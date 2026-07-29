@@ -316,6 +316,7 @@ export function buildStack(ctx, opts = {}) {
     root, chunks, builders, portals, interactables: [],
     spawn: [-3.2, 0, -OUTER + 1.7],
     spawnYaw: Math.PI,
+    lightBudget: 14,
     fogProfile: 'stack',
     reverb: 'stack',
     ambient: { sky: 0x1a1a20, ground: 0x2a2a30, intensity: 0.34 },

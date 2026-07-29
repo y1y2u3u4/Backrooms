@@ -405,6 +405,7 @@ export function buildPlant(ctx, opts = {}) {
     root, chunks, builders, portals, interactables,
     spawn: [HX0 + 2.2, G1, 0],
     spawnYaw: -Math.PI / 2,
+    lightBudget: 15,
     fogProfile: 'plant',
     reverb: 'plant',
     ambient: { sky: 0x141820, ground: 0x2a2620, intensity: 0.30 },

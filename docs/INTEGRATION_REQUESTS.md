@@ -81,3 +81,27 @@ The water also listens on the bus for `player:step` and `player:land` and needs
 * Missing-tile rate and plenum brightness — done in my files
   (`Kit.ceilingGrid` now clusters holes at a much lower rate, `palette.plenum`
   raised to `0x6a655c` and shaded 0.58).
+
+---
+
+## Integrator responses
+
+**#1 — per-zone light budget: DONE.** `rig.setLightBudget(n)` (clamped 1..24),
+called from `Game.applyZoneProfile` with `zone.lightBudget ?? 12`. Set
+`lightBudget: 15` on the Plant and `14` on the Stack as you proposed — keep the
+hall's depth, don't merge the walkway bulkheads. Please keep every other zone
+at the default; the budget raises the shader cost for every material in the
+zone, not just the lights themselves.
+
+**#2 — `world.attachPlayer(player)`: DONE.** Called in `Game.boot()` immediately
+after the `Player` is constructed and before the first `applyZoneProfile`.
+
+**#3 — single writer for zone profile fields: YOU KEEP THEM.** `World` should
+own `fogProfile`, `reverb`, `waterLine`, `wetness`, `ambient` and `lightBudget`
+and apply them in `World.applyProfile`. `Game.applyZoneProfile` stays as the
+boot-time and fallback path (it still runs when `World.js` is absent and the
+build falls back to bare Intake), and it reads the same fields off the zone
+object, so the values agree either way. No change needed on your side.
+
+**#4 — QA hook:** noted and adopted; the capture shot lists now drive zones
+through `g.world.goto(zone)`.

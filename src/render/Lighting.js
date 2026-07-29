@@ -305,6 +305,18 @@ export class LightRig {
     this.ambientTarget.intensity = intensity;
   }
 
+  /**
+   * Per-zone active-light budget. Twelve is right for the corridor zones, but
+   * the Plant's whole point is that you can see the whole hall at once, and
+   * dropping its two furthest high-bays is what establishes the room's depth.
+   * Raising this raises the shader cost for every material in that zone, so it
+   * is a per-zone decision, not a global one.
+   */
+  setLightBudget(n) {
+    this.maxActiveLights = Math.max(1, Math.min(24, n | 0));
+    this._sortTimer = 0;   // re-rank immediately
+  }
+
   /** Jump the bounce fill to its target — used on a zone change or at boot. */
   snapAmbient() {
     this.ambient.color.copy(this.ambientTarget.sky);

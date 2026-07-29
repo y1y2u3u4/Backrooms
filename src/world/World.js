@@ -255,6 +255,10 @@ export class World {
     if (z?.ambient && this.ctx.rig.setAmbient) {
       this.ctx.rig.setAmbient(z.ambient.sky, z.ambient.ground, z.ambient.intensity);
     }
+    // The Plant and the Stack are the only zones that legitimately need more
+    // than the default twelve simultaneous dynamic lights; everything else
+    // stays at the default because the budget costs every material in the zone.
+    this.ctx.rig.setLightBudget?.(z?.lightBudget ?? 12);
   }
 
   // -- frame --------------------------------------------------------------

@@ -86,6 +86,12 @@ export function createLoading({ title = 'Job docket', ref = '7/CO-2214' } = {}) 
         clockNode)),
     el('div.ax-load-remarks-row',
       el('span.ax-label', { text: 'Remarks' }), remarks, caret),
+    el('hr.ax-rule', { style: { marginTop: '14px' } }),
+    el('div.ax-load-sign',
+      el('div.ax-load-sign-box',
+        el('span.ax-label', { text: 'Signed on' }), el('span.ax-load-line')),
+      el('div.ax-load-sign-box',
+        el('span.ax-label', { text: 'Countersigned' }), el('span.ax-load-line'))),
     attended);
 
   const node = el('div.ax-layer.ax-loading',
@@ -205,7 +211,11 @@ export const LOADING_CSS = /* css */ `
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ax-load-fail { color: #b4614f; }
 
-.ax-load-stamp { right: clamp(26px,3.4vw,54px); bottom: clamp(54px,7vh,86px);
+.ax-load-sign { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; padding-top: 16px; }
+.ax-load-sign-box { display: flex; align-items: flex-end; gap: 12px; }
+.ax-load-line { flex: 1 1 auto; height: 1px; background: var(--ax-bone-4); margin-bottom: 3px; }
+
+.ax-load-stamp { right: clamp(26px,3.4vw,54px); bottom: clamp(10px,1.6vh,20px);
   opacity: 0; transform: rotate(var(--rot)) scale(1.08);
   transition: opacity 420ms var(--ax-ease), transform 420ms cubic-bezier(.16,.9,.3,1); }
 .ax-loading.ax-stamped .ax-load-stamp { opacity: .72; transform: rotate(var(--rot)) scale(1); }

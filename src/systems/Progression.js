@@ -149,15 +149,19 @@ export class Progression {
     if (!o || o.state === 'done') return false;
     o.state = 'done';
     // Reveal whatever the completion unblocks.
+    // The three core hunts are revealed together — they are parallel, not a
+    // sequence, and pretending otherwise would railroad the whole midgame.
+    // Everything else reveals strictly one at a time.
     const idx = this.objectives.indexOf(o);
+    let revealedCore = false;
     for (let i = idx + 1; i < this.objectives.length; i++) {
       const n = this.objectives[i];
-      if (n.state === 'hidden') {
-        // The three cores are revealed together — they are parallel, not a
-        // sequence, and pretending otherwise would railroad the whole midgame.
-        n.state = 'active';
-        if (!n.id.startsWith('core_')) break;
-      }
+      if (n.state !== 'hidden') continue;
+      const isCore = n.id.startsWith('core_');
+      if (!isCore && revealedCore) break;
+      n.state = 'active';
+      if (!isCore) break;
+      revealedCore = true;
     }
     this.bus.emit('progress:complete', { id, title: o.title });
     this._announce();

@@ -146,6 +146,8 @@ export class Game {
     });
     const spawn = this.world.spawn || [0, 0, 0];
     this.player.teleport(spawn[0], spawn[1], spawn[2], this.world.spawnYaw || 0);
+    // World.enter() needs to move the body when a portal is used.
+    this.world.attachPlayer?.(this.player);
     this.applyZoneProfile(this.world.currentZone || 'intake', { immediate: true });
 
     // ---- optional subsystems ---------------------------------------------
@@ -321,6 +323,7 @@ export class Game {
     const amb = z?.ambient || AMBIENT_PROFILES[zoneKey] || AMBIENT_PROFILES.intake;
     this.rig.setAmbient(amb.sky, amb.ground, amb.intensity);
     if (immediate) this.rig.snapAmbient();
+    this.rig.setLightBudget(z?.lightBudget ?? DEFAULT_LIGHT_BUDGET);
     this.audio?.setZone?.(z?.reverb || zoneKey);
     this.currentZone = zoneKey;
   }
@@ -472,6 +475,9 @@ export class Game {
  * inter-reflection a real room would have and is the main lever on how open or
  * how oppressive a zone feels before any fixture is placed.
  */
+/** Simultaneous dynamic lights outside the two big-volume zones. */
+export const DEFAULT_LIGHT_BUDGET = 12;
+
 export const AMBIENT_PROFILES = {
   intake:    { sky: 0x4a3f28, ground: 0x6e6044, intensity: 1.45 },
   service:   { sky: 0x1c2126, ground: 0x2c2f34, intensity: 0.40 },

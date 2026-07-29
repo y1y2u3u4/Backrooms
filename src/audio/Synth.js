@@ -387,12 +387,38 @@ export function noiseBurst(ctx, bag, dest, t, {
 export const t60ToQ = (t60, f) => clamp(t60 * Math.PI * f / 6.9078, 0.5, 900);
 
 /**
- * Ring a bank of modes with a short excitation.
+ * Ring a bank of modes with a short excitation. Metal, pipes, plates, ceramic,
+ * ducts, latches, footstep bodies — most of the game's percussive material.
  *
- *   modes: [{ f, t60, gain, q? }]
- *   excite: { dur, type, tone, gain }  — the strike itself
+ *   modes:  [{ f, t60, gain }]
+ *   excite: { dur, type, tone, gain, noise } — the contact itself
+ *   pitch:  frequency multiplier    damp: T60 multiplier
+ *   spread: 0..1 stereo scatter across the modes
  *
  * Returns the time at which the last mode has decayed.
+ *
+ * IMPLEMENTATION NOTE — why this is additive and not a filter bank.
+ *
+ * The obvious way to build this is a bank of high-Q bandpass filters excited by
+ * an impulse: one biquad per partial, exact T60 from Q = T60*pi*f/ln(1e3), and
+ * the strike's spectrum shapes the modes for free. It sounds right and it is
+ * cheap. It also does not work in Chrome.
+ *
+ * Blink computes a BiquadFilterNode's tail time analytically from its UNIT
+ * impulse response against an absolute threshold of 1/32768, and hard-stops the
+ * node when that elapses after its input goes silent. A constant-0dB-peak
+ * bandpass at Q=146 has a unit impulse response peaking at 1.9e-4 — only 16 dB
+ * above that threshold — so a mode asked to ring for 1.5 s is cut dead, to
+ * exactly zero, at 0.40 s and about -20 dB. Raising the level before or after
+ * the filter changes nothing, because the threshold is derived from the
+ * coefficients rather than from the signal. Measured across three Q values in
+ * tools/qa/audio-modaltest.mjs: 1.50 s -> 0.40, 0.42 -> 0.19, 0.90 -> 0.31.
+ *
+ * So: one oscillator and one envelope per partial. Exact decay, no truncation,
+ * no discontinuity, and roughly the same node count. The exciter's spectral
+ * shaping is recovered analytically by weighting each mode with the strike
+ * filter's response at that frequency, so a soft strike still rings the low
+ * modes and a hard one still rings the high ones.
  */
 export function modalRing(ctx, bag, dest, t, {
   modes = [], gain = 0.5, excite = {}, pitch = 1, damp = 1, spread = 0, rng = Math.random,
@@ -401,80 +427,57 @@ export function modalRing(ctx, bag, dest, t, {
   out.connect(dest);
 
   const ex = {
-    dur: 0.004, type: 'white', tone: 5200, q: 0.6, gain: 1, noise: 0.22, impulse: true, ...excite,
+    dur: 0.004, type: 'white', tone: 5200, q: 0.6, gain: 1, noise: 0.22, ...excite,
   };
-  // Normalise the bank against the sum of its mode gains, with an alignment
-  // factor: modes at different frequencies reach their envelope peaks at
-  // different times, so a bank rings at roughly half the sum of its nominal
-  // gains rather than all of it. ALIGN=2 recovers that, and the result is still
-  // bounded — `gain` remains a hard ceiling on the peak. Measured, not guessed;
-  // tools/qa/audio-probe.mjs fails the build if any voice exceeds it.
-  const ALIGN = 2.0;
+  // Normalise so `gain` is the peak of the summed bank. Oscillators all start
+  // at phase zero and therefore rise together, so the sum really does reach it.
   let sumG = 0;
   for (const m of modes) sumG += Math.abs(m.gain ?? 1);
-  // Never boost a one- or two-mode bank: there is nothing there to misalign.
-  const norm = ALIGN / Math.max(ALIGN, sumG);
+  const norm = 1 / Math.max(1, sumG);
 
-  // Exciter: an impulse plus an optional short noise chirp. The impulse gives a
-  // clean modal onset; the noise gives the strike its material (wood vs steel).
-  const exBus = gainNode(ctx, bag, ex.gain);
-  if (ex.impulse !== false) {
-    const imp = ctx.createBufferSource();
-    imp.buffer = impulseBuffer(ctx);
-    bag.src(imp);
-    const ig = gainNode(ctx, bag, 1);
-    imp.connect(ig); ig.connect(exBus);
-    try { imp.start(t); } catch { /* noop */ }
-  }
+  // Contact noise, radiated directly: the sound of two things touching, as
+  // distinct from the sound of the body ringing afterwards.
   if (ex.dur > 0 && ex.noise > 0) {
-    // The contact noise is radiated DIRECTLY, not through the resonators. That
-    // is both physically right (it is the sound of two things touching, not of
-    // the body ringing) and numerically necessary: a sustained excitation into
-    // a bank whose gain is compensated by 1/alpha builds up by orders of
-    // magnitude and blows the voice apart. Only a trickle goes into the body.
     const n = noiseSource(ctx, bag, { type: ex.type, rate: 1 });
     const nf = biquad(ctx, bag, 'lowpass', ex.tone, ex.q);
     const ng = gainNode(ctx, bag, 0);
-    n.connect(nf); nf.connect(ng);
-    ng.connect(out);
-    const bleed = gainNode(ctx, bag, ex.bleed ?? 0.015);
-    ng.connect(bleed); bleed.connect(exBus);
+    n.connect(nf); nf.connect(ng); ng.connect(out);
     hit(ng.gain, t, ex.noise, 0.0008, ex.dur);
     try { n.start(t, Math.random() * 2); } catch { n.start(t); }
     n.stop(t + ex.dur + 0.05);
   }
 
-  let last = t + 0.05;
+  let last = t + 0.02;
   for (const m of modes) {
     const f = clamp(m.f * pitch, 18, ctx.sampleRate * 0.47);
     const t60 = Math.max(0.006, (m.t60 ?? 0.4) * damp);
-    const q = m.q ?? t60ToQ(t60, f);
-    // A constant-0dB-peak bandpass (which is what Web Audio's 'bandpass' is)
-    // has an impulse response whose ENVELOPE peaks at exactly 2*alpha, where
-    // alpha = sin(w0)/2Q. For a 5-second mode at 147 Hz that is 1e-4.
-    const w0 = TAU * f / ctx.sampleRate;
-    const alpha = Math.sin(w0) / (2 * q);
-    const comp = clamp(1 / Math.max(2 * alpha, 1e-7), 1, 8e4);
+    // How hard this partial is struck: the strike's one-pole response at f.
+    // A dull mallet (low `tone`) leaves the high modes alone.
+    const exc = 1 / Math.sqrt(1 + (f / Math.max(60, ex.tone)) ** 2);
+    const amp = (m.gain ?? 1) * norm * (0.30 + 0.70 * exc) * ex.gain;
+    if (amp < 1e-5) continue;
 
-    // The compensation goes BEFORE the filter, and this is not a style choice.
-    // Blink stops processing a BiquadFilterNode once its ABSOLUTE output level
-    // falls under an internal silence threshold. Feed it an impulse of 1.0 and
-    // a Q=146 resonator peaks at 1.9e-4, hits that threshold a quarter of the
-    // way through its decay, and gets cut off: a 1.5 s steel plate rings for
-    // 0.4 s. Driving the filter hard and taking the level back afterwards keeps
-    // the absolute signal well above the threshold and the mode rings for its
-    // full T60. Verified with tools/qa/audio-modaltest.mjs.
-    const pre = gainNode(ctx, bag, comp);
-    const bp = biquad(ctx, bag, 'bandpass', f, q);
-    const mg = gainNode(ctx, bag, (m.gain ?? 1) * norm);
-    exBus.connect(pre); pre.connect(bp); bp.connect(mg);
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.value = f;
+    // A few cents of scatter: struck bodies are never perfectly tuned, and it
+    // stops a repeated hit from phasing identically against itself.
+    o.detune.value = (rng() * 2 - 1) * 4;
+    bag.src(o);
+    const g = gainNode(ctx, bag, 0);
+    o.connect(g);
+    // Low modes need a slightly longer onset or the envelope outruns the
+    // waveform and the mode starts with a click instead of a strike.
+    const atk = clamp(0.0006 + 1.2 / f, 0.0006, 0.005);
+    const end = hit(g.gain, t, amp, atk, t60);
     if (spread > 0) {
       const p = panner2d(ctx, bag, clamp((rng() * 2 - 1) * spread, -1, 1));
-      mg.connect(p); p.connect(out);
+      g.connect(p); p.connect(out);
     } else {
-      mg.connect(out);
+      g.connect(out);
     }
-    last = Math.max(last, t + t60 * 1.15);
+    o.start(t); o.stop(end + 0.02);
+    last = Math.max(last, end);
   }
   return last;
 }

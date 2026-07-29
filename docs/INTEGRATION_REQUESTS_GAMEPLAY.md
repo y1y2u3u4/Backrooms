@@ -177,6 +177,19 @@ want it culled with the chunk. Kinds: `breaker`, `valve`, `lift`, `keypad`,
 material buckets instead of the scene root — pass `{ builder: b }` and the door
 frame merges into your chunk.
 
+Zone builders that already produce the DESIGN.md §5 `interactables` array can
+hand it straight over: `gameplay.interactor.addAll(zone.interactables)`. The
+shape is the same; `hold`, `refusal`, `kind` and `once` are optional extras.
+
+**The goods lift decides the ending.** Mark the floor that leaves the building:
+
+```js
+gameplay.spawn('lift', { id: 'lift_2', floors: [
+  { name: 'PLANT',  y: -7.6 },
+  { name: 'SURFACE', y: 0, exit: true },   // <-- arriving here ends the game
+]});
+```
+
 ### 4.3 Attendant candidates
 
 The Attendant can only act on things it has been offered:

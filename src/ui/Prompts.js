@@ -152,6 +152,11 @@ export const PROMPTS_CSS = /* css */ `
 .ax-prompts[data-safe][data-refused] .ax-pr-badge::after { content: ''; position: absolute;
   left: -3px; right: -3px; top: 50%; height: 1px; background: #efeadc; transform: rotate(-38deg); }
 .ax-prompts[data-safe] .ax-pr-req { color: #efeadc; }
+/* An amber ring on an amber badge is invisible: in safe mode the progress
+   sweep and the state token both go to bone. */
+.ax-prompts[data-safe] .ax-pr-ring path { stroke: #efeadc; stroke-width: 2.5; }
+.ax-prompts[data-safe] .ax-pr-token { color: #cfc8b4; }
+.ax-prompts[data-safe] .ax-pr-subject { color: #b9b3a2; }
 `;
 
 export default createPrompts;

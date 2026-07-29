@@ -87,7 +87,7 @@ def build_one_hand(side_sign, mat_skin, mat_sleeve):
         A.assign_material(o, mat)
         objs.append(o)
     hand = A.join_objects(objs, "hand")
-    A.finish_hero_surface(hand, bevel_width=0.0028, bevel_segments=2, angle_deg=46)
+    A.finish_hero_surface(hand, bevel_width=0.0026, bevel_segments=1, angle_deg=46)
     return hand
 
 
