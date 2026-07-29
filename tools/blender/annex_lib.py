@@ -309,6 +309,75 @@ def extrude_profile_along_z(name, points2d, length, location=(0, 0, 0), caps=Tru
     return obj
 
 
+def sweep_tube(name, path_points, tube_r, tube_segments=6, location=(0, 0, 0), cap_ends=True):
+    """
+    Sweep a small circular cross-section of radius `tube_r` along a polyline
+    of world-space points. Used for handles, hooks, wire cages, coiled
+    cables — anything that reads better as a bent rod than a boxy shape.
+    """
+    bm = bmesh.new()
+    pts = [Vector(p) for p in path_points]
+    rings = []
+    for i, p in enumerate(pts):
+        if i == 0:
+            tangent = (pts[1] - pts[0]).normalized()
+        elif i == len(pts) - 1:
+            tangent = (pts[-1] - pts[-2]).normalized()
+        else:
+            tangent = (pts[i + 1] - pts[i - 1]).normalized()
+        ref = Vector((1, 0, 0))
+        binorm = tangent.cross(ref)
+        if binorm.length < 1e-5:
+            ref = Vector((0, 1, 0))
+            binorm = tangent.cross(ref)
+        binorm.normalize()
+        norm = binorm.cross(tangent).normalized()
+        ring = []
+        for k in range(tube_segments):
+            a = 2 * math.pi * k / tube_segments
+            off = binorm * (tube_r * math.cos(a)) + norm * (tube_r * math.sin(a))
+            ring.append(bm.verts.new(p + off))
+        rings.append(ring)
+    for i in range(len(rings) - 1):
+        ra, rb = rings[i], rings[i + 1]
+        for k in range(tube_segments):
+            k2 = (k + 1) % tube_segments
+            bm.faces.new((ra[k], ra[k2], rb[k2], rb[k]))
+    if cap_ends:
+        try:
+            bm.faces.new(rings[0][::-1])
+        except ValueError:
+            pass
+        try:
+            bm.faces.new(rings[-1])
+        except ValueError:
+            pass
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    obj = mesh_from_bmesh(bm, name)
+    obj.location = Vector(location)
+    return obj
+
+
+def helix_points(turns, radius, pitch, segments_per_turn=12, start=(0, 0, 0), axis='Y'):
+    """World-space points along a helix, for sweep_tube() — coiled cables, springs."""
+    n = int(turns * segments_per_turn)
+    pts = []
+    sx, sy, sz = start
+    for i in range(n + 1):
+        t = i / segments_per_turn
+        ang = 2 * math.pi * t
+        along = pitch * t
+        a = radius * math.cos(ang)
+        b = radius * math.sin(ang)
+        if axis == 'Y':
+            pts.append((sx + a, sy + along, sz + b))
+        elif axis == 'X':
+            pts.append((sx + along, sy + a, sz + b))
+        else:
+            pts.append((sx + a, sy + b, sz + along))
+    return pts
+
+
 def rounded_rect_profile(w, h, r, segs=3):
     """A rounded-rectangle 2D point loop, centred at origin, for use as a profile."""
     r = min(r, w / 2 - 1e-4, h / 2 - 1e-4)

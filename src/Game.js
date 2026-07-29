@@ -119,10 +119,18 @@ export class Game {
     // ---- world ------------------------------------------------------------
     const worldMod = await optional('world', 'world/World.js');
     if (worldMod?.createWorld) {
-      this.world = worldMod.createWorld(this.ctx);
-      await this.world.boot?.((p, m) => P(0.69 + p * 0.16, m));
-      this.subsystems.world = true;
-    } else {
+      // A half-finished world must not take the whole build down with it.
+      try {
+        this.world = worldMod.createWorld(this.ctx);
+        await this.world.boot?.((p, m) => P(0.69 + p * 0.16, m));
+        this.subsystems.world = true;
+      } catch (e) {
+        console.error('[game] world failed to build; falling back to Intake', e);
+        this.world = null;
+        this.subsystems.worldError = String(e.message || e);
+      }
+    }
+    if (!this.world) {
       // Fallback: the Intake zone alone. Always keeps the build runnable.
       const intake = buildIntake(this.ctx, {});
       this.engine.scene.add(intake.root);
