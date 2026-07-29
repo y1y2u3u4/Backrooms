@@ -474,12 +474,72 @@ export class Game {
 
   renderOnce(dt = 1 / 60) { this.step(dt); this.engine.render(dt); }
 
+  /**
+   * Place the camera for a capture.
+   *
+   * Resolves out of geometry and snaps to the floor first: a portal arrival
+   * point sits in a doorway, and dropping the eye there puts it inside a 160 mm
+   * wall, which then reads as a blown-out wash because at 200 mm from a surface
+   * lit by a fixture 2.7 m up the inverse square law is merciless.
+   */
   look(x, y, z, yaw = 0, pitch = 0) {
-    this.player.teleport(x, y, z, yaw);
+    const res = this.collision.resolveCapsule(
+      x, y, z, this.player.radius + 0.08, this.player.height);
+    const floor = this.collision.sampleFloor(res.x, res.z, y + 1.2, 2.5);
+    this.player.teleport(res.x, floor ? floor.y : y, res.z, yaw);
     this.player.pitch = pitch;
     this.player.bobAmount = 0;
     this.player.velocity.set(0, 0, 0);
     this.engine.exposure.reset();
+    this.player.update(1 / 60, null);
+  }
+
+  /**
+   * QA hook: place the camera somewhere with an actual sightline.
+   *
+   * A doorway faces a wall as often as it faces a room — the first
+   * zone-coverage capture produced a dozen frames of blown-out wallpaper 40 cm
+   * from the lens. This probes the collision world for the clearest direction,
+   * biases it toward the requested heading so shots stay roughly authored
+   * rather than arbitrary, and steps into the open space.
+   *
+   * @param {number[]} pos [x, y, z] starting point (usually a portal arrival)
+   * @param {number} prefer preferred yaw in radians
+   */
+  lookOpen(pos, prefer = 0, pitch = 0, { samples = 16, advance = 1.6, maxRange = 24 } = {}) {
+    const [x0, y0, z0] = pos;
+    const res = this.collision.resolveCapsule(
+      x0, y0, z0, this.player.radius + 0.08, this.player.height);
+    const floor = this.collision.sampleFloor(res.x, res.z, y0 + 1.2, 2.5);
+    const y = floor ? floor.y : y0;
+    const eye = y + 1.6;
+
+    let bestYaw = prefer, bestScore = -1;
+    for (let i = 0; i < samples; i++) {
+      const yaw = (i / samples) * Math.PI * 2;
+      const fx = -Math.sin(yaw), fz = -Math.cos(yaw);
+      let clear = 0;
+      for (let d = 1; d <= maxRange; d += 1) {
+        if (this.collision.segmentBlocked(res.x, eye, res.z,
+          res.x + fx * d, eye, res.z + fz * d, 'ceiling')) break;
+        clear = d;
+      }
+      // A shot pointing the way the designer meant is worth a few metres of
+      // depth, so the authored heading gets a bonus rather than a veto.
+      const delta = Math.abs(((yaw - prefer + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+      const score = clear + Math.max(0, 1 - delta / Math.PI) * 6;
+      if (score > bestScore) { bestScore = score; bestYaw = yaw; }
+    }
+
+    const fx = -Math.sin(bestYaw), fz = -Math.cos(bestYaw);
+    let step = 0;
+    for (let d = 0.4; d <= advance; d += 0.4) {
+      if (this.collision.segmentBlocked(res.x, eye, res.z,
+        res.x + fx * (d + 0.6), eye, res.z + fz * (d + 0.6), 'ceiling')) break;
+      step = d;
+    }
+    this.look(res.x + fx * step, y, res.z + fz * step, bestYaw, pitch);
+    return { position: [res.x + fx * step, y, res.z + fz * step], yaw: bestYaw, clearance: bestScore };
   }
 
   walkTo(x, z, seconds = 1) {

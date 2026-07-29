@@ -1,32 +1,62 @@
 [
-  { "name": "01_intake_spine",
-    "setup": "g.world.goto && g.world.goto('intake'); const s=g.world.spawn; g.look(s[0], s[1], s[2], g.world.spawnYaw||0, 0);" },
-  { "name": "02_intake_bay",
-    "setup": "g.world.goto && g.world.goto('intake'); const s=g.world.spawn; g.look(s[0]+8.4, s[1], s[2]-12.6, 0.8, -0.04);" },
-  { "name": "03_intake_ceiling",
-    "setup": "g.world.goto && g.world.goto('intake'); const s=g.world.spawn; g.look(s[0]+4.2, s[1], s[2]-8.4, 0.4, 0.62);" },
-  { "name": "04_intake_wall_close",
-    "setup": "g.world.goto && g.world.goto('intake'); const s=g.world.spawn; g.look(s[0]+1.2, s[1], s[2]-2.0, 0.0, -0.1);" },
-  { "name": "05_service_corridor",
-    "setup": "g.world.goto && g.world.goto('service'); const s=g.world.spawn; g.look(s[0], s[1], s[2], g.world.spawnYaw||0, 0);" },
-  { "name": "06_cistern_water",
-    "setup": "g.world.goto && g.world.goto('cistern'); const s=g.world.spawn; g.look(s[0], s[1], s[2], g.world.spawnYaw||0, -0.12);" },
-  { "name": "07_residence_corridor",
-    "setup": "g.world.goto && g.world.goto('residence'); const s=g.world.spawn; g.look(s[0], s[1], s[2], g.world.spawnYaw||0, 0);" },
-  { "name": "08_plant_hall",
-    "setup": "g.world.goto && g.world.goto('plant'); const s=g.world.spawn; g.look(s[0], s[1], s[2], g.world.spawnYaw||0, -0.05);" },
-  { "name": "09_plant_wide",
-    "setup": "g.world.goto && g.world.goto('plant'); const s=g.world.spawn; g.look(s[0], s[1], s[2], (g.world.spawnYaw||0)+0.7, 0.12);" },
-  { "name": "10_duct_crawl",
-    "setup": "g.world.goto && g.world.goto('duct'); const s=g.world.spawn; g.look(s[0], s[1], s[2], g.world.spawnYaw||0, 0); g.player.crouchAmt=1;" },
-  { "name": "11_stack_shaft",
-    "setup": "g.world.goto && g.world.goto('stack'); const s=g.world.spawn; g.look(s[0], s[1], s[2], g.world.spawnYaw||0, 0.18);" },
-  { "name": "12_safe_room",
-    "setup": "g.world.goto && g.world.goto('safe'); const s=g.world.spawn; g.look(s[0], s[1], s[2], g.world.spawnYaw||0, -0.05);" },
-  { "name": "13_surveyor_mid",
-    "setup": "g.world.goto && g.world.goto('intake'); const s=g.world.spawn; g.look(s[0], s[1], s[2], g.world.spawnYaw||0, 0); g.gameplay && g.gameplay.qa && g.gameplay.qa.surveyorTo && g.gameplay.qa.surveyorTo(s[0], s[2]-11, {state:'SEEKING'});" },
-  { "name": "14_surveyor_close",
-    "setup": "g.world.goto && g.world.goto('intake'); const s=g.world.spawn; g.look(s[0], s[1], s[2], g.world.spawnYaw||0, 0.06); g.gameplay && g.gameplay.qa && g.gameplay.qa.surveyorTo && g.gameplay.qa.surveyorTo(s[0], s[2]-4.2, {state:'MEASURING'});" },
-  { "name": "15_lamp_dark",
-    "setup": "g.world.goto && g.world.goto('service'); const s=g.world.spawn; g.look(s[0], s[1], s[2], g.world.spawnYaw||0, 0); g.rig.setCircuit('service', false); g.flashlight && (g.flashlight.isOn = true);" }
+  {
+    "name": "01_intake_spine",
+    "setup": "const r = g.world.goto ? g.world.goto('intake') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 0; g.lookOpen(p, y, 0)"
+  },
+  {
+    "name": "02_intake_bay",
+    "setup": "const r = g.world.goto ? g.world.goto('intake') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 1.6; g.lookOpen(p, y, -0.04)"
+  },
+  {
+    "name": "03_intake_ceiling",
+    "setup": "const r = g.world.goto ? g.world.goto('intake') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 0.4; g.lookOpen(p, y, 0.6)"
+  },
+  {
+    "name": "04_intake_look_back",
+    "setup": "const r = g.world.goto ? g.world.goto('intake') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 3.1416; g.lookOpen(p, y, -0.06)"
+  },
+  {
+    "name": "05_service_corridor",
+    "setup": "const r = g.world.goto ? g.world.goto('service') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 0; g.lookOpen(p, y, 0)"
+  },
+  {
+    "name": "06_cistern_water",
+    "setup": "const r = g.world.goto ? g.world.goto('cistern') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 0; g.lookOpen(p, y, -0.12)"
+  },
+  {
+    "name": "07_residence_corridor",
+    "setup": "const r = g.world.goto ? g.world.goto('residence') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 0; g.lookOpen(p, y, 0)"
+  },
+  {
+    "name": "08_plant_hall",
+    "setup": "const r = g.world.goto ? g.world.goto('plant') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 0; g.lookOpen(p, y, -0.05)"
+  },
+  {
+    "name": "09_plant_wide",
+    "setup": "const r = g.world.goto ? g.world.goto('plant') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 1.2; g.lookOpen(p, y, 0.14)"
+  },
+  {
+    "name": "10_duct_crawl",
+    "setup": "const r = g.world.goto ? g.world.goto('duct') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 0; g.lookOpen(p, y, 0); g.player.crouchAmt = 1;"
+  },
+  {
+    "name": "11_stack_shaft",
+    "setup": "const r = g.world.goto ? g.world.goto('stack') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 0; g.lookOpen(p, y, 0.2)"
+  },
+  {
+    "name": "12_safe_room",
+    "setup": "const r = g.world.goto ? g.world.goto('safe') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 0.6; g.lookOpen(p, y, -0.04)"
+  },
+  {
+    "name": "13_surveyor_mid",
+    "setup": "const r = g.world.goto ? g.world.goto('intake') : null; const p=(r&&r.position)||g.world.spawn; const y=((r&&r.yaw!==undefined)?r.yaw:(g.world.spawnYaw||0)); const o = g.lookOpen(p, y, 0); const q=g.gameplay&&g.gameplay.qa; if(q&&q.surveyorTo){ const f=g.player.forward(); q.surveyorTo(g.player.position.x+f.x*10, g.player.position.z+f.z*10, {state:'SEEKING'}); }"
+  },
+  {
+    "name": "14_surveyor_close",
+    "setup": "const r = g.world.goto ? g.world.goto('intake') : null; const p=(r&&r.position)||g.world.spawn; const y=((r&&r.yaw!==undefined)?r.yaw:(g.world.spawnYaw||0)); const o = g.lookOpen(p, y, 0.04); const q=g.gameplay&&g.gameplay.qa; if(q&&q.surveyorTo){ const f=g.player.forward(); q.surveyorTo(g.player.position.x+f.x*4.5, g.player.position.z+f.z*4.5, {state:'MEASURING'}); }"
+  },
+  {
+    "name": "15_lamp_in_the_dark",
+    "setup": "const r = g.world.goto ? g.world.goto('service') : null; const p=(r&&r.position)||g.world.spawn; const y=((r&&r.yaw!==undefined)?r.yaw:(g.world.spawnYaw||0)); g.lookOpen(p, y, 0); for (const c of g.rig.circuits.keys()) g.rig.setCircuit(c,false); if (g.flashlight) { g.flashlight.isOn = true; g.flashlight.on = true; }"
+  }
 ]
