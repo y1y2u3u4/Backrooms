@@ -1,0 +1,62 @@
+[
+  {
+    "name": "08_surveyor",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0.02); const q=g.gameplay&&g.gameplay.qa; if(q&&q.surveyorTo){const f=g.player.forward(); q.surveyorTo(g.player.position.x+f.x*9,g.player.position.z+f.z*9,g.player.yaw+Math.PI,'SEEKING');}",
+    "file": "docs/captures/final/08_surveyor.png",
+    "stats": {
+      "ms": 7437.791666666667,
+      "fps": 0.13444850902205516,
+      "p90": 39,
+      "calls": 334,
+      "tris": 781636,
+      "quality": "medium",
+      "res": "819x461",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 12,
+        "shadows": 3
+      }
+    }
+  },
+  {
+    "name": "09_intake_recheck",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0)",
+    "file": "docs/captures/final/09_intake_recheck.png",
+    "stats": {
+      "ms": 5.328571428511558,
+      "fps": 187.6675603238244,
+      "p90": 8.299999999813735,
+      "calls": 334,
+      "tris": 781636,
+      "quality": "medium",
+      "res": "819x461",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 12,
+        "shadows": 3
+      }
+    }
+  },
+  {
+    "name": "10_intake_ceiling_recheck",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,((r&&r.yaw)||0)+0.5,0.55)",
+    "file": "docs/captures/final/10_intake_ceiling_recheck.png",
+    "stats": {
+      "ms": 12.33571428574422,
+      "fps": 81.065431383706,
+      "p90": 21.199999999953434,
+      "calls": 324,
+      "tris": 779740,
+      "quality": "medium",
+      "res": "819x461",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 12,
+        "shadows": 3
+      }
+    }
+  }
+]

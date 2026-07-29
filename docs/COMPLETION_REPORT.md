@@ -134,15 +134,23 @@ answer to "does it hit 60 fps". This is stated plainly rather than worked around
 What *is* portable is the workload the frame submits. Measured in the integrated
 build at 1024×576, medium tier:
 
-| metric | measured | budget |
+| metric | measured across 8 zone shots | budget |
 |---|---:|---:|
-| draw calls | 167–210 | 180 |
-| triangles | 218 k – 407 k | 1 200 k |
-| active dynamic lights | 12 (capped) | 14 |
-| shadow-casting lights | 1–2 | 3 |
+| draw calls | 62 – 318 | 180 |
+| triangles | 51 k – 762 k | 1 200 k |
+| active dynamic lights | 12 (capped by tier) | 14 |
+| shadow-casting lights | 1 – 2 | 3 |
 | fixtures resident | 127 | — |
 
-Steady-state SwiftShader frame times at 496×279 were **5–8 ms**. The multi-second
+Draw calls exceed the 180 budget in the dressed zones (Intake 300–304, Service
+308, Residence 318) once props and decals are in. That is the one workload metric
+outside its target and it is the first thing to optimise: the cause is prop
+variety outrunning the per-material batching, and the fix is instancing the
+repeated props rather than merging them per chunk. Triangle counts are
+comfortable — 762 k against a 1.2 M budget — so there is headroom to trade.
+
+Steady-state SwiftShader frame times were **4–10 ms** (496×279 low tier: 5–8 ms;
+819×461 medium tier: 4.2–9.4 ms). The multi-second
 frames that appear in the capture logs are first-frame shader compiles after a
 camera jump into newly-visible materials, not steady-state cost — the same
 scenario measured 7.7 ms and 5.1 ms on subsequent frames.
@@ -174,17 +182,25 @@ measurement.
    soffit (visible in `docs/captures/judge1/07_residence_corridor.png`). This is
    a capture-tool limitation, not a game defect — the player controller has a
    ceiling probe and cannot get there.
-4. **Zone dressing density is uneven.** Intake and the Service Spine are dressed
-   to standard; the Plant, Cistern and Stack were still being dressed when their
-   agent's budget ran out. Their architecture and lighting are in place; their
-   prop density is lower than Intake's.
-5. **Ceiling water-staining is close to uniform** across the Intake plate rather
+4. **The Stack is the one zone that does not work.** It is a known, diagnosed
+   defect, not an unknown. In `docs/captures/final/05_stack.png` the receding
+   floors read as isolated lit rectangles suspended in black rather than as a
+   shaft: the zone emits floor slabs and gantries but no enclosing shaft wall, so
+   there is nothing for the fill light or the haze to sit on and nothing to
+   establish that the floors are inside anything. Raising its bounce fill and
+   thickening its fog (both done) reduce the effect but cannot fix it — the
+   geometry needs an enclosing well. This is the top remaining item.
+5. **Zone dressing density is uneven.** Intake, the Service Spine, the Residence
+   and the Plant are dressed to standard. The Cistern and the Ductwork have
+   their architecture, water and lighting but a lower prop density. The Safe Room
+   builds but could not be verified in a capture — see limitation 3.
+6. **Ceiling water-staining is close to uniform** across the Intake plate rather
    than following the wear gradient the fixtures already use. Concentrated damage
    reads as damage; distributed damage reads as material.
-6. **First-person hands are functional but not finished.** They are lit, posed
+7. **First-person hands are functional but not finished.** They are lit, posed
    and animated, but the geometry does not yet read as convincingly as the rest
    of the frame at the size it occupies.
-7. **Audio was never listened to.** It is verified numerically and thoroughly —
+8. **Audio was never listened to.** It is verified numerically and thoroughly —
    75/75 sounds rendered with no silence, clipping or DC offset, occlusion
    monotonic across three states, reverb T60s tracking target — but nobody in
    this loop could hear it.
@@ -232,7 +248,24 @@ Defects found and fixed by the project's own review loop, for completeness:
 | Auto-exposure blew a lit wall whenever half the frame was dark | range narrowed from [0.78, 2.20] to [0.80, 1.55] |
 | QA cameras stood against walls and inside soffits | `lookOpen()` probes for the clearest heading, centres laterally, resolves out of geometry and snaps to the floor |
 
-The automated artifact analyser was what turned the last of these from an
+### On reading the artifact analyser honestly
+
+The analyser flags a frame as CRUSHED when more than 16% of it sits at or near
+pure black. On the final set that fires for Service (0.738), the Plant (0.536),
+the Residence (0.613), the Cistern (0.260) and the Stack (0.900).
+
+**Four of those five are correct behaviour, not defects.** The threshold is
+calibrated for Intake, which is an over-lit office; a concrete service corridor
+lit by three failing strip lights is *supposed* to be mostly black, and visual
+inspection of `03_service.png`, `07_residence.png`, `06_cistern.png` and
+`04_plant_hall.png` confirms each has clear surface detail, readable
+architecture and legible light pools where it is lit. The flag did its job — it
+said "look at these" — and looking is what settled it.
+
+The Stack at 0.900 is the real failure, and it is the one the flag and the eye
+agree on. Per-zone thresholds are the obvious improvement to the tool.
+
+The analyser was also what turned the biggest defect of the project from an
 impression into a number. It measures crushed blacks, clipping, dynamic range,
 banding, high-frequency energy relative to the set median, isolated speckle and
 frame emptiness, and flags which frames to look at first — the run that produced
