@@ -19,7 +19,7 @@ export function buildPalette(materials) {
     // ---- Intake: the office maze ----------------------------------------
     wallpaper: M('wallpaper', {
       repeat: [1.25, 1.25], roughness: 1, metalness: 0, dirtBase: -0.15, dirtAmount: 0.75,
-      detailTile: 6, detailStrength: 0.42, normalScale: 0.9, envMapIntensity: 0.28,
+      detailTile: 3.6, detailStrength: 0.30, normalScale: 1.20, envMapIntensity: 0.28,
     }),
     wallpaperLit: M('wallpaper', {
       repeat: [1.25, 1.25], roughness: 1, metalness: 0, dirtBase: -0.3, dirtAmount: 0.45,
@@ -55,8 +55,12 @@ export function buildPalette(materials) {
       detailTile: 8, detailStrength: 0.3, envMapIntensity: 0.4,
     }),
     gridMetal: M('galvSteel', {
-      repeat: [1.5, 1.5], roughness: 0.55, metalness: 0.85, dirtAmount: 0, dirtBase: -99,
-      detailStrength: 0.2, envMapIntensity: 0.7, color: 0xd6d2c4,
+      // A ceiling tee is PAINTED steel, not a mirror. At high metalness its
+      // downward-facing flange has nothing to reflect but the dark lower band
+      // of the IBL, so the whole grid renders as hard black lines across every
+      // ceiling in the game. Low metalness lets the bounce fill reach it.
+      repeat: [1.5, 1.5], roughness: 0.64, metalness: 0.18, dirtAmount: 0, dirtBase: -99,
+      detailStrength: 0.2, envMapIntensity: 0.45, color: 0xe2ded0,
     }),
     conduitMetal: M('galvSteel', {
       repeat: [1.2, 1.2], roughness: 0.48, metalness: 0.92, dirtAmount: 0.3, dirtBase: -0.5,

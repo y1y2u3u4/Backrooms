@@ -1,0 +1,142 @@
+[
+  {
+    "name": "p01_entry",
+    "setup": "g.stop(); g.rig.maxActiveLights=24; g.world.maxResident=2; g.world.goto('plant'); g.look(384.6, 0.74, 400.0, -1.5708, -0.12)",
+    "file": "docs/captures/env/e2/p01_entry.png",
+    "stats": {
+      "ms": 604.0600000000559,
+      "fps": 1.6554646889380318,
+      "p90": 5929.9000000003725,
+      "calls": 111,
+      "tris": 280116,
+      "quality": "low",
+      "res": "397x223",
+      "lights": {
+        "fixtures": 144,
+        "lit": 105,
+        "active": 0,
+        "shadows": 2
+      }
+    }
+  },
+  {
+    "name": "p02_floor",
+    "setup": "g.look(392.0, -6.0, 396.5, -1.35, 0.14)",
+    "file": "docs/captures/env/e2/p02_floor.png",
+    "stats": {
+      "ms": 1741.6099999998696,
+      "fps": 0.5741813609247046,
+      "p90": 17287.400000000373,
+      "calls": 97,
+      "tris": 271746,
+      "quality": "low",
+      "res": "397x223",
+      "lights": {
+        "fixtures": 144,
+        "lit": 105,
+        "active": 11,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "c01_tunnel",
+    "setup": "g.world.goto('cistern'); g.look(786.0, 0.42, 0, -1.5708, -0.05)",
+    "file": "docs/captures/env/e2/c01_tunnel.png",
+    "stats": {
+      "ms": 30.73999999994412,
+      "fps": 32.53090435920032,
+      "p90": 264.59999999962747,
+      "calls": 103,
+      "tris": 100744,
+      "quality": "low",
+      "res": "397x223",
+      "lights": {
+        "fixtures": 30,
+        "lit": 28,
+        "active": 0,
+        "shadows": 2
+      }
+    }
+  },
+  {
+    "name": "k01_stack",
+    "setup": "g.world.goto('stack'); g.look(-3.2, 0, 790.5, 0.0, -0.34)",
+    "file": "docs/captures/env/e2/k01_stack.png",
+    "stats": {
+      "ms": 13.989999999850989,
+      "fps": 71.47962830669415,
+      "p90": 35.59999999962747,
+      "calls": 68,
+      "tris": 317880,
+      "quality": "low",
+      "res": "397x223",
+      "lights": {
+        "fixtures": 50,
+        "lit": 44,
+        "active": 0,
+        "shadows": 2
+      }
+    }
+  },
+  {
+    "name": "i01_arrival",
+    "setup": "g.world.goto('intake'); g.look(-30.0, 0, 25.2, -1.5708, -0.02)",
+    "file": "docs/captures/env/e2/i01_arrival.png",
+    "stats": {
+      "ms": 14.230000000074506,
+      "fps": 70.27406886821954,
+      "p90": 46.40000000037253,
+      "calls": 181,
+      "tris": 396466,
+      "quality": "low",
+      "res": "397x223",
+      "lights": {
+        "fixtures": 164,
+        "lit": 121,
+        "active": 0,
+        "shadows": 2
+      }
+    }
+  },
+  {
+    "name": "d01_duct",
+    "setup": "g.world.goto('duct'); g.look(786.6, 0, 400.0, -1.5708, 0.0); g.player.crouchAmt=1",
+    "file": "docs/captures/env/e2/d01_duct.png",
+    "stats": {
+      "ms": 20.929999999795108,
+      "fps": 47.778308648341586,
+      "p90": 60.799999999813735,
+      "calls": 75,
+      "tris": 68062,
+      "quality": "low",
+      "res": "397x223",
+      "lights": {
+        "fixtures": 132,
+        "lit": 94,
+        "active": 0,
+        "shadows": 2
+      }
+    }
+  },
+  {
+    "name": "o01_safe",
+    "setup": "g.world.goto('safe'); g.look(400.6, 0, 799.0, 0.0, -0.05)",
+    "file": "docs/captures/env/e2/o01_safe.png",
+    "stats": {
+      "ms": 36.610000000242145,
+      "fps": 27.3149412726956,
+      "p90": 353,
+      "calls": 53,
+      "tris": 32548,
+      "quality": "low",
+      "res": "397x223",
+      "lights": {
+        "fixtures": 8,
+        "lit": 8,
+        "active": 0,
+        "shadows": 1
+      }
+    }
+  }
+]
