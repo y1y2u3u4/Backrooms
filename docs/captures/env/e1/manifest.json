@@ -1,0 +1,122 @@
+[
+  {
+    "name": "p01_entry",
+    "setup": "g.stop(); g.world.maxResident=1; g.world.goto('plant'); g.world.evict(); g.look(384.6, 0.74, 400.0, -1.5708, -0.12)",
+    "file": "docs/captures/env/e1/p01_entry.png",
+    "stats": {
+      "ms": 2.3333333333333335,
+      "fps": 428.57142857142856,
+      "p90": 3.400000000372529,
+      "calls": 34,
+      "tris": 7980,
+      "quality": "low",
+      "res": "397x223",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 0,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "s01_spine_east",
+    "setup": "g.world.goto('service'); g.world.evict(); g.look(370.0, 0, 0, -1.5708, -0.02)",
+    "file": "docs/captures/env/e1/s01_spine_east.png",
+    "stats": {
+      "ms": 2435.5333333335197,
+      "fps": 0.41058768784383576,
+      "p90": 7299.5,
+      "calls": 172,
+      "tris": 276298,
+      "quality": "low",
+      "res": "397x223",
+      "lights": {
+        "fixtures": 32,
+        "lit": 30,
+        "active": 0,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "c01_tunnel",
+    "setup": "g.world.goto('cistern'); g.world.evict(); g.look(786.0, 0.42, 0, -1.5708, -0.05)",
+    "file": "docs/captures/env/e1/c01_tunnel.png",
+    "stats": {
+      "ms": 1.4000000000620882,
+      "fps": 714.2857142540366,
+      "p90": 2,
+      "calls": 34,
+      "tris": 7980,
+      "quality": "low",
+      "res": "397x223",
+      "lights": {
+        "fixtures": 32,
+        "lit": 30,
+        "active": 0,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "r01_corridor",
+    "setup": "g.world.goto('residence'); g.world.evict(); g.look(-17.0, 0, 400.0, -1.5708, -0.02)",
+    "file": "docs/captures/env/e1/r01_corridor.png",
+    "stats": {
+      "ms": 701.8333333336437,
+      "fps": 1.4248397055324973,
+      "p90": 2060.2000000001863,
+      "calls": 173,
+      "tris": 147426,
+      "quality": "low",
+      "res": "397x223",
+      "lights": {
+        "fixtures": 19,
+        "lit": 17,
+        "active": 0,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "k01_stack",
+    "setup": "g.world.goto('stack'); g.world.evict(); g.look(-3.2, 0, 790.5, 0.0, -0.34)",
+    "file": "docs/captures/env/e1/k01_stack.png",
+    "stats": {
+      "ms": 4.5999999999379115,
+      "fps": 217.39130435076032,
+      "p90": 9.099999999627471,
+      "calls": 34,
+      "tris": 7980,
+      "quality": "low",
+      "res": "397x223",
+      "lights": {
+        "fixtures": 19,
+        "lit": 17,
+        "active": 0,
+        "shadows": 2
+      }
+    }
+  },
+  {
+    "name": "i01_arrival",
+    "setup": "g.world.goto('intake'); g.world.evict(); g.look(-30.0, 0, 25.2, -1.5708, -0.02)",
+    "file": "docs/captures/env/e1/i01_arrival.png",
+    "stats": {
+      "ms": 12.23333333308498,
+      "fps": 81.74386921146878,
+      "p90": 27.299999999813735,
+      "calls": 181,
+      "tris": 396466,
+      "quality": "low",
+      "res": "397x223",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 0,
+        "shadows": 2
+      }
+    }
+  }
+]

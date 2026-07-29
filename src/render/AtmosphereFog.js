@@ -80,9 +80,14 @@ export function installAtmosphereFog() {
 
     // Slow drifting inhomogeneity — reads as still air with dust moving in it,
     // not as a shader effect. Amplitude is deliberately small.
-    vec3 np = vFogWorldPos * 0.055 + vec3(fogTime * 0.013, fogTime * 0.006, -fogTime * 0.009);
-    float n = annexNoise(np) * 0.65 + annexNoise(np * 2.7) * 0.35;
-    fogAmt *= 1.0 + (n - 0.5) * 2.0 * fogNoiseAmt;
+    //
+    // ONE octave, not two. This runs on every fragment of every surface in the
+    // game; the second octave cost as much as the first and was invisible at
+    // the amplitude this term is allowed to use.
+    if (fogNoiseAmt > 0.001) {
+      vec3 np = vFogWorldPos * 0.055 + vec3(fogTime * 0.013, fogTime * 0.006, -fogTime * 0.009);
+      fogAmt *= 1.0 + (annexNoise(np) - 0.5) * 2.0 * fogNoiseAmt;
+    }
 
     float f = clamp(1.0 - exp(-fogAmt), 0.0, fogMax);
     // Distant haze picks up a warmer bounce from the fluorescents overhead.

@@ -27,7 +27,7 @@ export const FIXTURE_TYPES = {
    */
   troffer: {
     size: [1.20, 0.09, 0.30],
-    color: 0xfff0cf, intensity: 26, distance: 17.0, angle: 1.42, penumbra: 0.30,
+    color: 0xfff0cf, intensity: 31, distance: 17.0, angle: 1.42, penumbra: 0.30,
     tubeColor: 0xfff6e2, tubeIntensity: 1.35, cone: 0.11, hum: 1.0,
   },
   /** Surface-mounted strip light, service corridors. */

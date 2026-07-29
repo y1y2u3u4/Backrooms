@@ -4,7 +4,7 @@ import { Input } from './core/Input.js';
 import { Assets } from './core/Assets.js';
 import { Bus, clamp01, damp } from './core/util.js';
 import { TextureForge } from './render/TextureForge.js';
-import { MaterialLibrary, updateMaterialGlobals, setWetness } from './render/Materials.js';
+import { MaterialLibrary, updateMaterialGlobals, setWetness, materialGlobals } from './render/Materials.js';
 import { LightRig } from './render/Lighting.js';
 import { FOG_PROFILES } from './render/AtmosphereFog.js';
 import { CollisionWorld } from './player/Physics.js';
@@ -87,6 +87,7 @@ export class Game {
 
     P(0.56, 'mixing materials');
     this.materials = new MaterialLibrary(this.forge, { envMap: this.engine.envMap });
+    materialGlobals.uStochastic.value = this.engine.q.stochastic;
     this.palette = buildPalette(this.materials);
 
     P(0.58, 'unpacking assets');
@@ -325,7 +326,9 @@ export class Game {
     const amb = z?.ambient || AMBIENT_PROFILES[zoneKey] || AMBIENT_PROFILES.intake;
     this.rig.setAmbient(amb.sky, amb.ground, amb.intensity);
     if (immediate) this.rig.snapAmbient();
-    this.rig.setLightBudget(z?.lightBudget ?? DEFAULT_LIGHT_BUDGET);
+    // The zone asks for a budget; the quality tier caps it.
+    this.rig.setLightBudget(Math.min(
+      z?.lightBudget ?? DEFAULT_LIGHT_BUDGET, this.engine.q.lights));
     // Hands live in a separate scene, so they need the zone's mood pushed to
     // them explicitly or they read as a flat cut-out pasted over the world.
     this._zoneAmbient = amb;
@@ -517,14 +520,14 @@ export const AMBIENT_PROFILES = {
   // direct light and reads as pure black next to it. These values are chosen so
   // an unlit wall face sits about two stops under a lit one, which is what a
   // real room with white ceilings actually does.
-  intake:    { sky: 0x9a9484, ground: 0xb4ac98, intensity: 3.20 },
-  service:   { sky: 0x6a7078, ground: 0x7c8189, intensity: 1.10 },
-  cistern:   { sky: 0x4e5c60, ground: 0x5a6a68, intensity: 0.75 },
-  residence: { sky: 0x8a7c66, ground: 0xa08e72, intensity: 1.70 },
-  plant:     { sky: 0x60686f, ground: 0x74766e, intensity: 1.15 },
-  duct:      { sky: 0x3a3833, ground: 0x46433c, intensity: 0.45 },
-  stack:     { sky: 0x767884, ground: 0x8a8c96, intensity: 1.05 },
-  safe:      { sky: 0x9a8666, ground: 0xb09468, intensity: 2.10 },
+  intake:    { sky: 0x8e897a, ground: 0xa39c8a, intensity: 1.75 },
+  service:   { sky: 0x5e646c, ground: 0x6c7178, intensity: 0.70 },
+  cistern:   { sky: 0x46545a, ground: 0x4e5e5e, intensity: 0.50 },
+  residence: { sky: 0x7e7462, ground: 0x8e806a, intensity: 1.05 },
+  plant:     { sky: 0x565e66, ground: 0x666861, intensity: 0.75 },
+  duct:      { sky: 0x34322d, ground: 0x3c3a34, intensity: 0.30 },
+  stack:     { sky: 0x6a6c78, ground: 0x7a7c86, intensity: 0.68 },
+  safe:      { sky: 0x8e7e62, ground: 0x9c8862, intensity: 1.30 },
   void:      { sky: 0x000000, ground: 0x000000, intensity: 0.0 },
 };
 

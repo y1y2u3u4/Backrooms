@@ -49,6 +49,19 @@ suppress that (the QA harness does).
   the field and it is invisible without this.
 - **R1.4** *(nice to have)* a settings surface for `audio.setVolume(0..1)`,
   `audio.setBusVolume('music', v)` and `audio.toggleMute()`.
+- **R1.5** For pausing, prefer `audio.engine.setDuck(0.6, 0.3)` over
+  `audio.duck(0.6, 0.3)`. `duck(amount, seconds)` is a *dip*: it ducks and then
+  recovers within `seconds`, which is right for a stinger and wrong for a pause
+  menu that stays open. `setDuck` holds until released with `setDuck(0)`.
+  `duck(0, s)` is already treated as a release, so the current wiring works —
+  it just lets the world back in half a second after the pause begins.
+
+**Already wired (observed in `src/Game.js`)** — no action needed, recorded so it
+does not get changed by accident: `createAudio({bus, collision, camera, rig})`
+at boot, `init()` armed on the first pointerdown/keydown, `update(dt, pos)` in
+the frame loop, and `setZone(z.reverb || zoneKey)` on zone change. Passing the
+player's feet to `update()` is fine — the facade takes the listener from the
+bound camera and only falls back to the argument when there is no camera.
 
 Nothing else in `main.js` needs to change. The audio system reads
 `rig.fixtures[]`, `collision.occlusion()` and `camera.matrixWorld`; it writes to

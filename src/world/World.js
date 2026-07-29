@@ -168,14 +168,14 @@ export class World {
     zone.tris = zone.root.userData?.tris ?? 0;
     console.info(`[world] built ${id} in ${(performance.now() - t0).toFixed(0)} ms` +
       (zone.tris ? ` (${(zone.tris / 1000).toFixed(0)}k tris)` : ''));
-    this.evict();
+    this.evict(id);
     return zone;
   }
 
   /** Tear a zone down completely. */
-  unload(id) {
+  unload(id, keep = null) {
     const z = this.zones[id];
-    if (!z || id === this.currentZone) return;
+    if (!z || id === this.currentZone || id === keep) return;
     this.root.remove(z.root);
     disposeTree(z.root, false);
     if (z._fixtures) for (const f of z._fixtures) this.ctx.rig.remove(f);
@@ -186,15 +186,23 @@ export class World {
     this.ctx.bus?.emit('zone:unload', { zone: id });
   }
 
-  /** Keep only the N most recently used zones. */
-  evict() {
+  /**
+   * Keep only the N most recently used zones.
+   *
+   * `keep` protects a zone that is about to become current but is not yet —
+   * without it, building a neighbour while the residency limit is already met
+   * evicts the zone that was just built, because `currentZone` still points at
+   * the one being left. That failure is silent and looks exactly like a zone
+   * that never built at all.
+   */
+  evict(keep = null) {
     const ids = Object.keys(this.zones);
     if (ids.length <= this.maxResident) return;
     ids.sort((a, b) => (this.lastUsed[a] || 0) - (this.lastUsed[b] || 0));
     for (const id of ids) {
       if (Object.keys(this.zones).length <= this.maxResident) break;
-      if (id === this.currentZone) continue;
-      this.unload(id);
+      if (id === this.currentZone || id === keep) continue;
+      this.unload(id, keep);
     }
   }
 

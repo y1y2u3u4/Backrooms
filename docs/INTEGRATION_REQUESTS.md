@@ -105,3 +105,76 @@ object, so the values agree either way. No change needed on your side.
 
 **#4 — QA hook:** noted and adopted; the capture shot lists now drive zones
 through `g.world.goto(zone)`.
+
+---
+
+## 6. URGENT — the dynamic-light budget is applied in creation order, not distance order
+
+`LightRig.update` picks which fixtures get a live `THREE.SpotLight` like this:
+
+```js
+for (const f of this.fixtures) {          // creation order
+  ...
+  const tooFar = f.distToCam > f.def.distance * 1.8;
+  if (tooFar || lit < 0.004) f.light.visible = false;
+  else if (litCount < this.maxActiveLights) litCount++;
+  else f.light.visible = false;
+}
+```
+
+`this.fixtures` is in the order zones created them, so the first N fixtures that
+happen to be within `distance * 1.8` win the budget — **not** the N nearest. In
+Intake that is catastrophic: the plate has ~127 troffers, the budget is 12, and
+the twelve that get lights are the ones lowest in row-major build order that are
+merely *within 27 m*, which are typically 20-25 m away and behind the player.
+The fixtures three metres in front of the camera are switched off. The frame
+goes black in the near field and stays lit in the far field, which is exactly
+backwards.
+
+You can see it in `docs/captures/env/e1/i01_arrival.png` (Intake, black) versus
+`r01_corridor.png` (the Residence, which reads correctly only because it has ~20
+fixtures created west-to-east and the camera happens to be at the west end).
+
+The shadow-caster code immediately above already builds the sorted array this
+needs:
+
+```js
+const live = this.fixtures
+  .filter((f) => f.level > 0.05 && this.circuitLevel(f.circuit) > 0.05)
+  .sort((a, b) => a.distToCam - b.distToCam);
+```
+
+Suggested fix: keep that sorted array on the rig at resort time
+(`this._live = live`), then award the budget by walking `this._live` rather than
+`this.fixtures`, and default everything else to `visible = false`. Something
+like:
+
+```js
+const budget = new Set(this._live.slice(0, this.maxActiveLights));
+for (const f of this.fixtures) {
+  const lit = f.update(t, dt, power > 0.02 ? power : 0);
+  f.light.visible = budget.has(f) && lit > 0.004 &&
+                    f.distToCam < f.def.distance * 1.8;
+}
+```
+
+Two related notes:
+
+* `distToCam` is only refreshed on the 0.22 s resort tick. After a teleport
+  (`Game.look`, a portal transition, a cinematic cut) the budget is decided from
+  stale distances for up to a fifth of a second. Forcing a resort inside
+  `Game.look()` and after `World.enter()` would make QA frames deterministic —
+  right now a capture with a small settle count can grab the frame before the
+  first resort.
+* Until this lands, every environment capture has to set
+  `g.rig.maxActiveLights = 24` in the shot setup to see anything, which is what
+  `tools/qa/shots.env*.json` now does. Those overrides should come out once the
+  ordering is fixed.
+
+## 7. Fixed on my side: `World.evict()` could unload the zone it had just built
+
+For the record, since it produced the same "zone is black" symptom: `build()`
+called `evict()` before `currentZone` had moved to the new zone, so with a small
+residency limit the newly built zone was the eviction candidate. `evict(keep)`
+now protects it. If you ever see a zone build in the console and then render
+nothing, that was the cause.

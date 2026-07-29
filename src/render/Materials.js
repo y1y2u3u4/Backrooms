@@ -112,10 +112,18 @@ const FRAG_MAP = /* glsl */ `
   // LEAK STREAKS on vertical surfaces. Water enters from above and runs down,
   // so the noise is stretched hard in Y and gated by a low-frequency "where is
   // the leak" mask. Biggest single win for making a wall read as a real wall.
-  vec2 axLeakN = axFbm2(vAnnexWorld * vec3(0.09, 0.012, 0.09) + 71.0);
-  float axLeak = smoothstep(0.50, 0.80, axLeakN.x)
-               * smoothstep(0.42, 0.88, axLeakN.y)
-               * axVert * uGrimeAmount;
+  // Leaks only exist on vertical faces, and floors plus ceilings are most of
+  // the screen area in a building like this — evaluating the field for them
+  // was pure waste. The traffic term below reuses .y, so the branch keeps a
+  // cheap fallback rather than skipping outright.
+  vec2 axLeakN = vec2(0.0);
+  float axLeak = 0.0;
+  if (axVert > 0.12 || axUp > 0.12) {
+    axLeakN = axFbm2(vAnnexWorld * vec3(0.09, 0.012, 0.09) + 71.0);
+    axLeak = smoothstep(0.50, 0.80, axLeakN.x)
+           * smoothstep(0.42, 0.88, axLeakN.y)
+           * axVert * uGrimeAmount;
+  }
 
   {
     // STOCHASTIC RE-TILING. Blend a second, rotated, differently-scaled tap of

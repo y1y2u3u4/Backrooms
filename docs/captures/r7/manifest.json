@@ -1,0 +1,82 @@
+[
+  {
+    "name": "q1_spine",
+    "setup": "g.look(-28.0, 0, -8.4, -1.5708, 0.0)",
+    "file": "docs/captures/r7/q1_spine.png",
+    "stats": {
+      "ms": 3034.1111111110076,
+      "fps": 0.32958582048560103,
+      "p90": 27157.400000000373,
+      "calls": 190,
+      "tris": 399388,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 12,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "q2_cross",
+    "setup": "g.look(4.2, 0, -8.4, -0.9, -0.02)",
+    "file": "docs/captures/r7/q2_cross.png",
+    "stats": {
+      "ms": 7.657142857089639,
+      "fps": 130.5970149262808,
+      "p90": 21.59999999962747,
+      "calls": 87,
+      "tris": 247258,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 12,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "q3_ceiling",
+    "setup": "g.look(-8.4, 0, -8.4, 0.4, 0.72)",
+    "file": "docs/captures/r7/q3_ceiling.png",
+    "stats": {
+      "ms": 5.11666666654249,
+      "fps": 195.43973941842393,
+      "p90": 8.300000000745058,
+      "calls": 64,
+      "tris": 240756,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 12,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "q4_bay",
+    "setup": "g.look(-12.6, 0, 4.2, 0.7, 0.0)",
+    "file": "docs/captures/r7/q4_bay.png",
+    "stats": {
+      "ms": 1173.8111111110904,
+      "fps": 0.8519258256581277,
+      "p90": 10476.899999999441,
+      "calls": 78,
+      "tris": 217594,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 12,
+        "shadows": 2
+      }
+    }
+  }
+]

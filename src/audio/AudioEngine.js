@@ -548,6 +548,9 @@ export class AudioEngine {
    */
   duck(amount = 0.6, seconds = 1.4, buses = ['ambience', 'world', 'music']) {
     if (!this.available) return;
+    // duck(0) reads as "let the world back in" everywhere it is called from, so
+    // treat it as a release of any sustained duck rather than a no-op dip.
+    if (amount <= 0) return this.setDuck(0, Math.max(0.05, seconds), buses);
     const t = this.now;
     const target = clamp01(1 - amount);
     const atk = Math.min(0.28, seconds * 0.22);

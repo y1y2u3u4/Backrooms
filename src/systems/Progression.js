@@ -337,6 +337,32 @@ export class Progression {
     return this;
   }
 
+  // -- Game.js compatibility ---------------------------------------------------------
+  // `Game.respawn()` talks to the progression layer rather than the director,
+  // which is the right call from its side — respawn is a *progression* concern
+  // and the director is an implementation detail of pacing. These two forward.
+
+  /** Where the player comes back. `[x, y, z]`, or null if nowhere is safe yet. */
+  lastSafePoint() {
+    const r = this.director?.lastSafe;
+    return r ? r.position.slice() : null;
+  }
+
+  /** Yaw to face on respawn. */
+  lastSafeYaw() { return this.director?.lastSafe?.yaw ?? 0; }
+
+  /**
+   * Perform the respawn. Idempotent and safe to call when nothing has died —
+   * the director owns the world-changing side of it.
+   */
+  respawn() {
+    this.director?.respawn?.();
+    return this.lastSafePoint();
+  }
+
+  /** Register a safe room from a zone builder's `safe` marker. */
+  registerSafeRoom(room) { return this.director?.registerSafeRoom?.(room) ?? null; }
+
   // -- per frame -------------------------------------------------------------------
 
   update(dt) {

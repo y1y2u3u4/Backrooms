@@ -31,10 +31,10 @@ const GradeShader = {
 
     uLift: { value: new THREE.Vector3(0.004, 0.006, 0.010) },
     uGamma: { value: new THREE.Vector3(1.0, 0.99, 0.97) },
-    uGain: { value: new THREE.Vector3(1.04, 1.0, 0.92) },
+    uGain: { value: new THREE.Vector3(1.02, 1.0, 0.965) },
     uShadowTint: { value: new THREE.Color(0x1d2630) },
-    uHighlightTint: { value: new THREE.Color(0xffe9bd) },
-    uSplitAmount: { value: 0.30 },
+    uHighlightTint: { value: new THREE.Color(0xfff0d8) },
+    uSplitAmount: { value: 0.20 },
     uSaturation: { value: 0.90 },
     uContrast: { value: 1.12 },
 
