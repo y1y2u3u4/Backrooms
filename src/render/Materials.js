@@ -28,8 +28,9 @@ import * as THREE from 'three';
 
 export const materialGlobals = {
   uTime: { value: 0 },
-  uMacroScale: { value: 0.055 },
-  uMacroStrength: { value: 0.22 },
+  uMacroScale: { value: 0.038 },
+  uMacroStrength: { value: 0.30 },
+  uStochastic: { value: 0.62 },
   uGrimeAmount: { value: 0.5 },
   uWetLine: { value: -999 },
   uWetAmount: { value: 0 },
@@ -38,13 +39,17 @@ export const materialGlobals = {
 
 const VERT_HEAD = /* glsl */ `
   varying vec3 vAnnexWorld;
+  varying vec3 vAnnexNormal;
 `;
 const VERT_BODY = /* glsl */ `
   vAnnexWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;
+  vAnnexNormal = normalize(mat3(modelMatrix) * objectNormal);
 `;
 
 const FRAG_HEAD = /* glsl */ `
   varying vec3 vAnnexWorld;
+  varying vec3 vAnnexNormal;
+  uniform float uStochastic;
   uniform float uTime;
   uniform float uMacroScale;
   uniform float uMacroStrength;
@@ -72,41 +77,93 @@ const FRAG_HEAD = /* glsl */ `
                mix(mix(axHash(i + vec3(0,0,1)), axHash(i + vec3(1,0,1)), f.x),
                    mix(axHash(i + vec3(0,1,1)), axHash(i + vec3(1,1,1)), f.x), f.y), f.z);
   }
-  float axFbm(vec3 p) {
-    return axNoise(p) * 0.58 + axNoise(p * 2.13) * 0.28 + axNoise(p * 4.7) * 0.14;
+  /**
+   * Returns TWO correlated bands from one lattice walk:
+   *   .x — a smooth 2-octave macro value
+   *   .y — the same field pushed two octaves finer
+   * Sharing the first two octaves between both outputs costs one extra noise
+   * lookup instead of three, which matters because this runs on every fragment
+   * of every surface in the game.
+   */
+  vec2 axFbm2(vec3 p) {
+    float a = axNoise(p);
+    float b = axNoise(p * 2.13 + 17.0);
+    float c = axNoise(p * 5.90 + 43.0);
+    return vec2(a * 0.66 + b * 0.34, b * 0.45 + c * 0.55);
   }
+  float axFbm(vec3 p) { return axFbm2(p).x; }
 `;
 
+/**
+ * Injected after <map_fragment>.
+ *
+ * Deliberately NOT wrapped in a block: the values computed here (`axM`,
+ * `axLeak`, `axVert`) are reused by the roughness injection further down
+ * main(). Every one of these terms is an fBm chain, and evaluating the same
+ * noise twice per fragment was measurably the most expensive thing in the
+ * shader — one evaluation, two consumers.
+ */
 const FRAG_MAP = /* glsl */ `
+  float axVert = 1.0 - abs(vAnnexNormal.y);
+  float axUp   = clamp(vAnnexNormal.y, 0.0, 1.0);
+  vec2  axN    = axFbm2(vAnnexWorld * uMacroScale);       // .x macro, .y fine
+  float axM    = axN.x;
+
+  // LEAK STREAKS on vertical surfaces. Water enters from above and runs down,
+  // so the noise is stretched hard in Y and gated by a low-frequency "where is
+  // the leak" mask. Biggest single win for making a wall read as a real wall.
+  vec2 axLeakN = axFbm2(vAnnexWorld * vec3(0.09, 0.012, 0.09) + 71.0);
+  float axLeak = smoothstep(0.50, 0.80, axLeakN.x)
+               * smoothstep(0.42, 0.88, axLeakN.y)
+               * axVert * uGrimeAmount;
+
   {
-    float m  = axFbm(vAnnexWorld * uMacroScale);
-    float m2 = axFbm(vAnnexWorld * uMacroScale * 5.7 + 41.0);
+    // STOCHASTIC RE-TILING. Blend a second, rotated, differently-scaled tap of
+    // the same albedo, weighted by world-space noise. Two taps at an irrational
+    // scale ratio push the combined pattern's period far beyond anything
+    // visible in one shot, which is what kills the "wallpaper grid" read down a
+    // long corridor.
+    #ifdef USE_MAP
+      if (uStochastic > 0.001) {
+        float w = smoothstep(0.36, 0.64, axN.y) * uStochastic;
+        const float CA = 0.7648, SA = 0.6442;   // ~40 degrees
+        vec2 ruv = vec2(vMapUv.x * CA - vMapUv.y * SA, vMapUv.x * SA + vMapUv.y * CA);
+        vec3 s1 = texture2D(map, vMapUv).rgb;
+        vec3 s2 = texture2D(map, ruv * 0.6180 + vec2(0.317, 0.771)).rgb;
+        diffuseColor.rgb *= mix(vec3(1.0), s2 / max(s1, vec3(1e-3)), w);
+      }
+    #endif
 
-    // 1. macro luminance + hue drift
-    float lum = mix(1.0 - uMacroStrength, 1.0 + uMacroStrength * 0.55, m);
-    diffuseColor.rgb *= lum;
+    // macro luminance + hue drift
+    diffuseColor.rgb *= mix(1.0 - uMacroStrength, 1.0 + uMacroStrength * 0.55, axM);
     diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * uTintColor, uTintAmount);
-    // patchy grime, biased dark so it never brightens the surface
-    diffuseColor.rgb *= 1.0 - smoothstep(0.45, 0.95, m2) * 0.30 * uGrimeAmount;
+    diffuseColor.rgb *= 1.0 - smoothstep(0.45, 0.95, axN.y) * 0.26 * uGrimeAmount;
 
-    // 2. grounding dirt at the base of vertical surfaces
+    diffuseColor.rgb *= mix(1.0, 0.46, clamp(axLeak, 0.0, 1.0));
+
+    // TRAFFIC WEAR on horizontal surfaces — long, low-frequency, directional.
+    float traffic = smoothstep(0.46, 0.84, axLeakN.y);
+    diffuseColor.rgb *= mix(1.0, 0.76, traffic * axUp * uGrimeAmount);
+
+    // grounding dirt at the base of vertical surfaces
     float dirt = 1.0 - smoothstep(uDirtBase, uDirtBase + 1.05, vAnnexWorld.y);
-    dirt *= uDirtAmount * (0.45 + 0.55 * m2);
+    dirt *= uDirtAmount * (0.45 + 0.55 * axN.y) * axVert;
     diffuseColor.rgb *= mix(1.0, 0.55, clamp(dirt, 0.0, 1.0));
 
-    // 4. damage darkening, used when a zone "turns"
-    diffuseColor.rgb *= mix(1.0, 0.35 + 0.25 * m, uDamage);
+    // damage darkening, used when a zone "turns"
+    diffuseColor.rgb *= mix(1.0, 0.35 + 0.25 * axM, uDamage);
   }
 `;
 
 const FRAG_ROUGH = /* glsl */ `
   {
-    float mr = axFbm(vAnnexWorld * uMacroScale * 1.7 + 7.0);
-    roughnessFactor = clamp(roughnessFactor + (mr - 0.5) * 0.26 * uMacroStrength, 0.035, 1.0);
+    roughnessFactor = clamp(roughnessFactor + (axM - 0.5) * 0.26 * uMacroStrength, 0.035, 1.0);
     float dirtR = 1.0 - smoothstep(uDirtBase, uDirtBase + 1.05, vAnnexWorld.y);
-    roughnessFactor = clamp(roughnessFactor + dirtR * uDirtAmount * 0.16, 0.035, 1.0);
+    roughnessFactor = clamp(roughnessFactor + dirtR * uDirtAmount * 0.16 * axVert, 0.035, 1.0);
+    // Leaks leave a residue that is glossier than the surrounding dry surface.
+    roughnessFactor = mix(roughnessFactor, 0.34, clamp(axLeak, 0.0, 1.0) * 0.7);
 
-    // 3. wetness below the zone water line
+    // wetness below the zone water line
     float wet = uWetAmount * (1.0 - smoothstep(uWetLine - 0.04, uWetLine + 0.42, vAnnexWorld.y));
     wet = clamp(wet, 0.0, 1.0);
     roughnessFactor = mix(roughnessFactor, 0.075, wet);
@@ -138,6 +195,7 @@ const DEFAULTS = {
   dirtAmount: 0.55,
   detailTile: 7.0,
   detailStrength: 0.35,
+  stochastic: 0.62,
   tint: 0xffffff,
   tintAmount: 0,
   side: THREE.FrontSide,
@@ -233,6 +291,7 @@ export class MaterialLibrary {
         uDetailStrength: { value: o.detailStrength },
         uTintColor: { value: new THREE.Color(o.tint) },
         uTintAmount: { value: o.tintAmount },
+        uStochastic: { value: o.stochastic },
       });
       shader.vertexShader = shader.vertexShader
         .replace('void main() {', VERT_HEAD + '\nvoid main() {')
@@ -247,7 +306,7 @@ export class MaterialLibrary {
     // Distinct cache key so three does not share a program with an
     // undecorated standard material.
     mat.customProgramCacheKey = () =>
-      `annex|${o.dirtBase}|${o.dirtAmount}|${o.detailTile}|${o.detailStrength}|${o.tintAmount}`;
+      `annex|${o.dirtBase}|${o.dirtAmount}|${o.detailTile}|${o.detailStrength}|${o.tintAmount}|${o.stochastic}`;
     this.all.add(mat);
     return mat;
   }

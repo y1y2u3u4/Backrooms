@@ -19,41 +19,46 @@ import { box, merge, xf, worldUV, whiteColors } from './geo.js';
  */
 
 export const FIXTURE_TYPES = {
-  /** Recessed 1200 mm twin-tube troffer — the Intake signature. */
+  /**
+   * Recessed 1200 mm twin-tube troffer — the Intake signature.
+   * Intensities are three's physical candela. A ceiling fixture 2.7 m above the
+   * floor needs roughly 30 cd to land a mid-tone on a 0.4-albedo carpet; the
+   * whole rig is calibrated from that one number outward.
+   */
   troffer: {
     size: [1.20, 0.09, 0.30],
-    color: 0xfff0cf, intensity: 5.2, distance: 11.5, angle: 1.24, penumbra: 0.86,
-    tubeColor: 0xfff6e2, tubeIntensity: 2.6, cone: 0.55, hum: 1.0,
+    color: 0xfff0cf, intensity: 34, distance: 15.0, angle: 1.26, penumbra: 0.82,
+    tubeColor: 0xfff6e2, tubeIntensity: 1.35, cone: 0.11, hum: 1.0,
   },
   /** Surface-mounted strip light, service corridors. */
   strip: {
     size: [1.55, 0.10, 0.13], mount: 'surface',
-    color: 0xe8f2ff, intensity: 4.0, distance: 10.0, angle: 1.32, penumbra: 0.9,
-    tubeColor: 0xdfeaff, tubeIntensity: 2.2, cone: 0.42, hum: 1.15,
+    color: 0xe4efff, intensity: 28, distance: 13.0, angle: 1.34, penumbra: 0.88,
+    tubeColor: 0xdfeaff, tubeIntensity: 1.25, cone: 0.09, hum: 1.15,
   },
   /** Vapour-tight bulkhead, the Cistern and the Plant. */
   bulkhead: {
     size: [0.34, 0.20, 0.18], mount: 'wall',
-    color: 0xffd9a0, intensity: 3.1, distance: 8.0, angle: 1.45, penumbra: 0.75,
-    tubeColor: 0xffe3b4, tubeIntensity: 2.0, cone: 0.7, hum: 0.5,
+    color: 0xffd39a, intensity: 20, distance: 11.0, angle: 1.45, penumbra: 0.7,
+    tubeColor: 0xffe3b4, tubeIntensity: 1.15, cone: 0.16, hum: 0.5,
   },
   /** High-bay sodium lamp for the Plant's big volume. */
   highbay: {
     size: [0.62, 0.42, 0.62], mount: 'ceiling',
-    color: 0xffb964, intensity: 16.0, distance: 34.0, angle: 1.05, penumbra: 0.62,
-    tubeColor: 0xffca80, tubeIntensity: 3.4, cone: 1.1, hum: 0.35,
+    color: 0xffb45c, intensity: 340, distance: 46.0, angle: 1.02, penumbra: 0.58,
+    tubeColor: 0xffca80, tubeIntensity: 2.2, cone: 0.30, hum: 0.35,
   },
   /** Warm domestic pendant, the Residence and safe rooms. */
   pendant: {
     size: [0.26, 0.30, 0.26], mount: 'ceiling',
-    color: 0xffbf72, intensity: 2.6, distance: 7.5, angle: 1.5, penumbra: 0.95,
-    tubeColor: 0xffd08a, tubeIntensity: 1.6, cone: 0.35, hum: 0.0,
+    color: 0xffb964, intensity: 17, distance: 9.5, angle: 1.5, penumbra: 0.95,
+    tubeColor: 0xffd08a, tubeIntensity: 0.9, cone: 0.07, hum: 0.0,
   },
   /** Battery emergency light — the only thing left when the grid is down. */
   emergency: {
     size: [0.22, 0.12, 0.11], mount: 'wall',
-    color: 0x8fffb0, intensity: 1.5, distance: 6.0, angle: 1.4, penumbra: 0.85,
-    tubeColor: 0x9dffbe, tubeIntensity: 1.3, cone: 0.28, hum: 0.0,
+    color: 0x86ffa8, intensity: 9, distance: 8.0, angle: 1.4, penumbra: 0.8,
+    tubeColor: 0x9dffbe, tubeIntensity: 0.8, cone: 0.10, hum: 0.0,
   },
 };
 
@@ -209,23 +214,27 @@ const ConeShader = {
     }
 
     void main() {
-      // Fade with depth down the cone, and with grazing angle at the shell so
-      // the silhouette never shows a hard polygonal edge.
+      // Density falls off down the cone as the beam spreads.
       float down = clamp(-vLocal.y / uHeight, 0.0, 1.0);
-      float a = 1.0 - down;
-      a = pow(a, 1.65);
+      float a = pow(1.0 - down, 1.9);
 
+      // Optical depth through a beam is greatest along its axis and vanishes at
+      // the silhouette, so alpha follows |N.V| — NOT the grazing term you would
+      // use for a rim. Getting this backwards turns a soft shaft into a solid
+      // white cone, which is exactly what it looked like before this comment.
       vec3 viewDir = normalize(uCameraPos - vWorld);
-      float grazing = 1.0 - abs(dot(normalize(vNormalW), viewDir));
-      a *= pow(grazing, 1.25);
+      float axial = abs(dot(normalize(vNormalW), viewDir));
+      a *= pow(axial, 1.5);
 
       // Slow dust motion through the beam.
-      float d = n3(vWorld * 1.9 + vec3(0.0, uTime * 0.07, uTime * 0.03));
-      d = 0.72 + d * 0.56;
-      a *= d;
+      float d = n3(vWorld * 2.4 + vec3(0.0, uTime * 0.06, uTime * 0.028));
+      a *= 0.70 + d * 0.60;
 
-      // Fade out very close to the fixture so the housing is not haloed.
-      a *= smoothstep(0.02, 0.28, down);
+      // Fade out near the fixture so the housing is not haloed, and with
+      // distance so a corridor of fixtures does not stack into a white wall.
+      a *= smoothstep(0.015, 0.30, down);
+      float dist = length(uCameraPos - vWorld);
+      a *= 1.0 / (1.0 + dist * 0.16);
 
       gl_FragColor = vec4(uColor * uIntensity * a, 1.0);
     }`,
@@ -272,9 +281,12 @@ export class LightRig {
     this.setCircuit('main', true);
     this.setCircuit('emergency', true);
 
-    // Very low ambient so unlit rooms are dark but not pure black voids —
-    // pure black hides geometry errors, which this project explicitly avoids.
-    this.ambient = new THREE.HemisphereLight(0x2a2417, 0x0a0908, 0.055);
+    // Bounce fill. There is no GI, and a recessed troffer throws nothing at the
+    // ceiling it is set into, so without this the entire suspended ceiling —
+    // one of the zone's signature surfaces — renders black. The *ground* colour
+    // is the bright one because it stands in for light bouncing off the lit
+    // floor onto every downward-facing surface.
+    this.ambient = new THREE.HemisphereLight(0x201c14, 0x4a3c22, 0.34);
     scene.add(this.ambient);
   }
 
@@ -394,6 +406,8 @@ export class LightRig {
     if (this.enableCones) {
       for (const f of this.fixtures) {
         if (!f.coneMesh) continue;
+        // Cones are pure overdraw; only the near field earns it.
+        if (f.distToCam > 26) { f.coneMesh.visible = false; continue; }
         const u = f.coneMesh.material.uniforms;
         u.uTime.value = t;
         u.uCameraPos.value.copy(camPos);

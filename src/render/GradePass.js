@@ -112,7 +112,7 @@ const GradeShader = {
       adapted = clamp(exp(adapted), 0.004, 4.0);
       // Aim for a mid-grey target, then clamp the correction hard so the image
       // never swings more than about 1.6 stops from the authored lighting.
-      float autoGain = clamp(0.16 / max(adapted, 1e-4), 0.62, 1.95);
+      float autoGain = clamp(0.135 / max(adapted, 1e-4), 0.55, 2.35);
       float gain = uExposure * mix(1.0, autoGain, uAutoExposure);
       col *= gain;
 

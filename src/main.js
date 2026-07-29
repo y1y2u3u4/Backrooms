@@ -190,13 +190,15 @@ game.boot((p, msg) => {
   if (m) m.textContent = msg;
 }).then(() => {
   const qa = new URLSearchParams(location.search).get('qa') === '1';
+  game.start();
   if (qa) {
-    // QA drives frames itself; no menu, no fade, no loading chrome.
+    // QA still needs the rAF loop running (a headless screenshot waits for a
+    // compositor commit), but no menu, no fade and no loading chrome. The
+    // camera holds still because pointer lock is never taken.
     loadingEl.remove(); veil.remove();
     window.ANNEX_READY = true;
     return;
   }
-  game.start();
   setTimeout(() => {
     loadingEl.style.transition = 'opacity 900ms ease';
     loadingEl.style.opacity = '0';

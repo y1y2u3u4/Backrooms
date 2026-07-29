@@ -27,6 +27,7 @@ const PORT = parseInt(args.port || '4173', 10);
 const SHOTS = (args.shots || 'default');
 const QUALITY = args.quality || 'high';
 const TIMEOUT = parseInt(args.timeout || '180000', 10);
+const SETTLE = parseInt(args.settle || '14', 10);
 
 async function waitForServer(url, ms = 60000) {
   const t0 = Date.now();
@@ -100,29 +101,32 @@ async function main() {
   }
 
   // Let the exposure adaptation and light flicker settle.
-  await page.evaluate(() => {
+  await page.evaluate((n) => {
     const g = window.ANNEX;
-    for (let i = 0; i < 90; i++) g.renderOnce(1 / 60);
-  });
+    for (let i = 0; i < n; i++) g.renderOnce(1 / 60);
+  }, SETTLE);
 
   const shotList = await loadShots(page, SHOTS);
   const manifest = [];
 
   for (const shot of shotList) {
+    const t0 = Date.now();
     await page.evaluate(async (s) => {
       const g = window.ANNEX;
+      g.engine.frameTime.clear();
       if (s.setup) { /* eslint-disable no-new-func */ new Function('g', s.setup)(g); }
-      const frames = s.settle ?? 40;
+      const frames = s.settle;
       for (let i = 0; i < frames; i++) g.renderOnce(1 / 60);
-    }, shot);
+    }, { ...shot, settle: shot.settle ?? SETTLE });
     const file = path.join(OUT, `${shot.name}.png`);
     await page.screenshot({ path: file, timeout: 180000 });
     const stats = await page.evaluate(() => {
       const g = window.ANNEX;
       return { ...g.engine.stats, lights: g.rig?.stats };
     });
+    const wall = ((Date.now() - t0) / 1000).toFixed(1);
     manifest.push({ ...shot, file, stats });
-    console.log(`  ✓ ${shot.name}  ${stats.res} ${stats.calls} calls ${(stats.tris / 1000).toFixed(0)}k tris`);
+    console.log(`  ✓ ${shot.name}  ${stats.res} ${stats.calls} calls ${(stats.tris / 1000).toFixed(0)}k tris  ${stats.ms.toFixed(1)}ms/f  (${wall}s)`);
   }
 
   await writeFile(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2));

@@ -206,38 +206,34 @@ function registerRecipes(forge) {
           const i = y * S + x;
           const u = x / S, v = y / S;
           // Woven slub: fine vertical warp with irregular horizontal weft.
-          const warp = Math.sin(u * S * 0.78) * 0.5 + 0.5;
-          const weft = tileNoise(u * P * 26, v * P * 5.5, P * 26, 5);
+          // The warp frequency is a fixed cycle count, NOT a multiple of the
+          // texture size — tying it to S puts the pattern at ~1 texel per cycle
+          // at any sane resolution, which aliases into vertical streaks.
+          const warp = Math.sin(u * 6.2831853 * 72) * 0.5 + 0.5;
+          const weft = tileNoise(u * P * 22, v * P * 5.0, P * 22, 5);
           const slub = tileFbm(u * P * 3, v * P * 3, P * 3, 4, 11);
-          let h = warp * 0.18 + weft * 0.22 + slub * 0.3;
+          let h = warp * 0.14 + weft * 0.18 + slub * 0.26;
 
-          // Large-scale print drift and light-bleaching bands.
-          const drift = tileFbm(u * P * 0.6, v * P * 0.6, P, 4, 3);
-          const band = smoothstep(0.35, 0.9, tileFbm(u * P * 0.35, v * P * 1.6, P, 3, 91));
+          // Mid-frequency print drift only. Anything with a period close to the
+          // tile size becomes a visible grid once the tile repeats down a
+          // corridor, so the big blotches live in the world-space macro term.
+          const drift = tileFbm(u * P * 2.4, v * P * 2.4, P * 2, 3, 3);
+          let col = mixRgb(base, warm, drift * 0.7 + 0.15);
+          col = mixRgb(col, cool, smoothstep(0.6, 1, 1 - drift) * 0.35);
+          col = mixRgb(col, bleach, smoothstep(0.55, 0.95, tileFbm(u * P * 3.1, v * P * 3.1, P * 3, 3, 91)) * 0.12);
 
-          let col = mixRgb(base, warm, drift);
-          col = mixRgb(col, cool, smoothstep(0.55, 1, 1 - drift) * 0.6);
-          col = mixRgb(col, bleach, band * 0.28);
+          // Fine damp mottling — small enough not to read as a repeating shape.
+          const blot = tileFbm(u * P * 5.5 + 4, v * P * 5.5, P * 5, 4, 47);
+          const bloom = smoothstep(0.60, 0.85, blot) * 0.5;
+          col = mixRgb(col, damp, bloom * 0.30);
 
-          // Damp bloom: irregular blotches with a darker, sharper tide line.
-          const blot = tileFbm(u * P * 1.1 + 4, v * P * 1.1, P, 5, 47);
-          const bloom = smoothstep(0.56, 0.78, blot);
-          const tide = smoothstep(0.60, 0.635, blot) * (1 - smoothstep(0.66, 0.72, blot));
-          col = mixRgb(col, damp, bloom * 0.55 + tide * 0.35);
+          // Scuffs: fine, low-contrast, and NOT strongly axis-aligned.
+          const scuff = smoothstep(0.80, 0.97, tileRidge(u * P * 4.5, v * P * 6.5, P * 4, 3, 5));
+          col = scaleRgb(col, 1 - scuff * 0.10);
+          h -= scuff * 0.14;
 
-          // Scuffs and gouges — sparse, directional, biased low on the wall.
-          const scuff = smoothstep(0.72, 0.95, tileRidge(u * P * 2.2, v * P * 9, P * 2, 3, 5));
-          col = scaleRgb(col, 1 - scuff * 0.22);
-          h -= scuff * 0.25;
-
-          // A few real tears exposing grey lining paper.
-          const tear = smoothstep(0.955, 0.985, tileWorley(u * P * 1.4, v * P * 1.4, P, 23).id > 0.93
-            ? tileFbm(u * P * 6, v * P * 6, P * 6, 3, 7) : 0);
-          col = mixRgb(col, hexLin('#9a948a'), tear);
-          h -= tear * 0.5;
-
-          const rough = clamp01(0.66 + slub * 0.16 + bloom * 0.2 - band * 0.06 + scuff * 0.1);
-          const ao = clamp01(1 - bloom * 0.22 - scuff * 0.18 - tear * 0.3 - (1 - weft) * 0.05);
+          const rough = clamp01(0.68 + slub * 0.12 + bloom * 0.12 + scuff * 0.08);
+          const ao = clamp01(1 - bloom * 0.10 - scuff * 0.10 - (1 - weft) * 0.04);
           c.set(i, col, rough, ao, h);
         }
       }
@@ -270,23 +266,17 @@ function registerRecipes(forge) {
           col = mixRgb(col, fibreC, smoothstep(0.72, 1, w.id) * 0.8);
           col = mixRgb(col, grey, smoothstep(0.9, 1, hash2(Math.floor(u * P * 30), Math.floor(v * P * 30))) * 0.7);
 
-          // Traffic path — matted, darker, shinier.
-          const traffic = smoothstep(0.45, 0.8, tileFbm(u * P * 0.5, v * P * 1.3, P, 4, 61));
-          h *= 1 - traffic * 0.45;
-          col = scaleRgb(col, 1 - traffic * 0.25);
+          // Mid-frequency matting only; the long traffic paths and soaked
+          // patches are applied in world space so they never tile.
+          const traffic = smoothstep(0.45, 0.85, tileFbm(u * P * 3.2, v * P * 4.6, P * 3, 3, 61));
+          h *= 1 - traffic * 0.26;
+          col = scaleRgb(col, 1 - traffic * 0.13);
 
-          // Damp: broad soaked regions with a concentrated dark core.
-          const soakN = tileFbm(u * P * 0.8 + 9, v * P * 0.8, P, 5, 5);
-          const soak = smoothstep(0.5, 0.78, soakN);
-          col = mixRgb(col, wet, soak * 0.75);
+          const soak = smoothstep(0.58, 0.86, tileFbm(u * P * 4.4 + 9, v * P * 4.4, P * 4, 3, 5));
+          col = mixRgb(col, wet, soak * 0.35);
 
-          // Old dried stain rings — lighter halo, darker rim.
-          const ring = tileFbm(u * P * 1.7, v * P * 1.7, P, 4, 83);
-          const rim = smoothstep(0.62, 0.645, ring) * (1 - smoothstep(0.655, 0.70, ring));
-          col = mixRgb(col, hexLin('#6b5a2c'), rim * 0.6);
-
-          const rough = clamp01(0.94 - traffic * 0.22 - soak * 0.38 + fibre * 0.05);
-          const ao = clamp01(0.55 + loop * 0.45 - soak * 0.18);
+          const rough = clamp01(0.94 - traffic * 0.10 - soak * 0.20 + fibre * 0.05);
+          const ao = clamp01(0.58 + loop * 0.42 - soak * 0.10);
           c.set(i, col, rough, ao, h);
         }
       }
@@ -731,8 +721,8 @@ function registerRecipes(forge) {
         for (let x = 0; x < S; x++) {
           const i = y * S + x;
           const u = x / S, v = y / S;
-          const weaveU = Math.sin(u * S * 1.55) * 0.5 + 0.5;
-          const weaveV = Math.sin(v * S * 1.55) * 0.5 + 0.5;
+          const weaveU = Math.sin(u * 6.2831853 * 96) * 0.5 + 0.5;
+          const weaveV = Math.sin(v * 6.2831853 * 96) * 0.5 + 0.5;
           const weave = (weaveU + weaveV) * 0.5;
           const nap = tileFbm(u * P * 12, v * P * 12, P * 12, 3, 7);
           const stain = smoothstep(0.6, 0.92, tileFbm(u * P * 1.1, v * P * 1.1, P, 4, 41));

@@ -93,7 +93,7 @@ export class Engine {
     const data = new Float32Array(W * H * 4);
     const ceil = new THREE.Color(0x6e5f36);
     const horizon = new THREE.Color(0x1a1a18);
-    const floor = new THREE.Color(0x070707);
+    const floor = new THREE.Color(0x261e12);
     const c = new THREE.Color();
     for (let y = 0; y < H; y++) {
       const t = y / (H - 1);                 // 0 = top
@@ -117,7 +117,7 @@ export class Engine {
     pmrem.dispose();
     tex.dispose();
     this.scene.environment = this.envMap;
-    this.scene.environmentIntensity = 0.35;
+    this.scene.environmentIntensity = 0.45;
   }
 
   _buildComposer() {

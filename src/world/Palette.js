@@ -18,28 +18,28 @@ export function buildPalette(materials) {
   return {
     // ---- Intake: the office maze ----------------------------------------
     wallpaper: M('wallpaper', {
-      repeat: [0.5, 0.5], roughness: 1, metalness: 0, dirtBase: -0.15, dirtAmount: 0.75,
+      repeat: [1.25, 1.25], roughness: 1, metalness: 0, dirtBase: -0.15, dirtAmount: 0.75,
       detailTile: 6, detailStrength: 0.42, normalScale: 0.9, envMapIntensity: 0.28,
     }),
     wallpaperLit: M('wallpaper', {
-      repeat: [0.5, 0.5], roughness: 1, metalness: 0, dirtBase: -0.3, dirtAmount: 0.45,
+      repeat: [1.25, 1.25], roughness: 1, metalness: 0, dirtBase: -0.3, dirtAmount: 0.45,
       detailTile: 6, detailStrength: 0.42, normalScale: 0.9, envMapIntensity: 0.34,
     }),
     carpet: M('carpet', {
-      repeat: [0.5, 0.5], roughness: 1, metalness: 0, dirtAmount: 0.25, dirtBase: -2,
+      repeat: [1.7, 1.7], roughness: 1, metalness: 0, dirtAmount: 0.25, dirtBase: -2,
       detailTile: 5, detailStrength: 0.55, normalScale: 1.35, envMapIntensity: 0.10,
     }),
     carpetWet: M('carpet', {
-      repeat: [0.5, 0.5], roughness: 1, metalness: 0, dirtAmount: 0.6, dirtBase: 0.35,
+      repeat: [1.7, 1.7], roughness: 1, metalness: 0, dirtAmount: 0.6, dirtBase: 0.35,
       detailTile: 5, detailStrength: 0.5, normalScale: 1.2, envMapIntensity: 0.5,
       tint: 0x8a8a92, tintAmount: 0.25,
     }),
     ceilingTile: M('ceilingTile', {
-      repeat: [0.82, 0.82], roughness: 1, metalness: 0, dirtAmount: 0, dirtBase: -99,
-      detailTile: 4, detailStrength: 0.35, normalScale: 0.75, envMapIntensity: 0.18,
+      repeat: [1.35, 1.35], roughness: 1, metalness: 0, dirtAmount: 0, dirtBase: -99,
+      detailTile: 4, detailStrength: 0.35, normalScale: 0.75, envMapIntensity: 0.55,
     }),
     plenum: M('concrete', {
-      repeat: [0.7, 0.7], roughness: 1, metalness: 0, dirtAmount: 0, dirtBase: -99,
+      repeat: [1.5, 1.5], roughness: 1, metalness: 0, dirtAmount: 0, dirtBase: -99,
       detailStrength: 0.2, envMapIntensity: 0.04, color: 0x3a3833,
     }),
 
@@ -75,62 +75,62 @@ export function buildPalette(materials) {
 
     // ---- Service spine ---------------------------------------------------
     concreteWall: M('concrete', {
-      repeat: [0.42, 0.42], roughness: 1, metalness: 0, dirtBase: -0.1, dirtAmount: 0.8,
+      repeat: [1.7, 1.7], roughness: 1, metalness: 0, dirtBase: -0.1, dirtAmount: 0.8,
       detailTile: 5, detailStrength: 0.45, normalScale: 1.1, envMapIntensity: 0.2,
     }),
     concreteFloor: M('concrete', {
-      repeat: [0.5, 0.5], roughness: 1, metalness: 0, dirtAmount: 0.35, dirtBase: -3,
+      repeat: [2.0, 2.0], roughness: 1, metalness: 0, dirtAmount: 0.35, dirtBase: -3,
       detailTile: 4, detailStrength: 0.4, normalScale: 0.9, envMapIntensity: 0.22,
       tint: 0x9a978d, tintAmount: 0.3,
     }),
     blockWall: M('paintedBlock', {
-      repeat: [0.34, 0.34], roughness: 1, metalness: 0, dirtBase: -0.05, dirtAmount: 0.8,
+      repeat: [1.4, 1.4], roughness: 1, metalness: 0, dirtBase: -0.05, dirtAmount: 0.8,
       detailTile: 5, detailStrength: 0.4, normalScale: 1.15, envMapIntensity: 0.25,
     }),
     linoFloor: M('linoleum', {
-      repeat: [0.55, 0.55], roughness: 1, metalness: 0, dirtAmount: 0.4, dirtBase: -3,
+      repeat: [2.2, 2.2], roughness: 1, metalness: 0, dirtAmount: 0.4, dirtBase: -3,
       detailTile: 4, detailStrength: 0.3, normalScale: 0.55, envMapIntensity: 0.55,
     }),
     tileWall: M('wallTile', {
-      repeat: [0.62, 0.62], roughness: 1, metalness: 0, dirtBase: -0.05, dirtAmount: 0.7,
+      repeat: [2.5, 2.5], roughness: 1, metalness: 0, dirtBase: -0.05, dirtAmount: 0.7,
       detailTile: 4, detailStrength: 0.35, normalScale: 1.0, envMapIntensity: 0.85,
     }),
 
     // ---- Cistern ---------------------------------------------------------
     rust: M('rustMetal', {
-      repeat: [0.7, 0.7], roughness: 1, metalness: 1, dirtAmount: 0.5, dirtBase: 0.5,
+      repeat: [1.5, 1.5], roughness: 1, metalness: 1, dirtAmount: 0.5, dirtBase: 0.5,
       detailTile: 4, detailStrength: 0.5, normalScale: 1.4, envMapIntensity: 0.6,
     }),
     silt: M('silt', {
-      repeat: [0.5, 0.5], roughness: 1, metalness: 0, dirtAmount: 0, dirtBase: -99,
+      repeat: [2.0, 2.0], roughness: 1, metalness: 0, dirtAmount: 0, dirtBase: -99,
       detailTile: 4, detailStrength: 0.4, normalScale: 1.1, envMapIntensity: 0.35,
     }),
     tread: M('treadPlate', {
-      repeat: [0.9, 0.9], roughness: 1, metalness: 1, dirtAmount: 0.35, dirtBase: -1,
+      repeat: [1.8, 1.8], roughness: 1, metalness: 1, dirtAmount: 0.35, dirtBase: -1,
       detailTile: 3, detailStrength: 0.3, normalScale: 1.2, envMapIntensity: 0.8,
     }),
 
     // ---- Residence -------------------------------------------------------
     plaster: M('plaster', {
-      repeat: [0.45, 0.45], roughness: 1, metalness: 0, dirtBase: -0.1, dirtAmount: 0.7,
+      repeat: [1.8, 1.8], roughness: 1, metalness: 0, dirtBase: -0.1, dirtAmount: 0.7,
       detailTile: 5, detailStrength: 0.4, normalScale: 1.0, envMapIntensity: 0.22,
     }),
     damask: M('wallpaperResidence', {
-      repeat: [0.42, 0.42], roughness: 1, metalness: 0, dirtBase: -0.1, dirtAmount: 0.65,
+      repeat: [1.7, 1.7], roughness: 1, metalness: 0, dirtBase: -0.1, dirtAmount: 0.65,
       detailTile: 6, detailStrength: 0.35, normalScale: 0.85, envMapIntensity: 0.25,
     }),
     fabric: M('acousticPanel', {
-      repeat: [0.9, 0.9], roughness: 1, metalness: 0, dirtAmount: 0.4, dirtBase: -0.3,
+      repeat: [1.8, 1.8], roughness: 1, metalness: 0, dirtAmount: 0.4, dirtBase: -0.3,
       detailTile: 5, detailStrength: 0.4, normalScale: 1.1, envMapIntensity: 0.08,
     }),
 
     // ---- Plant -----------------------------------------------------------
     machinePaint: M('steelPainted', {
-      repeat: [0.75, 0.75], roughness: 1, metalness: 1, dirtAmount: 0.55, dirtBase: -0.2,
+      repeat: [1.6, 1.6], roughness: 1, metalness: 1, dirtAmount: 0.55, dirtBase: -0.2,
       detailTile: 4, detailStrength: 0.4, normalScale: 1.15, envMapIntensity: 0.7,
     }),
     ductMetal: M('galvSteel', {
-      repeat: [0.6, 0.6], roughness: 1, metalness: 1, dirtAmount: 0.35, dirtBase: -1,
+      repeat: [1.5, 1.5], roughness: 1, metalness: 1, dirtAmount: 0.35, dirtBase: -1,
       detailTile: 4, detailStrength: 0.3, normalScale: 0.9, envMapIntensity: 0.85,
     }),
 
@@ -138,6 +138,71 @@ export function buildPalette(materials) {
     paper: M('paper', {
       repeat: [1, 1], roughness: 0.92, metalness: 0, dirtAmount: 0.15, dirtBase: -3,
       detailStrength: 0.2, envMapIntensity: 0.2,
+    }),
+
+    // ---- Prop surfaces ---------------------------------------------------
+    // Deliberately few. Every extra palette key is another draw call in every
+    // chunk that uses it, so props share a small vocabulary of finishes and
+    // rely on geometry and vertex shading for their individuality.
+    laminate: M('doorPaint', {
+      repeat: [1.6, 1.6], roughness: 0.44, metalness: 0, dirtAmount: 0.55, dirtBase: -0.55,
+      detailTile: 9, detailStrength: 0.22, envMapIntensity: 0.55, tint: 0xbfa77e, tintAmount: 0.55,
+    }),
+    woodDark: M('doorPaint', {
+      repeat: [1.3, 1.3], roughness: 0.55, metalness: 0, dirtAmount: 0.6, dirtBase: -0.4,
+      detailTile: 9, detailStrength: 0.3, envMapIntensity: 0.42, tint: 0x6b4a27, tintAmount: 0.7,
+    }),
+    cardboard: M('paper', {
+      repeat: [1.4, 1.4], roughness: 0.96, metalness: 0, dirtAmount: 0.5, dirtBase: -0.35,
+      detailTile: 6, detailStrength: 0.35, normalScale: 1.1, envMapIntensity: 0.12,
+      tint: 0xb08a52, tintAmount: 0.85,
+    }),
+    steelCabinet: M('steelPainted', {
+      repeat: [1.5, 1.5], roughness: 0.62, metalness: 0.75, dirtAmount: 0.5, dirtBase: -0.45,
+      detailTile: 5, detailStrength: 0.3, envMapIntensity: 0.6, color: 0x8f9187,
+    }),
+    plasticGrey: M('doorPaint', {
+      repeat: [2.4, 2.4], roughness: 0.5, metalness: 0, dirtAmount: 0.45, dirtBase: -0.5,
+      detailTile: 8, detailStrength: 0.18, envMapIntensity: 0.6, color: 0x7d7d78,
+    }),
+    hazardYellow: M('steelPainted', {
+      repeat: [2.0, 2.0], roughness: 0.55, metalness: 0.15, dirtAmount: 0.6, dirtBase: -0.3,
+      detailTile: 6, detailStrength: 0.25, envMapIntensity: 0.5, color: 0xc9a133,
+    }),
+    warningRed: M('steelPainted', {
+      repeat: [2.0, 2.0], roughness: 0.42, metalness: 0.3, dirtAmount: 0.45, dirtBase: -0.5,
+      detailTile: 6, detailStrength: 0.22, envMapIntensity: 0.7, color: 0x8e2a1e,
+    }),
+    enamel: M('wallTile', {
+      repeat: [3.0, 3.0], roughness: 0.22, metalness: 0.05, dirtAmount: 0.45, dirtBase: -0.4,
+      detailTile: 5, detailStrength: 0.2, envMapIntensity: 1.0, color: 0xd6d4cb,
+    }),
+    glassDark: M('doorPaint', {
+      repeat: [2, 2], roughness: 0.12, metalness: 0.4, dirtAmount: 0.35, dirtBase: -2,
+      detailStrength: 0.08, envMapIntensity: 1.3, color: 0x1b1d1f,
+    }),
+    rubber: M('acousticPanel', {
+      repeat: [2.6, 2.6], roughness: 0.92, metalness: 0, dirtAmount: 0.4, dirtBase: -0.4,
+      detailTile: 6, detailStrength: 0.35, envMapIntensity: 0.08, color: 0x2b2b2c,
+    }),
+    copper: M('rustMetal', {
+      repeat: [2.2, 2.2], roughness: 0.44, metalness: 1, dirtAmount: 0.4, dirtBase: -0.6,
+      detailTile: 5, detailStrength: 0.28, envMapIntensity: 0.95, tint: 0xb07a4a, tintAmount: 0.65,
+    }),
+    mattress: M('acousticPanel', {
+      repeat: [1.5, 1.5], roughness: 1, metalness: 0, dirtAmount: 0.8, dirtBase: 0.15,
+      detailTile: 5, detailStrength: 0.45, normalScale: 1.2, envMapIntensity: 0.06,
+      tint: 0xa9a08c, tintAmount: 0.5,
+    }),
+    carpetRunner: M('carpet', {
+      repeat: [2.4, 2.4], roughness: 1, metalness: 0, dirtAmount: 0.55, dirtBase: -1.2,
+      detailTile: 5, detailStrength: 0.6, normalScale: 1.4, envMapIntensity: 0.08,
+      tint: 0x6b2f2a, tintAmount: 0.6,
+    }),
+    boardConcrete: M('concrete', {
+      repeat: [1.5, 1.5], roughness: 1, metalness: 0, dirtBase: -0.1, dirtAmount: 0.85,
+      detailTile: 4, detailStrength: 0.5, normalScale: 1.3, envMapIntensity: 0.16,
+      tint: 0x8d8c87, tintAmount: 0.35,
     }),
 
     // ---- Doors -----------------------------------------------------------
