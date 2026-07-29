@@ -159,7 +159,7 @@ export function registerLibrary(engine) {
   // --- doors ---------------------------------------------------------------
 
   R('door.handle', {
-    bus: 'world', gain: 0.5, send: 0.30, ref: 2.0, dur: 0.5,
+    bus: 'world', gain: 0.9, send: 0.30, ref: 2.0, dur: 0.5,
     build: ({ ctx, bag, out, t, rng, vary }) => {
       const a = ratchet(ctx, bag, out, t, {
         count: 3, rate0: 26, rate1: 16, pitch: 1.15 * vary.pitch, gain: 0.42 * vary.gain,
@@ -174,7 +174,7 @@ export function registerLibrary(engine) {
   });
 
   R('door.open', {
-    bus: 'world', gain: 0.62, send: 0.36, ref: 2.4, dur: 1.6, priority: 2,
+    bus: 'world', gain: 0.95, send: 0.36, ref: 2.4, dur: 1.6, priority: 2,
     build: ({ ctx, bag, out, t, rng, vary }) => {
       // Latch withdraws, hinge complains, leaf swings past the frame.
       const a = modalRing(ctx, bag, out, t, {
@@ -380,7 +380,7 @@ export function registerLibrary(engine) {
   // --- pickups and paper ---------------------------------------------------
 
   R('pickup.item', {
-    bus: 'player', gain: 0.5, send: 0.2, spatial: false, dur: 0.7,
+    bus: 'player', gain: 0.9, send: 0.2, spatial: false, dur: 0.7,
     build: ({ ctx, bag, out, t, rng, vary }) => {
       const a = noiseBurst(ctx, bag, out, t, {
         type: 'white', filter: 'bandpass', f0: 2400 * vary.tone, f1: 1200, q: 1.1,
@@ -415,7 +415,7 @@ export function registerLibrary(engine) {
   });
 
   R('paper.take', {
-    bus: 'player', gain: 0.45, send: 0.18, spatial: false, dur: 0.8,
+    bus: 'player', gain: 0.95, send: 0.18, spatial: false, dur: 0.8,
     build: ({ ctx, bag, out, t, rng, vary }) => {
       // Three overlapping crackles at irregular offsets: paper is not one event.
       let end = t;
@@ -431,7 +431,7 @@ export function registerLibrary(engine) {
   });
 
   R('paper.rustle', {
-    bus: 'ambience', gain: 0.6, send: 0.4, ref: 2.5, dur: 1.6,
+    bus: 'ambience', gain: 0.95, send: 0.4, ref: 2.5, dur: 1.6,
     build: ({ ctx, bag, out, t, rng, vary }) => {
       let end = t;
       const n = 4 + Math.floor(rng() * 4);
@@ -490,7 +490,7 @@ export function registerLibrary(engine) {
   });
 
   R('glass.crack', {
-    bus: 'world', gain: 0.6, send: 0.4, ref: 2.2, dur: 1.8, priority: 3,
+    bus: 'world', gain: 1.0, send: 0.4, ref: 2.2, dur: 1.8, priority: 3,
     build: ({ ctx, bag, out, t, rng, vary }) => {
       const a = noiseBurst(ctx, bag, out, t, {
         type: 'white', filter: 'highpass', f0: 4200, q: 0.6,
@@ -595,7 +595,7 @@ export function registerLibrary(engine) {
   });
 
   R('flashlight.rattle', {
-    bus: 'player', gain: 0.3, send: 0.14, spatial: false, dur: 0.6,
+    bus: 'player', gain: 0.9, send: 0.14, spatial: false, dur: 0.6,
     build: ({ ctx, bag, out, t, rng, vary }) => ratchet(ctx, bag, out, t, {
       count: 2 + Math.floor(rng() * 3), rate0: 30, rate1: 22, pitch: 2.2 * vary.pitch,
       gain: 0.16 * vary.gain, modes: MODES.thinSteel, damp: 0.05, jitter: 0.5, rng,
@@ -688,7 +688,7 @@ export function registerLibrary(engine) {
   });
 
   R('ui.journal', {
-    bus: 'ui', gain: 0.36, send: 0.05, spatial: false, dur: 0.9,
+    bus: 'ui', gain: 0.75, send: 0.05, spatial: false, dur: 0.9,
     build: ({ ctx, bag, out, t, rng, vary }) => {
       const a = noiseBurst(ctx, bag, out, t, {
         type: 'brown', filter: 'lowpass', f0: 1400, q: 0.6,

@@ -290,29 +290,60 @@ export class Hands {
     };
   }
 
-  /** Replace the procedural hands with `hands_lowpoly.glb` if it exists. */
+  /**
+   * Replace the procedural hands with `hands_lowpoly.glb` if it exists.
+   *
+   * The Blender export is a single skin per side with no finger nodes, so this
+   * is a straight swap: the sculpted mesh in, the procedural phalanges out. The
+   * *pose* springs are untouched — position, rotation, sway, inertia, reach and
+   * recoil all still drive, because those live on the hand root, not the
+   * knuckles. Only the finger curl is lost, and a curl on a hand that has no
+   * separable fingers would be a lie anyway.
+   */
   async loadModel(assets) {
     if (!assets) return false;
     const proto = await assets.load('hands_lowpoly');
     if (!proto) return false;
-    const findSide = (name) => {
-      const inst = proto.getObjectByName(name);
-      return inst ? inst.clone(true) : null;
-    };
-    const R = findSide('hand_R') || findSide('Hand_R');
-    const L = findSide('hand_L') || findSide('Hand_L');
-    if (!R || !L) return false;
-    // Keep the procedural bone hierarchy if the GLB has no finger nodes: the
-    // animation is the point, the mesh is only skin.
-    const rebind = (glbRoot, hand) => {
-      for (const m of hand.root.children.slice()) {
-        if (m.isMesh) hand.root.remove(m);
+    const take = (...names) => {
+      for (const n of names) {
+        const o = proto.getObjectByName(n);
+        if (o) return o.clone(true);
       }
-      glbRoot.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } });
-      hand.root.add(glbRoot);
+      return null;
     };
-    rebind(R, this.right);
-    rebind(L, this.left);
+    const R = take('hand_R', 'Hand_R', 'handR');
+    const L = take('hand_L', 'Hand_L', 'handL');
+    if (!R || !L) return false;
+
+    const swap = (glbNode, hand) => {
+      // Strip everything procedural, including the finger chains.
+      for (const c of hand.root.children.slice()) {
+        if (c === this.itemMountR || c === this.itemMountL) continue;
+        hand.root.remove(c);
+      }
+      hand.fingers = [];
+      hand.thumb = null;
+
+      // Blender parents carry their own transform; the viewmodel wants the
+      // hand's own origin at the spring's origin.
+      glbNode.position.set(0, 0, 0);
+      glbNode.rotation.set(0, 0, 0);
+      glbNode.scale.set(1, 1, 1);
+      glbNode.updateMatrixWorld(true);
+
+      // Normalise to a believable hand: about 200 mm wrist to fingertip.
+      const size = new THREE.Box3().setFromObject(glbNode).getSize(new THREE.Vector3());
+      const longest = Math.max(size.x, size.y, size.z);
+      if (longest > 0.02) glbNode.scale.setScalar(0.30 / longest);
+
+      glbNode.traverse((o) => {
+        if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; o.frustumCulled = false; }
+      });
+      hand.root.add(glbNode);
+      hand.glb = glbNode;
+    };
+    swap(R, this.right);
+    swap(L, this.left);
     this.usingGlbHands = true;
     return true;
   }
@@ -518,6 +549,9 @@ export class Hands {
   }
 
   _curlHand(hand, pose, dt) {
+    // A GLB skin with no finger nodes has nothing to curl; the pose springs on
+    // the hand root still run.
+    if (!hand.fingers.length || !hand.thumb) return;
     for (let i = 0; i < hand.fingers.length; i++) {
       const fg = hand.fingers[i];
       fg.curlTarget = pose.curl[i];

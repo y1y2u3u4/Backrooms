@@ -460,7 +460,7 @@ export class Surveyor {
       'pelvis', 'torso', 'neck', 'head',
       'shoulder_L', 'shoulder_R', 'arm_upper_L', 'arm_upper_R',
       'arm_lower_L', 'arm_lower_R', 'arm_wrist_L', 'arm_wrist_R',
-      'blade_L', 'blade_R',
+      'blade_L', 'blade_R', 'hand_L', 'hand_R',
       'hip_L', 'hip_R', 'leg_upper_L', 'leg_upper_R',
       'leg_lower_L', 'leg_lower_R', 'foot_L', 'foot_R',
     ];
@@ -473,6 +473,13 @@ export class Surveyor {
       console.info('[surveyor] surveyor.glb has too few named bones; keeping the stand-in');
       return false;
     }
+    // Alias whatever the export actually called things. A rig that names the
+    // last arm segment `hand_*` rather than `blade_*` is not a broken rig, and
+    // the animation should not care.
+    bones.blade_L = bones.blade_L || bones.hand_L;
+    bones.blade_R = bones.blade_R || bones.hand_R;
+    bones.arm_wrist_L = bones.arm_wrist_L || null;
+    bones.arm_wrist_R = bones.arm_wrist_R || null;
     // Normalise scale to the bible's 2.9 m.
     const bboxHeight = new THREE.Box3().setFromObject(inst).getSize(_v).y;
     if (bboxHeight > 0.1) inst.scale.setScalar(HEIGHT / bboxHeight);
@@ -940,10 +947,22 @@ export class Surveyor {
     // A human pelvis rises ~25 mm per step and rolls ~5 degrees. This does
     // 70 mm and 16 degrees, and that single exaggeration is most of why the
     // walk is unpleasant to watch.
+    const hipY = Math.sin(g * 2) * 0.070 * amp - amp * 0.035 - stoop * 0.42;
+    const hipX = Math.sin(g) * 0.075 * amp;
+    const hipYaw = Math.sin(g) * 0.28 * amp;
+    const hipRoll = Math.sin(g) * 0.16 * amp;
     if (bones.pelvis) {
-      bones.pelvis.position.y = PELVIS_Y - this.stoop * 0.42 + Math.sin(g * 2) * 0.070 * amp - amp * 0.035;
-      bones.pelvis.position.x = Math.sin(g) * 0.075 * amp;
-      setRot('pelvis', Math.sin(g * 2 + 1.1) * 0.05 * amp, Math.sin(g) * 0.28 * amp, Math.sin(g) * 0.16 * amp);
+      bones.pelvis.position.y = PELVIS_Y + hipY;
+      bones.pelvis.position.x = hipX;
+      setRot('pelvis', Math.sin(g * 2 + 1.1) * 0.05 * amp, hipYaw, hipRoll);
+      this._rootBob = 0; this._rootSway = 0; this._rootRoll = 0;
+    } else {
+      // A GLB rig with no pelvis node still has to have the hip travel — it is
+      // the single most recognisable thing about the walk. Drive the whole
+      // root instead, which is visually equivalent from any distance.
+      this._rootBob = hipY;
+      this._rootSway = hipX;
+      this._rootRoll = hipRoll * 0.6;
     }
 
     // ---- torso: counter-rotates, and lags ----
@@ -1055,8 +1074,11 @@ export class Surveyor {
   }
 
   _applyTransform(dt) {
-    this.root.position.copy(this.position);
-    this.root.rotation.y = this.heading;
+    this.root.position.set(
+      this.position.x + Math.cos(this.heading) * (this._rootSway || 0),
+      this.position.y + (this._rootBob || 0),
+      this.position.z - Math.sin(this.heading) * (this._rootSway || 0));
+    this.root.rotation.set(0, this.heading, this._rootRoll || 0);
 
     // Shadows: it is 2.9 m of steel and it must throw one, but re-rendering the
     // whole shadow atlas every frame is not affordable. Refresh at 4 Hz, and

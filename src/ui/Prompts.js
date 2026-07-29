@@ -17,7 +17,10 @@
 
 import { el } from './theme.js';
 
-const PERIM = 'M17 0.5 H33.5 V33.5 H0.5 V0.5 Z';
+// The sweep runs on a ring *outside* the key badge, starting at top centre and
+// going clockwise. Drawn on the badge's own border it would be invisible: two
+// coincident amber lines one pixel apart read as one slightly thicker line.
+const PERIM = 'M23 1.25 H44.75 V44.75 H1.25 V1.25 Z';
 
 export function createPrompts() {
   let cur = null;
@@ -27,7 +30,7 @@ export function createPrompts() {
   const subject = el('div.ax-pr-subject.ax-micro');
   const badgeKey = el('span.ax-pr-key');
   const ring = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  ring.setAttribute('viewBox', '0 0 34 34');
+  ring.setAttribute('viewBox', '0 0 46 46');
   ring.setAttribute('class', 'ax-pr-ring');
   const ringPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   ringPath.setAttribute('d', PERIM);
@@ -121,11 +124,14 @@ export const PROMPTS_CSS = /* css */ `
 .ax-pr-key { position: relative; font-family: var(--ax-head); font-weight: 700; font-size: 11px;
   letter-spacing: .1em; color: var(--ax-amber); text-transform: uppercase;
   transition: color 220ms var(--ax-ease); }
-.ax-pr-ring { position: absolute; inset: 0; width: 34px; height: 34px; overflow: visible; }
-.ax-pr-ring path { fill: none; stroke: var(--ax-amber); stroke-width: 2;
+.ax-pr-ring { position: absolute; inset: -6px; width: 46px; height: 46px; overflow: visible; }
+.ax-pr-ring path { fill: none; stroke: var(--ax-amber); stroke-width: 2.5;
   stroke-dasharray: 100 100; stroke-dashoffset: 100; opacity: 0;
   transition: opacity 200ms var(--ax-ease); }
 .ax-prompts[data-hold] .ax-pr-ring path { opacity: 1; }
+/* While a hold is running the badge steps back so the sweep is the only bright
+   thing in the group. */
+.ax-prompts[data-hold] .ax-pr-badge::before { border-color: rgba(138,113,52,.45); }
 
 .ax-pr-verbwrap { display: flex; align-items: baseline; gap: 8px; }
 .ax-pr-verb { font-family: var(--ax-head); font-weight: 700; font-size: 13px;

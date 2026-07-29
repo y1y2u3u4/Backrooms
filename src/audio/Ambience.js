@@ -172,7 +172,7 @@ export class Ambience {
      * slow enough that it never clicks.
      */
     E.register('amb.hum', {
-      bus: 'ambience', gain: 0.30, send: 0.28, ref: 2.6, rolloff: 1.35, maxDist: 34,
+      bus: 'ambience', gain: 0.22, send: 0.28, ref: 2.6, rolloff: 1.35, maxDist: 34,
       loop: true, dur: Infinity, maxVoices: MAX_HUM_VOICES + 2, priority: 1,
       build: ({ ctx, bag, out, t, opts }) => {
         const detune = opts.detune ?? 0;
@@ -258,7 +258,7 @@ export class Ambience {
 
     /** Starter crackle — a fluorescent striking, or failing to. */
     E.register('amb.strike', {
-      bus: 'ambience', gain: 0.62, send: 0.35, ref: 2.4, maxDist: 26, dur: 0.5, maxVoices: 4,
+      bus: 'ambience', gain: 1.2, send: 0.35, ref: 2.4, maxDist: 26, dur: 0.5, maxVoices: 4,
       build: varied(({ ctx, bag, out, t, rng, vary }) => {
         let end = t;
         const n = 3 + Math.floor(rng() * 7);
@@ -631,7 +631,7 @@ export class Ambience {
 
     /** Expansion tick: a single, tiny, unmotivated noise in a wall. */
     E.register('struct.tick', {
-      bus: 'ambience', gain: 0.34, send: 0.7, ref: 3.2, maxDist: 30, dur: 0.5, maxVoices: 4,
+      bus: 'ambience', gain: 0.80, send: 0.7, ref: 3.2, maxDist: 30, dur: 0.5, maxVoices: 4,
       build: varied(({ ctx, bag, out, t, rng, vary }) => modalRing(ctx, bag, out, t, {
         modes: [
           { f: (380 + rng() * 900) * vary.pitch, t60: 0.02 + rng() * 0.06, gain: 1 },

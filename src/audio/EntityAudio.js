@@ -155,7 +155,7 @@ export class EntityAudio {
 
     /** Head plate rotating. Dry, close-miked, LOCALISABLE — this is the tell. */
     E.register('entity.tick', {
-      bus: 'entity', gain: 0.62, send: 0.20, ref: 4.0, rolloff: 0.9, maxDist: 45,
+      bus: 'entity', gain: 1.6, send: 0.20, ref: 4.0, rolloff: 0.9, maxDist: 45,
       hrtf: true, dur: 0.8, maxVoices: 3, priority: 8,
       build: varied(({ ctx, bag, out, t, rng, vary }) => {
         const n = 2 + Math.floor(rng() * 4);
@@ -180,7 +180,7 @@ export class EntityAudio {
      * backwards — nothing in nature rises like that), and a flat dead clack.
      */
     E.register('entity.measure', {
-      bus: 'entity', gain: 0.85, send: 0.55, ref: 5.0, rolloff: 0.75, maxDist: 55,
+      bus: 'entity', gain: 1.8, send: 0.55, ref: 5.0, rolloff: 0.75, maxDist: 55,
       hrtf: true, dur: 3.2, maxVoices: 1, priority: 10,
       build: varied(({ ctx, bag, out, t, rng, vary }) => {
         // 1. blade extends against the wall
@@ -361,7 +361,7 @@ export class EntityAudio {
     // No model, no voice. Only evidence, always quiet, always slightly behind.
 
     E.register('attendant.step', {
-      bus: 'entity', gain: 0.30, send: 0.95, ref: 4.0, rolloff: 1.0, maxDist: 30,
+      bus: 'entity', gain: 0.90, send: 0.95, ref: 4.0, rolloff: 1.0, maxDist: 30,
       dur: 1.2, maxVoices: 2, priority: 6,
       build: varied(({ ctx, bag, out, t, rng, vary }) => {
         // A wet footstep on carpet. It starts in the middle of the room.

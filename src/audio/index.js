@@ -238,8 +238,10 @@ export function createAudio({ bus = null, collision = null, camera = null, rig =
     /** Zone change: reverb profile + ambience profile in one call. */
     setZone(zone, fade = 1.4) {
       if (!zone) return api;
-      engine.setZone(ZONE_REVERB[zone] ? zone : zone, fade);
-      ambience.setZone(ZONE_AMBIENCE[zone] ? zone : ambience.zone, fade * 2);
+      // The engine resolves zone names and raw profile keys itself; the
+      // ambience only knows zone names, so an unknown key leaves it alone.
+      engine.setZone(zone, fade);
+      if (ZONE_AMBIENCE[zone]) ambience.setZone(zone, fade * 2);
       return api;
     },
 

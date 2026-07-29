@@ -119,9 +119,11 @@ export function createSubtitles({ camera = null } = {}) {
 
 export const SUBS_CSS = /* css */ `
 .ax-subs { }
+/* A transcript column, not a stack of centred bubbles: every line shares one
+   left edge so two cues in a row read as one continuous transcript. */
 .ax-sub-stack {
   position: absolute; left: 50%; bottom: clamp(56px, 9vh, 104px); transform: translateX(-50%);
-  width: min(66ch, 74vw); display: grid; gap: 4px; justify-items: center;
+  width: min(54ch, 64vw); display: grid; gap: 3px; justify-items: start;
 }
 .ax-sub-line {
   max-width: 100%; padding: 8px 15px 10px; background: rgba(6,5,3,.76);

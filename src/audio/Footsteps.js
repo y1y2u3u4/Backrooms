@@ -130,7 +130,7 @@ export class Footsteps {
     for (const key of Object.keys(SURFACES)) {
       const S = SURFACES[key];
       E.register(`step.${key}`, {
-        bus: 'player', spatial: false, gain: 0.72, send: S.send, dur: 1.2, maxVoices: 6, priority: 3,
+        bus: 'player', spatial: false, gain: 1.6, send: S.send, dur: 1.2, maxVoices: 6, priority: 3,
         build: varied(({ ctx, bag, out, t, rng, vary, opts }) => {
           const strength = clamp01(opts.strength ?? 0.6);
           const crouch = !!opts.crouch;
@@ -250,7 +250,7 @@ export class Footsteps {
 
     /** Standalone splash — wading, an object dropped in the Cistern. */
     E.register('splash', {
-      bus: 'world', gain: 0.6, send: 0.7, ref: 2.4, dur: 1.4, maxVoices: 5,
+      bus: 'world', gain: 1.0, send: 0.7, ref: 2.4, dur: 1.4, maxVoices: 5,
       build: varied(({ ctx, bag, out, t, rng, vary, opts }) => splash(ctx, bag, out, t, {
         depth: clamp01(opts.depth ?? 0.5), strength: clamp01(opts.strength ?? 0.7),
         rng, gain: vary.gain, crouch: false,
@@ -259,7 +259,7 @@ export class Footsteps {
 
     /** Clothing. Separate layer, separate bus level, never in step with itself. */
     E.register('cloth.rustle', {
-      bus: 'player', spatial: false, gain: 1.15, send: 0.12, dur: 0.6, maxVoices: 5, priority: 1,
+      bus: 'player', spatial: false, gain: 1.5, send: 0.12, dur: 0.6, maxVoices: 5, priority: 1,
       build: varied(({ ctx, bag, out, t, rng, vary, opts }) => {
         const amt = clamp01(opts.amount ?? 0.5);
         let end = t;
@@ -279,7 +279,7 @@ export class Footsteps {
 
     /** Breath. Sprinting adds it; fear makes it shallow and fast. */
     E.register('breath', {
-      bus: 'player', spatial: false, gain: 0.62, send: 0.14, dur: 1.2, maxVoices: 3, priority: 2,
+      bus: 'player', spatial: false, gain: 1.0, send: 0.14, dur: 1.2, maxVoices: 3, priority: 2,
       build: varied(({ ctx, bag, out, t, rng, vary, opts }) => {
         const inhale = opts.inhale !== false;
         const effort = clamp01(opts.effort ?? 0.5);
@@ -308,7 +308,7 @@ export class Footsteps {
 
     /** Landing. Heavier than a step, with a knee-and-cloth component. */
     E.register('land', {
-      bus: 'player', spatial: false, gain: 0.62, send: 0.4, dur: 1.6, maxVoices: 3, priority: 4,
+      bus: 'player', spatial: false, gain: 1.2, send: 0.4, dur: 1.6, maxVoices: 3, priority: 4,
       build: varied(({ ctx, bag, out, t, rng, vary, opts }) => {
         const S = SURFACES[resolveSurface(opts.surface)] || SURFACES.concrete;
         const f = clamp01(opts.force ?? 0.5);

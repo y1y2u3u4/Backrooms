@@ -110,13 +110,17 @@ export class Flashlight {
     const proto = await assets.load('handheld_lamp');
     if (!proto) return false;
     const inst = assets.instance('handheld_lamp') || proto.clone(true);
-    // Blender exports at real scale; the viewmodel wants it a touch smaller so
-    // it does not eat the frame.
-    inst.scale.setScalar(0.92);
+    // Blender exports at real scale; normalise to a ~220 mm inspection lamp so
+    // the viewmodel framing does not depend on the export's unit setup.
+    const size = new THREE.Box3().setFromObject(inst).getSize(new THREE.Vector3());
+    const longest = Math.max(size.x, size.y, size.z);
+    if (longest > 0.02) inst.scale.setScalar(0.22 / longest);
+
+    // Whatever the export called the glowing part.
     let lens = null;
     inst.traverse((o) => {
-      if (/lens|glass|emissive/i.test(o.name)) lens = o;
-      if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; }
+      if (!lens && /lens|glass|emissive|bulb|filament/i.test(o.name)) lens = o;
+      if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; o.frustumCulled = false; }
     });
     if (lens) {
       lens.material = new THREE.MeshBasicMaterial({ color: 0xfff0d0, fog: false, toneMapped: true });

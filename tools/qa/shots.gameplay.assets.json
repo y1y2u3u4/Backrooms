@@ -1,0 +1,47 @@
+[
+  {
+    "name": "00_boot_with_glb",
+    "settle": 4,
+    "setup": "g.__gpBoot = (async () => { const A = await import('/src/core/Assets.js'); const assets = new A.Assets({ materials: g.materials, palette: g.palette }); await assets.loadManifest(); g.assets = assets; const m = await import('/src/systems/GameplayBoot.js'); const gp = await m.installGameplay(g, { seedDemo: true, quality: 'low', assets }); g.gameplay = gp; const base = g.step.bind(g); g.step = (dt) => { base(dt); try { gp.update(dt, null); } catch (e) { window.__GP_ERR = String(e && e.stack || e); } }; window.__GLB = { surveyor: gp.surveyor.usingGlb, hands: !!gp.hands.usingGlbHands, lamp: !!gp.flashlight.usingGlbBody }; })().catch(e => { window.__GP_ERR = String(e && e.stack || e); }); g.look(-27.0, 0, -8.4, -1.5708, 0.02);"
+  },
+  {
+    "name": "01_glb_hands_lamp",
+    "settle": 50,
+    "setup": "if (!g.gameplay) return; g.gameplay.qa.lamp(true, 1); g.look(-25.2, 0, -4.2, 3.1416, -0.16);"
+  },
+  {
+    "name": "02_glb_hands_carry",
+    "settle": 60,
+    "setup": "if (!g.gameplay) return; g.gameplay.inventory.add('fuse_core', 1); g.look(-25.2, 0, -4.2, 3.1416, -0.22);"
+  },
+  {
+    "name": "03_glb_surveyor_full",
+    "settle": 30,
+    "setup": "if (!g.gameplay) return; g.gameplay.inventory.take('fuse_core', 1); g.gameplay.qa.lamp(false); g.gameplay.qa.surveyorTo(-20.5, -8.4, -1.5708); g.gameplay.qa.pose(0.9, 0.4); g.look(-27.0, 0, -8.4, -1.5708, 0.10);"
+  },
+  {
+    "name": "04_glb_surveyor_scale",
+    "settle": 26,
+    "setup": "if (!g.gameplay) return; g.gameplay.qa.surveyorTo(-23.6, -8.4, -1.5708); g.gameplay.qa.pose(0.0, 0.0); g.look(-27.0, 0, -8.4, -1.5708, 0.22);"
+  },
+  {
+    "name": "05_glb_surveyor_frozen",
+    "settle": 26,
+    "setup": "if (!g.gameplay) return; g.gameplay.qa.surveyorTo(-21.5, -8.4, -1.95); g.gameplay.qa.pose(1.55, 0.78); g.look(-27.0, 0, -8.4, -1.5708, 0.10);"
+  },
+  {
+    "name": "06_glb_surveyor_measuring",
+    "settle": 26,
+    "setup": "if (!g.gameplay) return; g.gameplay.qa.surveyorTo(-29.4, -8.4, 0); g.gameplay.qa.measure(8); g.look(-24.4, 0, -8.4, 1.5708, 0.14);"
+  },
+  {
+    "name": "07_glb_surveyor_head",
+    "settle": 26,
+    "setup": "if (!g.gameplay) return; g.gameplay.qa.surveyorTo(-24.6, -8.4, -1.5708); g.gameplay.qa.pose(0.4, -0.5); g.look(-27.0, 0, -8.4, -1.5708, 0.44);"
+  },
+  {
+    "name": "08_glb_surveyor_capture",
+    "settle": 26,
+    "setup": "if (!g.gameplay) return; g.gameplay.qa.surveyorTo(-25.9, -8.4, -1.5708); const s = g.gameplay.surveyor; s.captureBlend = 1; s.state = 'CAPTURING'; g.gameplay.qa.pose(0.2, 0.0); g.look(-27.0, 0, -8.4, -1.5708, 0.36);"
+  }
+]

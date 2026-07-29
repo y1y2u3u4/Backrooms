@@ -22,6 +22,7 @@ import { makeRng, clamp01, lerp, smoothstep, hash2, hash3, tileFbm, tileWorley, 
  */
 
 const CELLS = 8;                 // atlas is CELLS x CELLS stamps
+const SIGN_ATLAS = 2048;         // text atlas edge, px
 const CELL_PX = 128;
 
 /** Stamp index by name. Position in the atlas is (i % CELLS, floor(i / CELLS)). */
@@ -486,9 +487,12 @@ export class Decals {
     this.material.envMap = this.materials?.envMap ?? null;
 
     // ---- sign atlas ------------------------------------------------------
-    const SC = makeCanvas(1024, 1024);
+    // 2048 is enough for every plate, notice and stencil in the building at
+    // ~420 px/m, which is the same texel density as the surfaces they sit on.
+    const SS = SIGN_ATLAS;
+    const SC = makeCanvas(SS, SS);
     const sctx = SC.getContext('2d');
-    sctx.clearRect(0, 0, 1024, 1024);
+    sctx.clearRect(0, 0, SS, SS);
     this._signCanvas = SC;
     this._signCtx = sctx;
     const stex = new THREE.CanvasTexture(SC);
@@ -533,8 +537,8 @@ export class Decals {
 
     // Row-packing cursor.
     const cur = this._signCursor;
-    if (cur.x + w + 2 > 1024) { cur.x = 2; cur.y += cur.rowH + 2; cur.rowH = 0; }
-    if (cur.y + h + 2 > 1024) { cur.x = 2; cur.y = 2; cur.rowH = 0; }  // wrap; oldest gets overwritten
+    if (cur.x + w + 2 > SIGN_ATLAS) { cur.x = 2; cur.y += cur.rowH + 2; cur.rowH = 0; }
+    if (cur.y + h + 2 > SIGN_ATLAS) { cur.x = 2; cur.y = 2; cur.rowH = 0; }  // wrap; oldest is overwritten
     const x0 = cur.x, y0 = cur.y;
     cur.x += w + 2;
     cur.rowH = Math.max(cur.rowH, h);
@@ -552,27 +556,35 @@ export class Decals {
     };
     const st = styles[style] || styles.plate;
     if (st.bg) { ctx.fillStyle = st.bg; ctx.fillRect(x0, y0, w, h); }
+    const pad = Math.max(4, Math.round(Math.min(w, h) * 0.10));
     if (st.border) {
-      ctx.strokeStyle = st.border; ctx.lineWidth = 3;
-      ctx.strokeRect(x0 + 4.5, y0 + 4.5, w - 9, h - 9);
+      ctx.strokeStyle = st.border; ctx.lineWidth = Math.max(1.5, pad * 0.45);
+      ctx.strokeRect(x0 + pad * 0.6, y0 + pad * 0.6, w - pad * 1.2, h - pad * 1.2);
     }
     const arr = Array.isArray(lines) ? lines : [lines];
     ctx.fillStyle = st.fg;
     ctx.textBaseline = 'middle';
     ctx.textAlign = align === 'left' ? 'left' : align === 'right' ? 'right' : 'center';
-    const tx = align === 'left' ? x0 + 14 : align === 'right' ? x0 + w - 14 : x0 + w / 2;
+    const tx = align === 'left' ? x0 + pad : align === 'right' ? x0 + w - pad : x0 + w / 2;
     const lh = size * 1.14;
     const total = arr.length * lh;
     arr.forEach((line, i) => {
-      const fs = i === 0 ? size : size * 0.78;
+      let fs = i === 0 ? size : size * 0.78;
       ctx.font = `${weight} ${fs}px ${font}`;
+      // Shrink to fit rather than run off the plate.
+      const avail = w - pad * 2;
+      const measured = ctx.measureText(line).width + tracking * Math.max(0, line.length - 1);
+      if (measured > avail && measured > 0) {
+        fs *= avail / measured;
+        ctx.font = `${weight} ${fs}px ${font}`;
+      }
       const ty = y0 + h / 2 - total / 2 + lh * (i + 0.5);
       if (tracking > 0) {
         // Manual tracking; canvas letterSpacing is not universally available.
         const chars = [...line];
         const widths = chars.map((ch) => ctx.measureText(ch).width);
         const totalW = widths.reduce((s, v) => s + v, 0) + tracking * (chars.length - 1);
-        let cx2 = align === 'left' ? x0 + 14 : align === 'right' ? x0 + w - 14 - totalW : x0 + w / 2 - totalW / 2;
+        let cx2 = align === 'left' ? x0 + pad : align === 'right' ? x0 + w - pad - totalW : x0 + w / 2 - totalW / 2;
         const save = ctx.textAlign; ctx.textAlign = 'left';
         chars.forEach((ch, ci) => { ctx.fillText(ch, cx2, ty); cx2 += widths[ci] + tracking; });
         ctx.textAlign = save;
@@ -582,7 +594,7 @@ export class Decals {
     });
     if (rule) {
       ctx.strokeStyle = st.fg; ctx.globalAlpha = 0.5; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(x0 + 16, y0 + h * 0.62); ctx.lineTo(x0 + w - 16, y0 + h * 0.62); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x0 + pad, y0 + h * 0.62); ctx.lineTo(x0 + w - pad, y0 + h * 0.62); ctx.stroke();
       ctx.globalAlpha = 1;
     }
     // Distress: knock holes in the paint so nothing looks freshly printed.
@@ -599,8 +611,9 @@ export class Decals {
     }
     ctx.restore();
     this.signTexture.needsUpdate = true;
-    const e = 0.5 / 1024;
-    const rect = [x0 / 1024 + e, 1 - (y0 + h) / 1024 + e, (x0 + w) / 1024 - e, 1 - y0 / 1024 - e];
+    const e = 0.5 / SIGN_ATLAS;
+    const rect = [x0 / SIGN_ATLAS + e, 1 - (y0 + h) / SIGN_ATLAS + e,
+      (x0 + w) / SIGN_ATLAS - e, 1 - y0 / SIGN_ATLAS - e];
     this._signCache.set(key, rect);
     return rect;
   }
@@ -646,9 +659,22 @@ export class Decals {
     return g;
   }
 
-  /** Text quad — same as `quad` but into the sign atlas. */
+  /**
+   * Text quad — same as `quad` but into the sign atlas.
+   *
+   * `w`/`h` here are METRES (the size of the plate in the world). The canvas
+   * cell is derived from them at a fixed ~420 px/m so texel density on signage
+   * matches the rest of the building, and the default point size is derived
+   * from the cell so a two-line plate and a one-line plate look like they came
+   * off the same machine.
+   */
   label(b, lines, opts = {}) {
-    const rect = this.text(lines, opts);
+    const { w = 0.30, h = 0.12 } = opts;
+    const arr = Array.isArray(lines) ? lines : [lines];
+    const px = Math.max(64, Math.min(512, Math.round(w * 420)));
+    const py = Math.max(24, Math.min(512, Math.round(px * (h / Math.max(w, 0.01)))));
+    const size = opts.size ?? Math.round(py / (arr.length + 0.9));
+    const rect = this.text(lines, { ...opts, w: px, h: py, size });
     return this.quad(b, { ...opts, uvRect: rect, key: 'sign', stamp: STAMP.plateBlank });
   }
 
@@ -661,8 +687,7 @@ export class Decals {
     const face = yawFace(yaw);
     const n = FACE_N[face];
     this.label(b, name ? [number, name] : [number], {
-      w: 256, h: name ? 112 : 84, size: name ? 40 : 46, style,
-      face, x, y, z, w, h, lift: 0.012, strength: 1,
+      style, face, x, y, z, w, h, lift: 0.012, strength: 1, tracking: 1.5,
     });
     // The plate itself, so it has thickness and a shadow.
     const plate = new THREE.BoxGeometry(w + 0.014, h + 0.014, 0.006);

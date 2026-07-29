@@ -76,6 +76,10 @@ async function main() {
 
   const browser = await chromium.launch({ args: ['--no-sandbox', '--disable-dev-shm-usage', '--mute-audio'] });
   const page = await browser.newPage({ viewport: { width: 1000, height: 700 } });
+  // Block Vite's HMR client. A full render pass takes minutes; if anyone saves
+  // a file meanwhile, HMR reloads the page and destroys the execution context
+  // half way through the table.
+  await page.route('**/@vite/client', (r) => r.abort());
   const logs = [];
   page.on('console', (m) => logs.push(`[${m.type()}] ${m.text()}`));
   page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}\n${(e.stack || '').split('\n').slice(0, 8).join('\n')}`));

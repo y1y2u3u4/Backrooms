@@ -13,6 +13,7 @@
 import { chromium } from '@playwright/test';
 import { spawn } from 'node:child_process';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
+import { Buffer } from 'node:buffer';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 
@@ -82,7 +83,7 @@ async function main() {
     await page.waitForFunction('window.ANNEX_READY === true || window.ANNEX_ERROR', { timeout: TIMEOUT });
   } catch (e) {
     await writeFile(path.join(OUT, 'console.log'), logs.join('\n'));
-    await page.screenshot({ path: path.join(OUT, 'FAILED.png'), timeout: 120000 }).catch(()=>{});
+    await grabCanvas(page, path.join(OUT, 'FAILED.png')).catch(() => {});
     console.error('Timed out waiting for ANNEX_READY.');
     console.error(logs.slice(-40).join('\n'));
     await browser.close();
@@ -94,7 +95,7 @@ async function main() {
   if (err) {
     await writeFile(path.join(OUT, 'console.log'), logs.join('\n'));
     console.error('Boot error:\n' + err);
-    await page.screenshot({ path: path.join(OUT, 'FAILED.png'), timeout: 120000 }).catch(()=>{});
+    await grabCanvas(page, path.join(OUT, 'FAILED.png')).catch(() => {});
     await browser.close();
     if (server) server.kill();
     process.exit(3);
@@ -119,7 +120,7 @@ async function main() {
       for (let i = 0; i < frames; i++) g.renderOnce(1 / 60);
     }, { ...shot, settle: shot.settle ?? SETTLE });
     const file = path.join(OUT, `${shot.name}.png`);
-    await page.screenshot({ path: file, timeout: 180000 });
+    await grabCanvas(page, file);
     const stats = await page.evaluate(() => {
       const g = window.ANNEX;
       return { ...g.engine.stats, lights: g.rig?.stats };
@@ -141,6 +142,25 @@ async function main() {
   await browser.close();
   if (server) server.kill();
   console.log(`\nWrote ${manifest.length} frames to ${OUT}`);
+}
+
+/**
+ * Read the frame straight out of the WebGL canvas rather than asking Playwright
+ * for a screenshot.
+ *
+ * `page.screenshot()` waits for a compositor commit. When every frame takes
+ * seconds — which it does on a CPU rasteriser under load — that wait times out
+ * even though the renderer is working perfectly. The context is created with
+ * `preserveDrawingBuffer: true`, so the last rendered frame is still readable
+ * and `toDataURL` returns it immediately with no compositor involved.
+ */
+async function grabCanvas(page, file) {
+  const dataUrl = await page.evaluate(() => {
+    const c = document.getElementById('view');
+    return c.toDataURL('image/png');
+  });
+  const b64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+  await writeFile(file, Buffer.from(b64, 'base64'));
 }
 
 async function loadShots(page, name) {

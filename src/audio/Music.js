@@ -141,7 +141,7 @@ export class Music {
      * and bowed metal, and it is one node.
      */
     E.register('music.bowed', {
-      bus: 'music', spatial: false, gain: 0.8, send: 0.7, dur: 14, maxVoices: 3,
+      bus: 'music', spatial: false, gain: 1.1, send: 0.7, dur: 14, maxVoices: 3,
       build: varied(({ ctx, bag, out, t, rng, vary, opts }) => {
         const f = (opts.freq ?? midiToFreq(ROOT_MIDI + 12)) * vary.pitch;
         const dur = clamp(opts.duration ?? 8, 1.5, 40);
@@ -198,7 +198,7 @@ export class Music {
      * roll, and it should be recognisable every single time.
      */
     E.register('music.motif', {
-      bus: 'music', spatial: false, gain: 0.62, send: 0.85, dur: 16, maxVoices: 1, priority: 8,
+      bus: 'music', spatial: false, gain: 1.4, send: 0.85, dur: 16, maxVoices: 1, priority: 8,
       // The pitches are fixed — that is what makes it a motif — but the
       // phrasing is not. Each appearance breathes slightly differently.
       build: varied(({ ctx, bag, out, t, rng, vary, opts }) => {
@@ -300,11 +300,13 @@ export class Music {
     const dur = opts.duration ?? c.dur;
 
     // Bed: a very long fade in, a longer fade out.
+    this._timers = this._timers || [];
     if (c.bed > 0) {
       const bed = this.engine.loop('music.bed', { freq: rootF, fade: 9 });
       bed.setParam('level', c.bed * 0.55);
       this.handles.push(bed);
-      setTimeout(() => bed.stop(Math.min(14, dur * 0.4)), Math.max(1, (dur - 6)) * 1000);
+      this._timers.push(setTimeout(
+        () => bed.stop(Math.min(14, dur * 0.4)), Math.max(1, dur - 6) * 1000));
     }
 
     // Bowed metal: two or three long tones, entering at irregular times.
@@ -325,11 +327,9 @@ export class Music {
     // The motif, if this moment has earned it.
     if (c.motif) {
       const at = (opts.motifAt ?? c.motifAt ?? 4) * 1000;
-      const tm = setTimeout(() => {
+      this._timers.push(setTimeout(() => {
         this.engine.play('music.motif', { root: c.root ?? 0 });
-      }, at);
-      this._timers = this._timers || [];
-      this._timers.push(tm);
+      }, at));
     }
 
     if (c.ending) this.engine.setParam('music', 0.72, 6);

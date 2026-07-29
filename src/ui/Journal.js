@@ -563,8 +563,14 @@ export const JOURNAL_CSS = /* css */ `
 .ax-jr-sheet-head .ax-machine { color: rgba(35,33,26,.72); }
 .ax-jr-sheet-title { font-family: var(--ax-head); font-weight: 700; font-size: 15px;
   letter-spacing: .22em; text-transform: uppercase; color: var(--ax-paper-ink); margin-top: 9px; }
+/* A long sheet scrolls. Masking to transparent lets the sheet's own paper show
+   through, so the text fades into the page rather than into the dark ground. */
 .ax-jr-sheet-body { padding-top: 18px; overflow-y: auto; flex: 1 1 auto;
-  scrollbar-width: thin; scrollbar-color: rgba(35,33,26,.22) transparent; }
+  scrollbar-width: thin; scrollbar-color: rgba(35,33,26,.22) transparent;
+  -webkit-mask-image: linear-gradient(180deg, #000 0 88%, #0000 99%);
+  mask-image: linear-gradient(180deg, #000 0 88%, #0000 99%); }
+.ax-jr-sheet-body::-webkit-scrollbar { width: 3px; }
+.ax-jr-sheet-body::-webkit-scrollbar-thumb { background: rgba(35,33,26,.24); }
 .ax-jr-p { font-family: var(--ax-type); font-size: 13px; line-height: 1.92;
   color: rgba(30,28,22,.92); margin: 0 0 15px; letter-spacing: .008em; }
 .ax-jr-p:last-child { margin-bottom: 0; }

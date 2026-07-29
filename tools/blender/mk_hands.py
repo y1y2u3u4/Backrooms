@@ -19,10 +19,10 @@ def build_one_hand(side_sign, mat_skin, mat_sleeve):
     parts = []
 
     # Sleeve cuff sits ABOVE the wrist (+Z), palm and fingers hang below (-Z).
-    sleeve = A.prim_cylinder("_sleeve", 0.052, 0.09, segments=14, location=(0, 0, 0.052))
+    sleeve = A.prim_cylinder("_sleeve", 0.052, 0.09, segments=10, location=(0, 0, 0.052))
     parts.append((sleeve, mat_sleeve))
 
-    wrist_taper = A.cylinder_between("_wristTaper", (0, 0, 0.006), (0, 0, -0.01), 0.040, 0.036, segments=14)
+    wrist_taper = A.cylinder_between("_wristTaper", (0, 0, 0.006), (0, 0, -0.01), 0.040, 0.036, segments=10)
     parts.append((wrist_taper, mat_skin))
 
     # Palm: tapered from a narrower wrist to a wider knuckle line, built from
@@ -32,7 +32,7 @@ def build_one_hand(side_sign, mat_skin, mat_sleeve):
     palm_b = A.prim_box("_palmMid", 0.078, 0.027, 0.032, location=(0.002 * side_sign, 0, -0.058))
     palm_c = A.prim_box("_palmKnuckle", 0.086, 0.024, 0.030, location=(0.002 * side_sign, 0, -0.088))
     # a soft thenar bulge (thumb-side pad) so the palm isn't a flat slab
-    thenar = A.prim_sphere("_thenar", 0.022, segments=10, rings=8,
+    thenar = A.prim_sphere("_thenar", 0.022, segments=8, rings=6,
                             location=(0.034 * side_sign, -0.004, -0.062))
     for o in (palm_a, palm_b, palm_c, thenar):
         parts.append((o, mat_skin))
@@ -58,13 +58,13 @@ def build_one_hand(side_sign, mat_skin, mat_sleeve):
             end = pos + dir_vec * seg_len
             rr0 = r0 + (r1 - r0) * (si / 3)
             rr1 = r0 + (r1 - r0) * ((si + 1) / 3)
-            seg = A.cylinder_between(f"_f{fi}s{si}", pos, end, rr0, rr1, segments=8)
+            seg = A.cylinder_between(f"_f{fi}s{si}", pos, end, rr0, rr1, segments=6)
             parts.append((seg, mat_skin))
             # small knuckle bead at each joint to hide the seam
-            bead = A.prim_sphere(f"_f{fi}b{si}", rr0 * 1.05, segments=8, rings=6, location=tuple(pos))
+            bead = A.prim_sphere(f"_f{fi}b{si}", rr0 * 1.05, segments=6, rings=5, location=tuple(pos))
             parts.append((bead, mat_skin))
             pos = end
-        tip = A.prim_sphere(f"_f{fi}tip", r1, segments=8, rings=6, location=tuple(pos))
+        tip = A.prim_sphere(f"_f{fi}tip", r1, segments=6, rings=5, location=tuple(pos))
         parts.append((tip, mat_skin))
 
     # Thumb: two segments, angled out from the side of the palm, opposing the
@@ -74,11 +74,11 @@ def build_one_hand(side_sign, mat_skin, mat_sleeve):
     thumb_mid = thumb_root + thumb_dir1 * 0.036
     thumb_dir2 = Vector((0.35 * side_sign, -0.75, -0.45)).normalized()
     thumb_tip = thumb_mid + thumb_dir2 * 0.030
-    t0 = A.cylinder_between("_thumb0", thumb_root, thumb_mid, 0.0125, 0.0098, segments=8)
-    t1 = A.cylinder_between("_thumb1", thumb_mid, thumb_tip, 0.0098, 0.0072, segments=8)
-    t_base_bead = A.prim_sphere("_thumbBase", 0.0135, segments=8, rings=6, location=tuple(thumb_root))
-    t_knuckle = A.prim_sphere("_thumbKnuckle", 0.0098, segments=8, rings=6, location=tuple(thumb_mid))
-    t_tip = A.prim_sphere("_thumbTip", 0.0072, segments=8, rings=6, location=tuple(thumb_tip))
+    t0 = A.cylinder_between("_thumb0", thumb_root, thumb_mid, 0.0125, 0.0098, segments=6)
+    t1 = A.cylinder_between("_thumb1", thumb_mid, thumb_tip, 0.0098, 0.0072, segments=6)
+    t_base_bead = A.prim_sphere("_thumbBase", 0.0135, segments=6, rings=5, location=tuple(thumb_root))
+    t_knuckle = A.prim_sphere("_thumbKnuckle", 0.0098, segments=6, rings=5, location=tuple(thumb_mid))
+    t_tip = A.prim_sphere("_thumbTip", 0.0072, segments=6, rings=5, location=tuple(thumb_tip))
     for o in (t0, t1, t_base_bead, t_knuckle, t_tip):
         parts.append((o, mat_skin))
 
