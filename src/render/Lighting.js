@@ -27,7 +27,7 @@ export const FIXTURE_TYPES = {
    */
   troffer: {
     size: [1.20, 0.09, 0.30],
-    color: 0xfff0cf, intensity: 34, distance: 15.0, angle: 1.26, penumbra: 0.82,
+    color: 0xfff0cf, intensity: 38, distance: 17.0, angle: 1.40, penumbra: 0.42,
     tubeColor: 0xfff6e2, tubeIntensity: 1.35, cone: 0.11, hum: 1.0,
   },
   /** Surface-mounted strip light, service corridors. */
@@ -287,7 +287,21 @@ export class LightRig {
     // is the bright one because it stands in for light bouncing off the lit
     // floor onto every downward-facing surface.
     this.ambient = new THREE.HemisphereLight(0x201c14, 0x4a3c22, 0.34);
+    this.ambientTarget = { sky: new THREE.Color(0x201c14), ground: new THREE.Color(0x453b28), intensity: 0.34 };
     scene.add(this.ambient);
+  }
+
+  /**
+   * Per-zone bounce fill. Intake is a low-ceilinged room of saturated yellow
+   * surfaces lit by dozens of fixtures: in reality it would be flooded with
+   * inter-reflected light and have almost no shadows anywhere. With no GI, this
+   * is how that gets faked, and it is why Intake can be blindingly bright while
+   * the Cistern two doors away is nearly black.
+   */
+  setAmbient(sky, ground, intensity) {
+    this.ambientTarget.sky.set(sky);
+    this.ambientTarget.ground.set(ground);
+    this.ambientTarget.intensity = intensity;
   }
 
   setCircuit(name, powered) {
@@ -353,6 +367,10 @@ export class LightRig {
     for (const c of this.circuits.values()) {
       c.level = damp(c.level, c.target, 4.5, dt);
     }
+    const k = 1 - Math.exp(-2.2 * dt);
+    this.ambient.color.lerp(this.ambientTarget.sky, k);
+    this.ambient.groundColor.lerp(this.ambientTarget.ground, k);
+    this.ambient.intensity += (this.ambientTarget.intensity - this.ambient.intensity) * k;
 
     this._sortTimer -= dt;
     const resort = this._sortTimer <= 0;

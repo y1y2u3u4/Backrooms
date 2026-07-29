@@ -92,11 +92,24 @@ def rotate_mesh_data(obj, euler_xyz):
 
 def finalize_pivot(obj, pivot_world):
     """
-    Re-express a mesh authored in world space so that `pivot_world` becomes
-    the object's local origin. Use this for anything that must rotate about
-    a joint/hinge/stem: door leaves, wheels, switches, limb segments.
+    Re-express obj so that `pivot_world` (a WORLD-space point) becomes its
+    local origin, without moving any geometry. Use this for anything that
+    must rotate about a joint/hinge/stem: door leaves, wheels, switches,
+    limb segments.
+
+    Works regardless of the object's current transform: first bakes its
+    existing world matrix into the mesh data (so local == world), resets the
+    object's transform to identity, then re-centres on the pivot. This must
+    be called AFTER any join_objects()/duplicate() that might leave a
+    non-zero object transform behind.
     """
     p = Vector(pivot_world)
+    bpy.context.view_layer.update()
+    obj.data.transform(obj.matrix_world.copy())
+    obj.location = (0, 0, 0)
+    obj.rotation_euler = (0, 0, 0)
+    obj.scale = (1, 1, 1)
+    obj.data.update()
     translate_mesh_data(obj, -p)
     obj.location = p
 
@@ -607,7 +620,13 @@ def _bounds_of(objs):
     return lo, hi
 
 
-def render_turntable(objs, out_png, engine='BLENDER_EEVEE', res=520):
+def render_turntable(objs, out_png, engine='BLENDER_EEVEE', res=520, front_sign=-1):
+    """
+    front_sign: -1 (default) views from -Y, the usual Blender "front" side.
+    Pass +1 for wall-mounted props authored with their outward/visible face
+    on +Y (i.e. back-of-panel at y=0, front opening away from the wall) so
+    the QA turntable actually looks at the interesting side.
+    """
     """
     Renders front / 3-quarter / side views of `objs` on a neutral backdrop with
     simple 3-point-style lighting, then composites the three PNGs side-by-side
@@ -639,21 +658,22 @@ def render_turntable(objs, out_png, engine='BLENDER_EEVEE', res=520):
     backdrop.data.materials.append(bmat)
 
     # Lights (only matter for EEVEE; Workbench ignores them but it's harmless).
+    # Sun lamps: irradiance is size/distance independent, so the same energy
+    # values look right whether the prop is a 0.2m fuse core or a 3m entity.
     light_objs = []
-    def add_light(name, loc, energy, ltype='AREA', size=1.0):
-        d = bpy.data.lights.new(name, type=ltype)
+    def add_light(name, loc, energy, angle_deg=6.0):
+        d = bpy.data.lights.new(name, type='SUN')
         d.energy = energy
-        if hasattr(d, "size"):
-            d.size = size
+        d.angle = math.radians(angle_deg)
         o = bpy.data.objects.new(name, d)
         o.location = loc
         bpy.context.collection.objects.link(o)
         light_objs.append(o)
         return o
 
-    key = add_light("_QA_key", (center.x + radius * 2.2, center.y - radius * 2.2, center.z + radius * 2.6), 900, size=radius)
-    fill = add_light("_QA_fill", (center.x - radius * 2.6, center.y - radius * 1.6, center.z + radius * 1.4), 350, size=radius * 1.5)
-    rim = add_light("_QA_rim", (center.x, center.y + radius * 2.6, center.z + radius * 2.0), 500, size=radius)
+    key = add_light("_QA_key", (center.x + radius * 2.2, center.y - radius * 2.2, center.z + radius * 2.6), 3.0)
+    fill = add_light("_QA_fill", (center.x - radius * 2.6, center.y - radius * 1.6, center.z + radius * 1.4), 1.1, angle_deg=12)
+    rim = add_light("_QA_rim", (center.x, center.y + radius * 2.6, center.z + radius * 2.0), 1.8, angle_deg=8)
 
     def aim_light(o):
         direction = (center - o.location)
@@ -670,8 +690,8 @@ def render_turntable(objs, out_png, engine='BLENDER_EEVEE', res=520):
 
     dist = radius * 3.0
     views = {
-        "front": Vector((0, -dist, center.z + size.z * 0.15)),
-        "three_quarter": Vector((dist * 0.82, -dist * 0.82, center.z + size.z * 0.35)),
+        "front": Vector((0, front_sign * dist, center.z + size.z * 0.15)),
+        "three_quarter": Vector((dist * 0.82, front_sign * dist * 0.82, center.z + size.z * 0.35)),
         "side": Vector((dist, 0, center.z + size.z * 0.15)),
     }
 
@@ -692,6 +712,9 @@ def render_turntable(objs, out_png, engine='BLENDER_EEVEE', res=520):
     scene.render.resolution_y = res
     scene.render.film_transparent = False
     scene.render.image_settings.file_format = 'PNG'
+    scene.view_settings.view_transform = 'Standard'
+    scene.view_settings.look = 'None'
+    scene.view_settings.exposure = 0.0
 
     tmp_dir = os.path.join(os.path.dirname(out_png), "_qa_tmp")
     os.makedirs(tmp_dir, exist_ok=True)

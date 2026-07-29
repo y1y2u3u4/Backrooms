@@ -166,6 +166,38 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
   const builderFor = (r, c) => builders[Math.floor(r / INTAKE.chunkCells) * nChunk + Math.floor(c / INTAKE.chunkCells)]
     || builders[0];
 
+  // ---- plan the fixtures first -------------------------------------------
+  // The ceiling grid needs to know which cells a fixture occupies so it can
+  // leave those tiles out; building the ceiling first and the lights second
+  // buries every fixture in the plenum.
+  const fixturePlan = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const t = grid[r][c];
+      if (t === WALL) continue;
+      const h = hash2(r * 3 + 1, c * 5 + 2);
+      const isSpine = t === SPINE;
+      // Intake is an OFFICE. Offices are lit to ~400 lux on a 4 m fixture grid,
+      // and the horror of this place is that it is relentlessly, evenly bright
+      // with nowhere to stand outside the light. Sparse fixtures would read as
+      // an atmospheric ruin, which is the wrong zone.
+      if (!isSpine && h > 0.90) continue;
+      const [x, z] = cellPos(r, c);
+      const dmg = damageAt(r, c);
+      // Failure rate follows the wear gradient: near the entrance almost
+      // everything works, and the far corner is where the ceiling came down.
+      let health = 'good';
+      const hh = hash2(r * 11 + 3, c * 7 + 5);
+      if (hh < 0.015 + dmg * 0.42) health = 'dead';
+      else if (hh < 0.06 + dmg * 0.55) health = 'dying';
+      else if (hh < 0.22 + dmg * 0.55) health = 'buzz';
+      fixturePlan.push({
+        r, c, x, z, health,
+        rotation: isSpine && r === plan.spineRow ? Math.PI / 2 : 0,
+      });
+    }
+  }
+
   // ---- floor & ceiling, per chunk ----------------------------------------
   for (const b of builders) {
     const [cr, cc] = b.chunk;
@@ -179,10 +211,13 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
     floorSlab(b, rect, 0, { key: 'carpet', surface: 'carpet', subdiv: 2.1, edgeShade: 0.18 });
 
     const dmg = damageAt((r0 + r1) / 2, (c0 + c1) / 2);
+    const slots = fixturePlan
+      .filter((f) => f.r >= r0 && f.r < r1 && f.c >= c0 && f.c < c1)
+      .map((f) => [f.x, f.z]);
     ceilingGrid(b, rect, ceiling, {
       key: 'ceilingTile', gridKey: 'gridMetal', plenumKey: 'plenum',
       damage: 0.04 + dmg * 0.30, seed: seed + cr * 71 + cc * 13,
-      lightSlots: [],
+      lightSlots: slots,
     });
   }
 
@@ -274,30 +309,16 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
   }
 
   // ---- lighting ----------------------------------------------------------
-  // Fixtures sit on the 4.2 m grid but with gaps: a corridor where every third
-  // fixture is dead reads far better than one where they alternate.
   let fixtureSeed = 1;
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const t = grid[r][c];
-      if (t === WALL) continue;
-      const h = hash2(r * 3 + 1, c * 5 + 2);
-      const isSpine = t === SPINE;
-      if (!isSpine && h > 0.55) continue;      // bays are sparsely lit
-      const [x, z] = cellPos(r, c);
-      const b = builderFor(r, c);
-      const dmg = damageAt(r, c);
-      let health = 'good';
-      const hh = hash2(r * 11 + 3, c * 7 + 5);
-      if (hh < 0.05 + dmg * 0.30) health = 'dead';
-      else if (hh < 0.14 + dmg * 0.42) health = 'dying';
-      else if (hh < 0.30 + dmg * 0.45) health = 'buzz';
-      troffer(b, rig, x, ceiling - 0.012, z, {
-        rotation: isSpine && r === plan.spineRow ? Math.PI / 2 : 0,
-        circuit: 'intake', health, seed: fixtureSeed++,
-        cone: true,
-      });
-    }
+  for (const f of fixturePlan) {
+    const b = builderFor(f.r, f.c);
+    troffer(b, rig, f.x, ceiling, f.z, {
+      rotation: f.rotation,
+      circuit: 'intake',
+      health: f.health,
+      seed: fixtureSeed++,
+      cone: true,
+    });
   }
 
   // ---- construction details ----------------------------------------------

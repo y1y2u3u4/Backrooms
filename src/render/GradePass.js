@@ -36,10 +36,10 @@ const GradeShader = {
     uHighlightTint: { value: new THREE.Color(0xffe9bd) },
     uSplitAmount: { value: 0.30 },
     uSaturation: { value: 0.90 },
-    uContrast: { value: 1.06 },
+    uContrast: { value: 1.12 },
 
-    uVignette: { value: 0.42 },
-    uVignetteSoft: { value: 0.62 },
+    uVignette: { value: 0.26 },
+    uVignetteSoft: { value: 0.78 },
     uAberration: { value: 0.7 },
     uGrain: { value: 0.030 },
     uGrainSize: { value: 1.35 },

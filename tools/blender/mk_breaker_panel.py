@@ -152,7 +152,7 @@ def build():
         if i % 2 == 0:
             s.rotation_euler = (math.radians(18), 0, 0)
     bpy.context.view_layer.update()
-    A.render_turntable(all_meshes, QA)
+    A.render_turntable(all_meshes, QA, front_sign=1)
     door_full.hide_render = False
     handle.hide_render = False
     for s in switch_objs:

@@ -22,6 +22,11 @@ import { makeLightCone } from '../render/Lighting.js';
  *     same call are never identical.
  */
 
+/** Ceiling tile face height below the grid datum. */
+const TILE_FACE = 0.030;
+/** Tee underside below the grid datum — 8 mm proud of the tile. */
+const TEE_DROP = 0.038;
+
 export const KIT = {
   wallThickness: 0.16,
   skirtingHeight: 0.112,
@@ -323,7 +328,11 @@ export function ceilingGrid(b, rect, y, {
       if (h < damage * 0.34) { missing.push([cx, cz, cw, cd]); continue; }
 
       const sag = h < damage ? (h / Math.max(damage, 1e-4)) * 0.055 : 0;
-      const tw = cw - 0.028, td = cd - 0.028;
+      // Tiles must run UNDER the tee flange, not stop short of it. A gap of a
+      // couple of millimetres between tile and tee shows the black plenum
+      // behind and aliases into a field of black speckles across the whole
+      // ceiling at any distance — the single worst artifact in the first build.
+      const tw = cw - 0.010, td = cd - 0.010;
       const segs = sag > 0.004 ? 3 : 1;
       const g = new THREE.PlaneGeometry(tw, td, segs, segs);
       g.rotateX(Math.PI / 2);       // face down
@@ -336,7 +345,7 @@ export function ceilingGrid(b, rect, y, {
         }
         pos.needsUpdate = true;
       }
-      g.translate(cx, y - KIT.tileDrop, cz);
+      g.translate(cx, y - TILE_FACE, cz);
       worldUV(g, 1.22);
       const shade = 0.86 + h * 0.20;
       vertexShade(g, (px, py, pz) => {
@@ -350,29 +359,55 @@ export function ceilingGrid(b, rect, y, {
   }
 
   // Grid tees. Mains along Z at each x boundary, crosses along X.
-  const teeW = 0.024, teeH = 0.038;
+  // The flange is wider than the tile inset so tile and tee genuinely overlap,
+  // and its underside sits ~8 mm proud of the tile face, which is what gives a
+  // real exposed-tee ceiling its shadow line.
+  const teeW = 0.026, teeH = 0.036;
+  const teeBottom = y - TEE_DROP;
   for (let ix = 0; ix <= gx; ix++) {
     const x = x0 + ix * cw;
     const g = box(teeW, teeH, Math.abs(z1 - z0), 0.003, 1);
-    g.translate(x, y - teeH / 2, (z0 + z1) / 2);
+    g.translate(x, teeBottom + teeH / 2, (z0 + z1) / 2);
     grid.push(g);
   }
   for (let iz = 0; iz <= gz; iz++) {
     const z = z0 + iz * cd;
     const g = box(Math.abs(x1 - x0), teeH, teeW, 0.003, 1);
-    g.translate((x0 + x1) / 2, y - teeH / 2, z);
+    g.translate((x0 + x1) / 2, teeBottom + teeH / 2, z);
     grid.push(g);
   }
 
-  // Hanger wires above missing tiles — a small detail that sells the void.
+  // A missing tile has to show something. Hanger wires, a length of conduit and
+  // a cable bundle crossing the void give the hole depth and read as a real
+  // ceiling void rather than a black rectangle.
   for (const [cx, cz] of missing) {
-    for (let i = 0; i < 2; i++) {
-      const hx = cx + (rng() - 0.5) * cw * 0.6;
-      const hz = cz + (rng() - 0.5) * cd * 0.6;
-      const g = cyl(0.006, 0.006, plenumDepth * 0.9, 4);
-      g.translate(hx, y + plenumDepth * 0.45, hz);
+    for (let i = 0; i < 3; i++) {
+      const hx = cx + (rng() - 0.5) * cw * 0.7;
+      const hz = cz + (rng() - 0.5) * cd * 0.7;
+      const g = cyl(0.005, 0.005, plenumDepth * 0.92, 4);
+      g.translate(hx, y + plenumDepth * 0.46, hz);
       plenum.push(g);
     }
+    // Conduit crossing the void, on hangers, at a believable plenum height.
+    const alongX = rng.chance(0.5);
+    const cy = y + plenumDepth * (0.3 + rng() * 0.35);
+    const half = (alongX ? cw : cd) * 0.62;
+    const pipe = pipeRun(alongX
+      ? [[cx - half, cy, cz + (rng() - 0.5) * cd * 0.4], [cx + half, cy, cz + (rng() - 0.5) * cd * 0.4]]
+      : [[cx + (rng() - 0.5) * cw * 0.4, cy, cz - half], [cx + (rng() - 0.5) * cw * 0.4, cy, cz + half]],
+      0.026, 6, 2);
+    plenum.push(pipe);
+    // Cable bundle, sagging.
+    const sag = 0.09 + rng() * 0.07;
+    const bx = cx + (rng() - 0.5) * cw * 0.3, bz = cz + (rng() - 0.5) * cd * 0.3;
+    const by = cy + 0.10;
+    plenum.push(pipeRun(alongX
+      ? [[bx - half, by, bz], [bx, by - sag, bz], [bx + half, by, bz]]
+      : [[bx, by, bz - half], [bx, by - sag, bz], [bx, by, bz + half]], 0.018, 5, 4));
+    // A slab soffit above, so the void is not infinitely deep.
+    const soffit = box((alongX ? cw : cw) * 1.0, 0.04, cd, 0.004, 1);
+    soffit.translate(cx, y + plenumDepth * 0.96, cz);
+    plenum.push(soffit);
   }
 
   if (tiles.length) { const m = merge(tiles); b.add(key, m); }
@@ -391,11 +426,20 @@ export function ceilingGrid(b, rect, y, {
  * Recessed twin-tube troffer. Emits housing + diffuser + tubes and registers a
  * Fixture on the rig. `rotation` in radians about Y.
  */
+/**
+ * Recessed twin-tube troffer.
+ *
+ * `y` is the CEILING DATUM (the same y passed to ceilingGrid), not the fixture
+ * body position — the fixture works out its own mounting depth so the diffuser
+ * face lands flush with the tile face. Pass the fixture's cell centre to
+ * ceilingGrid's `lightSlots` or the tile will be drawn straight over it.
+ */
 export function troffer(b, rig, x, y, z, {
   rotation = 0, circuit = 'main', health = 'good', seed = 1, cone = true, type = 'troffer',
 } = {}) {
   const def = { troffer: [1.20, 0.30], strip: [1.55, 0.14] }[type] || [1.2, 0.3];
   const [L, W] = def;
+  y = y - TILE_FACE;
   const g = new THREE.Group();
   g.position.set(x, y, z);
   g.rotation.y = rotation;
@@ -404,11 +448,25 @@ export function troffer(b, rig, x, y, z, {
     repeat: [1.6, 1.6], color: 0xbfbfb8, metalness: 0.9, roughness: 0.55,
     dirtAmount: 0.15, detailStrength: 0.25, envMapIntensity: 0.8,
   }));
-  const housing = box(L + 0.05, 0.11, W + 0.05, 0.006, 1);
-  housing.translate(0, 0.055, 0);
-  const reflector = box(L - 0.02, 0.02, W - 0.02, 0.004, 1);
-  reflector.translate(0, 0.012, 0);
-  const hg = merge([housing, reflector]);
+  const housing = box(L + 0.06, 0.12, W + 0.06, 0.006, 1);
+  housing.translate(0, 0.062, 0);
+  // Specular reflector pan behind the tubes.
+  const reflector = box(L - 0.01, 0.014, W - 0.01, 0.003, 1);
+  reflector.translate(0, 0.085, 0);
+  // Visible flange around the aperture — this is what makes it read as a unit
+  // set into the grid instead of a hole with light behind it.
+  const frameParts = [];
+  for (const [fw, fd, ox, oz] of [
+    [L + 0.06, 0.028, 0, (W + 0.032) / 2],
+    [L + 0.06, 0.028, 0, -(W + 0.032) / 2],
+    [0.032, 0.028, (L + 0.032) / 2, 0],
+    [0.032, 0.028, -(L + 0.032) / 2, 0],
+  ]) {
+    const f = box(fw, 0.014, fd + (ox !== 0 ? W + 0.06 : 0), 0.003, 1);
+    f.translate(ox, 0.004, oz);
+    frameParts.push(f);
+  }
+  const hg = merge([housing, reflector, ...frameParts]);
   worldUV(hg, 0.9);
   whiteColors(hg);
   const housingMesh = new THREE.Mesh(hg, bodyMat);
@@ -421,7 +479,7 @@ export function troffer(b, rig, x, y, z, {
   for (const off of [-W * 0.24, W * 0.24]) {
     const t = new THREE.CylinderGeometry(0.019, 0.019, L - 0.10, 10, 1);
     t.rotateZ(Math.PI / 2);
-    t.translate(0, 0.006, off);
+    t.translate(0, 0.040, off);
     tubeGeos.push(t);
   }
   const tubeGeo = merge(tubeGeos);
@@ -435,7 +493,7 @@ export function troffer(b, rig, x, y, z, {
     for (const s of [-1, 1]) {
       const c = cyl(0.023, 0.023, 0.028, 8);
       c.rotateZ(Math.PI / 2);
-      c.translate(s * (L / 2 - 0.055), 0.006, off);
+      c.translate(s * (L / 2 - 0.055), 0.040, off);
       capGeos.push(c);
     }
   }
@@ -665,5 +723,5 @@ export function signPlate(b, x, y, z, { rotation = 0, w = 0.30, h = 0.11, key = 
   return g;
 }
 
-export { profileRunZ, solveSpans, finaliseSpans, SKIRTING_PROFILE, ANGLE_PROFILE };
+export { profileRunZ, solveSpans, finaliseSpans, SKIRTING_PROFILE, ANGLE_PROFILE, TILE_FACE, TEE_DROP };
 export default KIT;

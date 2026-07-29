@@ -244,7 +244,7 @@ function registerRecipes(forge) {
   // Commercial loop carpet, ochre flecked with brown and grey. Traffic paths
   // are matted flat (lower height, lower roughness), edges keep their pile.
   forge.define('carpet', {
-    size: 512, normalStrength: 3.4,
+    size: 512, normalStrength: 1.9,
     fill(c, S) {
       const fibreA = hexLin('#8a6f33');
       const fibreB = hexLin('#5c4a26');
@@ -259,12 +259,14 @@ function registerRecipes(forge) {
           const w = tileWorley(u * P * 30, v * P * 30, P * 30, 17);
           const loop = 1 - clamp01(w.f1 * 1.8);
           const fibre = tileFbm(u * P * 60, v * P * 60, P * 60, 3, 31);
-          let h = loop * 0.62 + fibre * 0.22;
+          let h = loop * 0.46 + fibre * 0.14;
 
-          // Fleck colour is per-loop so flecks read as discrete yarns.
-          let col = mixRgb(fibreA, fibreB, w.id);
-          col = mixRgb(col, fibreC, smoothstep(0.72, 1, w.id) * 0.8);
-          col = mixRgb(col, grey, smoothstep(0.9, 1, hash2(Math.floor(u * P * 30), Math.floor(v * P * 30))) * 0.7);
+          // Fleck colour is per-loop so flecks read as discrete yarns. Kept
+          // narrow: a wide spread between adjacent loops reads as gravel rather
+          // than as a woven surface once the texture is minified.
+          let col = mixRgb(fibreA, fibreB, w.id * 0.55);
+          col = mixRgb(col, fibreC, smoothstep(0.78, 1, w.id) * 0.45);
+          col = mixRgb(col, grey, smoothstep(0.94, 1, hash2(Math.floor(u * P * 30), Math.floor(v * P * 30))) * 0.35);
 
           // Mid-frequency matting only; the long traffic paths and soaked
           // patches are applied in world space so they never tile.

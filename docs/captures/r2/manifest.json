@@ -1,0 +1,230 @@
+[
+  {
+    "name": "01_spawn_corridor",
+    "setup": "g.look(-25.2, 0, 25.2, 0, -0.03)",
+    "file": "docs/captures/r2/01_spawn_corridor.png",
+    "stats": {
+      "ms": 302.5464285714053,
+      "fps": 3.3052778204056232,
+      "p90": 10.399999999906868,
+      "calls": 202,
+      "tris": 141296,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 91,
+        "lit": 58,
+        "shadows": 2
+      }
+    }
+  },
+  {
+    "name": "02_spine_long",
+    "setup": "g.look(-27.0, 0, -4.2, 1.5708, 0.0)",
+    "file": "docs/captures/r2/02_spine_long.png",
+    "stats": {
+      "ms": 178.20740740741087,
+      "fps": 5.611439022362514,
+      "p90": 7.2999999998137355,
+      "calls": 33,
+      "tris": 32906,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 91,
+        "lit": 58,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "03_spine_cross",
+    "setup": "g.look(6.3, 0, -4.2, 3.1416, 0.02)",
+    "file": "docs/captures/r2/03_spine_cross.png",
+    "stats": {
+      "ms": 356.0899999999907,
+      "fps": 2.808278805919925,
+      "p90": 27.699999999720603,
+      "calls": 168,
+      "tris": 112846,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 91,
+        "lit": 58,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "04_bay_open",
+    "setup": "g.look(0, 0, 10.5, 0.9, -0.05)",
+    "file": "docs/captures/r2/04_bay_open.png",
+    "stats": {
+      "ms": 90.52758620689013,
+      "fps": 11.04635660686476,
+      "p90": 9.399999999906868,
+      "calls": 144,
+      "tris": 112202,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 91,
+        "lit": 58,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "05_ceiling_up",
+    "setup": "g.look(-8.4, 0, -4.2, 0.4, 0.62)",
+    "file": "docs/captures/r2/05_ceiling_up.png",
+    "stats": {
+      "ms": 4.639285714265758,
+      "fps": 215.5504234035446,
+      "p90": 10.100000000093132,
+      "calls": 99,
+      "tris": 84582,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 91,
+        "lit": 57,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "06_floor_down",
+    "setup": "g.look(-8.4, 0, -4.2, 0.4, -0.85)",
+    "file": "docs/captures/r2/06_floor_down.png",
+    "stats": {
+      "ms": 3.8827586207089237,
+      "fps": 257.54884546941463,
+      "p90": 6.899999999906868,
+      "calls": 50,
+      "tris": 76314,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 91,
+        "lit": 58,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "07_wall_close",
+    "setup": "g.look(-25.0, 0, 21.0, 3.1416, 0.0)",
+    "file": "docs/captures/r2/07_wall_close.png",
+    "stats": {
+      "ms": 111.22499999997672,
+      "fps": 8.99078444594479,
+      "p90": 9.700000000186265,
+      "calls": 44,
+      "tris": 22704,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 91,
+        "lit": 58,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "08_dark_bay",
+    "setup": "g.look(21.0, 0, -25.0, 2.2, -0.02)",
+    "file": "docs/captures/r2/08_dark_bay.png",
+    "stats": {
+      "ms": 373.09310344834654,
+      "fps": 2.6802961265094694,
+      "p90": 10.699999999720603,
+      "calls": 281,
+      "tris": 175416,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 91,
+        "lit": 58,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "09_room_interior",
+    "setup": "g.look(12.6, 0, 12.6, 0.7, 0.0)",
+    "file": "docs/captures/r2/09_room_interior.png",
+    "stats": {
+      "ms": 6.013333333330229,
+      "fps": 166.29711751671556,
+      "p90": 10.799999999813735,
+      "calls": 216,
+      "tris": 165608,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 91,
+        "lit": 58,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "10_column_detail",
+    "setup": "g.look(-6.0, 0, 6.0, 0.6, -0.15)",
+    "file": "docs/captures/r2/10_column_detail.png",
+    "stats": {
+      "ms": 4.603846153817498,
+      "fps": 217.2096908952534,
+      "p90": 8.600000000093132,
+      "calls": 122,
+      "tris": 88262,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 91,
+        "lit": 58,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "11_crouch_low",
+    "setup": "g.look(-27.0, 0, 0, 1.5708, 0.1); g.player.crouchAmt = 1;",
+    "file": "docs/captures/r2/11_crouch_low.png",
+    "stats": {
+      "ms": 2.8448275861908394,
+      "fps": 351.51515151713556,
+      "p90": 5.899999999906868,
+      "calls": 28,
+      "tris": 28746,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 91,
+        "lit": 58,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "12_far_view",
+    "setup": "g.look(-29.0, 0, -29.0, 0.785, 0.0)",
+    "file": "docs/captures/r2/12_far_view.png",
+    "stats": {
+      "ms": 96.54374999995343,
+      "fps": 10.357998316830269,
+      "p90": 4.100000000093132,
+      "calls": 23,
+      "tris": 19212,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 91,
+        "lit": 58,
+        "shadows": 1
+      }
+    }
+  }
+]
