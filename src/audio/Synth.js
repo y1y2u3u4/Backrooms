@@ -417,10 +417,18 @@ export function modalRing(ctx, bag, dest, t, {
     try { imp.start(t); } catch { /* noop */ }
   }
   if (ex.dur > 0 && ex.noise > 0) {
+    // The contact noise is radiated DIRECTLY, not through the resonators. That
+    // is both physically right (it is the sound of two things touching, not of
+    // the body ringing) and numerically necessary: a sustained excitation into
+    // a bank whose gain is compensated by 1/alpha builds up by orders of
+    // magnitude and blows the voice apart. Only a trickle goes into the body.
     const n = noiseSource(ctx, bag, { type: ex.type, rate: 1 });
     const nf = biquad(ctx, bag, 'lowpass', ex.tone, ex.q);
     const ng = gainNode(ctx, bag, 0);
-    n.connect(nf); nf.connect(ng); ng.connect(exBus);
+    n.connect(nf); nf.connect(ng);
+    ng.connect(out);
+    const bleed = gainNode(ctx, bag, ex.bleed ?? 0.015);
+    ng.connect(bleed); bleed.connect(exBus);
     hit(ng.gain, t, ex.noise, 0.0008, ex.dur);
     try { n.start(t, Math.random() * 2); } catch { n.start(t); }
     n.stop(t + ex.dur + 0.05);

@@ -176,7 +176,7 @@ export const MENU_CSS = /* css */ `
   width: min(38ch, 34vw); }
 .ax-menu-list .ax-item { padding-right: 4px; }
 .ax-menu-note { margin-top: 18px; font-size: 10.5px; letter-spacing: .1em;
-  color: var(--ax-bone-4); min-height: 1.4em; max-width: 46ch; }
+  color: var(--ax-bone-4); min-height: 1.4em; max-width: none; white-space: nowrap; }
 
 .ax-menu-stamp { right: clamp(60px, 9vw, 190px); bottom: clamp(96px, 18vh, 210px); }
 .ax-menu-stamp[data-off] { opacity: 0; transition: opacity 240ms var(--ax-ease); }

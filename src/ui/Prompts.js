@@ -96,20 +96,26 @@ export function createPrompts() {
 export const PROMPTS_CSS = /* css */ `
 .ax-prompts { transition: opacity 240ms var(--ax-ease), visibility 0s linear 240ms; }
 .ax-pr-stack {
-  position: absolute; left: 50%; top: 76%; transform: translate(-50%,0);
+  position: absolute; left: 50%; top: 72%; transform: translate(-50%,0);
   display: grid; justify-items: center; gap: 9px; text-align: center;
+  padding: 26px 60px;
   opacity: 0; transform: translate(-50%, 7px);
   transition: opacity 260ms var(--ax-ease), transform 260ms var(--ax-ease);
 }
+/* A soft, edgeless pool of shadow so amber type stays legible against a lit
+   mustard wall. It has no perceptible boundary — it is not a panel. */
+.ax-pr-stack::before { content: ''; position: absolute; inset: -14px -30px;
+  background: radial-gradient(58% 62% at 50% 50%, rgba(4,3,2,.72), rgba(4,3,2,0) 72%);
+  z-index: -1; }
 .ax-prompts.ax-on .ax-pr-stack { opacity: 1; transform: translate(-50%, 0); }
 
-.ax-pr-subject { color: var(--ax-bone-4); transition: opacity 220ms var(--ax-ease); }
+.ax-pr-subject { color: var(--ax-bone-3); transition: opacity 220ms var(--ax-ease); }
 .ax-pr-line { display: flex; align-items: center; gap: 14px; }
 
 .ax-pr-badge { position: relative; width: 34px; height: 34px; display: grid; place-items: center; }
 .ax-pr-badge::before { content: ''; position: absolute; inset: 0;
-  border: 1px solid var(--ax-amber-2); transition: border-color 220ms var(--ax-ease),
-  background-color 220ms var(--ax-ease); }
+  border: 1px solid var(--ax-amber-2); background: rgba(8,7,5,.55);
+  transition: border-color 220ms var(--ax-ease), background-color 220ms var(--ax-ease); }
 .ax-pr-key { position: relative; font-family: var(--ax-head); font-weight: 700; font-size: 11px;
   letter-spacing: .1em; color: var(--ax-amber); text-transform: uppercase;
   transition: color 220ms var(--ax-ease); }

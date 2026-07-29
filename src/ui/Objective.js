@@ -57,7 +57,7 @@ export function createObjective() {
 export const OBJ_CSS = /* css */ `
 .ax-obj-stack {
   position: absolute; left: var(--ax-pad); top: clamp(78px, 11vh, 118px);
-  display: flex; gap: 13px; max-width: min(46ch, 40vw);
+  display: flex; gap: 13px; max-width: min(54ch, 46vw);
   opacity: 0; transform: translateX(-8px);
   transition: opacity 420ms var(--ax-ease), transform 420ms var(--ax-ease);
 }
@@ -67,8 +67,13 @@ export const OBJ_CSS = /* css */ `
 .ax-obj-stack[data-on] .ax-obj-tick { transform: scaleY(1); }
 .ax-obj-label { color: var(--ax-amber-2); }
 .ax-obj-text { font-family: var(--ax-head); font-weight: 700; font-size: clamp(11.5px,1.02vw,13.5px);
-  letter-spacing: .26em; text-transform: uppercase; color: var(--ax-bone);
-  line-height: 1.65; margin-top: 8px; }
+  letter-spacing: .22em; text-transform: uppercase; color: var(--ax-bone);
+  line-height: 1.7; margin-top: 8px; }
+/* Edgeless pool, same device as the prompt — legibility over a lit wall
+   without introducing a panel or a drop shadow. */
+.ax-obj-stack::before { content: ''; position: absolute; inset: -26px -70px -26px -40px;
+  background: radial-gradient(62% 66% at 34% 50%, rgba(4,3,2,.74), rgba(4,3,2,0) 74%);
+  z-index: -1; }
 .ax-obj-detail { font-size: 10px; letter-spacing: .13em; color: var(--ax-bone-3); margin-top: 8px; }
 `;
 

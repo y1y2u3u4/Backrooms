@@ -171,6 +171,8 @@ function reset() {
   ui.setPrompt(null); ui.setHoldProgress(0);
   ui.objective('');
   ui._components.subs.clear();
+  ui._components.prompts.setSafe(false);
+  ui._components.journal.setTab('notes');
   ui.hideHud(false);
   player.stamina = 1; player.fear = 0;
   ui.setLampBattery(1);

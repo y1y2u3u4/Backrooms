@@ -151,12 +151,24 @@ export function createJournal({ bus } = {}) {
 
     if (state.tab === 'plan') {
       emptyNote.textContent = plan.nodes.size ? '' : 'No survey recorded';
+      const key = (glyph, text) => el('div.ax-jr-key',
+        el('span.ax-jr-glyph', { text: glyph }), el('span.ax-value', { text }));
       index.appendChild(el('div.ax-jr-planinfo',
         el('div.ax-micro', { text: 'Surveyed' }),
         el('div.ax-value', { text: `${plan.nodes.size} location${plan.nodes.size === 1 ? '' : 's'}`,
           style: { marginTop: '8px' } }),
         el('div.ax-micro', { text: 'Grid', style: { marginTop: '22px' } }),
-        el('div.ax-value', { text: '4.2 m structural', style: { marginTop: '8px' } })));
+        el('div.ax-value', { text: '4.2 m structural', style: { marginTop: '8px' } }),
+        el('hr.ax-rule', { style: { margin: '26px 0 16px' } }),
+        el('div.ax-micro', { text: 'Key', style: { marginBottom: '12px' } }),
+        key('□', 'Room, entered'),
+        key('•', 'Junction'),
+        key('⊗', 'Lift or shaft'),
+        key('✛', 'Last known position'),
+        el('hr.ax-rule', { style: { margin: '22px 0 14px' } }),
+        el('p.ax-jr-planp', { text:
+          'The schedule for this floor is on file and does not agree with this ' +
+          'sheet. This sheet was drawn on site.' })));
       return;
     }
 
@@ -342,8 +354,8 @@ export function createJournal({ bus } = {}) {
     // hand-drawn stroke: two passes with deterministic wobble
     const ink = 'rgba(30,28,22,.80)';
     const wob = (a, b, k) => (h(`${a}|${b}`, k) - 0.5);
-    function handLine(x1, y1, x2, y2, key, jitter = 1.6) {
-      const segs = Math.max(2, Math.round(Math.hypot(x2 - x1, y2 - y1) / 26));
+    function handLine(x1, y1, x2, y2, key, jitter = 2.4) {
+      const segs = Math.max(3, Math.round(Math.hypot(x2 - x1, y2 - y1) / 15));
       for (let pass = 0; pass < 2; pass++) {
         g.beginPath();
         for (let i = 0; i <= segs; i++) {
@@ -372,21 +384,30 @@ export function createJournal({ bus } = {}) {
       const r = n.kind === 'room' ? 9 : n.kind === 'lift' ? 8 : 4.5;
       g.lineWidth = 1.2;
       if (n.kind === 'room') {
-        handLine(x - r, z - r, x + r, z - r, n.id + 'a', 1.1);
-        handLine(x + r, z - r, x + r, z + r, n.id + 'b', 1.1);
-        handLine(x + r, z + r, x - r, z + r, n.id + 'c', 1.1);
-        handLine(x - r, z + r, x - r, z - r, n.id + 'd', 1.1);
+        handLine(x - r, z - r, x + r, z - r, n.id + 'a', 1.4);
+        handLine(x + r, z - r, x + r, z + r, n.id + 'b', 1.4);
+        handLine(x + r, z + r, x - r, z + r, n.id + 'c', 1.4);
+        handLine(x - r, z + r, x - r, z - r, n.id + 'd', 1.4);
       } else if (n.kind === 'lift') {
-        handLine(x - r, z - r, x + r, z + r, n.id + 'x', 1.0);
-        handLine(x + r, z - r, x - r, z + r, n.id + 'y', 1.0);
+        handLine(x - r, z - r, x + r, z + r, n.id + 'x', 1.2);
+        handLine(x + r, z - r, x - r, z + r, n.id + 'y', 1.2);
         g.beginPath(); g.arc(x, z, r, 0, Math.PI * 2); g.stroke();
       } else {
         g.beginPath(); g.arc(x, z, r, 0, Math.PI * 2); g.fillStyle = ink; g.fill();
       }
-      if (n.label) {
-        g.fillStyle = 'rgba(30,28,22,.72)';
-        g.fillText(n.label, x + r + 6, z + 3.5);
-      }
+    }
+    // Labels last, over a knocked-out patch of paper — this is a plan somebody
+    // annotated after drawing it, so the writing wins over the lines.
+    for (const n of nodes) {
+      if (!n.label) continue;
+      const x = X(n.x), z = Z(n.z);
+      const r = n.kind === 'junction' ? 4.5 : 9;
+      const wdt = g.measureText(n.label).width;
+      const lx = x + r + 6, ly = z + 3.5;
+      g.fillStyle = 'rgba(196,187,159,.90)';
+      g.fillRect(lx - 3, ly - 9, wdt + 6, 12);
+      g.fillStyle = 'rgba(30,28,22,.80)';
+      g.fillText(n.label, lx, ly);
     }
 
     if (plan.here) {
@@ -521,6 +542,12 @@ export const JOURNAL_CSS = /* css */ `
   align-self: center; flex: 0 0 auto; }
 .ax-jr-empty { padding: 26px 2px; color: var(--ax-bone-4); }
 .ax-jr-planinfo { padding: 20px 2px; }
+.ax-jr-key { display: flex; align-items: baseline; gap: 12px; padding: 4px 0; }
+.ax-jr-glyph { font-family: var(--ax-mono); font-size: 12px; color: var(--ax-amber-2);
+  width: 14px; text-align: center; }
+.ax-jr-key .ax-value { color: var(--ax-bone-2); font-size: 11.5px; }
+.ax-jr-planp { font-family: var(--ax-type); font-size: 11px; line-height: 1.85;
+  color: var(--ax-bone-4); margin: 0; }
 .ax-jr-blank { margin: auto; }
 
 /* ---- note sheet --------------------------------------------------------- */

@@ -265,7 +265,7 @@ export function makeLightCone(height, radius, color) {
 // ---------------------------------------------------------------------------
 
 export class LightRig {
-  constructor(scene, { maxShadows = 3, shadowMapSize = 1024, maxActiveLights = 26 } = {}) {
+  constructor(scene, { maxShadows = 3, shadowMapSize = 1024, maxActiveLights = 12 } = {}) {
     this.scene = scene;
     this.fixtures = [];
     this.circuits = new Map();     // name -> {powered, level}
@@ -275,6 +275,7 @@ export class LightRig {
     this.time = 0;
     this._sortTimer = 0;
     this._shadowSet = new Set();
+    this._activeSet = null;
     this.cones = [];
     this.enableCones = true;
 
@@ -389,6 +390,12 @@ export class LightRig {
         .filter((f) => f.level > 0.05 && this.circuitLevel(f.circuit) > 0.05)
         .sort((a, b) => a.distToCam - b.distToCam);
 
+      // Distance-ranked active set. Without this the "keep the first N" loop
+      // below walks the fixture array in creation order, so which lights
+      // survive the budget depends on the order the zone happened to emit them
+      // rather than on where the player is standing.
+      this._activeSet = new Set(live.slice(0, this.maxActiveLights));
+
       const want = new Set(live.slice(0, this.maxShadows));
       // Hysteresis: keep an existing caster if it is still within 1.35x the
       // cut-off distance, so shadows do not pop while the player sways.
@@ -406,20 +413,22 @@ export class LightRig {
     }
 
     let litCount = 0;
+    const active = this._activeSet;
     for (const f of this.fixtures) {
       const power = this.circuitLevel(f.circuit);
       const lit = f.update(t, dt, power > 0.02 ? power : 0);
-      // Cull distant lights entirely — three uploads every visible light to
-      // every material, so the count matters more than the cost of each.
-      const tooFar = f.distToCam > f.def.distance * 1.8;
-      if (tooFar || lit < 0.004) {
+      // Cull distant lights entirely. three compiles the light count into every
+      // material's shader and evaluates every visible light for every fragment,
+      // so the *count* dominates the cost far more than each light's range —
+      // and a fixture 30 m away contributes less than the bounce fill does.
+      const tooFar = f.distToCam > f.def.distance * 1.5;
+      if (tooFar || lit < 0.004 || (active && !active.has(f))) {
         f.light.visible = false;
-      } else if (litCount < this.maxActiveLights) {
-        litCount++;
       } else {
-        f.light.visible = false;
+        litCount++;
       }
     }
+    this.litCount = litCount;
 
     if (this.enableCones) {
       for (const f of this.fixtures) {
@@ -444,7 +453,12 @@ export class LightRig {
   get stats() {
     let on = 0;
     for (const f of this.fixtures) if (f.level > 0.05) on++;
-    return { fixtures: this.fixtures.length, lit: on, shadows: this._shadowSet.size };
+    return {
+      fixtures: this.fixtures.length,
+      lit: on,
+      active: this.litCount ?? 0,     // lights actually uploaded to shaders
+      shadows: this._shadowSet.size,
+    };
   }
 }
 

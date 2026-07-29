@@ -180,9 +180,13 @@ window.AUDIO_PROBE = {
         wet.gain.value = 0.5 * (1 + occ * 1.85);
         lpf.connect(wet); wet.connect(conv); conv.connect(master);
       }
-      const def = engine.registry.get('metal.clang');
+      // A broadband source, so the measurement reads the FILTER rather than the
+      // material's own spectrum. A concrete footstep is the right test signal:
+      // it is what the player will most often hear through a wall.
+      const NAME = 'step.concrete';
+      const def = engine.registry.get(NAME);
       const bag = { sources: [], nodes: [], src(n) { this.sources.push(n); return n; }, add(n) { this.nodes.push(n); return n; }, stopAll() {}, dispose() {} };
-      def.build({ ctx, bag, out, t: 0.02, engine, opts: {}, rng: Math.random, name: 'metal.clang' });
+      def.build({ ctx, bag, out, t: 0.02, engine, opts: { strength: 0.9 }, rng: Math.random, name: NAME });
       return analyseBuffer(await ctx.startRendering());
     };
     const at = async (occ) => {
