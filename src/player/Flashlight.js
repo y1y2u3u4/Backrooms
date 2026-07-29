@@ -190,8 +190,10 @@ export class Flashlight {
     const headGeo = merge(headParts);
     worldUV(headGeo, 0.2);
     whiteColors(headGeo);
+    // Deliberately not shiny. A polished bezel 400 mm from the eye, lit by its
+    // own bulb, is a white hole in the middle of every frame.
     const headMat = new THREE.MeshStandardMaterial({
-      color: 0x8d8a80, roughness: 0.42, metalness: 0.85, vertexColors: true,
+      color: 0x6a675f, roughness: 0.62, metalness: 0.55, vertexColors: true,
     });
     g.add(new THREE.Mesh(headGeo, headMat));
 
@@ -200,7 +202,7 @@ export class Flashlight {
     refl.rotateX(-Math.PI / 2);
     refl.translate(0, 0, -0.096);
     const reflMesh = new THREE.Mesh(refl, new THREE.MeshStandardMaterial({
-      color: 0xdedad0, roughness: 0.12, metalness: 1,
+      color: 0xb8b4aa, roughness: 0.34, metalness: 0.9,
     }));
     g.add(reflMesh);
 

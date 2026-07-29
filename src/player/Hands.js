@@ -231,7 +231,7 @@ export class Hands {
 
     if (flashlight?.model) {
       flashlight.model.rotation.set(0.10, 0, 0);
-      flashlight.model.position.set(0, 0.004, -0.028);
+      flashlight.model.position.set(0, 0.004, -0.052);
       flashlight.model.scale.setScalar(0.88);
       this.itemMountR.add(flashlight.model);
     }
@@ -275,8 +275,10 @@ export class Hands {
     this.ambLight = new THREE.HemisphereLight(0x4a4438, 0x121110, 0);
     // A dedicated lamp-bounce light: when the torch is on, the near hand catches
     // spill off the reflector.
-    this.lampBounce = new THREE.PointLight(0xffd9a2, 0, 1.4, 2);
-    this.lampBounce.position.set(0.20, -0.22, -0.44);
+    this.lampBounce = new THREE.PointLight(0xffd9a2, 0, 1.1, 2);
+    // Far enough down the beam that it rims the fingers instead of blowing out
+    // the barrel it is supposed to be bouncing off.
+    this.lampBounce.position.set(0.12, -0.34, -0.82);
     this.scene.add(this.keyLight, this.fillLight, this.ambLight, this.lampBounce);
   }
 
@@ -594,7 +596,7 @@ export class Hands {
     this.ambLight.intensity = amb;
     this.keyLight.intensity = 0.15 + this.exposure * 1.55;
     this.fillLight.intensity = 0.05 + this.exposure * 0.42;
-    this.lampBounce.intensity = lampSpill * 1.25;
+    this.lampBounce.intensity = lampSpill * 0.5;
     this.lampBounce.visible = lampSpill > 0.01;
     if (this.flashlight) this.lampBounce.color.copy(this.flashlight.light.color);
 

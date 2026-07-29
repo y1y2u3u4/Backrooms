@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>THE ANNEX — live audio soak</title>
+<style>body{background:#0b0b0c;color:#c9c2ae;font:12px/1.6 ui-monospace,monospace;padding:16px}
+pre{white-space:pre-wrap}</style></head>
+<body>
+<h1 style="font-size:13px;letter-spacing:.3em;color:#d8b45a">live audio soak</h1>
+<pre id="log">booting…</pre>
+
+<script type="module">
+/**
+ * Live soak. Everything the offline probe cannot reach: a real AudioContext,
+ * the frame loop, the occlusion round-robin, voice pooling and reaping, the
+ * fluorescent hum pool tracking real Fixtures, and zone reverb crossfades.
+ *
+ * Runs against a synthetic corridor — real CollisionWorld boxes, real LightRig
+ * fixtures — and drives it the way the game will: footsteps off `player:step`,
+ * the Surveyor through its state machine, zone changes, held breaths.
+ */
+import * as THREE from 'three';
+import { Bus } from '/src/core/util.js';
+import { CollisionWorld } from '/src/player/Physics.js';
+import { LightRig, HEALTH } from '/src/render/Lighting.js';
+import { createAudio } from '/src/audio/index.js';
+
+const log = (m) => { document.getElementById('log').textContent = m; };
+const errors = [];
+window.addEventListener('error', (e) => errors.push(String(e.message)));
+
+// --- a corridor on the 4.2 m grid, with a cross wall and a doorway ---------
+const collision = new CollisionWorld();
+collision.addFloor([-4, -60, 4, 60], 0, { surface: 'carpet' });
+collision.addBox([-4.2, 0, -60], [-4.0, 2.78, 60], { tag: 'wall' });
+collision.addBox([4.0, 0, -60], [4.2, 2.78, 60], { tag: 'wall' });
+for (let z = -50; z < 50; z += 21) {
+  collision.addBox([-4, 0, z], [-0.45, 2.78, z + 0.16], { tag: 'wall' });
+  collision.addBox([0.45, 0, z], [4, 2.78, z + 0.16], { tag: 'wall' });
+}
+
+const scene = new THREE.Scene();
+const rig = new LightRig(scene, { maxShadows: 0, shadowMapSize: 256 });
+for (let i = 0, z = -50; z < 50; z += 4.2, i++) {
+  rig.add({
+    type: i % 7 === 3 ? 'strip' : 'troffer',
+    position: [0, 2.72, z],
+    circuit: 'main',
+    health: i % 11 === 5 ? HEALTH.DYING : i % 5 === 2 ? HEALTH.BUZZ : HEALTH.GOOD,
+    seed: i + 1,
+  });
+}
+
+const camera = new THREE.PerspectiveCamera(66, 16 / 9, 0.1, 200);
+const bus = new Bus();
+const audio = createAudio({ bus, collision, camera, rig, options: { autoInit: false } });
+window.ANNEX_AUDIO = audio;
+
+const ZONES = ['intake', 'service', 'cistern', 'plant', 'duct', 'residence', 'stack', 'safe'];
+const SURFACES = ['carpet', 'carpet_damp', 'concrete', 'lino', 'tread', 'duct'];
+const ENTITY = ['approach', 'hunt', 'measure', 'frozen', 'hunt', 'search', 'despawn'];
+
+window.SOAK = async function soak(seconds = 40) {
+  const ok = await audio.init();
+  if (!ok) return { ok: false, reason: 'AudioContext unavailable', state: 'none' };
+
+  const dt = 1 / 60;
+  const frames = Math.round(seconds * 60);
+  const samples = [];
+  let stepT = 0, zoneT = 0, entityT = 0, zi = 0, ei = 0, si = 0, left = true;
+  let peakVoices = 0, peakNodes = 0;
+  const t0 = performance.now();
+
+  for (let f = 0; f < frames; f++) {
+    const t = f * dt;
+    // Walk the corridor, back and forth, at a realistic pace.
+    const z = Math.sin(t * 0.11) * 46;
+    camera.position.set(Math.sin(t * 0.37) * 1.4, 1.63, z);
+    camera.rotation.set(0, Math.sin(t * 0.23) * 1.2, 0, 'YXZ');
+    camera.updateMatrixWorld();
+
+    stepT -= dt;
+    if (stepT <= 0) {
+      stepT = 0.42 + Math.random() * 0.18;
+      left = !left;
+      if (si++ % 37 === 0) si += 1;
+      bus.emit('player:step', {
+        surface: SURFACES[(si / 11 | 0) % SURFACES.length],
+        water: ((si / 11 | 0) % SURFACES.length) === 5 ? 0 : (Math.random() < 0.1 ? 0.4 : 0),
+        strength: 0.5 + Math.random() * 0.5,
+        crouch: Math.random() < 0.12,
+        left,
+        position: camera.position.clone(),
+      });
+    }
+    if (f % 900 === 450) bus.emit('player:land', { force: 0.7, surface: 'concrete' });
+
+    zoneT -= dt;
+    if (zoneT <= 0) { zoneT = 4.5; bus.emit('zone:enter', { zone: ZONES[zi++ % ZONES.length] }); }
+
+    entityT -= dt;
+    if (entityT <= 0) {
+      entityT = 3.2;
+      const st = ENTITY[ei++ % ENTITY.length];
+      audio.entity.setPosition({ x: 0, y: 0, z: z + 9 + Math.sin(t) * 6 });
+      bus.emit('entity:state', { entity: 'surveyor', state: st, position: { x: 0, y: 0, z: z + 9 } });
+      if (ei % 4 === 0) bus.emit('entity:heard', { position: camera.position.clone(), radius: 8 });
+    }
+
+    if (f === 300) audio.holdBreath(3.0);
+    if (f === 700) bus.emit('light:circuit', { circuit: 'main', powered: false });
+    if (f === 900) bus.emit('light:circuit', { circuit: 'main', powered: true });
+    if (f === 1100) bus.emit('story:note', { id: 'n1', title: 't', body: 'b' });
+    if (f === 1300) bus.emit('item:pickup', { id: 'fuse_core_a', name: 'Fuse core' });
+    if (f === 1500) audio.beat('dread');
+    if (f === 1700) audio.setMachineProximity(0.9);
+    if (f === 1900) audio.setSafeRoom(true);
+    if (f === 2050) bus.emit('cine:begin', { name: 'x' });
+    if (f === 2150) bus.emit('cine:end', { name: 'x' });
+
+    rig.update(dt, camera, null);
+    audio.update(dt, camera.position);
+
+    peakVoices = Math.max(peakVoices, audio.stats.voices);
+    peakNodes = Math.max(peakNodes, audio.stats.nodes);
+    if (f % 300 === 0) samples.push({ f, ...audio.stats });
+    // Let the audio thread actually run: an OfflineAudioContext-style tight
+    // loop would measure nothing about a live graph.
+    if (f % 2 === 0) await new Promise((r) => setTimeout(r, 0));
+  }
+
+  const wall = (performance.now() - t0) / 1000;
+  const st = audio.stats;
+  // Everything should wind down once the drivers stop.
+  audio.entity.silence(0.2);
+  bus.emit('entity:state', { entity: 'surveyor', state: 'despawn' });
+  for (let i = 0; i < 240; i++) { audio.update(dt, camera.position); }
+  await new Promise((r) => setTimeout(r, 900));
+  for (let i = 0; i < 120; i++) { audio.update(dt, camera.position); }
+
+  return {
+    ok: true, wall: +wall.toFixed(1), frames,
+    peakVoices, peakNodes,
+    end: audio.stats,
+    afterQuiet: audio.stats.voices,
+    samples, errors,
+    contextState: audio.engine.ctx.state,
+    denied: audio.engine.stats.denied,
+    occlChecks: audio.engine.stats.occlChecks,
+    hums: audio.ambience.humVoices.length,
+    reverb: audio.engine.currentReverb,
+  };
+};
+
+window.AUDIO_LIVE_READY = true;
+log('ready');
+</script>
+</body>
+</html>

@@ -324,6 +324,9 @@ export class Game {
     this.rig.setAmbient(amb.sky, amb.ground, amb.intensity);
     if (immediate) this.rig.snapAmbient();
     this.rig.setLightBudget(z?.lightBudget ?? DEFAULT_LIGHT_BUDGET);
+    // Hands live in a separate scene, so they need the zone's mood pushed to
+    // them explicitly or they read as a flat cut-out pasted over the world.
+    this._zoneAmbient = amb;
     this.audio?.setZone?.(z?.reverb || zoneKey);
     this.currentZone = zoneKey;
   }
@@ -419,6 +422,23 @@ export class Game {
     this.gameplay?.update?.(dt, this.input);
     this.world?.update?.(dt, this.player.position);
     this.rig.update(dt, this.engine.camera, this.engine.renderer);
+
+    // Overlay mood: the fill follows the zone, the key follows the lamp and the
+    // light actually falling on the player, so hands darken when the player
+    // walks out of a lit bay and brighten under a working fixture.
+    {
+      const amb = this._zoneAmbient || AMBIENT_PROFILES.intake;
+      const p = this.player.position;
+      const roomLight = clamp01(this.rig.illuminationAt(p.x, p.y + 1.2, p.z) * 0.6);
+      const lamp = this.flashlight
+        ? clamp01((this.flashlight.beamStrength ?? (this.flashlight.isOn ? 1 : 0)))
+        : 0;
+      this.engine.setOverlayLighting(
+        amb.sky, amb.ground,
+        0.35 + amb.intensity * 0.5 + roomLight * 0.9,
+        0.5 + roomLight * 1.6 + lamp * 2.2);
+    }
+
     this.audio?.update?.(dt, this.player.position);
     this.ui?.update?.(dt);
 

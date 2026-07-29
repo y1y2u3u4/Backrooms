@@ -198,7 +198,7 @@ export function seedIntakeDemo(ctx, { director, progression, attendant, entity }
   const face = Math.PI;    // front faces -Z, into the room
 
   const board = interactables.spawn('breaker', {
-    id: 'board_c', position: [-24.0, 0.95, Z], rotation: face, maxOn: 3,
+    id: 'board_c', position: [-24.0, 1.16, Z], rotation: face, maxOn: 3,
   });
 
   interactables.spawn('terminal', {

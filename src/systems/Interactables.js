@@ -255,10 +255,13 @@ export function breakerPanel(ctx, {
     ], { w: 512, h: 320, lineHeight: 26, font: '500 19px "Courier New", monospace', bg: '#cfc8b4' });
     const card = new THREE.Mesh(
       new THREE.PlaneGeometry(W - 0.09, H - 0.14),
-      new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95, metalness: 0 }));
-    card.position.set(W / 2, 0, 0.010);
-    card.rotation.y = Math.PI;
-    card.scale.x = -1;
+      new THREE.MeshStandardMaterial({
+        map: tex, roughness: 0.95, metalness: 0, side: THREE.DoubleSide,
+      }));
+    // Taped to the inside of the lid, so it faces the operative once the lid is
+    // swung open. DoubleSide because which way "inside" points depends on the
+    // hinge hand, and a schedule you cannot read is not a schedule.
+    card.position.set(W / 2, 0, 0.011);
     lidPivot.add(card);
   }
 

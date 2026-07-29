@@ -62,9 +62,23 @@ export class Engine {
 
     // Overlay scene: first-person hands and held items render after the world
     // with a cleared depth buffer so they can never clip through walls.
+    //
+    // A narrower FOV than the world camera (52 vs 66) is deliberate: hands at
+    // arm's length through a 66-degree lens distort badly at the frame edge.
     this.overlayScene = new THREE.Scene();
     this.overlayCamera = new THREE.PerspectiveCamera(52, 1, 0.01, 6);
     this.overlayScene.add(this.overlayCamera);
+
+    // The overlay is a separate scene, so it sees none of the world's lights.
+    // Without its own rig, anything rendered here is flat and unlit — which is
+    // exactly what first-person hands look like when this is forgotten. Two
+    // lights only: a key roughly where the held lamp is, and a broad fill that
+    // tracks the zone's bounce colour so hands pick up the room they are in.
+    this.overlayKey = new THREE.DirectionalLight(0xffe8c4, 2.2);
+    this.overlayKey.position.set(0.35, 0.55, 0.9);
+    this.overlayFill = new THREE.HemisphereLight(0x2a2418, 0x151210, 0.9);
+    this.overlayScene.add(this.overlayKey, this.overlayFill);
+    this.setOverlayLighting(0x2a2418, 0x4a3c22, 0.9, 1.0);
 
     this._buildEnvironment();
     this._buildComposer();
@@ -180,6 +194,20 @@ export class Engine {
         renderer.autoClear = prevAutoClear;
       },
     };
+  }
+
+  /**
+   * Drive the overlay rig from the world's current mood.
+   * @param {number} sky   fill colour from above
+   * @param {number} ground fill colour from below (floor bounce)
+   * @param {number} fill  fill intensity
+   * @param {number} key   key intensity — raise it when the lamp is on
+   */
+  setOverlayLighting(sky, ground, fill, key) {
+    this.overlayFill.color.set(sky);
+    this.overlayFill.groundColor.set(ground);
+    this.overlayFill.intensity = fill;
+    this.overlayKey.intensity = key;
   }
 
   setQuality(name) {
