@@ -251,6 +251,14 @@ export class Game {
     // actions into game state here rather than letting it drive the game
     // directly, so there is one place that owns the state machine.
     this.bus.on('ui:action', (e) => this._onUiAction(e));
+    // World.enter() emits this. Without it the bounce fill and the light budget
+    // stay on whatever the boot zone set, so walking into the Cistern keeps
+    // Intake's bright office fill and walking into Intake from the Cistern
+    // keeps its dark one.
+    this.bus.on('zone:enter', (e) => {
+      const key = e?.zone || e?.id;
+      if (key) this.applyZoneProfile(key, { immediate: !!e?.immediate });
+    });
     this.bus.on('ui:settings', (st) => {
       if (st && typeof st.motion === 'number') this.player.motionScale = st.motion;
       if (st && typeof st.fov === 'number') this.player.fovBase = st.fov;

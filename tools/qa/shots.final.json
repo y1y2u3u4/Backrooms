@@ -1,0 +1,10 @@
+[
+  { "name": "01_intake_spine",  "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0)" },
+  { "name": "02_intake_ceiling","setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,((r&&r.yaw)||0)+0.5,0.58)" },
+  { "name": "03_service",       "setup": "const r=g.world.goto?g.world.goto('service'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0)" },
+  { "name": "04_plant_hall",    "setup": "const r=g.world.goto?g.world.goto('plant'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,-0.05)" },
+  { "name": "05_stack",         "setup": "const r=g.world.goto?g.world.goto('stack'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0.16)" },
+  { "name": "06_cistern",       "setup": "const r=g.world.goto?g.world.goto('cistern'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,-0.10)" },
+  { "name": "07_residence",     "setup": "const r=g.world.goto?g.world.goto('residence'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0)" },
+  { "name": "08_surveyor",      "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0.02); const q=g.gameplay&&g.gameplay.qa; if(q&&q.surveyorTo){const f=g.player.forward(); q.surveyorTo(g.player.position.x+f.x*9,g.player.position.z+f.z*9,{state:'SEEKING'});}" }
+]
