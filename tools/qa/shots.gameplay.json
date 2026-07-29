@@ -8,27 +8,27 @@
   {
     "name": "10_breaker_panel",
     "settle": 30,
-    "setup": "if (!g.gameplay) return; g.look(-24.0, 0, 27.4, Math.PI, -0.03);"
+    "setup": "if (!g.gameplay) return; g.look(-24.0, 0, 28.6, Math.PI, 0.0);"
   },
   {
     "name": "11_breaker_close",
     "settle": 20,
-    "setup": "if (!g.gameplay) return; g.look(-24.0, 0, 29.0, Math.PI, 0.03);"
+    "setup": "if (!g.gameplay) return; g.look(-24.0, 0, 29.4, Math.PI, 0.04);"
   },
   {
     "name": "12_terminal",
     "settle": 90,
-    "setup": "if (!g.gameplay) return; g.look(-19.4, 0, 28.5, Math.PI, -0.06);"
+    "setup": "if (!g.gameplay) return; g.look(-19.4, 0, 28.7, Math.PI, -0.08);"
   },
   {
     "name": "13_keypad_reader",
     "settle": 20,
-    "setup": "if (!g.gameplay) return; g.look(-14.7, 0, 29.2, Math.PI, 0.0);"
+    "setup": "if (!g.gameplay) return; g.look(-14.7, 0, 29.5, Math.PI, 0.02);"
   },
   {
     "name": "14_valve",
     "settle": 20,
-    "setup": "if (!g.gameplay) return; g.look(-10.6, 0, 28.7, Math.PI, -0.06);"
+    "setup": "if (!g.gameplay) return; g.look(-10.6, 0, 29.0, Math.PI, -0.06);"
   },
   {
     "name": "15_generator",
@@ -38,7 +38,7 @@
   {
     "name": "16_generator_panel",
     "settle": 20,
-    "setup": "if (!g.gameplay) return; g.look(-4.0, 0, 27.0, Math.PI, -0.05);"
+    "setup": "if (!g.gameplay) return; g.look(-4.0, 0, 26.8, Math.PI, -0.04);"
   },
   {
     "name": "17_goods_lift",
@@ -48,84 +48,84 @@
   {
     "name": "18_locker_and_doors",
     "settle": 20,
-    "setup": "if (!g.gameplay) return; g.look(-27.4, 0, 28.4, Math.PI, -0.04);"
+    "setup": "if (!g.gameplay) return; g.look(-27.4, 0, 28.6, Math.PI, -0.02);"
   },
   {
     "name": "19_pickups",
     "settle": 20,
-    "setup": "if (!g.gameplay) return; g.look(-23.0, 0, 26.4, Math.PI, -0.48);"
+    "setup": "if (!g.gameplay) return; g.look(-23.4, 0, 26.6, Math.PI, -0.46);"
   },
 
   {
     "name": "20_hands_lamp",
     "settle": 40,
-    "setup": "if (!g.gameplay) return; g.gameplay.qa.lamp(true, 1); g.look(-20.0, 0, 22.0, Math.PI, -0.14);"
+    "setup": "if (!g.gameplay) return; g.gameplay.qa.lamp(true, 1); g.look(-25.2, 0, -4.2, 3.1416, -0.16);"
   },
   {
     "name": "21_hands_carry_core",
     "settle": 60,
-    "setup": "if (!g.gameplay) return; g.gameplay.inventory.add('fuse_core', 1); g.look(-20.0, 0, 22.0, Math.PI, -0.20);"
+    "setup": "if (!g.gameplay) return; g.gameplay.inventory.add('fuse_core', 1); g.look(-25.2, 0, -4.2, 3.1416, -0.22);"
   },
   {
     "name": "22_hands_reach",
     "settle": 40,
-    "setup": "if (!g.gameplay) return; g.gameplay.inventory.take('fuse_core', 1); g.gameplay.hands.setReaching(true, true); g.look(-20.0, 0, 22.0, Math.PI, -0.14);"
+    "setup": "if (!g.gameplay) return; g.gameplay.inventory.take('fuse_core', 1); g.gameplay.hands.setReaching(true, true); g.look(-25.2, 0, -4.2, 3.1416, -0.16);"
   },
   {
     "name": "23_lamp_dying_in_dark",
     "settle": 40,
-    "setup": "if (!g.gameplay) return; g.gameplay.hands.setReaching(false); g.gameplay.qa.circuits(false); g.gameplay.qa.lamp(true, 0.10); g.look(-20.0, 0, 12.0, Math.PI, -0.06);"
+    "setup": "if (!g.gameplay) return; g.gameplay.hands.setReaching(false); g.gameplay.qa.circuits(false); g.gameplay.qa.lamp(true, 0.10); g.look(-27.0, 0, -8.4, -1.5708, -0.04);"
   },
   {
     "name": "24_lamp_healthy_in_dark",
     "settle": 40,
-    "setup": "if (!g.gameplay) return; g.gameplay.qa.lamp(true, 1.0); g.look(-20.0, 0, 12.0, Math.PI, -0.06);"
+    "setup": "if (!g.gameplay) return; g.gameplay.qa.lamp(true, 1.0); g.look(-27.0, 0, -8.4, -1.5708, -0.04);"
   },
   {
-    "name": "25_breaker_thrown_dark",
+    "name": "25_spine_lit",
     "settle": 40,
-    "setup": "if (!g.gameplay) return; g.gameplay.qa.circuits(true); g.gameplay.interactables.get('board_c').api.setWay('intake', false); g.gameplay.qa.lamp(true, 1.0); g.look(-25.2, 0, 21.0, 0, 0.02);"
+    "setup": "if (!g.gameplay) return; g.gameplay.qa.circuits(true); g.gameplay.qa.lamp(false); g.look(-27.0, 0, -8.4, -1.5708, 0.02);"
   },
 
   {
     "name": "30_surveyor_lit_full",
-    "settle": 26,
-    "setup": "if (!g.gameplay) return; g.gameplay.qa.circuits(true); g.gameplay.qa.lamp(false); g.gameplay.qa.surveyorTo(-25.2, 12.6, Math.PI); g.gameplay.qa.pose(0.9, 0.4); g.look(-25.2, 0, 19.4, 0, 0.12);"
+    "settle": 30,
+    "setup": "if (!g.gameplay) return; g.gameplay.qa.circuits(true); g.gameplay.qa.lamp(false); g.gameplay.qa.surveyorTo(-20.5, -8.4, -1.5708); g.gameplay.qa.pose(0.9, 0.4); g.look(-27.0, 0, -8.4, -1.5708, 0.10);"
   },
   {
     "name": "31_surveyor_scale_vs_player",
     "settle": 26,
-    "setup": "if (!g.gameplay) return; g.gameplay.qa.surveyorTo(-25.2, 21.4, Math.PI); g.gameplay.qa.pose(0.0, 0.0); g.look(-25.2, 0, 25.2, 0, 0.20);"
+    "setup": "if (!g.gameplay) return; g.gameplay.qa.surveyorTo(-23.6, -8.4, -1.5708); g.gameplay.qa.pose(0.0, 0.0); g.look(-27.0, 0, -8.4, -1.5708, 0.22);"
   },
   {
     "name": "32_surveyor_frozen_midstride",
     "settle": 26,
-    "setup": "if (!g.gameplay) return; g.gameplay.qa.surveyorTo(-25.2, 14.0, Math.PI + 0.5); g.gameplay.qa.pose(1.55, 0.78); g.look(-22.6, 0, 19.2, 0.36, 0.12);"
+    "setup": "if (!g.gameplay) return; g.gameplay.qa.surveyorTo(-21.5, -8.4, -1.95); g.gameplay.qa.pose(1.55, 0.78); g.look(-27.0, 0, -8.4, -1.5708, 0.10);"
   },
   {
     "name": "33_surveyor_measuring",
     "settle": 26,
-    "setup": "if (!g.gameplay) return; g.gameplay.qa.surveyorTo(-29.4, 14.0, 1.5708); g.gameplay.qa.measure(8); g.look(-24.6, 0, 18.0, 0.72, 0.12);"
+    "setup": "if (!g.gameplay) return; g.gameplay.qa.surveyorTo(-29.4, -8.4, 0); g.gameplay.qa.measure(8); g.look(-24.4, 0, -8.4, 1.5708, 0.14);"
   },
   {
     "name": "34_surveyor_head_plate",
     "settle": 26,
-    "setup": "if (!g.gameplay) return; g.gameplay.qa.surveyorTo(-25.2, 17.4, Math.PI); g.gameplay.qa.pose(0.4, -0.5); g.look(-25.2, 0, 19.8, 0, 0.46);"
+    "setup": "if (!g.gameplay) return; g.gameplay.qa.surveyorTo(-24.6, -8.4, -1.5708); g.gameplay.qa.pose(0.4, -0.5); g.look(-27.0, 0, -8.4, -1.5708, 0.44);"
   },
   {
     "name": "35_surveyor_down_the_spine",
     "settle": 26,
-    "setup": "if (!g.gameplay) return; g.gameplay.qa.surveyorTo(-25.2, 2.0, Math.PI); g.gameplay.qa.pose(2.2, 0.2); g.look(-25.2, 0, 21.0, 0, 0.02);"
+    "setup": "if (!g.gameplay) return; g.gameplay.qa.surveyorTo(-8.0, -8.4, -1.5708); g.gameplay.qa.pose(2.2, 0.2); g.look(-27.0, 0, -8.4, -1.5708, 0.02);"
   },
   {
     "name": "36_surveyor_lamp_only",
     "settle": 26,
-    "setup": "if (!g.gameplay) return; g.gameplay.qa.circuits(false); g.gameplay.qa.lamp(true, 1.0); g.gameplay.qa.surveyorTo(-25.2, 15.2, Math.PI); g.gameplay.qa.pose(0.9, 0.25); g.look(-25.2, 0, 19.4, 0, 0.12);"
+    "setup": "if (!g.gameplay) return; g.gameplay.qa.circuits(false); g.gameplay.qa.lamp(true, 1.0); g.gameplay.qa.surveyorTo(-22.0, -8.4, -1.5708); g.gameplay.qa.pose(0.9, 0.25); g.look(-27.0, 0, -8.4, -1.5708, 0.10);"
   },
   {
     "name": "37_surveyor_capture",
     "settle": 26,
-    "setup": "if (!g.gameplay) return; g.gameplay.qa.circuits(true); g.gameplay.qa.lamp(false); g.gameplay.qa.surveyorTo(-25.2, 23.3, Math.PI); const s = g.gameplay.surveyor; s.captureBlend = 1; s.state = 'CAPTURING'; g.gameplay.qa.pose(0.2, 0.0); g.look(-25.2, 0, 25.2, 0, 0.34);"
+    "setup": "if (!g.gameplay) return; g.gameplay.qa.circuits(true); g.gameplay.qa.lamp(false); g.gameplay.qa.surveyorTo(-25.9, -8.4, -1.5708); const s = g.gameplay.surveyor; s.captureBlend = 1; s.state = 'CAPTURING'; g.gameplay.qa.pose(0.2, 0.0); g.look(-27.0, 0, -8.4, -1.5708, 0.36);"
   },
 
   {

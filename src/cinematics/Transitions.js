@@ -117,25 +117,33 @@ export function toCistern(ctx, params = {}) {
     .audio(0.0, 'stair/step_concrete')
     .audio(1.1, 'cistern/water_wash', { fadeIn: 3.2, loop: true })
 
+    // Down the first flight to the half landing, eyes on the treads.
     .camera(0.1, 3.6, [
-      { pos: f.at(-0.6, 0, 0), look: f.at(3.0, 0, -0.9), fov: 66 },
-      { pos: f.at(1.2, 0, -0.62), look: f.at(4.2, 0, -2.0), fov: 66 },
-      { pos: f.at(2.6, 0, -1.42), look: f.at(4.4, 1.6, -2.6), fov: 66 },
+      { pos: f.at(-0.6, 0, 0), look: f.at(4.4, 0, -0.55), fov: 66 },
+      { pos: f.at(1.2, 0, -0.62), look: f.at(6.2, 0, -1.20), fov: 66 },
+      { pos: f.at(2.6, 0, -1.42), look: f.at(7.6, 0, -2.02), fov: 66 },
     ], 'inOutSine', { from: 'current' })
 
-    // The turn. Nothing readable in frame for 0.8 s — that is the window.
-    .camera(3.7, 2.3, [
-      { pos: f.at(2.6, 0, -1.42), look: f.at(4.4, 1.6, -2.6), fov: 66 },
-      { pos: f.at(3.2, 0.5, -1.75), look: f.at(3.6, 2.4, -2.2), fov: 67 },
-      { pos: f.at(3.4, 1.5, -2.10), look: f.at(1.0, 2.6, -3.4), fov: 67 },
+    // The half landing. A 180 degree turn with the look target on a fixed 5 m
+    // circle and evenly spaced in angle, so the pan rate is even; if the radius
+    // wanders the camera visibly accelerates halfway round.
+    // Nothing readable is in frame for about a second — that is the window.
+    .camera(3.7, 3.0, [
+      { pos: f.at(2.60, 0, -1.42), look: f.at(7.60, 0.00, -2.02), fov: 66 },
+      { pos: f.at(2.72, 0, -1.58), look: f.at(6.14, 2.50, -2.10), fov: 66.5 },
+      { pos: f.at(2.80, 0, -1.78), look: f.at(5.10, 4.33, -2.18), fov: 67 },
+      { pos: f.at(2.76, 0, -1.98), look: f.at(2.60, 5.00, -2.26), fov: 67 },
+      { pos: f.at(2.60, 0, -2.14), look: f.at(0.10, 4.33, -2.34), fov: 67 },
+      { pos: f.at(2.40, 0, -2.26), look: f.at(-2.40, 0.00, -2.60), fov: 67 },
     ], 'inOut')
-    .cue(4.5, swap)
-    .audio(4.5, 'cistern/reverb_bridge')
+    .cue(4.9, swap)
+    .audio(4.9, 'cistern/reverb_bridge')
 
-    .camera(6.0, 2.5, [
-      { pos: f.at(3.4, 1.5, -2.10), look: f.at(1.0, 2.6, -3.4), fov: 67 },
-      { pos: f.at(3.0, 2.4, -2.55), look: f.at(-1.5, 3.0, -3.6), fov: 66 },
-      { pos: f.at(2.4, 3.4, -2.85), look: f.at(-4.0, 3.4, -3.2), fov: 66 },
+    // Down the second flight, now facing back the way the building came.
+    .camera(6.7, 2.5, [
+      { pos: f.at(2.40, 0, -2.26), look: f.at(-2.40, 0.00, -2.60), fov: 67 },
+      { pos: f.at(1.40, 0, -2.66), look: f.at(-4.20, 0.05, -3.10), fov: 66.5 },
+      { pos: f.at(0.20, 0, -2.94), look: f.at(-6.00, 0.00, -3.28), fov: 66 },
     ], 'inOutSine')
 
     .grade(4.4, { uSaturation: 0.88, uVignette: 0.08 }, 3.0)
@@ -196,7 +204,7 @@ export function toPlant(ctx, params = {}) {
     .camera(0.1, 3.0, [
       { pos: f.at(-1.0, 0, 0), look: f.at(4.0, 0, 0), fov: 66 },
       { pos: f.at(0.6, 0, 0), look: f.at(5.0, 0, 0), fov: 65 },
-      { pos: f.at(1.9, 0, 0), look: f.at(7.0, 0.4, 0), fov: 66 },
+      { pos: f.at(1.9, 0, 0), look: f.at(7.0, 0.4, 0.1), fov: 66 },
     ], 'inOutSine', { from: 'current' })
 
     .grade(1.15, { uExposure: 0.12 }, 0.30, 'in')
@@ -213,9 +221,10 @@ export function toPlant(ctx, params = {}) {
     .grade(4.2, { uExposure: 1 }, 0.9)
 
     // The tilt. Slow, long, and it never reaches the ceiling — the volume has
-    // to feel unresolved.
-    .camera(2.2, 6.4, [
-      { pos: f.at(1.9, 0, 0), look: f.at(7.0, 0.4, 0), fov: 66 },
+    // to feel unresolved. Starts where the entry move ends, not before it: two
+    // overlapping moves fight for the camera and produce a visible hitch.
+    .camera(3.1, 5.6, [
+      { pos: f.at(1.9, 0, 0), look: f.at(7.0, 0.4, 0.1), fov: 66 },
       { pos: f.at(3.4, 0, 0.05), look: f.at(9.0, 0.6, 3.2), fov: 68 },
       { pos: f.at(5.0, 0, 0.10), look: f.at(11.0, 0.8, 8.4), fov: 71 },
       { pos: f.at(6.2, 0, 0.06), look: f.at(13.0, 0.6, 6.0), fov: 69 },
@@ -248,7 +257,7 @@ export function toStack(ctx, params = {}) {
     .cue(1.34, swap)
     .grade(1.36, { uExposure: 1 }, 0.60, 'out')
 
-    .camera(1.9, 5.6, [
+    .camera(2.5, 5.2, [
       { pos: f.at(0.9, 0, 0), look: f.at(5.0, 0, 0), fov: 66, roll: 0 },
       { pos: f.at(1.5, 0, 0.06), look: f.at(5.4, 0, 2.6), fov: 71, roll: 0.026 },
       { pos: f.at(1.9, 0, 0.02), look: f.at(5.6, 0, -3.0), fov: 76, roll: 0.062 },

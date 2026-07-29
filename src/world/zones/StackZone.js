@@ -108,7 +108,7 @@ function facade(b, y, { detail = 2, seed = 1, lit = 0.18 } = {}) {
 }
 
 /** One deck ring around the void. */
-function deckRing(b, y, { detail = 2, rails = true, collide = true } = {}) {
+function deckRing(b, y, { detail = 2, rails = true, collide = true, gap = null } = {}) {
   const parts = [];
   const rects = [
     [-OUTER, -OUTER, OUTER, -VOID],
@@ -145,14 +145,28 @@ function deckRing(b, y, { detail = 2, rails = true, collide = true } = {}) {
   b.add('concreteFloor', g);
 
   if (rails) {
-    const pts = [[-VOID + 0.10, -VOID + 0.10], [VOID - 0.10, -VOID + 0.10],
-    [VOID - 0.10, VOID - 0.10], [-VOID + 0.10, VOID - 0.10]];
-    handrail(b, pts, y, { h: 1.06, spacing: detail > 1 ? 1.6 : 3.2, mid: detail > 1, toe: detail > 1, closed: true, key: 'machinePaint' });
+    const r = VOID - 0.10;
+    const opt = { h: 1.06, spacing: detail > 1 ? 1.6 : 3.2, mid: detail > 1, toe: detail > 1, key: 'machinePaint' };
+    handrail(b, [[-r, -r], [r, -r]], y, opt);
+    handrail(b, [[r, -r], [r, r]], y, opt);
+    handrail(b, [[-r, r], [-r, -r]], y, opt);
+    if (gap) {
+      // Somebody removed a bay of handrail and never put it back.
+      handrail(b, [[r, r], [gap[1], r]], y, opt);
+      handrail(b, [[gap[0], r], [-r, r]], y, opt);
+    } else {
+      handrail(b, [[r, r], [-r, r]], y, opt);
+    }
     if (collide) {
-      b.addColliderAt(0, y + 0.55, -VOID + 0.10, VOID * 2, 1.1, 0.12, { tag: 'rail' });
-      b.addColliderAt(0, y + 0.55, VOID - 0.10, VOID * 2, 1.1, 0.12, { tag: 'rail' });
-      b.addColliderAt(-VOID + 0.10, y + 0.55, 0, 0.12, 1.1, VOID * 2, { tag: 'rail' });
-      b.addColliderAt(VOID - 0.10, y + 0.55, 0, 0.12, 1.1, VOID * 2, { tag: 'rail' });
+      b.addColliderAt(0, y + 0.55, -r, VOID * 2, 1.1, 0.12, { tag: 'rail' });
+      b.addColliderAt(-r, y + 0.55, 0, 0.12, 1.1, VOID * 2, { tag: 'rail' });
+      b.addColliderAt(r, y + 0.55, 0, 0.12, 1.1, VOID * 2, { tag: 'rail' });
+      if (gap) {
+        b.addColliderAt((r + gap[1]) / 2, y + 0.55, r, r - gap[1], 1.1, 0.12, { tag: 'rail' });
+        b.addColliderAt((-r + gap[0]) / 2, y + 0.55, r, gap[0] + r, 1.1, 0.12, { tag: 'rail' });
+      } else {
+        b.addColliderAt(0, y + 0.55, r, VOID * 2, 1.1, 0.12, { tag: 'rail' });
+      }
     }
   }
 }
@@ -177,7 +191,7 @@ export function buildStack(ctx, opts = {}) {
     const dist = Math.abs(i);
     const detail = dist === 0 ? 3 : dist <= 2 ? 2 : 1;
     const b = dist === 0 ? bHere : dist <= 2 ? bNear : bFar;
-    deckRing(b, y, { detail, rails: true, collide: dist === 0 });
+    deckRing(b, y, { detail, rails: true, collide: dist === 0, gap: dist === 0 ? [1.4, 3.8] : null });
     facade(b, y, { detail, seed: seed + i * 31, lit: dist === 0 ? 0.22 : 0.16 });
     // Structure: columns at the four corners of the void, every level.
     if (detail >= 2) {
@@ -241,10 +255,9 @@ export function buildStack(ctx, opts = {}) {
     Props.fireExtinguisher(b, -OUTER + 0.14, 0.32, 6.4, { seed: 212, yaw: Math.PI / 2 });
     Props.noticeboard(b, 0.0, 1.55, -OUTER + 0.10, { seed: 213, yaw: 0, w: 1.2, h: 0.85, sheets: 8 });
 
-    // A section of handrail is gone, and there is a chair pushed up to the gap.
+    // A bay of handrail is missing (see deckRing's `gap`), and there is a chair
+    // pushed up to the edge of it, facing out over the drop.
     {
-      const gapZ = VOID - 0.10;
-      b.addColliderAt(2.6, 0.55, gapZ, 2.4, 1.1, 0.12, { tag: 'rail', solid: false, enabled: false });
       Props.officeChair(b, 2.6, 0, VOID - 1.0, { seed: 214, yaw: Math.PI, arms: false, damage: 0.8 });
       if (D) {
         D.quad(b, { stamp: STAMP.dustEdge, face: 'up', x: 2.6, y: 0.004, z: VOID - 1.0, w: 1.2, h: 1.2, strength: 1 });

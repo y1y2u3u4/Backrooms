@@ -38,7 +38,10 @@ export const INTAKE = {
   cols: 15,
   rows: 15,
   ceiling: KIT.ceilingIntake,
-  chunkCells: 5,
+  // Four chunks, not nine. Frustum culling across a 63 m open plate saves
+  // almost nothing — you can see most of it from a spine — and every extra
+  // chunk is another mesh per material in the draw-call count.
+  chunkCells: 8,
 };
 
 const EMPTY = 0, WALL = 1, ROOM = 2, SPINE = 3, COLUMN = 4;
@@ -199,6 +202,10 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
       fixturePlan.push({
         r, c, x, z, health,
         rotation: isSpine && r === plan.spineRow ? Math.PI / 2 : 0,
+        // Volumetric cones are pure overdraw and Intake runs ~130 fixtures.
+        // A third of them establishes the haze; the ones that get it are
+        // weighted onto the spines, where the long views are.
+        cone: isSpine ? hash2(r * 5, c * 9) < 0.5 : hash2(r * 5, c * 9) < 0.22,
       });
     }
   }
@@ -336,7 +343,7 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
       circuit: 'intake',
       health: f.health,
       seed: fixtureSeed++,
-      cone: true,
+      cone: f.cone,
     });
   }
 

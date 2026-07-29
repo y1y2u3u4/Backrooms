@@ -212,7 +212,7 @@ function registerRecipes(forge) {
           const warp = Math.sin(u * 6.2831853 * 26) * 0.5 + 0.5;
           const weft = tileNoise(u * P * 14, v * P * 4.0, P * 14, 5);
           const slub = tileFbm(u * P * 3, v * P * 3, P * 3, 4, 11);
-          let h = warp * 0.14 + weft * 0.18 + slub * 0.26;
+          let h = warp * 0.045 + weft * 0.14 + slub * 0.30;
 
           // Mid-frequency print drift only. Anything with a period close to the
           // tile size becomes a visible grid once the tile repeats down a

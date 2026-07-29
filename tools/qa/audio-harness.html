@@ -313,6 +313,75 @@ window.AUDIO_PROBE = {
     return { corr, ...analyseBuffer(buf), g100, g200, g137, samples: n };
   },
 
+  /**
+   * Diagnostic: does a high-Q bandpass in this browser actually ring for the
+   * T60 the maths says it should? Compares a raw biquad fed by a one-sample
+   * impulse buffer against modalRing's full graph.
+   */
+  async modalTest() {
+    const OC = window.OfflineAudioContext;
+    const sr = 48000;
+    const dur60 = (d) => {
+      let peak = 0;
+      for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]));
+      let last = 0;
+      for (let i = 0; i < d.length; i++) if (Math.abs(d[i]) > peak * 0.001) last = i;
+      return { peak, t60: last / sr };
+    };
+    const out = [];
+    for (const [f, t60] of [[214, 1.5], [268, 0.42], [1420, 0.9]]) {
+      const Q = t60 * Math.PI * f / 6.9078;
+
+      // (a) raw biquad + one-sample impulse buffer
+      let ctx = new OC(1, sr * 3, sr);
+      let bq = ctx.createBiquadFilter();
+      bq.type = 'bandpass'; bq.frequency.value = f; bq.Q.value = Q;
+      let b = ctx.createBuffer(1, 2, sr); b.getChannelData(0)[0] = 1;
+      let s = ctx.createBufferSource(); s.buffer = b;
+      s.connect(bq); bq.connect(ctx.destination); s.start(0);
+      const raw = dur60((await ctx.startRendering()).getChannelData(0));
+
+      // (b) raw biquad, impulse at a NON sample-aligned start time
+      ctx = new OC(1, sr * 3, sr);
+      bq = ctx.createBiquadFilter();
+      bq.type = 'bandpass'; bq.frequency.value = f; bq.Q.value = Q;
+      b = ctx.createBuffer(1, 2, sr); b.getChannelData(0)[0] = 1;
+      s = ctx.createBufferSource(); s.buffer = b;
+      s.connect(bq); bq.connect(ctx.destination); s.start(0.0203718);
+      const offgrid = dur60((await ctx.startRendering()).getChannelData(0));
+
+      // (c) the real modalRing graph
+      ctx = new OC(1, sr * 3, sr);
+      const dest = ctx.createGain(); dest.connect(ctx.destination);
+      const bag = { sources: [], nodes: [], src(n) { this.sources.push(n); return n; }, add(n) { this.nodes.push(n); return n; }, stopAll() {}, dispose() {} };
+      const { modalRing } = await import('/src/audio/Synth.js');
+      modalRing(ctx, bag, dest, 0.02, {
+        modes: [{ f, t60, gain: 1 }], gain: 0.5,
+        excite: { dur: 0.003, tone: 5000 },
+      });
+      const ring = dur60((await ctx.startRendering()).getChannelData(0));
+
+      // (d) modalRing with no exciter noise at all — pure impulse into the bank
+      ctx = new OC(1, sr * 3, sr);
+      const dest2 = ctx.createGain(); dest2.connect(ctx.destination);
+      const bag2 = { sources: [], nodes: [], src(n) { this.sources.push(n); return n; }, add(n) { this.nodes.push(n); return n; }, stopAll() {}, dispose() {} };
+      modalRing(ctx, bag2, dest2, 0.02, {
+        modes: [{ f, t60, gain: 1 }], gain: 0.5, excite: { dur: 0, noise: 0 },
+      });
+      const pure = (await ctx.startRendering()).getChannelData(0);
+      const pureStat = dur60(pure);
+      // Envelope every 25 ms, so a truncated tail is visible rather than inferred.
+      const envelope = [];
+      for (let i = 0; i < pure.length; i += Math.round(sr * 0.025)) {
+        let e = 0;
+        for (let j = 0; j < 600 && i + j < pure.length; j++) e = Math.max(e, Math.abs(pure[i + j]));
+        envelope.push(+e.toExponential(2));
+      }
+      out.push({ f, t60, Q: +Q.toFixed(1), raw, offgrid, ring, pure: pureStat, envelope });
+    }
+    return out;
+  },
+
   /** Render a waveform strip as a PNG data URL for eyeball verification. */
   async waveform(name, width = 900, height = 130) {
     const { buf } = await renderOne(name, 1);

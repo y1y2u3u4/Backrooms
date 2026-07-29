@@ -412,7 +412,8 @@ export function modalRing(ctx, bag, dest, t, {
   const ALIGN = 2.0;
   let sumG = 0;
   for (const m of modes) sumG += Math.abs(m.gain ?? 1);
-  const norm = ALIGN / Math.max(1e-6, sumG);
+  // Never boost a one- or two-mode bank: there is nothing there to misalign.
+  const norm = ALIGN / Math.max(ALIGN, sumG);
 
   // Exciter: an impulse plus an optional short noise chirp. The impulse gives a
   // clean modal onset; the noise gives the strike its material (wood vs steel).
@@ -448,19 +449,25 @@ export function modalRing(ctx, bag, dest, t, {
     const f = clamp(m.f * pitch, 18, ctx.sampleRate * 0.47);
     const t60 = Math.max(0.006, (m.t60 ?? 0.4) * damp);
     const q = m.q ?? t60ToQ(t60, f);
-    const bp = biquad(ctx, bag, 'bandpass', f, q);
     // A constant-0dB-peak bandpass (which is what Web Audio's 'bandpass' is)
     // has an impulse response whose ENVELOPE peaks at exactly 2*alpha, where
-    // alpha = sin(w0)/2Q. For a 5-second mode at 147 Hz that is 1e-4, which is
-    // why the first version of this function rendered the game's whole modal
-    // palette 70 dB too quiet. Compensating by 1/(2*alpha) makes each mode ring
-    // at exactly its stated gain, so `gain` is a true upper bound on the peak
-    // of the summed bank — verified numerically, not guessed.
+    // alpha = sin(w0)/2Q. For a 5-second mode at 147 Hz that is 1e-4.
     const w0 = TAU * f / ctx.sampleRate;
     const alpha = Math.sin(w0) / (2 * q);
     const comp = clamp(1 / Math.max(2 * alpha, 1e-7), 1, 8e4);
-    const mg = gainNode(ctx, bag, (m.gain ?? 1) * norm * comp);
-    exBus.connect(bp); bp.connect(mg);
+
+    // The compensation goes BEFORE the filter, and this is not a style choice.
+    // Blink stops processing a BiquadFilterNode once its ABSOLUTE output level
+    // falls under an internal silence threshold. Feed it an impulse of 1.0 and
+    // a Q=146 resonator peaks at 1.9e-4, hits that threshold a quarter of the
+    // way through its decay, and gets cut off: a 1.5 s steel plate rings for
+    // 0.4 s. Driving the filter hard and taking the level back afterwards keeps
+    // the absolute signal well above the threshold and the mode rings for its
+    // full T60. Verified with tools/qa/audio-modaltest.mjs.
+    const pre = gainNode(ctx, bag, comp);
+    const bp = biquad(ctx, bag, 'bandpass', f, q);
+    const mg = gainNode(ctx, bag, (m.gain ?? 1) * norm);
+    exBus.connect(pre); pre.connect(bp); bp.connect(mg);
     if (spread > 0) {
       const p = panner2d(ctx, bag, clamp((rng() * 2 - 1) * spread, -1, 1));
       mg.connect(p); p.connect(out);

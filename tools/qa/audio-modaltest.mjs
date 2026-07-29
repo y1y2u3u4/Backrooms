@@ -1,0 +1,16 @@
+import { chromium } from '@playwright/test';
+import { spawn } from 'node:child_process';
+const PORT=5307;
+const server = spawn('npx',['vite','--host','127.0.0.1','--port',String(PORT)],{stdio:'ignore'});
+const wait=async(u,ms)=>{const t0=Date.now();while(Date.now()-t0<ms){try{const r=await fetch(u);if(r.ok||r.status===404)return 1;}catch{}await new Promise(r=>setTimeout(r,300));}return 0;};
+await wait(`http://127.0.0.1:${PORT}/`,45000);
+const b = await chromium.launch({args:['--no-sandbox','--disable-dev-shm-usage','--mute-audio']});
+const p = await b.newPage();
+p.on('pageerror',e=>console.log('ERR',e.message));
+await p.goto(`http://127.0.0.1:${PORT}/tools/qa/audio-harness.html`,{waitUntil:'domcontentloaded'});
+await p.waitForFunction('window.AUDIO_READY===true',{timeout:60000});
+await p.waitForTimeout(2500);
+await p.reload({waitUntil:'domcontentloaded'});
+await p.waitForFunction('window.AUDIO_READY===true',{timeout:60000});
+console.log(JSON.stringify(await p.evaluate(()=>window.AUDIO_PROBE.modalTest()),null,1));
+await b.close(); server.kill(); process.exit(0);

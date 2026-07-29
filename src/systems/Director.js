@@ -92,6 +92,7 @@ export class Director {
     this.lastSafe = null;
     this.deaths = 0;
     this.dying = 0;               // >0 while the death sequence runs
+    this.hidden = false;          // player is inside a locker/cupboard
     this.respawnDelay = 4.2;
 
     this._unsub = [];
@@ -113,6 +114,9 @@ export class Director {
       if (puzzling.includes(e?.kind)) this.grantGrace();
     });
     on('story:note', () => this.grantGrace(this.puzzleGrace * 0.6));
+
+    on('hide:enter', () => { this.hidden = true; this.grantGrace(30); });
+    on('hide:exit', () => { this.hidden = false; });
 
     on('game:death', (e) => this.onDeath(e));
 
@@ -198,6 +202,11 @@ export class Director {
     // 4. Being encumbered — you cannot run and you know it.
     if (this.inventory?.handsFull) want += 0.12;
 
+    // 4b. Being inside something. Hiding is not relief; it is a decision you
+    // have already made and can no longer take back, and the breathing gets
+    // very close.
+    if (this.hidden) want += 0.30;
+
     // 5. Exertion bleeds into it.
     want += clamp01(p.exertion) * 0.10;
 
@@ -269,7 +278,8 @@ export class Director {
       }
       case 'attendant': {
         const kind = this.attendant.act();
-        if (!kind) { this.sinceBeat = this.nextBeatAt * 0.55; this.tension -= def.cost; }
+        // Nothing was safely out of sight. Do not force it — try again sooner.
+        if (!kind) { this.sinceBeat = this.nextBeatAt * 0.55; this.tension = Math.max(0, this.tension - def.cost); }
         break;
       }
       case 'services': {
@@ -421,6 +431,7 @@ export class Director {
       zone: this.zone,
       objective: this.objective,
       deaths: this.deaths,
+      hidden: this.hidden,
       lastBeats: this.beatLog.slice(-4).map((b) => b.name),
     };
   }

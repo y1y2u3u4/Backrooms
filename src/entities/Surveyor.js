@@ -60,6 +60,8 @@ export const STATE = {
 
 const HEIGHT = 2.90;
 const BODY_RADIUS = 0.30;
+/** Rest height of the pelvis bone. The stoop solver works back from this. */
+const PELVIS_Y = 1.42;
 /** Illumination (in LightRig units) at which it is fully mobile. */
 const LIGHT_FULL = 2.4;
 /** Below this it is stone. */
@@ -117,7 +119,7 @@ function buildStandIn(palette) {
   };
 
   // ---- pelvis --------------------------------------------------------------
-  const pelvis = add(root, 'pelvis', 1.46);
+  const pelvis = add(root, 'pelvis', 1.42);
   {
     const parts = [];
     // A narrow cast hip block with a machined slot and two pivot bosses.
@@ -142,25 +144,32 @@ function buildStandIn(palette) {
     // and each with a visible gap — the reason its outline reads as "stack of
     // filing trays" rather than "chest".
     const parts = [];
-    const n = 9;
+    const n = 11;
+    const pitch = 0.070;
     for (let i = 0; i < n; i++) {
       const t = i / (n - 1);
-      const w = lerp(0.36, 0.28, t);
-      const d = lerp(0.20, 0.155, t);
-      const h = 0.052;
+      const w = lerp(0.42, 0.30, t);
+      const d = lerp(0.23, 0.165, t);
+      const h = 0.050;
       const p = box(w, h, d, 0.006, 1);
-      p.rotateY(Math.sin(i * 1.9) * 0.11);
-      p.translate(Math.sin(i * 2.4) * 0.017, 0.06 + i * 0.088, Math.cos(i * 1.7) * 0.012);
+      p.rotateY(Math.sin(i * 1.9) * 0.13);
+      p.translate(Math.sin(i * 2.4) * 0.022, 0.06 + i * pitch, Math.cos(i * 1.7) * 0.016);
       parts.push(p);
-      // Spacer columns between plates, offset front and back.
+      // Spacer columns between plates, offset front and back so the stack has
+      // depth rather than reading as a ladder from the front.
       if (i < n - 1) {
         for (const s of [-1, 1]) {
-          const sp = cyl(0.014, 0.014, 0.036, 6);
-          sp.translate(s * (w * 0.32), 0.104 + i * 0.088, 0);
+          const sp = cyl(0.015, 0.015, pitch - 0.05, 6);
+          sp.translate(s * (w * 0.34), 0.085 + i * pitch, Math.cos(i * 2.9) * 0.045);
           parts.push(sp);
         }
       }
     }
+    // Shoulder yoke: a wide flat plate the arms visibly hang off, at the top of
+    // the stack. Without it the arms read as detached.
+    const yoke = box(0.46, 0.055, 0.14, 0.008, 1);
+    yoke.translate(0, 0.06 + (n - 1) * pitch + 0.055, 0);
+    parts.push(yoke);
     mesh(torso, merge(parts), plateMat, (x, y) => 0.52 + clamp01(y / 0.8) * 0.34);
 
     // Spine column visible through the gaps — dark, so the stack reads as open.
@@ -170,7 +179,7 @@ function buildStandIn(palette) {
   }
 
   // ---- neck ----------------------------------------------------------------
-  const neck = add(torso, 'neck', 0.80);
+  const neck = add(torso, 'neck', 0.88);
   {
     const parts = [];
     // Three telescoping sections, like a surveyor's staff.
@@ -229,7 +238,7 @@ function buildStandIn(palette) {
   // ---- arms: four segments, ending in a measuring blade ---------------------
   for (const side of [-1, 1]) {
     const S = side < 0 ? 'L' : 'R';
-    const shoulder = add(torso, `shoulder_${S}`, 0.70, 0);
+    const shoulder = add(torso, `shoulder_${S}`, 0.79, 0);
     shoulder.position.x = side * 0.17;
     {
       const j = cyl(0.052, 0.052, 0.10, 10);
@@ -420,6 +429,7 @@ export class Surveyor {
     this.measureNormal = new THREE.Vector3(1, 0, 0);
     this.frozenPose = false;
     this.captureBlend = 0;
+    this.stoop = 0;            // 0..1 how far it has folded to fit the ceiling
 
     this._shadowT = 0;
     this._noiseUnsub = [];
@@ -895,6 +905,20 @@ export class Surveyor {
     const moving = this.speed > 0.04 && this.lightScale > 0.02;
     this.frozenPose = this.lightScale <= 0.02;
 
+    // ---- ceiling fit ---------------------------------------------------------
+    // It is 2.9 m and the Intake ceiling is 2.78 m. Rather than clip through the
+    // grid — or shrink it, which would throw away the one number the bible is
+    // most specific about — it folds. The knees go over, the pelvis drops and
+    // the neck cranes forward under the tee grid. A machine that has to stoop to
+    // get through an office is worse than one that fits, and it is the reason
+    // its head is always closer to you than its feet are.
+    if (this.collision) {
+      const ceil = this.collision.ceilingAbove(this.position.x, this.position.z, this.position.y, 0.45);
+      const headroom = isFinite(ceil) ? ceil - this.position.y : 99;
+      this.stoop = damp(this.stoop, clamp01((HEIGHT + 0.06 - headroom) / 0.85), 6, dt);
+    }
+    const stoop = this.stoop;
+
     // The gait phase only advances while it is genuinely walking in light.
     if (moving) {
       // Long stride: 1.55 m at full speed for a 2.9 m body reads as unhurried.
@@ -917,14 +941,14 @@ export class Surveyor {
     // 70 mm and 16 degrees, and that single exaggeration is most of why the
     // walk is unpleasant to watch.
     if (bones.pelvis) {
-      bones.pelvis.position.y = 1.46 + Math.sin(g * 2) * 0.070 * amp - amp * 0.035;
+      bones.pelvis.position.y = PELVIS_Y - this.stoop * 0.42 + Math.sin(g * 2) * 0.070 * amp - amp * 0.035;
       bones.pelvis.position.x = Math.sin(g) * 0.075 * amp;
       setRot('pelvis', Math.sin(g * 2 + 1.1) * 0.05 * amp, Math.sin(g) * 0.28 * amp, Math.sin(g) * 0.16 * amp);
     }
 
     // ---- torso: counter-rotates, and lags ----
     setRot('torso',
-      0.055 + Math.sin(g * 2 + 0.6) * 0.030 * amp,
+      0.055 + stoop * 0.30 + Math.sin(g * 2 + 0.6) * 0.030 * amp,
       -Math.sin(g - 0.5) * 0.20 * amp,
       -Math.sin(g - 0.4) * 0.06 * amp);
 
@@ -959,8 +983,8 @@ export class Surveyor {
     const maxStep = 26 * dt;
     this.headYaw += clamp(dyaw, -maxStep, maxStep);
 
-    setRot('neck', -0.04 + Math.sin(g * 2 + 2.0) * 0.018 * amp, this.headYaw * 0.28, 0);
-    setRot('head', Math.sin(g * 2 + 2.4) * 0.010 * amp - this.captureBlend * 0.35,
+    setRot('neck', -0.04 + stoop * 0.46 + Math.sin(g * 2 + 2.0) * 0.018 * amp, this.headYaw * 0.28, 0);
+    setRot('head', -stoop * 0.30 + Math.sin(g * 2 + 2.4) * 0.010 * amp - this.captureBlend * 0.35,
       this.headYaw * 0.72, Math.sin(g) * 0.02 * amp);
 
     // ---- arms ----
@@ -1021,9 +1045,9 @@ export class Surveyor {
       const lift = Math.max(0, Math.sin(ph + Math.PI / 2));
       // Thigh swings forward; shin swings the *wrong* way, which is what a
       // reversed knee is. The foot then over-corrects to stay flat.
-      const thigh = swing * 0.62 * amp;
-      const shin = -0.30 - lift * 0.85 * amp;
-      const foot = 0.24 + lift * 0.55 * amp - swing * 0.20 * amp;
+      const thigh = swing * 0.62 * amp + stoop * 0.34;
+      const shin = -0.30 - lift * 0.85 * amp - stoop * 0.52;
+      const foot = 0.24 + lift * 0.55 * amp - swing * 0.20 * amp + stoop * 0.20;
       setRot(`leg_upper_${S}`, thigh, 0, side * 0.03);
       setRot(`leg_lower_${S}`, shin, 0, 0);
       setRot(`foot_${S}`, foot, 0, 0);
@@ -1061,6 +1085,7 @@ export class Surveyor {
       lightScale: +this.lightScale.toFixed(3),
       speed: +this.speed.toFixed(3),
       frozen: this.frozenPose,
+      stoop: +this.stoop.toFixed(2),
       measureHold: +Math.max(0, this.measureHold).toFixed(2),
       distToPlayer: +this.position.distanceTo(this.player.position).toFixed(2),
       usingGlb: this.usingGlb,

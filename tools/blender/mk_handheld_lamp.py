@@ -26,6 +26,7 @@ def build():
     mat_filament = A.make_material("bulb_filament", base_color=(1.0, 0.85, 0.5), roughness=0.3, metallic=0.1,
                                     emission_color=(1.0, 0.82, 0.45), emission_strength=8.0)
     mat_cable = A.make_material("cable_rubber", base_color=(0.02, 0.02, 0.02), roughness=0.85, metallic=0.0)
+    mat_fastener = A.make_material("fastener_steel", base_color=(0.42, 0.42, 0.44), roughness=0.4, metallic=0.85)
 
     root = A.new_empty("handheld_lamp", (0, 0, 0))
 
@@ -47,12 +48,32 @@ def build():
     A.assign_material(grip, mat_rubber)
     A.finish_round_surface(grip)
 
-    # rear cap (steel) closing the grip's back end
+    # rear cap (steel) closing the grip's back end, with 3 visible fixing
+    # screws — the strongest cheap "this was manufactured" signal.
     rear_cap = A.prim_cylinder("_rearcap", grip_r * 1.02, 0.012, segments=14, location=(0, -0.071, 0))
     rear_cap.rotation_euler = (math.pi / 2, 0, 0)
     A.apply_transforms(rear_cap, loc=False, rot=True, scale=False)
     A.assign_material(rear_cap, mat_steel_dark)
     A.finish_round_surface(rear_cap)
+
+    rear_screws = []
+    for i in range(3):
+        ang = math.radians(120 * i + 20)
+        sx, sz = grip_r * 0.65 * math.cos(ang), grip_r * 0.65 * math.sin(ang)
+        scr = A.prim_cylinder(f"_rearScrew{i}", 0.0022, 0.004, segments=6, location=(sx, -0.0715, sz))
+        scr.rotation_euler = (math.pi / 2, 0, 0)
+        A.apply_transforms(scr, loc=False, rot=True, scale=False)
+        rear_screws.append(scr)
+    rear_screw_obj = A.join_objects(rear_screws, "_rearScrews")
+    A.assign_material(rear_screw_obj, mat_fastener)
+    A.finish_round_surface(rear_screw_obj)
+
+    # cable strain-relief clamp band, just behind the cap where the coil exits
+    clamp = A.prim_cylinder("_cableClamp", 0.0068, 0.006, segments=12, location=(0, -0.077, 0))
+    clamp.rotation_euler = (math.pi / 2, 0, 0)
+    A.apply_transforms(clamp, loc=False, rot=True, scale=False)
+    A.assign_material(clamp, mat_fastener)
+    A.finish_round_surface(clamp)
 
     # slide switch: a small rectangular nub in a milled slot on the grip
     switch_y = -0.01
@@ -75,6 +96,26 @@ def build():
     A.apply_transforms(head, loc=False, rot=True, scale=False)
     A.assign_material(head, mat_steel)
     A.finish_round_surface(head)
+
+    # ferrule ring marking the grip/housing seam — a real join, not a blend
+    ferrule = A.prim_cylinder("_ferrule", grip_r * 1.10, 0.006, segments=16, location=(0, 0.056, 0))
+    ferrule.rotation_euler = (math.pi / 2, 0, 0)
+    A.apply_transforms(ferrule, loc=False, rot=True, scale=False)
+    A.assign_material(ferrule, mat_fastener)
+    A.finish_round_surface(ferrule)
+
+    # cage mounting screws where the rear ring meets the housing
+    cage_mount_screws = []
+    for i in range(3):
+        ang = math.radians(120 * i)
+        sx, sz = 0.026 * math.cos(ang), 0.026 * math.sin(ang)
+        scr = A.prim_cylinder(f"_cageMount{i}", 0.0024, 0.006, segments=6, location=(sx, 0.083, sz))
+        scr.rotation_euler = (math.pi / 2, 0, 0)
+        A.apply_transforms(scr, loc=False, rot=True, scale=False)
+        cage_mount_screws.append(scr)
+    cage_mount_obj = A.join_objects(cage_mount_screws, "_cageMounts")
+    A.assign_material(cage_mount_obj, mat_fastener)
+    A.finish_round_surface(cage_mount_obj)
 
     # reflector cup (recessed, behind the bulb)
     reflector = A.lathe_profile("_reflector", [
@@ -143,7 +184,8 @@ def build():
     A.finish_round_surface(cable, weighted_normal=False)
 
     # -- assemble ----------------------------------------------------------------
-    parts = [grip, rear_cap, switch_nub, head, reflector, bulb, filament, cage, hook, cable]
+    parts = [grip, rear_cap, rear_screw_obj, clamp, switch_nub, head, ferrule, cage_mount_obj,
+             reflector, bulb, filament, cage, hook, cable]
     for o in parts:
         A.parent_keep_transform(o, root)
 

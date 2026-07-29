@@ -310,8 +310,7 @@ export function stairFlight(b, x, y, z, {
         [x + (u * c + (v + vv) * s), z - u * s + (v + vv) * c]);
       const minX = Math.min(...corners.map((p) => p[0])), maxX = Math.max(...corners.map((p) => p[0]));
       const minZ = Math.min(...corners.map((p) => p[1])), maxZ = Math.max(...corners.map((p) => p[1]));
-      b.collision.addFloor([minX + b.origin[0], minZ + b.origin[2], maxX + b.origin[0], maxZ + b.origin[2]],
-        y + hy + b.origin[1], { surface: 'metal', tag: 'stair' });
+      b.addFloor([minX, minZ, maxX, maxZ], y + hy, { surface: 'metal', tag: 'stair' });
     }
   }
 
@@ -339,8 +338,7 @@ export function stairFlight(b, x, y, z, {
         [x + (u * c + (totalRun + landing / 2 + vv) * s), z - u * s + (totalRun + landing / 2 + vv) * c]);
       const minX = Math.min(...cs.map((p) => p[0])), maxX = Math.max(...cs.map((p) => p[0]));
       const minZ = Math.min(...cs.map((p) => p[1])), maxZ = Math.max(...cs.map((p) => p[1]));
-      b.collision.addFloor([minX + b.origin[0], minZ + b.origin[2], maxX + b.origin[0], maxZ + b.origin[2]],
-        y + totalRise + b.origin[1], { surface: 'metal', tag: 'landing' });
+      b.addFloor([minX, minZ, maxX, maxZ], y + totalRise, { surface: 'metal', tag: 'landing' });
     }
   }
 

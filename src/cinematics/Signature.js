@@ -165,11 +165,17 @@ export function transformation(ctx, params = {}) {
     .audio(0.9, 'annex/door_shut_behind', { distance: 9 })
     .caption(1.0, 'a door shuts', { sound: true, hint: 'behind you', duration: 2.6 })
 
-    .camera(1.15, 2.6, [
-      { pos: f.at(0, 0, 0), look: f.at(6, 0, 0), fov: 66 },
-      { pos: f.at(0, 0, 0.01), look: f.at(1.4, 5.2, 0), fov: 67 },
-      { pos: f.at(-0.05, 0, 0), look: f.at(-6, 0.4, 0), fov: 68 },
-    ], 'out')
+    // The turn. Look targets sit on a fixed 6 m circle at even 45 degree
+    // intervals: constant radius and constant angular spacing are what keep the
+    // pan rate even. Uneven keys make the camera lurch through the middle of
+    // the turn, which reads as a whip-pan rather than as a head turning.
+    .camera(1.15, 3.1, [
+      { pos: f.at(0, 0, 0), look: f.at(6.00, 0.00, 0), fov: 66 },
+      { pos: f.at(0, 0, 0.004), look: f.at(4.24, 4.24, 0), fov: 66.5 },
+      { pos: f.at(0, 0, 0.010), look: f.at(0.00, 6.00, 0), fov: 67 },
+      { pos: f.at(-0.03, 0, 0.004), look: f.at(-4.24, 4.24, 0), fov: 67.5 },
+      { pos: f.at(-0.05, 0, 0), look: f.at(-6.00, 0.30, 0), fov: 68 },
+    ], 'inOut')
 
     // Facing away. This is the window.
     .cue(2.6, swapAhead)
@@ -179,16 +185,18 @@ export function transformation(ctx, params = {}) {
     .cue(3.4, (c) => c.ui?.subtitle?.({ text: 'nothing there', sound: true, hint: 'behind you', duration: 2.4 }))
 
     // Hold on the empty end of the corridor a beat too long.
-    .camera(3.8, 2.2, [
-      { pos: f.at(-0.05, 0, 0), look: f.at(-6, 0.4, 0), fov: 68 },
-      { pos: f.at(-0.12, 0, 0.01), look: f.at(-8, 0.2, 0.6), fov: 67 },
+    .camera(4.25, 1.95, [
+      { pos: f.at(-0.05, 0, 0), look: f.at(-6.00, 0.30, 0), fov: 68 },
+      { pos: f.at(-0.12, 0, 0.01), look: f.at(-6.00, 0.60, 0.10), fov: 67 },
     ], 'inOutSine')
 
     // Back. Slower than the turn away — reluctance reads as duration.
-    .camera(6.2, 3.4, [
-      { pos: f.at(-0.12, 0, 0.01), look: f.at(-8, 0.2, 0.6), fov: 67 },
-      { pos: f.at(-0.05, 0, 0), look: f.at(-1.2, -4.0, 0), fov: 66 },
-      { pos: f.at(0, 0, 0), look: f.at(7, 0, 0), fov: 66 },
+    .camera(6.2, 3.6, [
+      { pos: f.at(-0.12, 0, 0.010), look: f.at(-6.00, 0.60, 0.10), fov: 67 },
+      { pos: f.at(-0.09, 0, 0.008), look: f.at(-4.24, -4.24, 0.06), fov: 66.5 },
+      { pos: f.at(-0.05, 0, 0.004), look: f.at(0.00, -6.00, 0.02), fov: 66 },
+      { pos: f.at(-0.02, 0, 0.002), look: f.at(4.24, -4.24, 0), fov: 66 },
+      { pos: f.at(0, 0, 0), look: f.at(6.00, 0.00, 0), fov: 66 },
     ], 'inOutSine')
 
     .cue(7.4, swapBehind)

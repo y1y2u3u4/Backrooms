@@ -27,7 +27,7 @@ export const FIXTURE_TYPES = {
    */
   troffer: {
     size: [1.20, 0.09, 0.30],
-    color: 0xfff0cf, intensity: 38, distance: 17.0, angle: 1.40, penumbra: 0.42,
+    color: 0xfff0cf, intensity: 26, distance: 17.0, angle: 1.42, penumbra: 0.30,
     tubeColor: 0xfff6e2, tubeIntensity: 1.35, cone: 0.11, hum: 1.0,
   },
   /** Surface-mounted strip light, service corridors. */
@@ -305,6 +305,13 @@ export class LightRig {
     this.ambientTarget.intensity = intensity;
   }
 
+  /** Jump the bounce fill to its target — used on a zone change or at boot. */
+  snapAmbient() {
+    this.ambient.color.copy(this.ambientTarget.sky);
+    this.ambient.groundColor.copy(this.ambientTarget.ground);
+    this.ambient.intensity = this.ambientTarget.intensity;
+  }
+
   setCircuit(name, powered) {
     const c = this.circuits.get(name) || { powered: false, level: 0, target: 0 };
     c.powered = powered;
@@ -399,7 +406,7 @@ export class LightRig {
     for (const c of this.circuits.values()) {
       c.level = damp(c.level, c.target, 4.5, dt);
     }
-    const k = 1 - Math.exp(-2.2 * dt);
+    const k = 1 - Math.exp(-5.0 * dt);
     this.ambient.color.lerp(this.ambientTarget.sky, k);
     this.ambient.groundColor.lerp(this.ambientTarget.ground, k);
     this.ambient.intensity += (this.ambientTarget.intensity - this.ambient.intensity) * k;

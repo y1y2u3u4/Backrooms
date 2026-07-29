@@ -48,24 +48,29 @@ export function intro(ctx, params = {}) {
     .cue(6.4, (c) => circuit(c, params.circuit || 'intake_a', true))
     .audio(6.5, 'intake/ballast_strike')
 
-    // Out of the car. One continuous dolly from here to the end of the shot.
+    // Out of the car. One continuous dolly, four moves that share their end
+    // keys exactly, from here to the end of the shot.
+    //
+    // Note that `f.at(forward, right, up)` is measured from *eye height*, so
+    // look targets sit near up = 0 and the floor is at about -1.6.
     .camera(0, 6.6, [
-      { pos: carA, look: f.at(6, 0, eye - 0.06), fov: 66 },
-      { pos: [carA[0], carA[1], carA[2]], look: f.at(6, 0, eye - 0.02), fov: 66 },
-    ], 'inOutSine', { from: null })
+      { pos: carA, look: f.at(6, 0, -0.05), fov: 66 },
+      { pos: f.at(-3.16, 0.02, 0.01), look: f.at(6, 0.04, -0.02), fov: 66 },
+    ], 'inOutSine')
 
     .camera(6.6, 7.2, [
-      { pos: carA, look: f.at(8, 0, eye), fov: 66 },
-      { pos: f.at(-1.4, 0.06, 0), look: f.at(8, 0.4, eye), fov: 65 },
-      { pos: f.at(1.6, 0.02, 0), look: f.at(9, 0.2, eye - 0.1), fov: 64 },
+      { pos: f.at(-3.16, 0.02, 0.01), look: f.at(6, 0.04, -0.02), fov: 66 },
+      { pos: f.at(-1.4, 0.06, 0), look: f.at(8, 0.30, -0.04), fov: 65 },
+      { pos: f.at(1.6, 0.02, 0), look: f.at(9, 0.15, -0.12), fov: 64 },
     ], 'inOut')
 
-    // The floor. The look target drops to a point two metres ahead on the deck
-    // while the body keeps moving — a glance down, not a cut to a detail shot.
+    // The floor. The look target drops to a point two and a half metres ahead
+    // on the deck while the body keeps moving forward — a glance down at where
+    // your feet are going, not a cut to a detail shot.
     .camera(13.8, 3.4, [
-      { pos: f.at(1.6, 0.02, 0), look: f.at(9, 0.2, eye - 0.1), fov: 64 },
-      { pos: f.at(3.0, 0, -0.04), look: f.at(3.4, 0.1, 0.02), fov: 63 },
-      { pos: f.at(4.1, 0, -0.05), look: f.at(5.0, -0.1, 0.0), fov: 63 },
+      { pos: f.at(1.6, 0.02, 0), look: f.at(9, 0.15, -0.12), fov: 64 },
+      { pos: f.at(3.0, 0, -0.04), look: f.at(5.4, 0.06, -0.85), fov: 63 },
+      { pos: f.at(4.1, 0, -0.05), look: f.at(6.5, -0.05, -1.42), fov: 63 },
     ], 'inOut')
 
     .audio(14.6, 'intro/floor_wrong')
@@ -74,9 +79,9 @@ export function intro(ctx, params = {}) {
 
     // Back up to eye level, still walking.
     .camera(17.2, 6.3, [
-      { pos: f.at(4.1, 0, -0.05), look: f.at(5.0, -0.1, 0.0), fov: 63 },
-      { pos: f.at(5.6, 0, -0.02), look: f.at(11, 0.1, eye - 0.2), fov: 64.5 },
-      { pos: f.at(7.4, 0, 0), look: f.at(14, 0, eye), fov: 66 },
+      { pos: f.at(4.1, 0, -0.05), look: f.at(6.5, -0.05, -1.42), fov: 63 },
+      { pos: f.at(5.6, 0, -0.02), look: f.at(11, 0.08, -0.62), fov: 64.5 },
+      { pos: f.at(7.4, 0, 0), look: f.at(14, 0, -0.02), fov: 66 },
     ], 'inOutSine')
 
     .grade(18.4, { uDread: 0.10, uAberration: 0 }, 4.0)

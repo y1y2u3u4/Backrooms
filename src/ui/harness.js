@@ -348,9 +348,8 @@ window.UIH_TEST = async function testCinematics() {
       const spike = (arr) => {
         if (arr.length < 12) return 0;
         const s = [...arr].sort((a, b) => a - b);
-        const med = s[Math.floor(s.length * 0.5)] || 1e-6;
-        const max = s[s.length - 1];
-        return max / Math.max(med, 1e-6);
+        const p95 = s[Math.floor(s.length * 0.95)] || 1e-7;
+        return s[s.length - 1] / Math.max(p95, 1e-7);
       };
       const camMove = {
         maxStep: +Math.max(0, ...dPos).toFixed(4),

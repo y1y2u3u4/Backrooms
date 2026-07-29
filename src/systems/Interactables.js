@@ -190,14 +190,12 @@ export function breakerPanel(ctx, {
   maxOn = 3, ways = null, parent = null,
 } = {}) {
   const { rig, bus, interactor, collision, player } = ctx;
-  const rng = makeRng(0xb0a2d);
   const W = 0.52, H = 0.68, D = 0.135;
   const root = placed(position, rotation, `breaker:${id}`);
   (parent || ctx.scene).add(root);
 
   const steel = M(ctx, 'machinePaint');
   const galv = M(ctx, 'ductMetal');
-  const chrome = M(ctx, 'chrome');
   const plastic = M(ctx, 'plasticWhite');
 
   const defaults = [
@@ -409,7 +407,6 @@ export function valve(ctx, {
   (parent || ctx.scene).add(root);
 
   const rustMat = M(ctx, 'rust');
-  const steel = M(ctx, 'machinePaint');
   const chrome = M(ctx, 'chrome');
 
   // Body: a flanged gate valve on a short pipe stub.
@@ -544,7 +541,6 @@ export function valve(ctx, {
       const target = state.turned * TAU * 0.85;
       state.spin = damp(state.spin, target, 6, dt);
       wheelGrp.rotation.y = state.spin;
-      plate.material.map && (plate.rotation.z = 0);
     },
   };
 }

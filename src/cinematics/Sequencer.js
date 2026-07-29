@@ -361,8 +361,9 @@ export function createSequencer({ bus, engine, player, deck, ui = null, rig = nu
       bus?.emit('cine:begin', { name: track.name, duration: track.duration, skippable: track.skippable });
 
       // Frame 0: put the camera on the first key straight away so there is
-      // never a single frame of the player's own view leaking through.
-      if (run.moves.length && run.moves[0].at <= 0) applyMove(run.moves[0], 0);
+      // never a single frame of the player's own view leaking through, and no
+      // snap when a move that starts at t > 0 finally kicks in.
+      if (run.moves.length) applyMove(run.moves[0], 0);
       return promise;
     },
 
@@ -415,15 +416,18 @@ export function createSequencer({ bus, engine, player, deck, ui = null, rig = nu
         try { c.fn(r.ctx); } catch (e) { console.error(`[cine:${r.track.name}] cue @${c.at}`, e); }
       }
 
+      // The camera is always owned by exactly one move: the latest one that has
+      // started. Before the first move begins it holds that move's opening key,
+      // and after the last one ends it holds its closing key. Anything looser
+      // than this produces a one-frame snap at a move boundary, which is the
+      // single most visible defect a sequence can have.
       let active = null;
       for (const mv of r.moves) {
         if (r.t < mv.at) continue;
-        if (r.t <= mv.at + mv.dur || !active) active = mv;
+        if (!active || mv.at >= active.at) active = mv;
       }
-      if (active) {
-        const u = clamp01((r.t - active.at) / active.dur);
-        applyMove(active, u);
-      }
+      if (active) applyMove(active, clamp01((r.t - active.at) / active.dur));
+      else if (r.moves.length) applyMove(r.moves[0], 0);
 
       // Hand-off: player takes look control while the dolly finishes.
       const ho = r.track.handOffAt;

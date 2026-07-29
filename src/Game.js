@@ -146,7 +146,7 @@ export class Game {
     });
     const spawn = this.world.spawn || [0, 0, 0];
     this.player.teleport(spawn[0], spawn[1], spawn[2], this.world.spawnYaw || 0);
-    this.applyZoneProfile(this.world.currentZone || 'intake');
+    this.applyZoneProfile(this.world.currentZone || 'intake', { immediate: true });
 
     // ---- optional subsystems ---------------------------------------------
     await this._bootAudio(P);
@@ -320,6 +320,7 @@ export class Game {
     setWetness(z?.waterLine ?? -999, z?.wetness ?? 0);
     const amb = z?.ambient || AMBIENT_PROFILES[zoneKey] || AMBIENT_PROFILES.intake;
     this.rig.setAmbient(amb.sky, amb.ground, amb.intensity);
+    if (immediate) this.rig.snapAmbient();
     this.audio?.setZone?.(z?.reverb || zoneKey);
     this.currentZone = zoneKey;
   }
@@ -472,14 +473,14 @@ export class Game {
  * how oppressive a zone feels before any fixture is placed.
  */
 export const AMBIENT_PROFILES = {
-  intake:    { sky: 0x342b1c, ground: 0x5e5138, intensity: 0.78 },
-  service:   { sky: 0x161a1e, ground: 0x24262a, intensity: 0.26 },
+  intake:    { sky: 0x4a3f28, ground: 0x6e6044, intensity: 1.45 },
+  service:   { sky: 0x1c2126, ground: 0x2c2f34, intensity: 0.40 },
   cistern:   { sky: 0x0d1416, ground: 0x18211f, intensity: 0.20 },
-  residence: { sky: 0x241c14, ground: 0x40311e, intensity: 0.38 },
+  residence: { sky: 0x2c2418, ground: 0x4a3a24, intensity: 0.62 },
   plant:     { sky: 0x141820, ground: 0x2a2620, intensity: 0.30 },
   duct:      { sky: 0x0e0d0c, ground: 0x131211, intensity: 0.10 },
   stack:     { sky: 0x1a1a20, ground: 0x2a2a30, intensity: 0.34 },
-  safe:      { sky: 0x2a2116, ground: 0x4a3a20, intensity: 0.46 },
+  safe:      { sky: 0x32281a, ground: 0x543f22, intensity: 0.72 },
 };
 
 /** Minimal World shim used when `src/world/World.js` is not present. */

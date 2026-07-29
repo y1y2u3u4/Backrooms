@@ -916,6 +916,9 @@ def render_silhouette(objs, out_png, res=420, view_angle=(0.82, -0.82, 0.30)):
             bsdf.inputs["Base Color"].default_value = (0.003, 0.003, 0.003, 1.0)
             _set_input(bsdf, ["Roughness"], 1.0)
             _set_input(bsdf, ["Metallic"], 0.0)
+    # Workbench's MATERIAL colour mode reads diffuse_color (the flat Object
+    # Info colour), not the Principled BSDF node graph — set both.
+    black.diffuse_color = (0.003, 0.003, 0.003, 1.0)
 
     saved = []
     for o in objs:

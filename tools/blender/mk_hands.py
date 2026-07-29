@@ -25,11 +25,17 @@ def build_one_hand(side_sign, mat_skin, mat_sleeve):
     wrist_taper = A.cylinder_between("_wristTaper", (0, 0, 0.006), (0, 0, -0.01), 0.040, 0.036, segments=14)
     parts.append((wrist_taper, mat_skin))
 
-    # Palm: a flattened rounded block from the wrist down to the knuckle line.
-    palm = A.prim_box("_palm", 0.082, 0.028, 0.085, location=(0.002 * side_sign, 0, -0.055))
-    parts.append((palm, mat_skin))
-    # taper the palm slightly toward the fingers using a second smaller box
-    # blended by proximity is overkill here; a bevel will soften it enough.
+    # Palm: tapered from a narrower wrist to a wider knuckle line, built from
+    # three overlapping blocks of decreasing/increasing width so a single
+    # bevel pass reads as a soft, organic mass rather than a brick.
+    palm_a = A.prim_box("_palmWrist", 0.062, 0.026, 0.030, location=(0.0, 0, -0.026))
+    palm_b = A.prim_box("_palmMid", 0.078, 0.027, 0.032, location=(0.002 * side_sign, 0, -0.058))
+    palm_c = A.prim_box("_palmKnuckle", 0.086, 0.024, 0.030, location=(0.002 * side_sign, 0, -0.088))
+    # a soft thenar bulge (thumb-side pad) so the palm isn't a flat slab
+    thenar = A.prim_sphere("_thenar", 0.022, segments=10, rings=8,
+                            location=(0.034 * side_sign, -0.004, -0.062))
+    for o in (palm_a, palm_b, palm_c, thenar):
+        parts.append((o, mat_skin))
 
     knuckle_z = -0.098
     finger_specs = [
@@ -81,7 +87,7 @@ def build_one_hand(side_sign, mat_skin, mat_sleeve):
         A.assign_material(o, mat)
         objs.append(o)
     hand = A.join_objects(objs, "hand")
-    A.finish_hero_surface(hand, bevel_width=0.0015, bevel_segments=1, angle_deg=50)
+    A.finish_hero_surface(hand, bevel_width=0.0028, bevel_segments=2, angle_deg=46)
     return hand
 
 

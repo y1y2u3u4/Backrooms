@@ -31,11 +31,16 @@ for (const r of report) {
   // Continuity: a 60 fps eased dolly never moves more than a few cm or turns
   // more than a couple of degrees in one frame, and never spikes off its own
   // median. A snap shows up here and nowhere else.
+  // Absolute limits: 0.12 m/frame is 7 m/s, faster than any authored dolly;
+  // 0.055 rad/frame is 190 deg/s, faster than a startled head turn. The spike
+  // ratios are measured against the 95th percentile, not the median, and only
+  // count when the move is big enough for the ratio to mean anything — a camera
+  // that is nearly still all shot has a median of zero and would flag forever.
   if (r.mode === 'watch') {
     if (r.cam.maxStep > 0.12) problems.push(`camera jump ${r.cam.maxStep} m/frame`);
-    if (r.cam.maxTurn > 0.075) problems.push(`camera whip ${(r.cam.maxTurn * 57.3).toFixed(1)}°/frame`);
-    if (r.cam.posSpike > 26) problems.push(`position discontinuity ×${r.cam.posSpike}`);
-    if (r.cam.angSpike > 40) problems.push(`rotation discontinuity ×${r.cam.angSpike}`);
+    if (r.cam.maxTurn > 0.055) problems.push(`camera whip ${(r.cam.maxTurn * 57.3).toFixed(1)}°/frame`);
+    if (r.cam.maxStep > 0.02 && r.cam.posSpike > 6) problems.push(`position discontinuity ×${r.cam.posSpike}`);
+    if (r.cam.maxTurn > 0.012 && r.cam.angSpike > 6) problems.push(`rotation discontinuity ×${r.cam.angSpike}`);
   }
   const tag = problems.length ? '✗' : '✓';
   if (problems.length) bad++;

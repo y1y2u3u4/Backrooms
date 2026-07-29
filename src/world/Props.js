@@ -1906,19 +1906,23 @@ export function barricade(b, x, y, z, o = {}) {
   const { seed = 1, yaw = 0, width = 2.2 } = o;
   const rng = makeRng(seed);
   const c = Math.cos(yaw), s = Math.sin(yaw);
+  /** Local (across, out) -> world (x, z), with the barricade facing +v. */
   const at = (u, v) => [x + u * c + v * s, z - u * s + v * c];
-  filingCabinet(b, ...ins(at(-width * 0.34, 0.05)), y, { seed: seed + 1, yaw: yaw + rng.range(-0.3, 0.3), drawers: 4, damage: 0.7 });
-  desk(b, ...ins(at(width * 0.12, -0.1)), y, { seed: seed + 2, yaw: yaw + Math.PI / 2 + rng.range(-0.2, 0.2), damage: 0.8, pedestal: 'none' });
-  shelving(b, ...ins(at(width * 0.40, 0.18)), y, { seed: seed + 3, yaw: yaw + rng.range(-0.4, 0.4), h: 1.2, bays: 3, damage: 0.8, contents: 0.3 });
-  boxStack(b, ...ins(at(-width * 0.05, 0.30)), y, { seed: seed + 4, count: 3 });
+  const p1 = at(-width * 0.34, 0.05);
+  filingCabinet(b, p1[0], y, p1[1], { seed: seed + 1, yaw: yaw + rng.range(-0.3, 0.3), drawers: 4, damage: 0.7 });
+  const p2 = at(width * 0.12, -0.10);
+  desk(b, p2[0], y, p2[1], { seed: seed + 2, yaw: yaw + Math.PI / 2 + rng.range(-0.2, 0.2), damage: 0.8, pedestal: 'none' });
+  const p3 = at(width * 0.40, 0.18);
+  shelving(b, p3[0], y, p3[1], { seed: seed + 3, yaw: yaw + rng.range(-0.4, 0.4), h: 1.2, bays: 3, damage: 0.8, contents: 0.3 });
+  const p4 = at(-width * 0.05, 0.30);
+  boxStack(b, p4[0], y, p4[1], { seed: seed + 4, count: 3 });
   for (let i = 0; i < 4; i++) {
-    const u = rng.range(-width / 2, width / 2), v = rng.range(-0.35, 0.35);
-    plasticChair(b, ...ins(at(u, v)), y + rng.range(0, 0.5), {
+    const p = at(rng.range(-width / 2, width / 2), rng.range(-0.35, 0.35));
+    plasticChair(b, p[0], y + rng.range(0, 0.5), p[1], {
       seed: seed + 10 + i, yaw: rng() * TAU, collide: false,
     });
   }
 }
-function ins([a, b_]) { return [a, b_]; }
 
 /**
  * A row of identical objects with per-instance variation, using an

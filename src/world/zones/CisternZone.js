@@ -145,22 +145,29 @@ export function buildCistern(ctx, opts = {}) {
     }
   };
 
-  // Stair hall: open to the tunnel on the east.
+  // Sides are named by the edge they sit on: 'n' = z0, 'e' = x1, 's' = z1,
+  // 'w' = x0. Openings are measured along the run from its first point.
+  //
+  // Stair hall: open east into the tunnel; the west wall is built separately
+  // because it carries the door back up to the Service Spine.
   wallFor(bStair, R_STAIRHALL, 4.2, {
-    e: [{ at: 3.6 - R_TUNNEL[1] + 0.0, width: 3.8, height: 3.05 }],
-    n: [{ at: 3.0, width: 5.0, height: CEIL + 0.55 }],   // through to the sump
+    w: 'skip',
+    e: [{ at: 0 - R_STAIRHALL[1], width: 3.8, height: 3.05 }],
   });
-  // Tunnel: open at both ends, gallery opening on the north side.
+  // Tunnel: open at both ends; a pocket off the north side (the sump) and the
+  // silt gallery off the south.
   wallFor(bTunnel, R_TUNNEL, CEIL, {
     w: 'skip', e: 'skip',
-    n: [{ at: R_TUNNEL[2] - (-7.4), width: 4.4, height: 2.45 }],
+    n: [{ at: (R_SUMP[0] + R_SUMP[2]) / 2 - R_TUNNEL[0], width: R_SUMP[2] - R_SUMP[0], height: CEIL }],
+    s: [{ at: R_TUNNEL[2] - (R_GALLERY[0] + R_GALLERY[2]) / 2, width: R_GALLERY[2] - R_GALLERY[0], height: 2.45 }],
   });
-  // Chamber: open on the west to the tunnel.
+  // Chamber: open on the west to the tunnel, with a sill because its floor is
+  // 320 mm lower — the tunnel drains into it.
   wallFor(bChamber, R_CHAMBER, 4.9, {
-    w: [{ at: 7.2 - R_TUNNEL[1], width: 3.8, height: 3.05 }],
+    w: [{ at: R_CHAMBER[3] - 0, width: 3.8, height: 3.05, sill: 0.32 }],
   });
   wallFor(bGallery, R_GALLERY, 2.55, { n: 'skip' });
-  wallFor(bStair, R_SUMP, CEIL + 0.55, { e: 'skip' });
+  wallFor(bStair, R_SUMP, CEIL + 0.55, { s: 'skip' });
 
   liner(bTunnel, R_TUNNEL[0], R_TUNNEL[2], R_TUNNEL[1], R_TUNNEL[3], 0, CEIL, { every: 2.1, seed: 7 });
   liner(bGallery, R_GALLERY[0] + 0.4, R_GALLERY[2] - 0.4, R_GALLERY[1], R_GALLERY[3], 0.16, 2.55, { every: 1.9, seed: 9 });
