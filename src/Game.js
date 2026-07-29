@@ -176,7 +176,8 @@ export class Game {
     try {
       this.audio = mod.createAudio({
         bus: this.bus, collision: this.collision,
-        camera: this.engine.camera, rig: this.rig, player: this.player,
+        camera: this.engine.camera, rig: this.rig,
+        options: { quality: this.engine.qualityName },
       });
       this.subsystems.audio = true;
       // AudioContext needs a gesture; arm it on the first interaction.
@@ -186,64 +187,122 @@ export class Game {
     } catch (e) { console.warn('[game] audio failed to construct', e); }
   }
 
+  /**
+   * The gameplay layer installs itself as one unit — see
+   * docs/INTEGRATION_REQUESTS_GAMEPLAY.md. It owns the flashlight, hands,
+   * inventory, interactor, entities, director and progression, and asserts its
+   * own internal update order, so this must not try to step the parts.
+   */
   async _bootGameplay(P) {
     P(0.91, 'winding the clock');
-    const ctx = {
-      ...this.ctx, player: this.player, world: this.world,
-      camera: this.engine.camera, input: this.input, game: this,
-    };
-
-    const flash = await optional('flashlight', 'player/Flashlight.js');
-    if (flash?.createFlashlight) this.flashlight = flash.createFlashlight(ctx);
-    else if (flash?.Flashlight) this.flashlight = new flash.Flashlight(ctx);
-
-    const hands = await optional('hands', 'player/Hands.js');
-    if (hands?.createHands) this.hands = hands.createHands({ ...ctx, overlayScene: this.engine.overlayScene, overlayCamera: this.engine.overlayCamera });
-    else if (hands?.Hands) this.hands = new hands.Hands({ ...ctx, overlayScene: this.engine.overlayScene, overlayCamera: this.engine.overlayCamera });
-
-    const inv = await optional('inventory', 'player/Inventory.js');
-    if (inv?.createInventory) this.inventory = inv.createInventory(ctx);
-    else if (inv?.Inventory) this.inventory = new inv.Inventory(ctx);
-    ctx.inventory = this.inventory;
-
-    const inter = await optional('interactor', 'player/Interactor.js');
-    if (inter?.createInteractor) this.interactor = inter.createInteractor(ctx);
-    else if (inter?.Interactor) this.interactor = new inter.Interactor(ctx);
-
-    const ents = await optional('entities', 'entities/EntityManager.js');
-    if (ents?.createEntities) this.entities = ents.createEntities(ctx);
-    else {
-      const surv = await optional('surveyor', 'entities/Surveyor.js');
-      if (surv?.createSurveyor) this.entities = { surveyor: surv.createSurveyor(ctx), update: (dt) => this.entities.surveyor.update(dt) };
+    const mod = await optional('gameplay', 'systems/GameplayBoot.js');
+    if (!mod?.installGameplay) return;
+    try {
+      this.gameplay = await mod.installGameplay(this, {
+        // Zone builders emit their own props; the demo seeding is only for
+        // running the gameplay layer against the bare Intake fallback.
+        seedDemo: !this.subsystems.world,
+        surveyor: true,
+        assets: this.assets ?? null,
+        quality: this.engine.qualityName,
+      });
+      // Convenience aliases so QA and cinematics do not have to know the shape.
+      this.flashlight = this.gameplay.flashlight;
+      this.hands = this.gameplay.hands;
+      this.inventory = this.gameplay.inventory;
+      this.interactor = this.gameplay.interactor;
+      this.entities = this.gameplay.surveyor ? { surveyor: this.gameplay.surveyor } : null;
+      this.director = this.gameplay.director;
+      this.progression = this.gameplay.progression;
+      this.subsystems.gameplay = true;
+    } catch (e) {
+      console.error('[game] gameplay failed to install', e);
+      this.subsystems.gameplayError = String(e.message || e);
     }
-
-    const dir = await optional('director', 'systems/Director.js');
-    if (dir?.createDirector) this.director = dir.createDirector({ ...ctx, entities: this.entities });
-
-    const prog = await optional('progression', 'systems/Progression.js');
-    if (prog?.createProgression) this.progression = prog.createProgression({ ...ctx, director: this.director });
-
-    this.subsystems.gameplay = !!(this.interactor || this.entities);
   }
 
   async _bootUI(P) {
     P(0.94, 'printing the docket');
     const mod = await optional('ui', 'ui/UI.js');
     if (mod?.createUI) {
-      this.ui = mod.createUI({
-        bus: this.bus, root: this.uiRoot, engine: this.engine,
-        player: this.player, game: this, input: this.input,
-      });
-      this.subsystems.ui = true;
+      try {
+        this.ui = mod.createUI({
+          bus: this.bus, root: this.uiRoot, engine: this.engine,
+          player: this.player, game: this, input: this.input, rig: this.rig,
+        });
+        this.subsystems.ui = true;
+      } catch (e) { console.error('[game] UI failed to construct', e); }
     }
-    const cine = await optional('cinematics', 'cinematics/Sequencer.js');
+
+    const cine = await optional('cinematics', 'cinematics/index.js');
     if (cine?.createSequencer) {
-      this.sequencer = cine.createSequencer({
-        bus: this.bus, engine: this.engine, player: this.player,
-        game: this, ui: this.ui, input: this.input,
-      });
-      this.subsystems.cinematics = true;
+      try {
+        this.sequencer = cine.createSequencer({
+          bus: this.bus, engine: this.engine, player: this.player,
+          game: this, ui: this.ui, rig: this.rig,
+        });
+        cine.installCinematics?.(this.sequencer);
+        this.subsystems.cinematics = true;
+      } catch (e) { console.error('[game] cinematics failed to construct', e); }
     }
+
+    // The UI is the only thing that knows what the player clicked; route its
+    // actions into game state here rather than letting it drive the game
+    // directly, so there is one place that owns the state machine.
+    this.bus.on('ui:action', (e) => this._onUiAction(e));
+  }
+
+  _onUiAction({ action, ...data } = {}) {
+    switch (action) {
+      case 'begin':
+      case 'continue':
+        this.startRun({ fresh: action === 'begin' });
+        break;
+      case 'resume':
+        if (this.paused) this.togglePause();
+        break;
+      case 'abandon':
+        this.state = 'menu';
+        this.paused = false;
+        this.input.exitLock();
+        this.ui?.show?.('title');
+        break;
+      case 'retry':
+      case 'respawn':
+        this.respawn(data);
+        break;
+      case 'ending:done':
+        this.state = 'menu';
+        this.ui?.show?.('title');
+        break;
+      default: break;
+    }
+  }
+
+  /** Enter play. Runs the intro sequence if cinematics are available. */
+  startRun({ fresh = true } = {}) {
+    this.state = 'play';
+    this.paused = false;
+    this.ui?.show?.(null);
+    this.input.requestLock();
+    this.audio?.init?.();
+    if (fresh && this.sequencer?.play) {
+      this.sequencer.play('intro');
+    }
+  }
+
+  /** Death -> respawn. The world is expected to have shifted slightly. */
+  respawn() {
+    this.progression?.respawn?.();
+    const point = this.progression?.lastSafePoint?.() || this.world?.spawn || [0, 0, 0];
+    this.player.teleport(point[0], point[1], point[2], this.world?.spawnYaw || 0);
+    this.player.controlEnabled = true;
+    this.player.lookEnabled = true;
+    this.player.frozen = false;
+    this.engine.exposure.reset();
+    this.state = 'play';
+    this.ui?.show?.(null);
+    if (this.sequencer?.play) this.sequencer.play('respawn');
   }
 
   // -------------------------------------------------------------------------
@@ -298,22 +357,24 @@ export class Game {
   step(dt) {
     updateMaterialGlobals(dt);
 
+    // Order is load-bearing and is asserted by the gameplay layer:
+    //   1. cinematics may move or lock the camera
+    //   2. player integrates motion and emits noise/step events
+    //   3. gameplay reads the FINAL camera matrix (flashlight aim, interaction
+    //      raycast), then steps props, entities, director and hands
+    //   4. the world streams against the settled player position
+    //   5. the light rig runs last so it sees any circuit change made this frame
     this.sequencer?.update?.(dt);
     this.player.update(dt, this.input);
-    this.flashlight?.update?.(dt);
-    this.hands?.update?.(dt);
+    this.gameplay?.update?.(dt, this.input);
     this.world?.update?.(dt, this.player.position);
-    this.interactor?.update?.(dt);
-    this.entities?.update?.(dt);
-    this.director?.update?.(dt);
-    this.progression?.update?.(dt);
     this.rig.update(dt, this.engine.camera, this.engine.renderer);
     this.audio?.update?.(dt, this.player.position);
     this.ui?.update?.(dt);
 
     // Fear feeds the grade and the player's breathing. Kept here so there is
     // exactly one writer, whatever combination of subsystems is present.
-    const fear = clamp01(this.director?.fear ?? 0);
+    const fear = clamp01(this.gameplay?.director?.fear ?? this.director?.fear ?? 0);
     this.player.fear = damp(this.player.fear, fear, 2.2, dt);
     if (!this.subsystems.cinematics) {
       this.engine.grade.uniforms.uDread.value =
@@ -353,7 +414,8 @@ export class Game {
       subsystems: { ...this.subsystems },
       engine: this.engine.stats,
       lights: this.rig.stats,
-      entity: this.entities?.surveyor?.debugState?.() ?? null,
+      entity: this.gameplay?.surveyor?.debugState?.() ?? null,
+      gameplay: this.gameplay?.debugState?.() ?? null,
     };
   }
 }

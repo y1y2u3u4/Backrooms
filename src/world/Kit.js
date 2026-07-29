@@ -313,7 +313,7 @@ export function ceilingGrid(b, rect, y, {
   const shellFlip = shell.clone();
   shellFlip.applyMatrix4(new THREE.Matrix4().makeScale(-1, 1, 1)); // inward-facing
   worldUV(shellFlip, 1.4);
-  vertexShade(shellFlip, () => 0.30);
+  vertexShade(shellFlip, () => 0.58);
   plenum.push(shellFlip);
   shell.dispose();
 
@@ -325,7 +325,13 @@ export function ceilingGrid(b, rect, y, {
       if (slot) continue;   // a fixture occupies this cell
 
       const h = hash2(Math.round(cx * 13), Math.round(cz * 13));
-      if (h < damage * 0.34) { missing.push([cx, cz, cw, cd]); continue; }
+      // Missing tiles CLUSTER. A scattered hash of holes reads as perforated
+      // pegboard at distance — every hole shrinks to a black dot. Real ceilings
+      // lose tiles in groups: where a leak came through, or where somebody
+      // pulled a run of three to get at a cable. So a low-frequency cluster
+      // field gates the per-tile chance, and the overall rate is low.
+      const cluster = hash2(Math.round(cx / 2.6), Math.round(cz / 2.6));
+      if (cluster < damage * 0.55 && h < 0.42) { missing.push([cx, cz, cw, cd]); continue; }
 
       const sag = h < damage ? (h / Math.max(damage, 1e-4)) * 0.055 : 0;
       // Tiles must run UNDER the tee flange, not stop short of it. A gap of a

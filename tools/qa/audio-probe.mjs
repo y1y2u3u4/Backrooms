@@ -89,9 +89,13 @@ async function main() {
   try {
     await ready();
     // Vite pre-bundles `three` (pulled in by Physics.js) on first sight and then
-    // forces a full reload. Settle through that before touching the page.
+    // forces a full reload, which would destroy an execution context mid-run.
+    // Settle through that, then reload once deliberately so the page we measure
+    // on is loaded entirely from the warm dep cache.
     await page.waitForTimeout(2500);
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await ready();
+    await page.waitForTimeout(1200);
   } catch {
     console.error('harness never became ready:\n' + logs.join('\n'));
     await browser.close(); if (server) server.kill();
@@ -100,7 +104,7 @@ async function main() {
 
   /** Evaluate, surviving a navigation by waiting for the harness again. */
   const run = async (fn, arg) => {
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < 5; attempt++) {
       try { return await page.evaluate(fn, arg); } catch (e) {
         if (!/context was destroyed|Target closed|navigation/i.test(String(e.message))) throw e;
         await page.waitForTimeout(1200);

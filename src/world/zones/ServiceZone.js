@@ -84,9 +84,11 @@ export function buildService(ctx, opts = {}) {
   const rng = makeRng(seed);
   const D = decals || ctx.world?.decals;
 
-  const [bWest, bMid, bEast, bRooms, bPlantRoom] =
-    makeBuilders(ctx, 'service', ['west', 'mid', 'east', 'rooms', 'plantroom']);
-  const builders = [bWest, bMid, bEast, bRooms, bPlantRoom];
+  // Three chunks, not five. Every extra chunk is another mesh per material in
+  // the frame, and the draw-call budget is tighter than the culling win.
+  const [bWest, bMid, bEast] = makeBuilders(ctx, 'service', ['west', 'mid', 'east']);
+  const bPlantRoom = bWest;
+  const builders = [bWest, bMid, bEast];
   const fixtures = [];
   const R = rigProxy(rig, [0, 0, 0], fixtures);   // ZoneBuilder already offsets objects
   const rigFor = (b) => rigProxy(rig, b.origin, fixtures);
@@ -187,6 +189,9 @@ export function buildService(ctx, opts = {}) {
     else if (h < 0.5) health = 'buzz';
     stripLight(b, rigFor(b), x + 2.1, CEIL - 0.10, 0.12, {
       rotation: Math.PI / 2, circuit: 'service', health, seed: fseed++, cage: true,
+      // Volumetric cones are pure overdraw; every other fixture is plenty to
+      // establish the haze and it halves the transparent draw count.
+      cone: fseed % 2 === 0,
     });
   }
   emergencyLight(bMid, rigFor(bMid), -6.3, 2.55, HW - 0.09, { yaw: Math.PI, seed: 2 });

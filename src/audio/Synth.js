@@ -321,13 +321,17 @@ export function panner2d(ctx, bag, pan = 0) {
 // ---------------------------------------------------------------------------
 
 const _impulseCache = new WeakMap();
-/** A two-sample unit impulse — the exciter for every modal ring. */
+/**
+ * A true single-sample unit impulse — the exciter for every modal ring.
+ * It must be a UNIT impulse and nothing else: modalRing's level compensation is
+ * derived analytically from the biquad's impulse response, so any extra samples
+ * here silently change the loudness of every struck object in the game.
+ */
 export function impulseBuffer(ctx) {
   let b = _impulseCache.get(ctx);
   if (!b) {
-    b = ctx.createBuffer(1, 4, ctx.sampleRate);
-    const d = b.getChannelData(0);
-    d[0] = 1; d[1] = 0.55; d[2] = -0.12;
+    b = ctx.createBuffer(1, 2, ctx.sampleRate);
+    b.getChannelData(0)[0] = 1;
     _impulseCache.set(ctx, b);
   }
   return b;
@@ -441,13 +445,15 @@ export function modalRing(ctx, bag, dest, t, {
     const q = m.q ?? t60ToQ(t60, f);
     const bp = biquad(ctx, bag, 'bandpass', f, q);
     // A constant-0dB-peak bandpass (which is what Web Audio's 'bandpass' is)
-    // has an impulse response that STARTS at alpha = sin(w0)/2Q, not at 1. For
-    // a 5-second piano-ish mode that is 1e-5, which is why the first version of
-    // this function rendered the game's entire modal palette 60 dB too quiet.
-    // Compensating by exactly 1/alpha makes each mode ring at its stated gain.
+    // has an impulse response whose ENVELOPE peaks at exactly 2*alpha, where
+    // alpha = sin(w0)/2Q. For a 5-second mode at 147 Hz that is 1e-4, which is
+    // why the first version of this function rendered the game's whole modal
+    // palette 70 dB too quiet. Compensating by 1/(2*alpha) makes each mode ring
+    // at exactly its stated gain, so `gain` is a true upper bound on the peak
+    // of the summed bank — verified numerically, not guessed.
     const w0 = TAU * f / ctx.sampleRate;
     const alpha = Math.sin(w0) / (2 * q);
-    const comp = clamp(1 / Math.max(alpha, 1e-7), 1, 8e4);
+    const comp = clamp(1 / Math.max(2 * alpha, 1e-7), 1, 8e4);
     const mg = gainNode(ctx, bag, (m.gain ?? 1) * norm * comp);
     exBus.connect(bp); bp.connect(mg);
     if (spread > 0) {

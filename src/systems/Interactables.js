@@ -758,7 +758,10 @@ export function goodsLift(ctx, {
             font: '600 28px "Courier New", monospace', bg: '#141310', fg: '#ff9a3c', glow: '#ff7a10',
           });
           player?.kick(0.03, 0, 0.02, 0.04);
-          bus?.emit('lift:arrive', { id, floor: state.floor, name: floors[state.floor].name });
+          bus?.emit('lift:arrive', {
+            id, floor: state.floor, name: floors[state.floor].name,
+            exit: !!floors[state.floor].exit,
+          });
           bus?.emit('player:noise', { position: root.getWorldPosition(new THREE.Vector3()), radius: 18 });
         }
       }
@@ -1973,6 +1976,8 @@ export function hidingPlace(ctx, {
     },
     /** Push the door open a crack to look out. Louder the wider it goes. */
     setPeek(v) { state.peek = clamp01(v); },
+    /** Shut it, silently and instantly. Used only by the Attendant. */
+    shut() { if (state.inside) return false; state.peek = 0; state.doorTarget = 0; state.door = 0; return true; },
     state: () => ({ ...state }),
   };
 

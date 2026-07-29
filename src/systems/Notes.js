@@ -489,12 +489,13 @@ floor or you drain one and either way it hears you. One in R-207, and my card
 is old, so it will have to be the warden's. One in the Stack, and the Stack is
 not a place, so take the lift and do not look at the indicator.
 
-E — if it is you reading this, and it should not be, the answer to the terminal
-in the Office of Record is not a number. It is the date on the poster, backwards,
-without the year. I set it. I am sorry about the open day.
+E — if it is you reading this, and it should not be, the authorisation on the
+terminal in the Office of Record is not a number anybody could guess. It is the
+date on the open-day poster, written as four figures, and then reversed. I set
+it. I am sorry about the open day.
 
 Do not come and look for me. I am fine. I am simply not finished.
-`, { tags: ['core', 'notebook'], code: '3112' }),
+`, { tags: ['core', 'notebook'], code: '2130' }),
 
   // ---------------------------------------------------------- discovery --
   N('note_office_of_record', 'Office of Record — Card on the desk', 'note', 'safe', `

@@ -72,6 +72,9 @@ const SCHEMA = [
     { id: 'subtitles', name: 'Subtitles', kind: 'toggle' },
     { id: 'safePrompts', name: 'High-contrast prompts', kind: 'toggle' },
   ] },
+  { group: 'Record', items: [
+    { id: '_reset', name: 'Restore issued settings', kind: 'action', note: 'Form 12B, as printed' },
+  ] },
 ];
 
 function pct(v) { return v <= 0.001 ? 'MUTE' : Math.round(v * 100) + '%'; }
@@ -106,9 +109,10 @@ export function createSettings({ bus, engine, player, input, onClose }) {
       'form part of the site record.' })));
   cols[1].appendChild(el('div.ax-set-note.ax-rise',
     el('hr.ax-rule', { style: { margin: '30px 0 14px' } }),
-    field('Subtitles', 'Speaker + position', { mono: false }),
-    field('Head motion', 'Bob, sway and shake', { mono: false }),
-    field('Prompts', 'Shape and word tokens', { mono: false })));
+    el('p.ax-set-p', { text:
+      'Subtitles carry a speaker and a direction. High-contrast prompts carry a ' +
+      'shape and a word as well as a colour. Head motion scales the bob, the ' +
+      'sway and every shake in the building, including the ones in the lift.' })));
 
   function makeRow(item) {
     const name = el('div.ax-ctl-n', { text: item.name });
@@ -139,6 +143,10 @@ export function createSettings({ bus, engine, player, input, onClose }) {
         off.toggleAttribute('data-on', !v);
         on.toggleAttribute('data-on', !!v);
       };
+    } else if (item.kind === 'action') {
+      mid = el('div.ax-seg', el('span.ax-set-action', { text: item.note || '' }));
+      mid._paint = () => {};
+      val = el('div.ax-ctl-v', { text: '↩' });
     } else {
       const spans = item.options.map((o) => {
         const s = el('span', { text: item.label?.[o] || o });
@@ -153,6 +161,7 @@ export function createSettings({ bus, engine, player, input, onClose }) {
     const row = el('div.ax-ctl.ax-rise', name, mid, val);
     interactive(row);
     row.addEventListener('pointerenter', () => selectRow(rows.findIndex((r) => r.item === item)));
+    if (item.kind === 'action') row.addEventListener('click', () => restoreDefaults());
     const rec = { item, node: row, mid, val };
     rows.push(rec);
     return row;
@@ -161,11 +170,19 @@ export function createSettings({ bus, engine, player, input, onClose }) {
   function paint(item) {
     const rec = rows.find((r) => r.item === item);
     if (!rec) return;
+    if (item.kind === 'action') return;
     const v = values[item.id];
     rec.mid._paint(v);
     if (item.kind === 'range') rec.val.textContent = item.format(v);
     else if (item.kind === 'toggle') rec.val.textContent = v ? 'YES' : 'NO';
     else rec.val.textContent = '';
+  }
+
+  function restoreDefaults() {
+    Object.assign(values, DEFAULTS);
+    for (const g of SCHEMA) for (const i of g.items) paint(i);
+    saveSettings(values);
+    applyAll();
   }
 
   function setValue(item, v, apply = true) {
@@ -191,6 +208,7 @@ export function createSettings({ bus, engine, player, input, onClose }) {
 
   function nudge(dir) {
     const { item } = rows[sel];
+    if (item.kind === 'action') { restoreDefaults(); return; }
     if (item.kind === 'range') setValue(item, values[item.id] + dir * item.step);
     else if (item.kind === 'toggle') setValue(item, dir > 0);
     else {
@@ -288,6 +306,9 @@ export const SETTINGS_CSS = /* css */ `
   color: var(--ax-bone-4); margin: 0; max-width: 48ch; }
 .ax-set-note .ax-field { padding: 3px 0; }
 .ax-set-note .ax-value { color: var(--ax-bone-4); font-size: 11.5px; }
+.ax-set-action { font-family: var(--ax-type); font-size: 11.5px; letter-spacing: 0;
+  text-transform: none; color: var(--ax-bone-4); padding: 4px 0; }
+.ax-ctl[data-sel] .ax-set-action { color: var(--ax-bone-2); }
 `;
 
 export default createSettings;

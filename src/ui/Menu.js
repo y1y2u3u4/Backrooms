@@ -74,11 +74,12 @@ export function createMenu({ onSelect, hasSave = () => false }) {
   creditsBack.addEventListener('click', () => showView('root'));
 
   const creditsView = el('div.ax-menu-credits',
-    el('div.ax-h1', { text: 'Staffing schedule' }),
-    el('div.ax-micro.ax-dim', { text: 'Annex 7 · night operations · sheet 1 of 1',
-      style: { marginTop: '10px', marginBottom: '20px' } }),
-    creditsColumn(),
-    el('div', { style: { marginTop: '26px' } }, creditsBack));
+    el('div.ax-menu-credits-head',
+      el('div.ax-h1', { text: 'Staffing schedule' }),
+      el('div.ax-micro.ax-dim', { text: 'Annex 7 · night operations · sheet 1 of 1',
+        style: { marginTop: '10px' } })),
+    el('div.ax-menu-credits-scroll', creditsColumn()),
+    el('div.ax-menu-credits-foot', creditsBack));
 
   // Two lines, always. The lockup is a deliberate stack, not a wrap, so it
   // reads the same at 1280x720 and on a 21:9 monitor.
@@ -123,6 +124,9 @@ export function createMenu({ onSelect, hasSave = () => false }) {
     rootView.toggleAttribute('data-off', v !== 'root');
     creditsView.toggleAttribute('data-on', v === 'credits');
     stampNode.toggleAttribute('data-off', v !== 'root');
+    // The credits are a document, not a poster — the live plate behind gets
+    // pushed back so the schedule is actually readable.
+    node.toggleAttribute('data-reading', v !== 'root');
   }
 
   select(0);
@@ -181,13 +185,29 @@ export const MENU_CSS = /* css */ `
 .ax-menu-stamp { right: clamp(60px, 9vw, 190px); bottom: clamp(96px, 18vh, 210px); }
 .ax-menu-stamp[data-off] { opacity: 0; transition: opacity 240ms var(--ax-ease); }
 
+.ax-menu-layer[data-reading] .ax-menu-scrim {
+  background:
+    linear-gradient(97deg, rgba(5,4,3,.985) 0%, rgba(5,4,3,.97) 34%, rgba(5,4,3,.90) 58%,
+                           rgba(5,4,3,.74) 78%, rgba(5,4,3,.80) 100%),
+    linear-gradient(0deg, rgba(4,3,2,.86) 0%, rgba(4,3,2,0) 34%);
+}
 .ax-menu-credits {
-  position: absolute; left: var(--ax-pad); top: clamp(104px, 16vh, 160px);
-  width: min(62ch, 54vw); max-height: 68vh; overflow: hidden;
+  position: absolute; left: var(--ax-pad); top: clamp(96px, 14vh, 150px);
+  bottom: clamp(62px, 9vh, 92px); width: min(62ch, 54vw);
+  display: flex; flex-direction: column; min-height: 0;
   opacity: 0; transform: translateY(10px); pointer-events: none;
   transition: opacity 320ms var(--ax-ease), transform 320ms var(--ax-ease);
 }
 .ax-menu-credits[data-on] { opacity: 1; transform: none; pointer-events: auto; }
+.ax-menu-credits-head { flex: 0 0 auto; padding-bottom: 18px; }
+.ax-menu-credits-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 12px;
+  scrollbar-width: thin; scrollbar-color: rgba(207,200,180,.18) transparent;
+  -webkit-mask-image: linear-gradient(180deg, #000 0 92%, #0000 100%);
+  mask-image: linear-gradient(180deg, #000 0 92%, #0000 100%); }
+.ax-menu-credits-scroll::-webkit-scrollbar { width: 3px; }
+.ax-menu-credits-scroll::-webkit-scrollbar-thumb { background: rgba(207,200,180,.18); }
+.ax-menu-credits-foot { flex: 0 0 auto; padding-top: 14px;
+  border-top: 1px solid var(--ax-bone-4); }
 
 @media (max-height: 760px) {
   .ax-menu-root { top: 26%; }

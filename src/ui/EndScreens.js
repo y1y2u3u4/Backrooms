@@ -248,7 +248,7 @@ export const END_CSS = /* css */ `
 .ax-ending[data-phase="roll"] .ax-end-roll { opacity: 1; }
 .ax-end-roll-inner { width: min(64ch, 56vw); will-change: transform; }
 
-.ax-end-coda { position: absolute; left: var(--ax-pad); top: 42%; width: min(56ch, 52vw);
+.ax-end-coda { position: absolute; left: var(--ax-pad); top: 42%; width: min(64ch, 58vw);
   opacity: 0; transform: translateY(8px);
   transition: opacity 1100ms var(--ax-ease), transform 1100ms var(--ax-ease); }
 .ax-ending[data-phase="coda"] .ax-end-coda { opacity: 1; transform: none; }

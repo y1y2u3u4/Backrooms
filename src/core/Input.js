@@ -20,6 +20,15 @@ export const ACTIONS = {
   cancel: ['Escape'],
   confirm: ['Enter', 'Space'],
   drop: ['KeyG'],
+  /**
+   * Covering the lamp with a hand is SILENT; the switch clicks, and the
+   * Surveyor hears clicks. This is the single most important key in the game
+   * after WASD, which is why it is a hold rather than a toggle.
+   */
+  cover: ['KeyV'],
+  swapCell: ['KeyB'],
+  /** Push a hiding place ajar to look out. Shares KeyV — context decides. */
+  peek: ['KeyV'],
 };
 
 export class Input extends Bus {
@@ -152,6 +161,8 @@ export class Input extends Bus {
       case 'crouch': return b[1]?.pressed;
       case 'interact': return b[0]?.pressed;
       case 'flashlight': return b[2]?.pressed;
+      case 'cover': case 'peek': return b[6]?.pressed;
+      case 'swapCell': return b[3]?.pressed;
       default: return false;
     }
   }

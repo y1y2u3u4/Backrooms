@@ -49,10 +49,12 @@ export function createPrompts() {
     subject.style.opacity = cur.subject ? '' : '0';
     badgeKey.textContent = cur.key || 'E';
     verb.textContent = cur.verb || 'Use';
-    const refused = !!cur.requires || cur.disabled;
+    // Note the coercion: toggleAttribute(name, undefined) *toggles* rather than
+    // forcing, which silently leaves a stale refusal on the next prompt.
+    const refused = !!(cur.requires || cur.disabled);
     node.toggleAttribute('data-refused', refused);
-    node.toggleAttribute('data-hold', !!cur.hold && !refused);
-    node.toggleAttribute('data-safe', safe);
+    node.toggleAttribute('data-hold', !!(cur.hold && !refused));
+    node.toggleAttribute('data-safe', !!safe);
     requires.textContent = cur.requires ? `Requires ${cur.requires}` : '';
     requires.style.opacity = cur.requires ? '' : '0';
     token.textContent = !safe ? '' : refused ? '· Locked' : cur.hold ? '· Hold' : '· Press';

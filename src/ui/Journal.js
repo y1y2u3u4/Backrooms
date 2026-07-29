@@ -396,6 +396,17 @@ export function createJournal({ bus } = {}) {
         g.beginPath(); g.arc(x, z, r, 0, Math.PI * 2); g.fillStyle = ink; g.fill();
       }
     }
+    if (plan.here) {
+      const x = X(plan.here.x), z = Z(plan.here.z);
+      g.strokeStyle = '#8a5a1a'; g.lineWidth = 1.5;
+      g.beginPath(); g.moveTo(x - 8, z); g.lineTo(x + 8, z);
+      g.moveTo(x, z - 8); g.lineTo(x, z + 8); g.stroke();
+      g.beginPath(); g.arc(x, z, 12, 0, Math.PI * 2); g.stroke();
+      g.fillStyle = '#8a5a1a'; g.font = 'bold 9px "Helvetica Neue", Arial, sans-serif';
+      g.fillText('HERE', x + 16, z - 10);
+      g.font = '10px "Courier New", monospace';
+    }
+
     // Labels last, over a knocked-out patch of paper — this is a plan somebody
     // annotated after drawing it, so the writing wins over the lines.
     for (const n of nodes) {
@@ -408,16 +419,6 @@ export function createJournal({ bus } = {}) {
       g.fillRect(lx - 3, ly - 9, wdt + 6, 12);
       g.fillStyle = 'rgba(30,28,22,.80)';
       g.fillText(n.label, lx, ly);
-    }
-
-    if (plan.here) {
-      const x = X(plan.here.x), z = Z(plan.here.z);
-      g.strokeStyle = '#8a5a1a'; g.lineWidth = 1.5;
-      g.beginPath(); g.moveTo(x - 8, z); g.lineTo(x + 8, z);
-      g.moveTo(x, z - 8); g.lineTo(x, z + 8); g.stroke();
-      g.beginPath(); g.arc(x, z, 12, 0, Math.PI * 2); g.stroke();
-      g.fillStyle = '#8a5a1a'; g.font = 'bold 9px "Helvetica Neue", Arial, sans-serif';
-      g.fillText('HERE', x + 16, z - 10);
     }
   }
 

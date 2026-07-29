@@ -217,14 +217,17 @@ export class Attendant {
     if (!hit) return null;
     const { entry, position } = hit;
     const handle = entry.data?.handle;
-    if (handle?.api?.setPeek) handle.api.setPeek(0);
     const st = handle?.state?.();
-    if (st && st.inside) return null;      // never while the player is in it
-    if (handle) { handle.api?.setPeek?.(0); }
-    // Drive the door group directly if we have one.
-    const pivot = entry.object.children.find((c) => c.type === 'Group');
-    if (pivot) pivot.rotation.y = 0;
-    if (handle) { handle.state && (handle.root.userData.attendantShut = true); }
+    if (st?.inside) return null;           // never while the player is in it
+    // No swing, no sound: it is simply like that now, and it was not like that
+    // before.
+    if (handle?.api?.shut) {
+      if (!handle.api.shut()) return null;
+    } else {
+      const pivot = entry.object.children.find((c) => c.isGroup || c.type === 'Group');
+      if (pivot) pivot.rotation.y = 0;
+    }
+    entry.object.userData.attendantShut = true;
     entry.used = true;
     return position;
   }

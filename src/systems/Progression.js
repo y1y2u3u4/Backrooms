@@ -252,20 +252,14 @@ export class Progression {
       this.bus.emit('world:power', { way8: true });
     });
 
+    // The lift is the ending. A floor flagged `exit: true` is the way out; every
+    // other floor is just a floor. Arriving there with the set running is the
+    // intended ending, and arriving there *without* it is the one where the
+    // indicator was telling the truth all along and the car only goes down.
     on('lift:arrive', (e) => {
-      // Arriving at the top of the shaft with the set running is the ending.
       if (this.ended) return;
-      if (this.setRunning && e?.name && /OUT|SURFACE|GROUND|PLANT/i.test(e.name) === false) {
-        this._end(ENDINGS.LEFT);
-      }
-    });
-
-    on('lift:travel', (e) => {
-      if (this.ended) return;
-      if (!this.setRunning) {
-        // The car will move without the set. It only goes one way.
-        this._end(ENDINGS.DESCENDED);
-      }
+      if (!e?.exit) return;
+      this._end(this.setRunning ? ENDINGS.LEFT : ENDINGS.DESCENDED);
     });
 
     on('valve:complete', (e) => {

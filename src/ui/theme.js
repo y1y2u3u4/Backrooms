@@ -175,8 +175,11 @@ const CSS = /* css */ `
     linear-gradient(8deg,  rgba(207,200,180,.022) 0%, rgba(0,0,0,0) 38%),
     repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, #0000 1px 3px);
 }
+/* A radial, not an inset shadow: an inset shadow on a dark ground draws a
+   visible rounded rectangle, which is the single most common way a full-screen
+   overlay gives itself away as a box. */
 .ax-vig { position: absolute; inset: 0; pointer-events: none;
-  box-shadow: inset 0 0 clamp(90px,13vw,240px) clamp(30px,5vw,110px) rgba(4,3,2,.72); }
+  background: radial-gradient(128% 104% at 50% 46%, rgba(4,3,2,0) 34%, rgba(4,3,2,.66) 100%); }
 
 /* ---- type -------------------------------------------------------------- */
 .ax-display {
