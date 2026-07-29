@@ -9,6 +9,59 @@ Ordered by how much breaks without them.
 
 ---
 
+## 0. Two fixes to the wiring already in `src/Game.js`  **(blocking)**
+
+`_bootUI` and `step` are nearly right. Two things:
+
+**(a) Do not construct a second sequencer.** `createUI` already builds one,
+fully wired, and exposes it as `ui.cine`. `Game._bootUI` currently builds
+another via `cine.createSequencer(...)`; both then drive `engine.camera` in the
+same frame and whichever runs last wins, non-deterministically. Replace:
+
+```js
+const cine = await optional('cinematics', 'cinematics/index.js');
+if (cine?.createSequencer) { this.sequencer = cine.createSequencer({ ... }); ... }
+```
+
+with:
+
+```js
+this.sequencer = this.ui?.cine || null;      // already has every sequence registered
+this.subsystems.cinematics = !!this.sequencer;
+```
+
+`createSequencer` now warns on the console when a second one is built against
+the same engine, and both share one `GradeDeck`, so the current code no longer
+*corrupts* the grade — but the camera contention is real and only this fixes it.
+
+**(b) Move `sequencer.update` after `player.update`.** `step()` currently runs
+
+```js
+this.sequencer?.update?.(dt);          // 1. cinematics move the camera
+...
+this.player.update(dt, this.input);    // 2. player overwrites it
+```
+
+`Player._applyCamera` runs unconditionally — it runs even when `frozen` — so it
+writes `camera.position` and `camera.rotation` every frame and stamps on
+whatever the cinematic just did. The sequencer must run **after** the player and
+**before** `engine.render`. Once (a) is done this is automatic, because
+`ui.update(dt)` (already called at the end of `step`) runs the sequencer, the
+vitals and the grade composition in the right order. Just delete the standalone
+`this.sequencer?.update?.(dt)` line.
+
+The comment block in `step()` describing the order should then read:
+
+```
+//   1. player integrates motion and emits noise/step events
+//   2. gameplay reads the FINAL camera matrix
+//   3. world streams against the settled player position
+//   4. light rig runs last so it sees this frame's circuit changes
+//   5. ui.update() — cinematics take the camera, then the grade is composed
+```
+
+---
+
 ## 1. `src/main.js` — construct the UI and call it in the frame loop  **(blocking)**
 
 The UI is a drop-in. It needs three lines in `boot()` and one in `step()`.

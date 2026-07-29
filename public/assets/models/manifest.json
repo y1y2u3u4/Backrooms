@@ -1,0 +1,203 @@
+{
+  "$schema": "THE ANNEX asset manifest — read by game code to know each GLB's sub-objects, pivots and suggested materials.",
+  "generated_by": "tools/blender/*.py (Blender 4.0.2, headless)",
+  "conventions": {
+    "units": "metres",
+    "up_axis": "+Y (glTF export; authored Z-up in Blender, exporter flips it)",
+    "pivots": "floor-standing props: base centre. wall-mounted props: mounting face. hinged/rotating parts: the hinge/joint axis. See each asset's 'pivot' note.",
+    "materials": "Every mesh has named MAT_* slots. The game re-materialises with its own procedural PBR library (src/world/Palette.js); 'suggestedPalette' below is the closest existing key per slot — several assets need NEW palette keys (glass, emissive, rubber, copper, brass) that don't exist yet, called out explicitly."
+  },
+  "assets": [
+    {
+      "file": "fuse_core.glb",
+      "tier": 1,
+      "description": "Hand-carried ceramic-and-brass power core — the key puzzle item.",
+      "triangles": 4470,
+      "triBudget": 12000,
+      "boundingBoxMetres": { "x": 0.112, "y": 0.306, "z": 0.125 },
+      "pivot": "root at the base of the ceramic body (floor/hand-carry convention); +Y is the model's 'front' (the window side).",
+      "subObjects": [
+        { "name": "CeramicBody", "purpose": "sharp-shouldered insulator-shed body with a recessed/bezelled window cutout", "material": "MAT_ceramic_ribbed" },
+        { "name": "_bezelFrame", "purpose": "proud brass bezel around the glass window", "material": "MAT_brass" },
+        { "name": "WindowScrews", "purpose": "4 corner fixing screws on the bezel", "material": "MAT_steel_pin" },
+        { "name": "BrassBase", "purpose": "base cap with chamfered contact face", "material": "MAT_brass" },
+        { "name": "_hexBase", "purpose": "hex wrench-flat band on the base cap", "material": "MAT_brass_oxidised" },
+        { "name": "BaseRivets", "purpose": "6 fixings between base cap and ceramic body", "material": "MAT_steel_pin" },
+        { "name": "BrassProngs", "purpose": "3 contact prongs on the underside", "material": "MAT_brass" },
+        { "name": "BrassTop", "purpose": "top cap + contact stud", "material": "MAT_brass" },
+        { "name": "_hexTop", "purpose": "hex wrench-flat band on the top cap", "material": "MAT_brass_oxidised" },
+        { "name": "TopRivets", "purpose": "6 fixings between top cap and ceramic body", "material": "MAT_steel_pin" },
+        { "name": "Handle", "purpose": "carry bail, static", "material": "MAT_steel_worn" },
+        { "name": "HandleLugs", "purpose": "flattened drilled lugs where the handle hinges", "material": "MAT_steel_worn" },
+        { "name": "HingePins", "purpose": "pins through the handle lugs", "material": "MAT_steel_pin" },
+        { "name": "Glass", "purpose": "inspection window pane — needs a transmissive/glass shader", "material": "MAT_glass" },
+        { "name": "Filament", "purpose": "visible glowing filament behind the glass — drive its emission strength for puzzle state", "material": "MAT_emissive" },
+        { "name": "DataPlate", "purpose": "stamped data plate with raised lettering bars + asset-tag boss", "material": "MAT_stamped_label" }
+      ],
+      "suggestedPalette": {
+        "MAT_ceramic_ribbed": "tileWall",
+        "MAT_brass": "chrome (NEEDS a dedicated brass/copper key — chrome reads too cool/blue)",
+        "MAT_brass_oxidised": "rust",
+        "MAT_steel_pin": "chrome",
+        "MAT_steel_worn": "machinePaint",
+        "MAT_glass": "NEW KEY NEEDED — transmissive glass, none exists in Palette.js",
+        "MAT_emissive": "NEW KEY NEEDED — emissive material the game can drive by strength for puzzle feedback",
+        "MAT_stamped_label": "signPlate"
+      }
+    },
+    {
+      "file": "breaker_panel.glb",
+      "tier": 1,
+      "description": "Wall-mounted distribution board with a hinged door, DIN-railed interior, 8 breakers + main isolator, terminal block, wiring looms and a gland plate.",
+      "triangles": 7264,
+      "triBudget": 12000,
+      "boundingBoxMetres": { "x": 0.610, "y": 0.902, "z": 0.189 },
+      "pivot": "root at the WALL MOUNTING FACE: x=0 (width centre), y=0 (back plane against the wall), z=0 (vertical centre of the box). Box extends +Y away from the wall.",
+      "subObjects": [
+        { "name": "Enclosure", "purpose": "outer steel shell, open-fronted cavity", "material": "MAT_steel_painted_panel" },
+        { "name": "FrontLip", "purpose": "rolled/folded lip around the front opening", "material": "MAT_steel_painted_panel" },
+        { "name": "Backplate", "purpose": "interior mounting plate", "material": "MAT_steel_dark" },
+        { "name": "Busbars", "purpose": "2 copper busbars", "material": "MAT_copper_busbar" },
+        { "name": "DinRails", "purpose": "top/bottom DIN rails the breakers clip onto", "material": "MAT_din_rail" },
+        { "name": "InteriorDetail", "purpose": "merged static detail: 8 breaker bodies + rating windows + test buttons, main isolator body/window, neutral/earth terminal block + screws, gland plate + gland rings", "material": "mixed: MAT_switch_plastic / MAT_rating_window / MAT_terminal_block / MAT_steel_dark / MAT_din_rail" },
+        { "name": "switch_0 .. switch_7", "purpose": "the 8 individually-pivoting BREAKER TOGGLE levers (hinge at the switch face; rotate about local X to flip). The static breaker bodies live in InteriorDetail.", "material": "MAT_switch_toggle" },
+        { "name": "main_isolator", "purpose": "larger pivoting isolator toggle, same convention as switch_N", "material": "MAT_switch_toggle" },
+        { "name": "WiringLooms", "purpose": "cable bundles from each breaker down to the gland plate", "material": "MAT_cable_insulation" },
+        { "name": "Knockouts", "purpose": "3 conduit knockouts on the top face (1 punched-through, 2 still blanked)", "material": "MAT_galv_steel" },
+        { "name": "LabelPlate", "purpose": "blank schematic label plate on the backplate", "material": "MAT_label_plate" },
+        { "name": "pivot_door", "purpose": "EMPTY at the hinge line (x=hinge_x). Rotate about local Z to open/close.", "material": null },
+        { "name": "DoorLeaf", "purpose": "door leaf: return flange, hinge-knuckle set, stiffening ribs, card holder — child of pivot_door", "material": "MAT_steel_painted_panel" },
+        { "name": "_latchDisc", "purpose": "quarter-turn latch with a screwdriver slot — child of pivot_door", "material": "MAT_chrome_latch" },
+        { "name": "ScheduleCard", "purpose": "paper circuit schedule sitting in the door's card holder — child of pivot_door", "material": "MAT_paper_schedule" }
+      ],
+      "suggestedPalette": {
+        "MAT_steel_painted_panel": "machinePaint",
+        "MAT_steel_dark": "machinePaint (darker tint)",
+        "MAT_copper_busbar": "NEW KEY NEEDED — copper; chrome/conduitMetal are the closest existing metals",
+        "MAT_switch_plastic": "plasticWhite (needs a dark tint override)",
+        "MAT_switch_toggle": "plasticWhite (needs a red tint override)",
+        "MAT_rating_window": "plasticWhite",
+        "MAT_terminal_block": "NEW KEY NEEDED — green terminal-block plastic",
+        "MAT_label_plate": "signPlate",
+        "MAT_paper_schedule": "paper",
+        "MAT_chrome_latch": "chrome",
+        "MAT_galv_steel": "gridMetal",
+        "MAT_din_rail": "gridMetal",
+        "MAT_cable_insulation": "plenum (dark, non-metal — closest available)"
+      }
+    },
+    {
+      "file": "valve_wheel.glb",
+      "tier": 1,
+      "description": "Corroded cast-iron gate valve on a pipe stub with a separately-pivoting handwheel.",
+      "triangles": 2016,
+      "triBudget": 12000,
+      "boundingBoxMetres": { "x": 0.390, "y": 0.359, "z": 0.282 },
+      "pivot": "root on the PIPE CENTRELINE (x=0 mid-length, y=0, z=0) so the game can slot it into a pipeRun. Pipe runs along local X.",
+      "subObjects": [
+        { "name": "FlowBody", "purpose": "the main valve body inline with the pipe", "material": "MAT_cast_iron_corroded" },
+        { "name": "PipeStubs", "purpose": "pipe stubs + end flanges both sides", "material": "MAT_pipe_steel" },
+        { "name": "Bonnet", "purpose": "bonnet rising from the flow body to the stem", "material": "MAT_cast_iron_corroded" },
+        { "name": "BonnetBolts", "purpose": "8 fixing bolts around the bonnet flange", "material": "MAT_steel_stem" },
+        { "name": "Stem", "purpose": "static stem rising to the wheel", "material": "MAT_steel_stem" },
+        { "name": "wheel", "purpose": "THE PIVOTING PART — spoked handwheel with hex hub nut; rotates about the stem axis (local Z through its own origin at the stem top)", "material": "MAT_cast_iron_corroded" }
+      ],
+      "suggestedPalette": {
+        "MAT_cast_iron_corroded": "rust",
+        "MAT_rust_streak": "rust",
+        "MAT_steel_stem": "conduitMetal",
+        "MAT_pipe_steel": "ductMetal"
+      }
+    },
+    {
+      "file": "handheld_lamp.glb",
+      "tier": 1,
+      "description": "Player's rubber-and-steel inspection lamp — held in first person, closest scrutiny of any prop in the game.",
+      "triangles": 2660,
+      "triBudget": 6000,
+      "boundingBoxMetres": { "x": 0.064, "y": 0.066, "z": 0.258 },
+      "pivot": "origin at the centre of the hand grip. +Y is 'forward' (toward the bulb/cage); the hook hangs on -Z from the rear, the cable exits the rear cap toward -Y.",
+      "subObjects": [
+        { "name": "Grip", "purpose": "ribbed rubber grip", "material": "MAT_rubber_grip" },
+        { "name": "_rearcap", "purpose": "steel cap closing the grip's back end", "material": "MAT_steel_lamp_dark" },
+        { "name": "_rearScrews", "purpose": "3 fixing screws on the rear cap", "material": "MAT_fastener_steel" },
+        { "name": "_cableClamp", "purpose": "strain-relief clamp band where the coiled cable exits", "material": "MAT_fastener_steel" },
+        { "name": "switch_slide", "purpose": "PIVOTING/SLIDING slide-switch nub (game should translate it along its slot, not rotate it)", "material": "MAT_steel_lamp" },
+        { "name": "HeadHousing", "purpose": "steel collar between grip and cage", "material": "MAT_steel_lamp" },
+        { "name": "_ferrule", "purpose": "ferrule ring marking the grip/housing seam", "material": "MAT_fastener_steel" },
+        { "name": "_cageMounts", "purpose": "3 screws mounting the wire cage to the housing", "material": "MAT_fastener_steel" },
+        { "name": "_reflector", "purpose": "recessed reflector cup behind the bulb", "material": "MAT_steel_lamp" },
+        { "name": "Bulb", "purpose": "glass bulb — needs a transmissive/glass shader", "material": "MAT_bulb_glass" },
+        { "name": "Filament", "purpose": "visible glowing filament — drive emission strength for on/off state", "material": "MAT_bulb_filament" },
+        { "name": "WireCage", "purpose": "protective wire cage over the bulb", "material": "MAT_steel_lamp" },
+        { "name": "Hook", "purpose": "static hanging hook", "material": "MAT_steel_lamp_dark" },
+        { "name": "CableStub", "purpose": "short coiled cable stub", "material": "MAT_cable_rubber" }
+      ],
+      "suggestedPalette": {
+        "MAT_rubber_grip": "NEW KEY NEEDED — matte black rubber; plenum is the closest non-metal dark surface",
+        "MAT_steel_lamp": "conduitMetal",
+        "MAT_steel_lamp_dark": "gridMetal",
+        "MAT_fastener_steel": "chrome",
+        "MAT_bulb_glass": "NEW KEY NEEDED — transmissive glass",
+        "MAT_bulb_filament": "NEW KEY NEEDED — emissive, drive by lamp on/off state",
+        "MAT_cable_rubber": "NEW KEY NEEDED — matte black rubber (same as MAT_rubber_grip)"
+      }
+    },
+    {
+      "file": "hands_lowpoly.glb",
+      "tier": 1,
+      "description": "First-person hands, stylised relaxed loose-carry pose. No rig — game poses procedurally.",
+      "triangles": 5304,
+      "triBudget": 6000,
+      "boundingBoxMetres": { "x": 0.356, "y": 0.245, "z": 0.108 },
+      "pivot": "EACH hand's own local origin is its WRIST, with local -Z running from wrist toward fingertips. hand_L and hand_R are exported at x=-0.10/+0.10 for the contact-sheet render only — reposition/rotate each independently at runtime.",
+      "subObjects": [
+        { "name": "hand_L", "purpose": "left hand, mirrored geometry from the same build", "material": "MAT_skin_stylised / MAT_sleeve_fabric" },
+        { "name": "hand_R", "purpose": "right hand", "material": "MAT_skin_stylised / MAT_sleeve_fabric" }
+      ],
+      "suggestedPalette": {
+        "MAT_skin_stylised": "NEW KEY NEEDED — stylised skin tone, nothing in Palette.js covers organic/skin surfaces",
+        "MAT_sleeve_fabric": "fabric"
+      }
+    },
+    {
+      "file": "surveyor.glb",
+      "tier": 2,
+      "description": "THE SURVEYOR — THE ANNEX's entity. ~2.9m tall. Square louvred-diffuser head on a long neck with instrument-boom rods; irregular stacked ceiling-void-plate torso with a gap exposing its spine; long over-segmented arms ending in flat measuring paddles; thin legs reversed at the knee. Fully procedural joint hierarchy, neutral A-pose at rest.",
+      "triangles": 9680,
+      "triBudget": 18000,
+      "boundingBoxMetres": { "x": 0.962, "y": 2.948, "z": 0.458 },
+      "pivot": "root at ground level between the feet. Every limb/joint object's LOCAL ORIGIN is its own joint (shoulder/elbow/wrist, hip/knee/ankle, torso base, neck base, head base) — verified non-zero in parent space; safe for direct procedural rotation.",
+      "hierarchy": "surveyor > torso > { neck > head, arm_upper_L > arm_lower_L > hand_L, arm_upper_R > arm_lower_R > hand_R }; surveyor > leg_upper_L > leg_lower_L > foot_L; surveyor > leg_upper_R > leg_lower_R > foot_R",
+      "subObjects": [
+        { "name": "torso", "purpose": "irregular stacked ceiling-void plates (one gap exposes the spine core), corner rivets, one sheared/damaged corner. Pivots at the hip line.", "material": "MAT_void_plate / MAT_void_plate_dark / MAT_rivet / MAT_spine_core" },
+        { "name": "neck", "purpose": "thin shaft, torso to head base", "material": "MAT_limb_shaft" },
+        { "name": "head", "purpose": "the identifying silhouette feature: a solid-bordered square louvre plate (see-through only at its centre aperture) + instrument-boom rods behind it + corner fixing bolts. Slight tilt about its own facing normal.", "material": "MAT_void_plate_dark / MAT_louvre_grille / MAT_joint_collar / MAT_rivet" },
+        { "name": "arm_upper_L / arm_upper_R", "purpose": "shoulder-to-elbow segment, mounted high/wide, with a shoulder collar + clevis pin", "material": "MAT_limb_shaft / MAT_joint_collar / MAT_clevis_pin" },
+        { "name": "arm_lower_L / arm_lower_R", "purpose": "elbow-to-wrist, built as TWO visual sub-segments (elbow->mid->wrist) inside one pivoting object for the 'too many segments' read, with elbow/mid collars + clevis pin", "material": "MAT_limb_shaft / MAT_joint_collar / MAT_clevis_pin" },
+        { "name": "hand_L / hand_R", "purpose": "flat wide measuring-paddle terminal, wrist collar + clevis pin", "material": "MAT_measuring_blade / MAT_joint_collar" },
+        { "name": "leg_upper_L / leg_upper_R", "purpose": "hip-to-knee (thigh), hip collar + clevis pin", "material": "MAT_limb_shaft / MAT_joint_collar / MAT_clevis_pin" },
+        { "name": "leg_lower_L / leg_lower_R", "purpose": "knee-to-ankle (shin), reversed-knee bend baked into the rest pose, knee collar + clevis pin", "material": "MAT_limb_shaft / MAT_joint_collar / MAT_clevis_pin" },
+        { "name": "foot_L / foot_R", "purpose": "flat foot + ankle collar", "material": "MAT_limb_shaft / MAT_joint_collar" }
+      ],
+      "suggestedPalette": {
+        "MAT_void_plate": "ceilingTile (strong thematic match — the torso literally is ceiling-void material)",
+        "MAT_void_plate_dark": "plenum",
+        "MAT_limb_shaft": "machinePaint",
+        "MAT_joint_collar": "gridMetal",
+        "MAT_clevis_pin": "chrome",
+        "MAT_measuring_blade": "gridMetal",
+        "MAT_louvre_grille": "gridMetal (matches the building's own ceiling-grid material — reinforces the theme)",
+        "MAT_rivet": "conduitMetal",
+        "MAT_spine_core": "rust"
+      },
+      "qa": {
+        "turntable": "docs/assets/surveyor.png (front / three_quarter / side / raking-light)",
+        "silhouette_test": "docs/assets/surveyor_silhouette.png (full / quarter-height / eighth-height, pure black on grey) — head remains the widest, most distinct silhouette feature at all three sizes"
+      }
+    }
+  ],
+  "notPresent": {
+    "note": "Tier 3 fixtures/set-dressing (troffer, bulkhead_lamp, radiator, locker, pipe_junction, cart, office_chair, desk, crt_terminal, shelving_unit, duct_section, debris_kit) were not built this pass — Tier 1 + the Surveyor were prioritised per direction, and Tier 1 required two full rebuild passes to reach a manufactured-detail bar. Kit.js/geo.js already procedurally cover several of these shapes (troffer, grille, conduit) reasonably well in the meantime."
+  }
+}

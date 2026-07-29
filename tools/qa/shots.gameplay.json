@@ -4,7 +4,6 @@
     "settle": 4,
     "setup": "g.__gpBoot = import('/src/systems/GameplayBoot.js').then(m => m.installGameplay(g, { seedDemo: true, quality: 'low' })).then(gp => { g.gameplay = gp; const base = g.step.bind(g); g.step = (dt) => { base(dt); try { gp.update(dt, null); } catch (e) { window.__GP_ERR = String(e && e.stack || e); } }; window.__GP_READY = true; }).catch(e => { window.__GP_ERR = String(e && e.stack || e); }); g.look(-24.0, 0, 27.4, Math.PI, -0.03);"
   },
-
   {
     "name": "10_breaker_panel",
     "settle": 30,
@@ -18,17 +17,17 @@
   {
     "name": "12_terminal",
     "settle": 90,
-    "setup": "if (!g.gameplay) return; g.look(-19.4, 0, 28.7, Math.PI, -0.08);"
+    "setup": "if (!g.gameplay) return; g.look(-19.4, 0, 27.9, Math.PI, -0.32);"
   },
   {
     "name": "13_keypad_reader",
     "settle": 20,
-    "setup": "if (!g.gameplay) return; g.look(-14.7, 0, 29.5, Math.PI, 0.02);"
+    "setup": "if (!g.gameplay) return; g.look(-14.7, 0, 29.4, Math.PI, -0.08);"
   },
   {
     "name": "14_valve",
     "settle": 20,
-    "setup": "if (!g.gameplay) return; g.look(-10.6, 0, 29.0, Math.PI, -0.06);"
+    "setup": "if (!g.gameplay) return; g.look(-10.6, 0, 28.6, Math.PI, -0.30);"
   },
   {
     "name": "15_generator",
@@ -38,7 +37,7 @@
   {
     "name": "16_generator_panel",
     "settle": 20,
-    "setup": "if (!g.gameplay) return; g.look(-4.0, 0, 26.8, Math.PI, -0.04);"
+    "setup": "if (!g.gameplay) return; g.look(-4.0, 0, 26.8, Math.PI, -0.22);"
   },
   {
     "name": "17_goods_lift",
@@ -48,14 +47,13 @@
   {
     "name": "18_locker_and_doors",
     "settle": 20,
-    "setup": "if (!g.gameplay) return; g.look(-27.4, 0, 28.6, Math.PI, -0.02);"
+    "setup": "if (!g.gameplay) return; g.look(-27.4, 0, 27.8, Math.PI, -0.20);"
   },
   {
     "name": "19_pickups",
     "settle": 20,
-    "setup": "if (!g.gameplay) return; g.look(-23.4, 0, 26.6, Math.PI, -0.46);"
+    "setup": "if (!g.gameplay) return; g.look(-23.4, 0, 26.6, Math.PI, -0.72);"
   },
-
   {
     "name": "20_hands_lamp",
     "settle": 40,
@@ -86,7 +84,6 @@
     "settle": 40,
     "setup": "if (!g.gameplay) return; g.gameplay.qa.circuits(true); g.gameplay.qa.lamp(false); g.look(-27.0, 0, -8.4, -1.5708, 0.02);"
   },
-
   {
     "name": "30_surveyor_lit_full",
     "settle": 30,
@@ -127,7 +124,6 @@
     "settle": 26,
     "setup": "if (!g.gameplay) return; g.gameplay.qa.circuits(true); g.gameplay.qa.lamp(false); g.gameplay.qa.surveyorTo(-25.9, -8.4, -1.5708); const s = g.gameplay.surveyor; s.captureBlend = 1; s.state = 'CAPTURING'; g.gameplay.qa.pose(0.2, 0.0); g.look(-27.0, 0, -8.4, -1.5708, 0.36);"
   },
-
   {
     "name": "40_attendant_footprints",
     "settle": 70,

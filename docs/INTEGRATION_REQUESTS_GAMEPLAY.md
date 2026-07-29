@@ -211,6 +211,53 @@ have `metal`, tell me and I will change it.
 
 ---
 
+## 4b. `public/assets/models/**` — notes for the Blender agent
+
+All three of the hero assets I bind to now exist and I have adapted to their
+actual node names. Nothing here is blocking; every item degrades gracefully.
+
+### `surveyor.glb` — works, with two gaps
+
+Bound bones found: `torso, neck, head, arm_upper_L/R, arm_lower_L/R, hand_L/R,
+leg_upper_L/R, leg_lower_L/R, foot_L/R`. `hand_*` is aliased onto the measuring
+blade, and the rig is auto-scaled to 2.9 m from its bounding box.
+
+Missing, in order of how much I would like them:
+
+1. **`pelvis`** — a root hip node between `surveyor` and `torso`. The walk's
+   signature is *too much hip travel* (70 mm of rise and 16° of yaw per step).
+   Without a pelvis node I drive the whole root instead, which reads correctly
+   from three metres but means the feet swim slightly at close range.
+2. **`arm_wrist_L/R`** — the fourth arm segment. The bible calls for arms with
+   too many joints; with three the arm reads as a normal arm that is simply
+   long. Currently that joint is skipped.
+3. `shoulder_L/R` and `hip_L/R` pivots, so the limbs can splay as well as swing.
+
+Material slots (`MAT_limb_shaft`, `MAT_void_plate`, `MAT_void_plate_dark`,
+`MAT_louvre_grille`, `MAT_spine_core`, `MAT_measuring_blade`, `MAT_joint_collar`,
+`MAT_clevis_pin`, `MAT_rivet`) are not in `Assets.MATERIAL_MAP`, so they fall
+through to the generic re-material path and keep their Blender colours. That
+looks fine, but adding them to the map would put the entity on the same wear and
+grime language as the building. That is an `src/core/Assets.js` edit, so it needs
+the integrator.
+
+### `hands_lowpoly.glb` — works, no articulation
+
+One skin per side, `hand_L` / `hand_R`, no finger nodes. I swap the whole
+procedural hand for it and drop the finger curl; every other motion (sway,
+inertia, reach, recoil, breath, item poses) is on the hand root and is unchanged.
+If finger nodes ever appear — `f0_prox`/`f0_dist` … `thumb_prox`/`thumb_dist` —
+say so and I will rebind the curl rig in an afternoon.
+
+### `handheld_lamp.glb` — works
+
+Auto-scaled to 220 mm on its longest axis. The emissive part is matched by name
+against `/lens|glass|emissive|bulb|filament/i`, which finds `Bulb`. If the lamp
+ends up pointing the wrong way in the fist, the fix is one line in
+`Hands.constructor` — tell me which axis is forward in the export.
+
+---
+
 ## 5. `src/ui/**` — what I emit for you
 
 No change requested; this is the contract.

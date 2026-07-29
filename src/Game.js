@@ -499,14 +499,23 @@ export class Game {
 export const DEFAULT_LIGHT_BUDGET = 12;
 
 export const AMBIENT_PROFILES = {
-  intake:    { sky: 0x4a3f28, ground: 0x6e6044, intensity: 1.45 },
-  service:   { sky: 0x1c2126, ground: 0x2c2f34, intensity: 0.40 },
-  cistern:   { sky: 0x0d1416, ground: 0x18211f, intensity: 0.20 },
-  residence: { sky: 0x2c2418, ground: 0x4a3a24, intensity: 0.62 },
-  plant:     { sky: 0x141820, ground: 0x2a2620, intensity: 0.30 },
-  duct:      { sky: 0x0e0d0c, ground: 0x131211, intensity: 0.10 },
-  stack:     { sky: 0x1a1a20, ground: 0x2a2a30, intensity: 0.34 },
-  safe:      { sky: 0x32281a, ground: 0x543f22, intensity: 0.72 },
+  // NOTE ON UNITS. A HemisphereLight's intensity is irradiance, and it is
+  // multiplied by the colour — so what matters is colour x intensity, and it
+  // has to land in the same range as a real fixture's irradiance to register at
+  // all. A troffer 2.7 m up delivers roughly 5 units at the floor; a fill of
+  // 0.14 (which is what a dark brown at intensity 1.3 gives) is 36x below the
+  // direct light and reads as pure black next to it. These values are chosen so
+  // an unlit wall face sits about two stops under a lit one, which is what a
+  // real room with white ceilings actually does.
+  intake:    { sky: 0x9a9484, ground: 0xb4ac98, intensity: 3.20 },
+  service:   { sky: 0x6a7078, ground: 0x7c8189, intensity: 1.10 },
+  cistern:   { sky: 0x4e5c60, ground: 0x5a6a68, intensity: 0.75 },
+  residence: { sky: 0x8a7c66, ground: 0xa08e72, intensity: 1.70 },
+  plant:     { sky: 0x60686f, ground: 0x74766e, intensity: 1.15 },
+  duct:      { sky: 0x3a3833, ground: 0x46433c, intensity: 0.45 },
+  stack:     { sky: 0x767884, ground: 0x8a8c96, intensity: 1.05 },
+  safe:      { sky: 0x9a8666, ground: 0xb09468, intensity: 2.10 },
+  void:      { sky: 0x000000, ground: 0x000000, intensity: 0.0 },
 };
 
 /** Minimal World shim used when `src/world/World.js` is not present. */

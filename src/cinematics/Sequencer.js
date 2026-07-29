@@ -38,6 +38,7 @@
 
 import * as THREE from 'three';
 import { EASE, easeFn, catmullRom, clamp01 } from './ease.js';
+import { deckFor } from './Grade.js';
 
 // ---------------------------------------------------------------------------
 
@@ -130,6 +131,25 @@ const _look = new THREE.Vector3();
 export function createSequencer({ bus, engine, player, deck, ui = null, rig = null, game = null } = {}) {
   const registry = new Map();
   const camera = engine?.camera || null;
+
+  // `deck` is optional so a sequencer can be constructed without knowing about
+  // the UI, but it always resolves to the engine's single shared deck — two
+  // decks over one set of uniforms fight and drift.
+  deck = deck || deckFor(engine);
+
+  // A second sequencer on the same engine means two systems writing the camera
+  // in the same frame, and whichever runs last silently wins. Say so loudly;
+  // the fix is to use the one the UI already owns (`ui.cine`).
+  if (engine) {
+    if (engine.__axSequencer) {
+      console.warn('[cine] a second sequencer was created for this engine. ' +
+        'Both will drive the camera. Use `ui.cine` instead of constructing your own.');
+    } else {
+      Object.defineProperty(engine, '__axSequencer', {
+        value: true, enumerable: false, writable: true, configurable: true,
+      });
+    }
+  }
 
   let run = null;          // the active run, or null
   let shakeAmt = 0, shakeDecay = 2.6, shakeT = 0;

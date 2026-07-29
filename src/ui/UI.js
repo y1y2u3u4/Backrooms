@@ -140,7 +140,7 @@ import { createObjective, OBJ_CSS } from './Objective.js';
 import { createDeath, createEnding, END_CSS } from './EndScreens.js';
 import { createVitals } from './Vitals.js';
 import { CREDITS_CSS } from './credits.js';
-import { GradeDeck } from '../cinematics/Grade.js';
+import { deckFor } from '../cinematics/Grade.js';
 import { createSequencer } from '../cinematics/Sequencer.js';
 import { installCinematics } from '../cinematics/index.js';
 
@@ -155,7 +155,7 @@ export function createUI({
   injectStyles(document);
   injectModuleStyles();
 
-  const deck = new GradeDeck(engine?.grade?.uniforms || {});
+  const deck = deckFor(engine);
   const screenLayer = deck.layer('screen', 200);
   const listeners = new Set();
   let current = null;

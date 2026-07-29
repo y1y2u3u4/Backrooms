@@ -26,6 +26,25 @@ const MUL = ['uExposure', 'uSaturation', 'uAutoExposure'];
 const MAX = ['uFade', 'uFlash', 'uInvert'];
 const ALL = [...ADD, ...MUL, ...MAX];
 
+/**
+ * One deck per engine, shared.
+ *
+ * The whole point of the deck is that there is exactly one writer for the post
+ * uniforms. Two decks over the same uniforms is worse than no deck at all: each
+ * captures the other's composed output as its "resting" base and they ratchet.
+ * So the deck lives on the engine and everyone asks for the same one.
+ */
+export function deckFor(engine) {
+  if (!engine) return new GradeDeck({});
+  if (!engine.__axGradeDeck) {
+    Object.defineProperty(engine, '__axGradeDeck', {
+      value: new GradeDeck(engine.grade?.uniforms || {}),
+      enumerable: false, writable: true, configurable: true,
+    });
+  }
+  return engine.__axGradeDeck;
+}
+
 export class GradeDeck {
   /** @param {object} uniforms engine.grade.uniforms */
   constructor(uniforms) {

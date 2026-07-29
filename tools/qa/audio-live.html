@@ -62,15 +62,26 @@ window.SOAK = async function soak(seconds = 40) {
   const ok = await audio.init();
   if (!ok) return { ok: false, reason: 'AudioContext unavailable', state: 'none' };
 
-  const dt = 1 / 60;
-  const frames = Math.round(seconds * 60);
   const samples = [];
   let stepT = 0, zoneT = 0, entityT = 0, zi = 0, ei = 0, si = 0, left = true;
   let peakVoices = 0, peakNodes = 0;
   const t0 = performance.now();
 
-  for (let f = 0; f < frames; f++) {
-    const t = f * dt;
+  // REAL TIME, on rAF. Stepping a fixed dt faster than the wall clock would
+  // schedule voices faster than the audio thread can retire them and every
+  // measurement below — peak voices, node count, leak trend — would be
+  // meaningless.
+  const done = new Set();
+  const fired = (at) => (t >= at && !done.has(at) ? (done.add(at), true) : false);
+  let f = 0, last = performance.now(), t = 0;
+  const frames = Math.round(seconds * 60);
+  while (t < seconds) {
+    await new Promise((r) => requestAnimationFrame(r));
+    const now = performance.now();
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    t += dt;
+    f++;
     // Walk the corridor, back and forth, at a realistic pace.
     const z = Math.sin(t * 0.11) * 46;
     camera.position.set(Math.sin(t * 0.37) * 1.4, 1.63, z);
@@ -91,7 +102,7 @@ window.SOAK = async function soak(seconds = 40) {
         position: camera.position.clone(),
       });
     }
-    if (f % 900 === 450) bus.emit('player:land', { force: 0.7, surface: 'concrete' });
+    if (fired(5.0)) bus.emit('player:land', { force: 0.7, surface: 'concrete' });
 
     zoneT -= dt;
     if (zoneT <= 0) { zoneT = 4.5; bus.emit('zone:enter', { zone: ZONES[zi++ % ZONES.length] }); }
@@ -105,42 +116,46 @@ window.SOAK = async function soak(seconds = 40) {
       if (ei % 4 === 0) bus.emit('entity:heard', { position: camera.position.clone(), radius: 8 });
     }
 
-    if (f === 300) audio.holdBreath(3.0);
-    if (f === 700) bus.emit('light:circuit', { circuit: 'main', powered: false });
-    if (f === 900) bus.emit('light:circuit', { circuit: 'main', powered: true });
-    if (f === 1100) bus.emit('story:note', { id: 'n1', title: 't', body: 'b' });
-    if (f === 1300) bus.emit('item:pickup', { id: 'fuse_core_a', name: 'Fuse core' });
-    if (f === 1500) audio.beat('dread');
-    if (f === 1700) audio.setMachineProximity(0.9);
-    if (f === 1900) audio.setSafeRoom(true);
-    if (f === 2050) bus.emit('cine:begin', { name: 'x' });
-    if (f === 2150) bus.emit('cine:end', { name: 'x' });
+    if (fired(5.0)) audio.holdBreath(3.0);
+    if (fired(11.5)) bus.emit('light:circuit', { circuit: 'main', powered: false });
+    if (fired(15.0)) bus.emit('light:circuit', { circuit: 'main', powered: true });
+    if (fired(18.0)) bus.emit('story:note', { id: 'n1', title: 't', body: 'b' });
+    if (fired(21.0)) bus.emit('item:pickup', { id: 'fuse_core_a', name: 'Fuse core' });
+    if (fired(25.0)) audio.beat('dread');
+    if (fired(28.0)) audio.setMachineProximity(0.9);
+    if (fired(31.0)) audio.setSafeRoom(true);
+    if (fired(34.0)) bus.emit('cine:begin', { name: 'x' });
+    if (fired(36.0)) bus.emit('cine:end', { name: 'x' });
 
     rig.update(dt, camera, null);
     audio.update(dt, camera.position);
 
     peakVoices = Math.max(peakVoices, audio.stats.voices);
     peakNodes = Math.max(peakNodes, audio.stats.nodes);
-    if (f % 300 === 0) samples.push({ f, ...audio.stats });
-    // Let the audio thread actually run: an OfflineAudioContext-style tight
-    // loop would measure nothing about a live graph.
-    if (f % 2 === 0) await new Promise((r) => setTimeout(r, 0));
+    if (t >= samples.length * (seconds / 8)) samples.push({ t: +t.toFixed(1), ...audio.stats });
   }
 
   const wall = (performance.now() - t0) / 1000;
-  const st = audio.stats;
-  // Everything should wind down once the drivers stop.
+  // Everything discrete should wind down once the drivers stop; the ambience
+  // and music LOOPS are supposed to survive, so they are counted separately.
   audio.entity.silence(0.2);
+  audio.setSafeRoom(false);
   bus.emit('entity:state', { entity: 'surveyor', state: 'despawn' });
-  for (let i = 0; i < 240; i++) { audio.update(dt, camera.position); }
-  await new Promise((r) => setTimeout(r, 900));
-  for (let i = 0; i < 120; i++) { audio.update(dt, camera.position); }
+  const quietUntil = performance.now() + 4000;
+  let qLast = performance.now();
+  while (performance.now() < quietUntil) {
+    await new Promise((r) => requestAnimationFrame(r));
+    const n2 = performance.now();
+    audio.update(Math.min((n2 - qLast) / 1000, 0.05), camera.position);
+    qLast = n2;
+  }
 
   return {
-    ok: true, wall: +wall.toFixed(1), frames,
+    ok: true, wall: +wall.toFixed(1), frames: f, seconds,
     peakVoices, peakNodes,
     end: audio.stats,
-    afterQuiet: audio.stats.voices,
+    afterQuiet: audio.stats.oneShots,
+    afterQuietLoops: audio.stats.loops,
     samples, errors,
     contextState: audio.engine.ctx.state,
     denied: audio.engine.stats.denied,

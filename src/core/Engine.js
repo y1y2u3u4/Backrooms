@@ -106,8 +106,8 @@ export class Engine {
     const W = 64, H = 32;
     const data = new Float32Array(W * H * 4);
     const ceil = new THREE.Color(0x7d6c40);
-    const horizon = new THREE.Color(0x2a2620);
-    const floor = new THREE.Color(0x261e12);
+    const horizon = new THREE.Color(0x282622);
+    const floor = new THREE.Color(0x231f19);
     const c = new THREE.Color();
     for (let y = 0; y < H; y++) {
       const t = y / (H - 1);                 // 0 = top
