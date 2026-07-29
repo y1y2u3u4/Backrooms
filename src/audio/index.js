@@ -80,6 +80,12 @@ import { EntityAudio } from './EntityAudio.js';
 import { Music } from './Music.js';
 import { Silence } from './Silence.js';
 
+/** Reverb profile key -> the zone whose ambience bed belongs with it. */
+const REVERB_TO_ZONE = {
+  corridor: 'intake', tiled: 'service', service: 'service', hall: 'plant',
+  cistern: 'cistern', dead: 'residence', duct: 'duct', stack: 'stack', safe: 'safe',
+};
+
 export function createAudio({ bus = null, collision = null, camera = null, rig = null, options = {} } = {}) {
   const engine = new AudioEngine({
     collision, camera,
@@ -213,14 +219,17 @@ export function createAudio({ bus = null, collision = null, camera = null, rig =
      */
     update(dt, playerPos) {
       if (!engine.available) return;
-      if (playerPos) {
-        listenerPos.x = playerPos.x ?? playerPos[0] ?? 0;
-        listenerPos.y = playerPos.y ?? playerPos[1] ?? 1.6;
-        listenerPos.z = playerPos.z ?? playerPos[2] ?? 0;
-      } else if (camera) {
+      // The camera IS the listener, so prefer it when one is bound; `playerPos`
+      // is a fallback for a headless caller. Passing the player's feet instead
+      // of the eye therefore costs nothing.
+      if (camera && camera.position) {
         listenerPos.x = camera.position.x;
         listenerPos.y = camera.position.y;
         listenerPos.z = camera.position.z;
+      } else if (playerPos) {
+        listenerPos.x = playerPos.x ?? playerPos[0] ?? 0;
+        listenerPos.y = playerPos.y ?? playerPos[1] ?? 1.6;
+        listenerPos.z = playerPos.z ?? playerPos[2] ?? 0;
       }
       const d = Math.min(dt || 0, 0.1);
       engine.update(d);
@@ -238,10 +247,13 @@ export function createAudio({ bus = null, collision = null, camera = null, rig =
     /** Zone change: reverb profile + ambience profile in one call. */
     setZone(zone, fade = 1.4) {
       if (!zone) return api;
-      // The engine resolves zone names and raw profile keys itself; the
-      // ambience only knows zone names, so an unknown key leaves it alone.
+      // The engine resolves both zone names ('cistern') and raw reverb profile
+      // keys ('hall'). The ambience only knows zone names, so a profile key is
+      // mapped back to the zone that owns it — a builder returning
+      // `reverb: 'hall'` should still get the Plant's ambience bed.
       engine.setZone(zone, fade);
-      if (ZONE_AMBIENCE[zone]) ambience.setZone(zone, fade * 2);
+      const ambKey = ZONE_AMBIENCE[zone] ? zone : REVERB_TO_ZONE[zone];
+      if (ambKey) ambience.setZone(ambKey, fade * 2);
       return api;
     },
 

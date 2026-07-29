@@ -69,6 +69,13 @@ export class Player {
     this.viewRoll = 0;
     this.fovBase = 66;
     this.fovOffset = 0;
+    /**
+     * Motion-reduction setting, 0..1, from the settings screen.
+     * At 0 the head is still, but lean, the neck spring and landing compression
+     * all still work — those are physical responses carrying information, not
+     * idle motion, and removing them removes information.
+     */
+    this.motionScale = 1;
 
     this.stepDistance = 0;
     this.totalDistance = 0;
@@ -291,7 +298,7 @@ export class Player {
     this.recoil.z = damp(this.recoil.z + this.recoilVel.z * dt, 0, 6, dt);
 
     // Bob: 2:1 Lissajous. Vertical at 2f, lateral at 1f, plus a small roll.
-    const a = this.bobAmount * lerp(1, 0.55, this.crouchAmt);
+    const a = this.bobAmount * lerp(1, 0.55, this.crouchAmt) * this.motionScale;
     const bobY = Math.sin(this.bobPhase * 2) * 0.026 * a;
     const bobX = Math.sin(this.bobPhase) * 0.030 * a;
     const bobRoll = Math.sin(this.bobPhase) * 0.011 * a;
@@ -299,12 +306,13 @@ export class Player {
     // Breathing: slow when calm, shallow and fast when afraid or spent.
     const breathRate = lerp(0.72, 2.55, clamp01(this.exertion * 0.7 + this.fear * 0.8));
     this._breathPhase = (this._breathPhase || 0) + breathRate * dt * TAU * 0.5;
-    const breathAmp = lerp(0.0032, 0.0135, clamp01(this.exertion + this.fear * 0.9));
+    const breathAmp = lerp(0.0032, 0.0135, clamp01(this.exertion + this.fear * 0.9))
+      * lerp(0.35, 1, this.motionScale);
     const breathY = Math.sin(this._breathPhase) * breathAmp;
     // Idle micro-drift stops the camera from ever being perfectly locked.
     const t = performance.now() * 0.001;
-    const driftX = wobble(t * 0.21, 3) * 0.0016 * (1 - a * 0.7);
-    const driftY = wobble(t * 0.17, 8) * 0.0014 * (1 - a * 0.7);
+    const driftX = wobble(t * 0.21, 3) * 0.0016 * (1 - a * 0.7) * this.motionScale;
+    const driftY = wobble(t * 0.17, 8) * 0.0014 * (1 - a * 0.7) * this.motionScale;
 
     const eyeY = lerp(EYE_STAND, EYE_CROUCH, this.crouchAmt);
     this.eyeHeight = eyeY;
@@ -318,7 +326,8 @@ export class Player {
       this.position.y + eyeY + bobY + breathY + this.neckOffset.y,
       this.position.z + this._right.z * (bobX + leanOffset) + this._fwd.z * this.neckOffset.z);
 
-    this.viewRoll = damp(this.viewRoll, -this.lean * 0.185 + bobRoll + this.recoil.z, 12, dt);
+    this.viewRoll = damp(this.viewRoll,
+      -this.lean * 0.185 + bobRoll * this.motionScale + this.recoil.z, 12, dt);
     cam.rotation.set(
       this.pitch + this.recoil.x + driftY,
       this.yaw + this.recoil.y + driftX,

@@ -16,6 +16,30 @@ import { worldUV, whiteColors, triCount } from '../render/geo.js';
  * so the world always builds even mid-production.
  */
 
+/**
+ * Slots the procedural palette does not cover.
+ *
+ * The palette is a library of *architectural* surfaces — wallpaper, concrete,
+ * carpet. Hero props need a handful of small-object materials that would never
+ * appear on a wall: brass contacts, rubber grips, glazed ceramic. Rather than
+ * bloat the palette with keys only one prop uses, they are defined here as
+ * plain parameter sets and still get the game's shader injections so they fog
+ * and grade with everything else.
+ */
+const PROP_MATERIALS = {
+  MAT_brass:          { color: 0xb08d4a, metalness: 1.0, roughness: 0.34, env: 1.15 },
+  MAT_brass_oxidised: { color: 0x6d5a34, metalness: 1.0, roughness: 0.62, env: 0.7 },
+  MAT_copper:         { color: 0xa05a34, metalness: 1.0, roughness: 0.40, env: 1.0 },
+  MAT_ceramic:        { color: 0xd8d2c2, metalness: 0.0, roughness: 0.28, env: 0.9 },
+  MAT_ceramic_ribbed: { color: 0xcfc8b6, metalness: 0.0, roughness: 0.32, env: 0.85 },
+  MAT_rubber:         { color: 0x24241f, metalness: 0.0, roughness: 0.88, env: 0.25 },
+  MAT_steel_pin:      { color: 0x8f9297, metalness: 1.0, roughness: 0.30, env: 1.1 },
+  MAT_steel_worn:     { color: 0x74777c, metalness: 1.0, roughness: 0.46, env: 0.95 },
+  MAT_stamped_label:  { color: 0x9aa0a2, metalness: 0.6, roughness: 0.42, env: 0.8 },
+  MAT_skin:           { color: 0x9c7358, metalness: 0.0, roughness: 0.74, env: 0.30 },
+  MAT_bone:           { color: 0xb8b3a2, metalness: 0.0, roughness: 0.62, env: 0.45 },
+};
+
 /** Blender material name -> palette key. Extend as the library grows. */
 export const MATERIAL_MAP = {
   MAT_steel_painted: 'machinePaint',
@@ -130,6 +154,19 @@ export class Assets {
         });
       } else if (key === 'MAT_emissive') {
         mat = new THREE.MeshBasicMaterial({ color: src?.color || 0xffe0a8, fog: true });
+        mat.userData.emissiveSlot = true;
+        mat.userData.baseColor = mat.color.clone();
+        o.userData.emissive = mat;
+      } else if (PROP_MATERIALS[key]) {
+        const d = PROP_MATERIALS[key];
+        mat = new THREE.MeshStandardMaterial({
+          color: d.color, metalness: d.metalness, roughness: d.roughness,
+          vertexColors: true, envMapIntensity: d.env,
+        });
+        this.materials.decorate(mat, {
+          dirtAmount: 0.35, dirtBase: -0.6, detailStrength: 0, stochastic: 0,
+        });
+        mat.envMap = this.materials.envMap;
       } else {
         const paletteKey = MATERIAL_MAP[key];
         if (paletteKey && this.palette[paletteKey]) {

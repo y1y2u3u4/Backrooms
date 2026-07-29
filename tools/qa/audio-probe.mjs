@@ -266,7 +266,8 @@ async function main() {
     console.log('\n  FAILURES:');
     for (const f of failures) console.log('   ✗', f);
   }
-  const errs = logs.filter((l) => l.startsWith('[error]') || l.startsWith('[pageerror]'));
+  const errs = logs.filter((l) => l.startsWith('[error]') || l.startsWith('[pageerror]'))
+    .filter((l) => !/ERR_FAILED/.test(l));   // the deliberately blocked HMR client
   if (errs.length) {
     console.log('\n  console errors:');
     console.log(errs.slice(0, 12).join('\n'));

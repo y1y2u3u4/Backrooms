@@ -322,10 +322,8 @@ export function panner2d(ctx, bag, pan = 0) {
 
 const _impulseCache = new WeakMap();
 /**
- * A true single-sample unit impulse — the exciter for every modal ring.
- * It must be a UNIT impulse and nothing else: modalRing's level compensation is
- * derived analytically from the biquad's impulse response, so any extra samples
- * here silently change the loudness of every struck object in the game.
+ * A single-sample unit impulse. Useful for exciting any filter-based resonator
+ * — see the note in `modalRing` for why the modal bank does not use one.
  */
 export function impulseBuffer(ctx) {
   let b = _impulseCache.get(ctx);
@@ -383,7 +381,12 @@ export function noiseBurst(ctx, bag, dest, t, {
 // Modal synthesis — metal, pipes, plates, drips, ceramic, glass
 // ---------------------------------------------------------------------------
 
-/** T60 (seconds) to bandpass Q at frequency f. */
+/**
+ * T60 (seconds) to bandpass Q at frequency f. For CONTINUOUSLY excited
+ * resonators (the bowed-metal bank in Music.js), where the filter's input never
+ * goes silent and Blink therefore never truncates it. Struck bodies use
+ * `modalRing`, which is additive — see the note there.
+ */
 export const t60ToQ = (t60, f) => clamp(t60 * Math.PI * f / 6.9078, 0.5, 900);
 
 /**

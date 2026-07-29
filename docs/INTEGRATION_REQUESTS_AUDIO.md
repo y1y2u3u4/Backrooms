@@ -239,15 +239,31 @@ Recorded here so nobody builds them:
 
 ## 6. Verification
 
+Three scripts, none of which needs a build — each starts its own Vite dev
+server. All exit non-zero on failure, so they can go straight into CI.
+
 ```
-node tools/qa/audio-probe.mjs           # full numeric report, exit 4 on failure
+node tools/qa/audio-probe.mjs           # what every sound IS      (port 5303)
 node tools/qa/audio-probe.mjs --png     # also writes waveform strips
+node tools/qa/audio-live.mjs            # what the engine DOES     (port 5305)
+node tools/qa/audio-modaltest.mjs       # resonator decay diagnostic (port 5307)
 ```
 
-Renders every registered sound twice through an OfflineAudioContext in headless
-Chromium and checks that nothing is silent, clipping or DC-offset, that two
-triggers of the same sound differ, that the generated impulse responses have the
-T60 they claim and are level-matched, that occlusion makes a source duller,
-quieter *and* more reverberant, and that the fluorescent hum's envelope tracks a
-dying fixture's flicker curve. It needs no build; it starts its own Vite dev
-server on port 5303.
+**`audio-probe.mjs`** renders all 75 registered sounds twice through an
+OfflineAudioContext in headless Chromium — the same `build()` code the live game
+runs — and checks that nothing is silent, clipping or DC-offset, that two
+triggers of the same sound genuinely differ, that the nine generated impulse
+responses have the T60 they claim and are level-matched to within 1.9x, that
+occlusion makes a source duller, quieter *and* more reverberant (measured
+through the real `CollisionWorld`), and that the fluorescent hum's output
+envelope correlates with a dying fixture's flicker curve at r > 0.9 with the
+100 Hz mains partial dominant. Writes `tools/qa/audio-out/audio-report.json`.
+
+**`audio-live.mjs`** is the half the offline probe cannot reach: a real
+AudioContext, a real frame loop in real time, the occlusion round-robin, voice
+pooling and reaping, the hum pool tracking real `LightRig` fixtures, and zone
+reverb crossfades — driven over a synthetic corridor for 40 s. Fails if the
+voice count climbs, if one-shots survive wind-down, or if anything throws.
+
+**`audio-modaltest.mjs`** documents and re-checks a Blink behaviour that shaped
+the design of `Synth.modalRing` (see §5 and the comment in that function).

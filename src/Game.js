@@ -238,22 +238,24 @@ export class Game {
       } catch (e) { console.error('[game] UI failed to construct', e); }
     }
 
-    const cine = await optional('cinematics', 'cinematics/index.js');
-    if (cine?.createSequencer) {
-      try {
-        this.sequencer = cine.createSequencer({
-          bus: this.bus, engine: this.engine, player: this.player,
-          game: this, ui: this.ui, rig: this.rig,
-        });
-        cine.installCinematics?.(this.sequencer);
-        this.subsystems.cinematics = true;
-      } catch (e) { console.error('[game] cinematics failed to construct', e); }
-    }
+    // createUI already builds a fully-wired sequencer with every sequence
+    // registered and exposes it as `ui.cine`. Constructing a second one here
+    // would put two sequencers on the same camera in the same frame, and
+    // whichever ran last would win non-deterministically.
+    this.sequencer = this.ui?.cine || null;
+    this.subsystems.cinematics = !!this.sequencer;
 
     // The UI is the only thing that knows what the player clicked; route its
     // actions into game state here rather than letting it drive the game
     // directly, so there is one place that owns the state machine.
     this.bus.on('ui:action', (e) => this._onUiAction(e));
+    this.bus.on('ui:settings', (st) => {
+      if (st && typeof st.motion === 'number') this.player.motionScale = st.motion;
+      if (st && typeof st.fov === 'number') this.player.fovBase = st.fov;
+      if (st && typeof st.sensitivity === 'number') this.input.sensitivity = st.sensitivity;
+      if (st && typeof st.invertY === 'boolean') this.input.invertY = st.invertY;
+      if (st && st.quality) this.engine.setQuality(st.quality);
+    });
   }
 
   _onUiAction({ action, ...data } = {}) {
@@ -394,8 +396,15 @@ export class Game {
     const dt = Math.min((now - this._last) / 1000, 0.05);
     this._last = now;
     this.time += dt;
-    if (!this.paused) this.step(dt);
-    else this.ui?.update?.(dt);
+    if (!this.paused) {
+      this.step(dt);
+    } else {
+      // The pause screen is a translucent scrim over a *living* room. Freezing
+      // the whole step stops the light flicker and it reads as a screenshot.
+      updateMaterialGlobals(dt);
+      this.rig.update(dt, this.engine.camera, this.engine.renderer);
+      this.ui?.update?.(dt);
+    }
     this.engine.render(dt);
     this.input.endFrame();
   }
@@ -404,14 +413,15 @@ export class Game {
   step(dt) {
     updateMaterialGlobals(dt);
 
-    // Order is load-bearing and is asserted by the gameplay layer:
-    //   1. cinematics may move or lock the camera
-    //   2. player integrates motion and emits noise/step events
-    //   3. gameplay reads the FINAL camera matrix (flashlight aim, interaction
+    // Order is load-bearing and is asserted by the gameplay and UI layers:
+    //   1. player integrates motion and emits noise/step events
+    //   2. gameplay reads the FINAL camera matrix (flashlight aim, interaction
     //      raycast), then steps props, entities, director and hands
-    //   4. the world streams against the settled player position
-    //   5. the light rig runs last so it sees any circuit change made this frame
-    this.sequencer?.update?.(dt);
+    //   3. the world streams against the settled player position
+    //   4. the light rig runs last so it sees any circuit change made this frame
+    //   5. ui.update() runs the sequencer — which must come after the player,
+    //      because Player._applyCamera writes the camera every frame even when
+    //      frozen — and then composes the grade, before engine.render()
     if (this.state === 'menu') {
       // The title screen sits over a live world, not a plate. The player body
       // stays parked; only the camera drifts.
