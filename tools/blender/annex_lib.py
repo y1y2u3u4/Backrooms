@@ -886,6 +886,98 @@ def _composite_row(png_paths, out_path):
 # Manifest helper
 # ---------------------------------------------------------------------------
 
+def render_silhouette(objs, out_png, res=420, view_angle=(0.82, -0.82, 0.30)):
+    """
+    Pure-black-on-grey silhouette contact sheet at three frame-fill levels
+    (full / quarter-height / eighth-height), from one consistent angle. The
+    single most useful check for whether a creature/hero-prop silhouette
+    reads at distance — flat shading, no material variation, no cavity/AO.
+    """
+    scene = bpy.context.scene
+    if scene.world is None:
+        scene.world = bpy.data.worlds.new("_QA_world")
+    scene.world.use_nodes = True
+    bg = scene.world.node_tree.nodes.get("Background")
+    if bg:
+        bg.inputs[0].default_value = (0.6, 0.6, 0.62, 1.0)
+        bg.inputs[1].default_value = 1.0
+
+    lo, hi = _bounds_of(objs)
+    center = (lo + hi) / 2
+    size = hi - lo
+    radius = max(size.length / 2, 0.05)
+
+    black = bpy.data.materials.get("_QA_silhouette_black")
+    if black is None:
+        black = bpy.data.materials.new("_QA_silhouette_black")
+        black.use_nodes = True
+        bsdf = black.node_tree.nodes.get("Principled BSDF")
+        if bsdf:
+            bsdf.inputs["Base Color"].default_value = (0.003, 0.003, 0.003, 1.0)
+            _set_input(bsdf, ["Roughness"], 1.0)
+            _set_input(bsdf, ["Metallic"], 0.0)
+
+    saved = []
+    for o in objs:
+        if o.type != 'MESH':
+            continue
+        saved.append((o, list(o.data.materials)))
+        o.data.materials.clear()
+        o.data.materials.append(black)
+
+    prev_engine = scene.render.engine
+    scene.render.engine = 'BLENDER_WORKBENCH'
+    scene.display.shading.light = 'FLAT'
+    scene.display.shading.color_type = 'MATERIAL'
+    scene.display.shading.show_cavity = False
+    scene.render.resolution_x = res
+    scene.render.resolution_y = res
+    scene.render.image_settings.file_format = 'PNG'
+    scene.view_settings.view_transform = 'Standard'
+
+    cam_data = bpy.data.cameras.new("_QA_silcam")
+    cam_data.lens = 50
+    cam = bpy.data.objects.new("_QA_silcam", cam_data)
+    bpy.context.collection.objects.link(cam)
+    scene.camera = cam
+
+    vx, vy, vz = view_angle
+    tmp_dir = os.path.join(os.path.dirname(out_png), "_qa_tmp_sil")
+    os.makedirs(tmp_dir, exist_ok=True)
+    frame_paths = []
+    # dist multipliers chosen so the subject fills ~full/quarter/eighth of frame height
+    for tag, mult in (("full", 1.35), ("quarter", 5.4), ("eighth", 10.8)):
+        dist = radius * mult
+        cam.location = (center.x + vx * dist, center.y + vy * dist, center.z + vz * dist)
+        direction = center - cam.location
+        cam.rotation_euler = direction.to_track_quat('-Z', 'Y').to_euler()
+        cam_data.clip_end = dist * 20
+        fp = os.path.join(tmp_dir, f"{tag}.png")
+        scene.render.filepath = fp
+        bpy.ops.render.render(write_still=True)
+        frame_paths.append(fp)
+
+    scene.render.engine = prev_engine
+    bpy.data.objects.remove(cam, do_unlink=True)
+    for o, mats in saved:
+        o.data.materials.clear()
+        for m in mats:
+            o.data.materials.append(m)
+
+    _composite_row(frame_paths, out_png)
+    for fp in frame_paths:
+        try:
+            os.remove(fp)
+        except OSError:
+            pass
+    try:
+        os.rmdir(tmp_dir)
+    except OSError:
+        pass
+    print(f"[QA] silhouette sheet -> {out_png}")
+    return out_png
+
+
 def bbox_metres(objs):
     lo, hi = _bounds_of(objs)
     size = hi - lo

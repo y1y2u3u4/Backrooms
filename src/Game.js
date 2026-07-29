@@ -158,6 +158,8 @@ export class Game {
     P(0.97, 'compiling shaders');
     this.engine.renderer.compile(this.engine.scene, this.engine.camera);
 
+    this.menuCamera = this._makeMenuCamera();
+
     this.canvas.addEventListener('click', () => {
       if (this.ready && this.state === 'play') this.input.requestLock();
     });
@@ -281,6 +283,9 @@ export class Game {
 
   /** Enter play. Runs the intro sequence if cinematics are available. */
   startRun({ fresh = true } = {}) {
+    // Put the body back where the menu camera drifted away from.
+    const spawn = this.world?.spawn || [0, 0, 0];
+    if (fresh) this.player.teleport(spawn[0], spawn[1], spawn[2], this.world?.spawnYaw || 0);
     this.state = 'play';
     this.paused = false;
     this.ui?.show?.(null);
@@ -342,6 +347,41 @@ export class Game {
 
   stop() { this.running = false; cancelAnimationFrame(this._raf); }
 
+  /**
+   * Menu camera.
+   *
+   * A static title plate says "this is a menu"; a camera that is *already*
+   * inside the building, drifting, says "this place exists and you are about to
+   * be in it". The move is deliberately almost imperceptible — a slow dolly
+   * with a long lateral drift and a barely-there breath, so nothing in frame
+   * ever quite settles.
+   */
+  _makeMenuCamera() {
+    const cam = this.engine.camera;
+    const spawn = this.world?.spawn || [0, 0, 0];
+    const yaw0 = (this.world?.spawnYaw || 0) + 0.35;
+    let t = 0;
+    return {
+      reset: () => { t = 0; },
+      update: (dt) => {
+        t += dt;
+        const drift = Math.sin(t * 0.055) * 2.6;
+        const dolly = Math.sin(t * 0.031 + 1.1) * 1.4;
+        const yaw = yaw0 + Math.sin(t * 0.041) * 0.16;
+        cam.position.set(
+          spawn[0] + Math.cos(yaw0) * drift + Math.sin(yaw0) * dolly,
+          spawn[1] + 1.58 + Math.sin(t * 0.21) * 0.012,
+          spawn[2] - Math.sin(yaw0) * drift + Math.cos(yaw0) * dolly);
+        cam.rotation.set(
+          Math.sin(t * 0.037 + 2.2) * 0.035 - 0.02,
+          yaw,
+          Math.sin(t * 0.029) * 0.008,
+          'YXZ');
+        cam.updateMatrixWorld();
+      },
+    };
+  }
+
   _frame() {
     const now = performance.now();
     const dt = Math.min((now - this._last) / 1000, 0.05);
@@ -365,7 +405,13 @@ export class Game {
     //   4. the world streams against the settled player position
     //   5. the light rig runs last so it sees any circuit change made this frame
     this.sequencer?.update?.(dt);
-    this.player.update(dt, this.input);
+    if (this.state === 'menu') {
+      // The title screen sits over a live world, not a plate. The player body
+      // stays parked; only the camera drifts.
+      this.menuCamera.update(dt);
+    } else {
+      this.player.update(dt, this.input);
+    }
     this.gameplay?.update?.(dt, this.input);
     this.world?.update?.(dt, this.player.position);
     this.rig.update(dt, this.engine.camera, this.engine.renderer);

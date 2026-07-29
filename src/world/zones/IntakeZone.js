@@ -2,8 +2,12 @@ import * as THREE from 'three';
 import { Builder } from '../Builder.js';
 import { attachPalette } from '../Palette.js';
 import { KIT, floorSlab, wallRun, ceilingGrid, troffer, sprinkler, smokeDetector, outlet, grille, conduit, doorway } from '../Kit.js';
-import { makeRng, clamp01, hash2, lerp } from '../../core/util.js';
-import { box, merge, worldUV, vertexShade, cyl } from '../../render/geo.js';
+import { makeBuilders, rigProxy, portal, emergencyLight } from '../ZoneKit.js';
+import { STAMP, roomNumber } from '../Decals.js';
+import * as Props from '../Props.js';
+import * as Mech from '../Machinery.js';
+import { makeRng, clamp01, hash2, lerp, TAU } from '../../core/util.js';
+import { box, merge, worldUV, vertexShade, cyl, pipeRun } from '../../render/geo.js';
 
 /**
  * INTAKE — the entrance zone.
@@ -155,14 +159,10 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
 
   // ---- one builder per chunk, for frustum culling ------------------------
   const nChunk = Math.ceil(cols / INTAKE.chunkCells);
-  const builders = [];
-  for (let cr = 0; cr < nChunk; cr++) {
-    for (let cc = 0; cc < nChunk; cc++) {
-      const b = attachPalette(new Builder(materials, collision, { name: `intake_${cr}_${cc}` }), palette);
-      b.chunk = [cr, cc];
-      builders.push(b);
-    }
-  }
+  const names = [];
+  for (let cr = 0; cr < nChunk; cr++) for (let cc = 0; cc < nChunk; cc++) names.push(`${cr}_${cc}`);
+  const builders = makeBuilders(ctx, 'intake', names);
+  builders.forEach((b, i) => { b.chunk = [Math.floor(i / nChunk), i % nChunk]; });
   const builderFor = (r, c) => builders[Math.floor(r / INTAKE.chunkCells) * nChunk + Math.floor(c / INTAKE.chunkCells)]
     || builders[0];
 

@@ -292,5 +292,74 @@ paintPlate();
 set((location.hash || '#title').slice(1));
 requestAnimationFrame(loop);
 
+/**
+ * Cinematics self-test.
+ *
+ * Steps every registered sequence to completion at a fixed dt with no renderer
+ * attached, and asserts the two things that must always be true afterwards:
+ * the player has control back, and the grade deck has been handed back to its
+ * resting values. Runs each sequence twice — once watched, once skipped at the
+ * halfway mark — because skip is the path that strands people.
+ */
+window.UIH_TEST = async function testCinematics() {
+  const { SEQUENCES } = await import('../cinematics/index.js');
+  const names = Object.keys(SEQUENCES);
+  const errs = [];
+  const report = [];
+  const onErr = (e) => errs.push(String(e.message || e));
+  window.addEventListener('error', onErr);
+  const warn = console.error;
+  console.error = (...a) => { errs.push(a.map(String).join(' ')); warn(...a); };
+
+  const restingVig = engine.grade.uniforms.uVignette.value;
+
+  for (const name of names) {
+    for (const mode of ['watch', 'skip']) {
+      const before = errs.length;
+      player.frozen = false; player.controlEnabled = true; player.lookEnabled = true;
+      let swaps = 0;
+      const params = {
+        onSwap: () => swaps++, onSwapAhead: () => swaps++, onSwapBehind: () => swaps++,
+        travel: 6,
+      };
+      const p = ui.cine.play(name, params);
+      let steps = 0;
+      const dur = ui.cine.current?.duration ?? 0;
+      while (ui.cine.active && steps < 4000) {
+        ui.update(1 / 60);
+        steps++;
+        if (mode === 'skip' && steps === 30) ui.cine.skip();
+      }
+      await p;
+      // Retire the cine layer's fade-out so the deck settles.
+      for (let i = 0; i < 60; i++) ui.update(1 / 60);
+      ui.hide('death'); ui.hide('ending');
+      for (let i = 0; i < 60; i++) ui.update(1 / 60);
+
+      const u = engine.grade.uniforms;
+      const stuck = [];
+      if (u.uFade.value > 0.02) stuck.push(`uFade=${u.uFade.value.toFixed(3)}`);
+      if (u.uFlash.value > 0.02) stuck.push(`uFlash=${u.uFlash.value.toFixed(3)}`);
+      if (u.uWarp.value > 0.02) stuck.push(`uWarp=${u.uWarp.value.toFixed(3)}`);
+      if (u.uScanline.value > 0.02) stuck.push(`uScanline=${u.uScanline.value.toFixed(3)}`);
+      if (Math.abs(u.uVignette.value - restingVig) > 0.05) stuck.push(`uVignette=${u.uVignette.value.toFixed(3)}`);
+      if (u.uDread.value > 0.02) stuck.push(`uDread=${u.uDread.value.toFixed(3)}`);
+
+      report.push({
+        name, mode, duration: +dur.toFixed(2), steps, swaps,
+        frozen: player.frozen, control: player.controlEnabled, look: player.lookEnabled,
+        stuck, errors: errs.slice(before),
+      });
+      player.fear = 0;
+    }
+  }
+
+  console.error = warn;
+  window.removeEventListener('error', onErr);
+  ui.hide('death'); ui.hide('ending');
+  player.frozen = false; player.controlEnabled = true; player.lookEnabled = true;
+  return report;
+};
+
 window.UIH = { ui, bus, engine, player, set, states: Object.keys(STATES), paintPlate };
 window.UIH_READY = true;

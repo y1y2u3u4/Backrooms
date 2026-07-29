@@ -405,9 +405,12 @@ export class Flashlight {
     this.spill.color.copy(this.light.color);
 
     if (this.lens) {
+      // Kept just under 1.0 at full output. The lens is a 74 mm disc a hand's
+      // length from the eye; pushed above white it blooms into a hole in the
+      // middle of the frame and eats the picture.
       const m = this.lens.material;
       const base = m.userData.baseColor || new THREE.Color(0xfff0d0);
-      m.color.copy(base).multiplyScalar(0.06 + s * 1.5);
+      m.color.copy(base).multiplyScalar(0.05 + s * 0.82);
     }
   }
 
