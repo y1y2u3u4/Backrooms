@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#0a0906" />
+    <title>THE ANNEX</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23100e08'/><rect x='5' y='2' width='6' height='12' fill='%23c8a94a'/></svg>" />
+    <style>
+      :root {
+        --amber: #d8b45a;
+        --amber-dim: #8a7134;
+        --paper: #cfc8b4;
+        --ink: #0a0906;
+        --ui-font: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0; padding: 0; width: 100%; height: 100%;
+        background: #000; color: var(--paper);
+        font-family: var(--ui-font);
+        overflow: hidden; overscroll-behavior: none;
+        -webkit-font-smoothing: antialiased;
+      }
+      #app { position: fixed; inset: 0; }
+      canvas#view { display: block; width: 100%; height: 100%; touch-action: none; }
+      #ui-root { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+      #ui-root > * { pointer-events: none; }
+      .clickable { pointer-events: auto; }
+      ::selection { background: var(--amber-dim); color: #000; }
+      /* Prevents a white flash before the first frame is presented. */
+      #boot-veil {
+        position: fixed; inset: 0; background: #000; z-index: 100;
+        transition: opacity 900ms ease;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="view"></canvas>
+      <div id="ui-root"></div>
+    </div>
+    <div id="boot-veil"></div>
+    <noscript style="position:fixed;inset:0;display:grid;place-items:center;font-family:monospace">
+      THE ANNEX requires JavaScript and WebGL2.
+    </noscript>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

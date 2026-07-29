@@ -1,0 +1,14 @@
+[
+  { "name": "01_spawn_corridor",   "setup": "g.look(-25.2, 0, 25.2, 0, -0.03)", "settle": 45 },
+  { "name": "02_spine_long",       "setup": "g.look(-27.0, 0, -4.2, 1.5708, 0.0)", "settle": 45 },
+  { "name": "03_spine_cross",      "setup": "g.look(6.3, 0, -4.2, 3.1416, 0.02)", "settle": 45 },
+  { "name": "04_bay_open",         "setup": "g.look(0, 0, 10.5, 0.9, -0.05)", "settle": 45 },
+  { "name": "05_ceiling_up",       "setup": "g.look(-8.4, 0, -4.2, 0.4, 0.62)", "settle": 45 },
+  { "name": "06_floor_down",       "setup": "g.look(-8.4, 0, -4.2, 0.4, -0.85)", "settle": 45 },
+  { "name": "07_wall_close",       "setup": "g.look(-25.0, 0, 21.0, 3.1416, 0.0)", "settle": 45 },
+  { "name": "08_dark_bay",         "setup": "g.look(21.0, 0, -25.0, 2.2, -0.02)", "settle": 60 },
+  { "name": "09_room_interior",    "setup": "g.look(12.6, 0, 12.6, 0.7, 0.0)", "settle": 45 },
+  { "name": "10_column_detail",    "setup": "g.look(-6.0, 0, 6.0, 0.6, -0.15)", "settle": 45 },
+  { "name": "11_crouch_low",       "setup": "g.look(-27.0, 0, 0, 1.5708, 0.1); g.player.crouchAmt = 1;", "settle": 30 },
+  { "name": "12_far_view",         "setup": "g.look(-29.0, 0, -29.0, 0.785, 0.0)", "settle": 45 }
+]
