@@ -159,10 +159,27 @@ window.AUDIO_PROBE = {
     // Render the same sound through the chain the engine would build at a given
     // occlusion, taking the dry and wet paths SEPARATELY so the wet/dry ratio
     // is a real measurement rather than an early/late energy guess.
-    const render = async (occ, path) => {
+    // Per-channel stats, so the dry and wet paths can be measured from ONE
+    // render of ONE source instance. Rendering them separately would compare
+    // two different randomisations of the same sound and the wet/dry ratio
+    // would be noise.
+    const chanStats = (d, sr) => {
+      let peak = 0, sum = 0;
+      for (let i = 0; i < d.length; i++) { const a = Math.abs(d[i]); if (a > peak) peak = a; sum += d[i] * d[i]; }
+      let num = 0, den = 0;
+      for (let b = 0; b < 40; b++) {
+        const f = 40 * Math.pow(2, b * (Math.log2(14000 / 40) / 39));
+        const m = goertzel(d, sr, f);
+        num += f * m; den += m;
+      }
+      return { rms: Math.sqrt(sum / d.length), peak, centroid: den > 1e-12 ? num / den : 0 };
+    };
+
+    const at = async (occ) => {
       const OC = window.OfflineAudioContext;
       const ctx = new OC(2, 48000 * 2.5, 48000);
-      const master = ctx.createGain(); master.connect(ctx.destination);
+      const merge = ctx.createChannelMerger(2);   // L = dry, R = wet
+      merge.connect(ctx.destination);
       const lpf = ctx.createBiquadFilter(); lpf.type = 'lowpass'; lpf.Q.value = 0.4;
       const dry = ctx.createGain();
       const out = ctx.createGain();
@@ -170,16 +187,14 @@ window.AUDIO_PROBE = {
       lpf.frequency.value = Math.max(180, Math.min(19000, 19000 + (340 - 19000) * Math.pow(occ, 0.75)));
       dry.gain.value = 1 + (0.20 - 1) * occ;
       out.connect(dry); dry.connect(lpf);
-      if (path === 'dry') {
-        lpf.connect(master);
-      } else {
-        const conv = ctx.createConvolver(); conv.normalize = false;
-        conv.buffer = renderIR(ctx, REVERB_PROFILES.service);
-        const wet = ctx.createGain();
-        // Base send 0.5, distance factor 1, occlusion boost — as in the engine.
-        wet.gain.value = 0.5 * (1 + occ * 1.85);
-        lpf.connect(wet); wet.connect(conv); conv.connect(master);
-      }
+      lpf.connect(merge, 0, 0);
+      const conv = ctx.createConvolver(); conv.normalize = false;
+      conv.buffer = renderIR(ctx, REVERB_PROFILES.service);
+      const wet = ctx.createGain();
+      // Base send 0.5, distance factor 1, occlusion boost — as in the engine.
+      wet.gain.value = 0.5 * (1 + occ * 1.85);
+      lpf.connect(wet); wet.connect(conv);
+      const fold = ctx.createGain(); conv.connect(fold); fold.connect(merge, 0, 1);
       // A broadband source, so the measurement reads the FILTER rather than the
       // material's own spectrum. A concrete footstep is the right test signal:
       // it is what the player will most often hear through a wall.
@@ -187,15 +202,12 @@ window.AUDIO_PROBE = {
       const def = engine.registry.get(NAME);
       const bag = { sources: [], nodes: [], src(n) { this.sources.push(n); return n; }, add(n) { this.nodes.push(n); return n; }, stopAll() {}, dispose() {} };
       def.build({ ctx, bag, out, t: 0.02, engine, opts: { strength: 0.9 }, rng: Math.random, name: NAME });
-      return analyseBuffer(await ctx.startRendering());
-    };
-    const at = async (occ) => {
-      const d = await render(occ, 'dry');
-      const w = await render(occ, 'wet');
+      const buf = await ctx.startRendering();
+      const d = chanStats(buf.getChannelData(0), 48000);
+      const w = chanStats(buf.getChannelData(1), 48000);
       return {
-        dryRms: d.rms, dryCentroid: d.centroid, dryPeak: d.peak,
+        dryRms: d.rms, dryPeak: d.peak, centroid: d.centroid, rms: d.rms,
         wetRms: w.rms, wetDry: w.rms / Math.max(1e-12, d.rms),
-        centroid: d.centroid, rms: d.rms,
       };
     };
     return { open, solid, doorway, clear: await at(0), half: await at(0.5), blocked: await at(1) };

@@ -199,14 +199,16 @@ export class Music {
      */
     E.register('music.motif', {
       bus: 'music', spatial: false, gain: 0.62, send: 0.85, dur: 16, maxVoices: 1, priority: 8,
-      build: ({ ctx, bag, out, t, opts }) => {
+      // The pitches are fixed — that is what makes it a motif — but the
+      // phrasing is not. Each appearance breathes slightly differently.
+      build: varied(({ ctx, bag, out, t, rng, vary, opts }) => {
         const rootMidi = (opts.root ?? 0) + ROOT_MIDI + 24;
-        const gap = opts.gap ?? 2.6;
-        const noteDur = opts.noteDur ?? 5.5;
+        const gap = (opts.gap ?? 2.6) * (0.9 + rng() * 0.2);
+        const noteDur = (opts.noteDur ?? 5.5) * (0.85 + rng() * 0.3);
         let end = t;
         MOTIF.forEach((semi, i) => {
           const f = midiToFreq(rootMidi + semi);
-          const tt = t + i * gap;
+          const tt = t + i * gap * (i ? 0.94 + rng() * 0.12 : 1);
           // Struck, then allowed to ring for a long time. Two partials only —
           // the motif must be legible through everything else in the mix.
           const e = modalRing(ctx, bag, out, tt, {
@@ -216,14 +218,14 @@ export class Music {
               { f: f * 3.01, t60: noteDur * 0.35, gain: 0.14 },
               { f: f * 0.5, t60: noteDur * 0.8, gain: 0.22 },
             ],
-            gain: 0.42 * (i === 1 ? 0.9 : 1),
-            excite: { dur: 0.02, type: 'pink', tone: f * 3, gain: 0.7 },
-            spread: 0.25,
+            gain: 0.42 * (i === 1 ? 0.9 : 1) * vary.gain,
+            excite: { dur: 0.02, type: 'pink', tone: f * 3, gain: 0.7, noise: 0.10 },
+            spread: 0.25, rng,
           });
           end = Math.max(end, e);
         });
         return end;
-      },
+      }, { pitch: 0, gain: 0.10, pan: 0, tone: 0, time: 0.04 }),
     });
 
     /**

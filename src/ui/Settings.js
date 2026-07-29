@@ -73,7 +73,7 @@ const SCHEMA = [
     { id: 'safePrompts', name: 'High-contrast prompts', kind: 'toggle' },
   ] },
   { group: 'Record', items: [
-    { id: '_reset', name: 'Restore issued settings', kind: 'action', note: 'Form 12B, as printed' },
+    { id: '_reset', name: 'Restore issued settings', kind: 'action', note: 'As printed' },
   ] },
 ];
 
@@ -307,7 +307,7 @@ export const SETTINGS_CSS = /* css */ `
 .ax-set-note .ax-field { padding: 3px 0; }
 .ax-set-note .ax-value { color: var(--ax-bone-4); font-size: 11.5px; }
 .ax-set-action { font-family: var(--ax-type); font-size: 11.5px; letter-spacing: 0;
-  text-transform: none; color: var(--ax-bone-4); padding: 4px 0; }
+  text-transform: none; color: var(--ax-bone-4); padding: 4px 0; white-space: nowrap; }
 .ax-ctl[data-sel] .ax-set-action { color: var(--ax-bone-2); }
 `;
 
