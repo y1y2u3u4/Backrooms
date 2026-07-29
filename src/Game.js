@@ -615,7 +615,7 @@ export const AMBIENT_PROFILES = {
   // direct light and reads as pure black next to it. These values are chosen so
   // an unlit wall face sits about two stops under a lit one, which is what a
   // real room with white ceilings actually does.
-  intake:    { sky: 0x8e897a, ground: 0xa39c8a, intensity: 1.75 },
+  intake:    { sky: 0x93907f, ground: 0xa8a48f, intensity: 2.05 },
   service:   { sky: 0x5e646c, ground: 0x6c7178, intensity: 0.70 },
   cistern:   { sky: 0x46545a, ground: 0x4e5e5e, intensity: 0.50 },
   residence: { sky: 0x7e7462, ground: 0x8e806a, intensity: 1.05 },

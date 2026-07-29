@@ -147,10 +147,13 @@ export class AtmosphereController {
 
 /** Named atmosphere profiles, one per zone family. */
 export const FOG_PROFILES = {
-  intake:    { color: 0x121008, colorFar: 0x241d0c, density: 0.026, falloff: 0.10,  baseY: -1.0, noise: 0.38 },
+  // Far colour is the single strongest tint in the frame: over a 20 m corridor
+  // it covers a third of the image. A saturated brown here turns the whole zone
+  // rust-orange no matter what the surfaces are doing.
+  intake:    { color: 0x14120c, colorFar: 0x2a2619, density: 0.023, falloff: 0.10,  baseY: -1.0, noise: 0.34 },
   service:   { color: 0x0a0b0c, colorFar: 0x14161a, density: 0.030, falloff: 0.09,  baseY: -1.4, noise: 0.30 },
   cistern:   { color: 0x070c0d, colorFar: 0x0d1618, density: 0.055, falloff: 0.22,  baseY:  0.0, noise: 0.55 },
-  residence: { color: 0x100d0a, colorFar: 0x1d1710, density: 0.024, falloff: 0.12,  baseY: -1.0, noise: 0.34 },
+  residence: { color: 0x120f0c, colorFar: 0x201b15, density: 0.022, falloff: 0.12,  baseY: -1.0, noise: 0.34 },
   plant:     { color: 0x08090b, colorFar: 0x13161c, density: 0.017, falloff: 0.045, baseY: -4.0, noise: 0.42 },
   duct:      { color: 0x0b0a09, colorFar: 0x121110, density: 0.048, falloff: 0.05,  baseY: -1.0, noise: 0.20 },
   // The Stack's whole effect is floors receding into haze. Too thin, and the

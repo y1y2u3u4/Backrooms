@@ -39,7 +39,7 @@ export function buildPalette(materials) {
       detailTile: 4, detailStrength: 0.35, normalScale: 0.75, envMapIntensity: 0.40,
       // Mineral fibre is a cool off-white. Without pulling the warmth back out
       // here it takes the colour of the floor bounce and reads as rust.
-      tint: 0xc9d0d8, tintAmount: 0.35,
+      tint: 0xc9d0d8, tintAmount: 0.55,
     }),
     plenum: M('concrete', {
       // A real plenum is a concrete soffit that catches a little of the room

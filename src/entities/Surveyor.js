@@ -499,6 +499,9 @@ export class Surveyor {
 
   /** Place it and leave it dormant. Nothing is emitted; nobody knows it is here. */
   spawnAt(x, y, z, heading = 0) {
+    // Defensive: a QA hook calling this with an options object instead of a
+    // heading used to poison `this.heading` and then crash debugState().
+    if (typeof heading !== 'number' || !Number.isFinite(heading)) heading = 0;
     this.position.set(x, y, z);
     this.heading = heading;
     this._desired = heading;

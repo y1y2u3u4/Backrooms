@@ -1,0 +1,5 @@
+[
+  { "name": "08_surveyor",  "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0.02); const q=g.gameplay&&g.gameplay.qa; if(q&&q.surveyorTo){const f=g.player.forward(); q.surveyorTo(g.player.position.x+f.x*9,g.player.position.z+f.z*9,g.player.yaw+Math.PI,'SEEKING');}" },
+  { "name": "09_intake_recheck", "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0)" },
+  { "name": "10_intake_ceiling_recheck", "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,((r&&r.yaw)||0)+0.5,0.55)" }
+]
