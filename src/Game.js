@@ -184,6 +184,7 @@ export class Game {
         camera: this.engine.camera, rig: this.rig,
         options: { quality: this.engine.qualityName },
       });
+      this.audio.bindPlayer?.(this.player);
       this.subsystems.audio = true;
       // AudioContext needs a gesture; arm it on the first interaction.
       const arm = () => { this.audio.init?.(); window.removeEventListener('pointerdown', arm); window.removeEventListener('keydown', arm); };
@@ -342,7 +343,10 @@ export class Game {
     this.state = this.paused ? 'paused' : 'play';
     if (this.paused) this.input.exitLock(); else this.input.requestLock();
     this.ui?.show?.(this.paused ? 'pause' : null);
-    this.audio?.duck?.(this.paused ? 0.6 : 0, 0.3);
+    // setDuck holds until released; duck() is a dip that recovers on its own,
+    // which would let the world back in half a second into a pause.
+    if (this.audio?.engine?.setDuck) this.audio.engine.setDuck(this.paused ? 0.6 : 0, 0.3);
+    else this.audio?.duck?.(this.paused ? 0.6 : 0, 0.3);
   }
 
   start() {
@@ -499,6 +503,9 @@ export class Game {
       lights: this.rig.stats,
       entity: this.gameplay?.surveyor?.debugState?.() ?? null,
       gameplay: this.gameplay?.debugState?.() ?? null,
+      // A stuck AudioContext is the most likely audio failure in the field and
+      // is completely invisible without this.
+      audio: this.audio?.stats ?? null,
     };
   }
 }
