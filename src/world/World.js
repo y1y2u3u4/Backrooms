@@ -260,9 +260,20 @@ export class World {
     const profile = FOG_PROFILES[key] || FOG_PROFILES.intake;
     this.ctx.engine?.atmosphere?.set(profile, immediate);
     setWetness(z?.waterLine ?? -999, z?.wetness ?? 0);
-    if (z?.ambient && this.ctx.rig.setAmbient) {
-      this.ctx.rig.setAmbient(z.ambient.sky, z.ambient.ground, z.ambient.intensity);
-    }
+
+    // BOUNCE FILL IS NOT SET HERE. It is owned by Game.AMBIENT_PROFILES, applied
+    // from the `zone:enter` this method's caller emits.
+    //
+    // A HemisphereLight's intensity is irradiance multiplied by its colour, so
+    // what matters is colour x intensity and it has to land in the same range as
+    // a real fixture's irradiance (a troffer delivers ~5 units at the floor) to
+    // register at all. The per-zone `ambient` fields the zone builders declare
+    // were authored against an earlier, much darker scale — colour x intensity
+    // around 0.01 — and applying them left six of the eight zones between 60%
+    // and 95% pure black. One writer, on the calibrated scale.
+    //
+    // A zone that genuinely wants different fill should override
+    // AMBIENT_PROFILES rather than carry its own numbers.
     // The Plant and the Stack are the only zones that legitimately need more
     // than the default twelve simultaneous dynamic lights; everything else
     // stays at the default because the budget costs every material in the zone.

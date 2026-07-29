@@ -333,7 +333,7 @@ export class Game {
     this.engine.atmosphere.set(profile, immediate);
     const z = this.world?.zones?.[zoneKey];
     setWetness(z?.waterLine ?? -999, z?.wetness ?? 0);
-    const amb = z?.ambient || AMBIENT_PROFILES[zoneKey] || AMBIENT_PROFILES.intake;
+    const amb = AMBIENT_PROFILES[zoneKey] || AMBIENT_PROFILES.intake;
     this.rig.setAmbient(amb.sky, amb.ground, amb.intensity);
     if (immediate) this.rig.snapAmbient();
     // The zone asks for a budget; the quality tier caps it.
