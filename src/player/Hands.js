@@ -232,6 +232,7 @@ export class Hands {
     if (flashlight?.model) {
       flashlight.model.rotation.set(0.10, 0, 0);
       flashlight.model.position.set(0, 0.004, -0.028);
+      flashlight.model.scale.setScalar(0.88);
       this.itemMountR.add(flashlight.model);
     }
     this.carried = null;   // two-handed prop mesh (fuse core)

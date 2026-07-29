@@ -325,16 +325,46 @@ window.UIH_TEST = async function testCinematics() {
       const p = ui.cine.play(name, params);
       let steps = 0;
       const dur = ui.cine.current?.duration ?? 0;
+      // Continuity trace: a camera that snaps shows up as one frame whose
+      // delta is an order of magnitude larger than its neighbours.
+      const dPos = [], dAng = [];
+      let px = camera.position.x, py = camera.position.y, pz = camera.position.z;
+      let ry = camera.rotation.y, rx = camera.rotation.x;
       while (ui.cine.active && steps < 4000) {
         ui.update(1 / 60);
         steps++;
+        if (steps > 2) {
+          dPos.push(Math.hypot(camera.position.x - px, camera.position.y - py, camera.position.z - pz));
+          let dy = camera.rotation.y - ry;
+          while (dy > Math.PI) dy -= Math.PI * 2;
+          while (dy < -Math.PI) dy += Math.PI * 2;
+          dAng.push(Math.hypot(dy, camera.rotation.x - rx));
+        }
+        px = camera.position.x; py = camera.position.y; pz = camera.position.z;
+        ry = camera.rotation.y; rx = camera.rotation.x;
         if (mode === 'skip' && steps === 30) ui.cine.skip();
       }
       await p;
-      // Retire the cine layer's fade-out so the deck settles.
+      const spike = (arr) => {
+        if (arr.length < 12) return 0;
+        const s = [...arr].sort((a, b) => a - b);
+        const med = s[Math.floor(s.length * 0.5)] || 1e-6;
+        const max = s[s.length - 1];
+        return max / Math.max(med, 1e-6);
+      };
+      const camMove = {
+        maxStep: +Math.max(0, ...dPos).toFixed(4),
+        maxTurn: +Math.max(0, ...dAng).toFixed(4),
+        posSpike: +spike(dPos).toFixed(1),
+        angSpike: +spike(dAng).toFixed(1),
+      };
+      // Settle: retire the cine layer's fade-out, close any screen the sequence
+      // opened, and clear the fear a sequence is allowed to leave behind (that
+      // belongs to the director's vitals layer, not to the cinematic).
+      player.fear = 0;
       for (let i = 0; i < 60; i++) ui.update(1 / 60);
       ui.hide('death'); ui.hide('ending');
-      for (let i = 0; i < 60; i++) ui.update(1 / 60);
+      for (let i = 0; i < 90; i++) ui.update(1 / 60);
 
       const u = engine.grade.uniforms;
       const stuck = [];
@@ -346,7 +376,7 @@ window.UIH_TEST = async function testCinematics() {
       if (u.uDread.value > 0.02) stuck.push(`uDread=${u.uDread.value.toFixed(3)}`);
 
       report.push({
-        name, mode, duration: +dur.toFixed(2), steps, swaps,
+        name, mode, duration: +dur.toFixed(2), steps, swaps, cam: camMove,
         frozen: player.frozen, control: player.controlEnabled, look: player.lookEnabled,
         stuck, errors: errs.slice(before),
       });

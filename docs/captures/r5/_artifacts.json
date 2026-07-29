@@ -1,0 +1,89 @@
+{
+  "dir": "docs/captures/r5",
+  "limits": {
+    "crushed": 0.16,
+    "clipped": 0.03,
+    "dynamicRange": 0.22,
+    "banding": 0.055,
+    "speckle": 0.0035,
+    "emptiness": 0.72
+  },
+  "hfMedian": 0.01816406777738153,
+  "rows": [
+    {
+      "file": "q1_spine.png",
+      "W": 800,
+      "H": 450,
+      "mean": 0.22814397528101868,
+      "contrast": 0.25252234967539633,
+      "dynamicRange": 0.6974282264709473,
+      "crushed": 0.45389722222222223,
+      "clipped": 0,
+      "banding": 0.006438888888888889,
+      "highFreq": 0.018060482577990415,
+      "speckle": 0.000002797171500179019,
+      "emptiness": 0.4583361111111111,
+      "colourCast": 0.4114069161634623
+    },
+    {
+      "file": "q2_cross.png",
+      "W": 800,
+      "H": 450,
+      "mean": 0.3609971382964782,
+      "contrast": 0.1551997010605163,
+      "dynamicRange": 0.5962768718600273,
+      "crushed": 0.00031944444444444446,
+      "clipped": 0,
+      "banding": 0.006983333333333334,
+      "highFreq": 0.01816406777738153,
+      "speckle": 0.000002797171500179019,
+      "emptiness": 0.0722388888888889,
+      "colourCast": 0.39687165193669627
+    },
+    {
+      "file": "q3_ceiling.png",
+      "W": 800,
+      "H": 450,
+      "mean": 0.32129973408800355,
+      "contrast": 0.13292708846088117,
+      "dynamicRange": 0.7598455129191279,
+      "crushed": 0.010638888888888889,
+      "clipped": 0,
+      "banding": 0.0038777777777777777,
+      "highFreq": 0.02654864684164693,
+      "speckle": 0.000016783029001074113,
+      "emptiness": 0.123175,
+      "colourCast": 0.29407848633586686
+    },
+    {
+      "file": "q4_bay.png",
+      "W": 800,
+      "H": 450,
+      "mean": 0.08368792491005782,
+      "contrast": 0.16423242308812525,
+      "dynamicRange": 0.5640682578086853,
+      "crushed": 0.7554111111111111,
+      "clipped": 0,
+      "banding": 0.0001,
+      "highFreq": 0.017294652458165985,
+      "speckle": 0.000013985857500895095,
+      "emptiness": 0.7582138888888889,
+      "colourCast": 0.48174215426400274
+    }
+  ],
+  "flagged": [
+    {
+      "file": "q1_spine.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    },
+    {
+      "file": "q4_bay.png",
+      "flags": [
+        "CRUSHED",
+        "EMPTY"
+      ]
+    }
+  ]
+}
