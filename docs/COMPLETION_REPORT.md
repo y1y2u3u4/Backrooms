@@ -227,6 +227,17 @@ Defects found and fixed by the project's own review loop, for completeness:
 | Detail normal shimmered on every grazing wall | fades via `fwidth()` before one texel per pixel |
 | Resolution-tied `sin()` frequencies aliased into vertical streaks | fixed cycle counts |
 | Shadow acne on grazing surfaces | normalBias 0.028 → 0.075 |
+| **Six of eight zones were 60–95% pure black** | zone builders each carried an `ambient` field authored against the pre-recalibration scale (colour × intensity ≈ 0.01 against a troffer's ~5 at the floor) and `World` was applying them; bounce fill now has exactly one writer |
+| Zone profile was applied only at boot | now applied on `zone:enter`, so walking into the Cistern stops keeping Intake's office fill |
+| Auto-exposure blew a lit wall whenever half the frame was dark | range narrowed from [0.78, 2.20] to [0.80, 1.55] |
+| QA cameras stood against walls and inside soffits | `lookOpen()` probes for the clearest heading, centres laterally, resolves out of geometry and snaps to the floor |
+
+The automated artifact analyser was what turned the last of these from an
+impression into a number. It measures crushed blacks, clipping, dynamic range,
+banding, high-frequency energy relative to the set median, isolated speckle and
+frame emptiness, and flags which frames to look at first — the run that produced
+`0.677, 0.642, 0.693, 0.894, 0.954` of frame at or near pure black across the
+non-Intake zones is what located the stale fill values.
 
 ---
 
