@@ -153,7 +153,10 @@ export const FOG_PROFILES = {
   residence: { color: 0x100d0a, colorFar: 0x1d1710, density: 0.024, falloff: 0.12,  baseY: -1.0, noise: 0.34 },
   plant:     { color: 0x08090b, colorFar: 0x13161c, density: 0.017, falloff: 0.045, baseY: -4.0, noise: 0.42 },
   duct:      { color: 0x0b0a09, colorFar: 0x121110, density: 0.048, falloff: 0.05,  baseY: -1.0, noise: 0.20 },
-  stack:     { color: 0x0a0a0c, colorFar: 0x1a1a22, density: 0.013, falloff: 0.022, baseY: -20.0, noise: 0.50 },
+  // The Stack's whole effect is floors receding into haze. Too thin, and the
+  // far ones read as unlit fragments floating in a void rather than as a shaft
+  // that goes on further than you can see.
+  stack:     { color: 0x0d0e12, colorFar: 0x22242c, density: 0.036, falloff: 0.010, baseY: -30.0, noise: 0.42 },
   safe:      { color: 0x14100a, colorFar: 0x241b0e, density: 0.020, falloff: 0.14,  baseY: -1.0, noise: 0.25 },
   void:      { color: 0x000000, colorFar: 0x000000, density: 0.20,  falloff: 0.01,  baseY: -1.0, noise: 0.10 },
 };

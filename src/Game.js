@@ -538,8 +538,27 @@ export class Game {
         res.x + fx * (d + 0.6), eye, res.z + fz * (d + 0.6), 'ceiling')) break;
       step = d;
     }
-    this.look(res.x + fx * step, y, res.z + fz * step, bestYaw, pitch);
-    return { position: [res.x + fx * step, y, res.z + fz * step], yaw: bestYaw, clearance: bestScore };
+    let cx = res.x + fx * step, cz = res.z + fz * step;
+
+    // Centre laterally. Standing against a side wall puts a brightly-lit
+    // surface across half the frame at 0.4 m, which is both a bad composition
+    // and the thing most likely to fool the auto-exposure.
+    const rx = Math.cos(bestYaw), rz = -Math.sin(bestYaw);
+    const clearSide = (sign) => {
+      let c = 0;
+      for (let d = 0.5; d <= 8; d += 0.5) {
+        if (this.collision.segmentBlocked(cx, eye, cz,
+          cx + rx * sign * d, eye, cz + rz * sign * d, 'ceiling')) break;
+        c = d;
+      }
+      return c;
+    };
+    const left = clearSide(-1), right = clearSide(1);
+    const shift = Math.max(-1.4, Math.min(1.4, (right - left) * 0.5));
+    cx += rx * shift; cz += rz * shift;
+
+    this.look(cx, y, cz, bestYaw, pitch);
+    return { position: [cx, y, cz], yaw: bestYaw, clearance: bestScore };
   }
 
   walkTo(x, z, seconds = 1) {
@@ -594,7 +613,7 @@ export const AMBIENT_PROFILES = {
   residence: { sky: 0x7e7462, ground: 0x8e806a, intensity: 1.05 },
   plant:     { sky: 0x565e66, ground: 0x666861, intensity: 0.75 },
   duct:      { sky: 0x34322d, ground: 0x3c3a34, intensity: 0.30 },
-  stack:     { sky: 0x6a6c78, ground: 0x7a7c86, intensity: 0.68 },
+  stack:     { sky: 0x8a8c98, ground: 0x9a9ca6, intensity: 1.55 },
   safe:      { sky: 0x8e7e62, ground: 0x9c8862, intensity: 1.30 },
   void:      { sky: 0x000000, ground: 0x000000, intensity: 0.0 },
 };

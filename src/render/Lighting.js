@@ -90,8 +90,12 @@ export class Fixture {
     this.group.add(this.light, this.target);
     this.light.target = this.target;
     this.light.castShadow = false;
-    this.light.shadow.bias = -0.0016;
-    this.light.shadow.normalBias = 0.028;
+    // Shadow acne shows up as a field of bright/dark pixels on any surface at a
+    // grazing angle to the light — and in a building lit entirely from directly
+    // overhead, every wall is at a grazing angle. normalBias has to cover more
+    // than one shadow-map texel at the far end of the spot's range.
+    this.light.shadow.bias = -0.0035;
+    this.light.shadow.normalBias = 0.075;
     this.light.shadow.mapSize.set(rig.shadowMapSize, rig.shadowMapSize);
     this.light.shadow.camera.near = 0.12;
     this.light.shadow.camera.far = def.distance;

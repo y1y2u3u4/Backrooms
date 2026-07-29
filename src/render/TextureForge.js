@@ -322,7 +322,7 @@ function registerRecipes(forge) {
 
   // -- Board-formed service concrete --------------------------------------
   forge.define('concrete', {
-    size: 512, normalStrength: 2.4,
+    size: 512, normalStrength: 1.7,
     fill(c, S) {
       const grey = hexLin('#6e6a63');
       const pale = hexLin('#8b877e');
@@ -339,9 +339,9 @@ function registerRecipes(forge) {
           // Exposed aggregate: worley pebbles poking through the skin.
           const agg = tileWorley(u * P * 16, v * P * 16, P * 16, 29);
           const pebble = smoothstep(0.30, 0.06, agg.f1) * smoothstep(0.55, 0.85, agg.id);
-          const pit = smoothstep(0.90, 1, tileWorley(u * P * 26, v * P * 26, P * 26, 44).id);
+          const pit = smoothstep(0.93, 1, tileWorley(u * P * 16, v * P * 16, P * 16, 44).id);
 
-          let h = grain * 0.2 - seam * 0.4 + pebble * 0.35 - pit * 0.6;
+          let h = grain * 0.2 - seam * 0.4 + pebble * 0.28 - pit * 0.38;
           let col = mixRgb(grey, pale, tileFbm(u * P * 0.8, v * P * 0.8, P, 4, 7));
           col = mixRgb(col, dark, smoothstep(0.55, 1, tileFbm(u * P * 1.6, v * P * 1.6, P, 4, 19)) * 0.5);
           col = mixRgb(col, scaleRgb(pale, 1.1), pebble * 0.55);
@@ -533,7 +533,7 @@ function registerRecipes(forge) {
 
   // -- Old plaster, Residence wing ----------------------------------------
   forge.define('plaster', {
-    size: 512, normalStrength: 2.2,
+    size: 512, normalStrength: 1.5,
     fill(c, S) {
       const cream = hexLin('#b6ac96');
       const yellowed = hexLin('#9c8c6c');
@@ -544,7 +544,7 @@ function registerRecipes(forge) {
           const i = y * S + x;
           const u = x / S, v = y / S;
           const trowel = tileFbm(u * P * 2.2, v * P * 2.0, P * 2, 4, 12);
-          const crack = smoothstep(0.86, 0.99, tileRidge(u * P * 2.6, v * P * 2.6, P * 2, 5, 8));
+          const crack = smoothstep(0.80, 0.97, tileRidge(u * P * 2.2, v * P * 2.2, P * 2, 4, 8));
           const blister = smoothstep(0.72, 0.9, tileFbm(u * P * 3.4, v * P * 3.4, P * 3, 4, 44));
 
           let col = mixRgb(cream, yellowed, tileFbm(u * P * 0.6, v * P * 0.6, P, 4, 5));

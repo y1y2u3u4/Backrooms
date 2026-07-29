@@ -112,7 +112,11 @@ const GradeShader = {
       adapted = clamp(exp(adapted), 0.004, 4.0);
       // Aim for a mid-grey target, then clamp the correction hard so the image
       // never swings more than about 1.6 stops from the authored lighting.
-      float autoGain = clamp(0.135 / max(adapted, 1e-4), 0.78, 2.20);
+      // Range deliberately narrow. Wider, and a frame that is half dark corridor
+      // pushes the gain up until the lit wall in the other half reads as blown
+      // white — the auto-exposure doing exactly what it is asked to do and
+      // ruining the shot. Authored lighting should dominate; this is a nudge.
+      float autoGain = clamp(0.135 / max(adapted, 1e-4), 0.80, 1.55);
       float gain = uExposure * mix(1.0, autoGain, uAutoExposure);
       col *= gain;
 
