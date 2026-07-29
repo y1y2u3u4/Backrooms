@@ -175,42 +175,54 @@ window.AUDIO_PROBE = {
       return { rms: Math.sqrt(sum / d.length), peak, centroid: den > 1e-12 ? num / den : 0 };
     };
 
-    const at = async (occ) => {
-      const OC = window.OfflineAudioContext;
-      const ctx = new OC(2, 48000 * 2.5, 48000);
-      const merge = ctx.createChannelMerger(2);   // L = dry, R = wet
-      merge.connect(ctx.destination);
+    // ONE source instance, THREE occlusion states, SIX output channels. Every
+    // sound in the game is randomised per trigger, so rendering the states
+    // separately would compare three different footsteps and the differences
+    // would be noise rather than occlusion.
+    const OC = window.OfflineAudioContext;
+    const ctx = new OC(6, 48000 * 2.5, 48000);
+    const merge = ctx.createChannelMerger(6);
+    merge.connect(ctx.destination);
+    const out = ctx.createGain();
+    const conv = ctx.createConvolver(); conv.normalize = false;
+    conv.buffer = renderIR(ctx, REVERB_PROFILES.service);
+
+    const states = [0, 0.5, 1];
+    states.forEach((occ, i) => {
       const lpf = ctx.createBiquadFilter(); lpf.type = 'lowpass'; lpf.Q.value = 0.4;
       const dry = ctx.createGain();
-      const out = ctx.createGain();
       // The exact mapping from AudioEngine._updateVoiceOcclusion.
       lpf.frequency.value = Math.max(180, Math.min(19000, 19000 + (340 - 19000) * Math.pow(occ, 0.75)));
       dry.gain.value = 1 + (0.20 - 1) * occ;
       out.connect(dry); dry.connect(lpf);
-      lpf.connect(merge, 0, 0);
-      const conv = ctx.createConvolver(); conv.normalize = false;
-      conv.buffer = renderIR(ctx, REVERB_PROFILES.service);
+      lpf.connect(merge, 0, i * 2);
       const wet = ctx.createGain();
       // Base send 0.5, distance factor 1, occlusion boost — as in the engine.
       wet.gain.value = 0.5 * (1 + occ * 1.85);
-      lpf.connect(wet); wet.connect(conv);
-      const fold = ctx.createGain(); conv.connect(fold); fold.connect(merge, 0, 1);
-      // A broadband source, so the measurement reads the FILTER rather than the
-      // material's own spectrum. A concrete footstep is the right test signal:
-      // it is what the player will most often hear through a wall.
-      const NAME = 'step.concrete';
-      const def = engine.registry.get(NAME);
-      const bag = { sources: [], nodes: [], src(n) { this.sources.push(n); return n; }, add(n) { this.nodes.push(n); return n; }, stopAll() {}, dispose() {} };
-      def.build({ ctx, bag, out, t: 0.02, engine, opts: { strength: 0.9 }, rng: Math.random, name: NAME });
-      const buf = await ctx.startRendering();
-      const d = chanStats(buf.getChannelData(0), 48000);
-      const w = chanStats(buf.getChannelData(1), 48000);
+      lpf.connect(wet);
+      const own = ctx.createConvolver(); own.normalize = false; own.buffer = conv.buffer;
+      wet.connect(own);
+      const fold = ctx.createGain(); own.connect(fold); fold.connect(merge, 0, i * 2 + 1);
+    });
+
+    // A broadband source, so the measurement reads the FILTER rather than the
+    // material's own spectrum. A concrete footstep is the right test signal: it
+    // is what the player will most often hear through a wall.
+    const NAME = 'step.concrete';
+    const def = engine.registry.get(NAME);
+    const bag = { sources: [], nodes: [], src(n) { this.sources.push(n); return n; }, add(n) { this.nodes.push(n); return n; }, stopAll() {}, dispose() {} };
+    def.build({ ctx, bag, out, t: 0.02, engine, opts: { strength: 0.9 }, rng: Math.random, name: NAME });
+    const buf = await ctx.startRendering();
+
+    const at = (i) => {
+      const d = chanStats(buf.getChannelData(i * 2), 48000);
+      const w = chanStats(buf.getChannelData(i * 2 + 1), 48000);
       return {
         dryRms: d.rms, dryPeak: d.peak, centroid: d.centroid, rms: d.rms,
         wetRms: w.rms, wetDry: w.rms / Math.max(1e-12, d.rms),
       };
     };
-    return { open, solid, doorway, clear: await at(0), half: await at(0.5), blocked: await at(1) };
+    return { open, solid, doorway, clear: at(0), half: at(1), blocked: at(2) };
   },
 
   /** Analyse the generated impulse responses themselves. */

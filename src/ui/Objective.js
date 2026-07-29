@@ -56,7 +56,7 @@ export function createObjective() {
 
 export const OBJ_CSS = /* css */ `
 .ax-obj-stack {
-  position: absolute; left: var(--ax-pad); top: clamp(78px, 11vh, 118px);
+  position: absolute; left: var(--ax-inset); top: clamp(78px, 11vh, 118px);
   display: flex; gap: 13px; max-width: min(54ch, 46vw);
   opacity: 0; transform: translateX(-8px);
   transition: opacity 420ms var(--ax-ease), transform 420ms var(--ax-ease);

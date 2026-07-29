@@ -136,6 +136,9 @@ const CSS = /* css */ `
   --ax-paper-ink:  #23211a;
   --ax-stamp:      #7d3a31;
   --ax-pad:        clamp(30px, 4.1vw, 84px);
+  /* Screens stop widening past 1680 px and centre instead, so a 21:9 monitor
+     gets a wider frame around the same document rather than a stretched one. */
+  --ax-inset:      max(var(--ax-pad), calc(50% - 840px));
   --ax-head: 'Helvetica Neue Condensed','HelveticaNeue-CondensedBold','Arial Narrow',
              'Liberation Sans Narrow','DejaVu Sans Condensed','Helvetica Neue',Helvetica,Arial,sans-serif;
   --ax-sans: 'Helvetica Neue',Helvetica,'Liberation Sans',Arial,sans-serif;
@@ -297,7 +300,7 @@ const CSS = /* css */ `
 .ax-key.ax-cold { border-color: var(--ax-bone-4); color: var(--ax-bone-3); }
 
 /* ---- footer / header rails --------------------------------------------- */
-.ax-rail { position: absolute; left: var(--ax-pad); right: var(--ax-pad);
+.ax-rail { position: absolute; left: var(--ax-inset); right: var(--ax-inset);
   display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; }
 .ax-rail.ax-top { top: clamp(24px,3.2vh,38px); align-items: flex-start; }
 .ax-rail.ax-bot { bottom: clamp(22px,3vh,34px); }

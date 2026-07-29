@@ -259,7 +259,7 @@ export class Footsteps {
 
     /** Clothing. Separate layer, separate bus level, never in step with itself. */
     E.register('cloth.rustle', {
-      bus: 'player', spatial: false, gain: 0.78, send: 0.12, dur: 0.6, maxVoices: 5, priority: 1,
+      bus: 'player', spatial: false, gain: 1.15, send: 0.12, dur: 0.6, maxVoices: 5, priority: 1,
       build: varied(({ ctx, bag, out, t, rng, vary, opts }) => {
         const amt = clamp01(opts.amount ?? 0.5);
         let end = t;

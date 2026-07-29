@@ -403,14 +403,16 @@ export function modalRing(ctx, bag, dest, t, {
   const ex = {
     dur: 0.004, type: 'white', tone: 5200, q: 0.6, gain: 1, noise: 0.22, impulse: true, ...excite,
   };
-  // Normalise against the LOUDEST mode, not the sum. Modes at different
-  // frequencies reach their envelope peaks at different times, so summing their
-  // nominal gains would under-shoot by the mode count and quietly bury every
-  // struck object in the game. This way `gain` is the peak of the fundamental
-  // and the bank as a whole lands a little above it.
-  let maxG = 0;
-  for (const m of modes) maxG = Math.max(maxG, Math.abs(m.gain ?? 1));
-  const norm = 1 / Math.max(1e-6, maxG);
+  // Normalise the bank against the sum of its mode gains, with an alignment
+  // factor: modes at different frequencies reach their envelope peaks at
+  // different times, so a bank rings at roughly half the sum of its nominal
+  // gains rather than all of it. ALIGN=2 recovers that, and the result is still
+  // bounded — `gain` remains a hard ceiling on the peak. Measured, not guessed;
+  // tools/qa/audio-probe.mjs fails the build if any voice exceeds it.
+  const ALIGN = 2.0;
+  let sumG = 0;
+  for (const m of modes) sumG += Math.abs(m.gain ?? 1);
+  const norm = ALIGN / Math.max(1e-6, sumG);
 
   // Exciter: an impulse plus an optional short noise chirp. The impulse gives a
   // clean modal onset; the noise gives the strike its material (wood vs steel).

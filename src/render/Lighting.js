@@ -334,19 +334,50 @@ export class LightRig {
     this.cones.length = 0;
   }
 
-  /** Light level reaching a world point, used by the Surveyor's movement rule. */
-  illuminationAt(x, y, z) {
+  /**
+   * Light level reaching a world point. This is the input to the Surveyor's
+   * movement rule, so it has to agree with what the player can see: a fixture
+   * on the far side of a 160 mm wall must not "light" a room that is visibly
+   * dark. Pass `{occlude: true, collision}` to run a segment test against the
+   * few fixtures that are actually in range — it is cheap because the range
+   * cull rejects almost everything first.
+   */
+  illuminationAt(x, y, z, { occlude = false, collision = null } = {}) {
     let total = 0;
-    _v.set(x, y, z);
     for (const f of this.fixtures) {
       if (f.level < 0.02) continue;
       const p = f.group.position;
       const d2 = (p.x - x) ** 2 + (p.y - y) ** 2 + (p.z - z) ** 2;
-      if (d2 > f.def.distance * f.def.distance) continue;
-      const atten = clamp01(1 - Math.sqrt(d2) / f.def.distance);
-      total += f.level * atten * atten * (f.def.intensity / 5);
+      const range = f.def.distance;
+      if (d2 > range * range) continue;
+      const atten = clamp01(1 - Math.sqrt(d2) / range);
+      let contribution = f.level * atten * atten * (f.def.intensity / 5);
+      if (occlude && collision && contribution > 0.02) {
+        // Aim slightly below the fixture: the light body itself is a collider
+        // in some zones and would occlude its own beam.
+        if (collision.segmentBlocked(p.x, p.y - 0.12, p.z, x, y, z, 'ceiling')) continue;
+      }
+      total += contribution;
     }
     return total;
+  }
+
+  /**
+   * Mark only the shadow maps whose light could actually see `object`, instead
+   * of re-rendering every live shadow map. three has no per-light dirty flag,
+   * so this still sets the global `needsUpdate`, but it suppresses the refresh
+   * entirely when nothing that casts is anywhere near the mover — which is the
+   * common case for a wandering entity in a building this size.
+   */
+  requestShadowRefresh(object, radius = 2.0) {
+    if (!object) { this._shadowDirty = true; return true; }
+    const p = object.isVector3 ? object : (object.position || object);
+    for (const f of this._shadowSet) {
+      const q = f.group.position;
+      const d = Math.hypot(q.x - p.x, q.y - p.y, q.z - p.z);
+      if (d < f.def.distance + radius) { this._shadowDirty = true; return true; }
+    }
+    return false;
   }
 
   /** Nearest live fixture, for "run toward the light" behaviours. */

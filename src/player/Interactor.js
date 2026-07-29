@@ -20,6 +20,7 @@ import { clamp01, damp, lerp, smoothstep } from '../core/util.js';
  */
 
 const MAX_RANGE = 3.2;
+const _pw = new THREE.Vector3();
 
 // ---------------------------------------------------------------------------
 
@@ -454,10 +455,17 @@ export class Interactor {
     this._origin.copy(cam.position);
     this.raycaster.set(this._origin, this._dir);
 
+    // Cheap distance pre-filter. three's raycaster culls by bounding sphere
+    // against the *infinite* ray, not against `far`, so without this every
+    // merged machine in the zone gets a full triangle test whenever the player
+    // happens to be looking down a corridor at it.
     const roots = [];
     for (const it of this.items) {
       if (it.enabled === false && it.hideWhenDisabled) continue;
       if (!it.object.visible) continue;
+      it.object.getWorldPosition(_pw);
+      const reach = (it.range ?? 2.2) + (it.cullRadius ?? 3.0);
+      if (_pw.distanceToSquared(this._origin) > reach * reach) continue;
       roots.push(it.object);
     }
     if (!roots.length) return null;

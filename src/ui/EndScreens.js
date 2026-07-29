@@ -214,7 +214,7 @@ export function createEnding({ onDone }) {
 
 export const END_CSS = /* css */ `
 /* ---- death -------------------------------------------------------------- */
-.ax-death-body { position: absolute; left: var(--ax-pad); top: clamp(112px, 17vh, 176px);
+.ax-death-body { position: absolute; left: var(--ax-inset); top: clamp(112px, 17vh, 176px);
   width: min(58ch, 52vw); }
 .ax-death-title { font-size: clamp(32px, 3.8vw, 58px); letter-spacing: .20em; margin-top: 16px; }
 .ax-death-body .ax-field { padding: 6px 0; }
@@ -225,13 +225,13 @@ export const END_CSS = /* css */ `
 .ax-death-p { font-family: var(--ax-type); font-size: 12.5px; line-height: 1.95;
   color: var(--ax-bone-2); margin: 0 0 14px; }
 .ax-death-menu { margin-top: clamp(24px, 4vh, 42px); }
-.ax-death-stamp { right: clamp(70px, 12vw, 250px); top: clamp(150px, 30vh, 320px);
+.ax-death-stamp { right: calc(var(--ax-inset) + clamp(30px, 8vw, 220px)); top: clamp(150px, 30vh, 320px);
   --scale: 2.1; transform: rotate(var(--rot)) scale(2.1); transform-origin: 50% 50%;
   opacity: 0; transition: opacity 620ms var(--ax-ease) 700ms; }
 .ax-on .ax-death-stamp { opacity: .58; }
 
 /* ---- ending ------------------------------------------------------------- */
-.ax-end-card { position: absolute; left: var(--ax-pad); top: 34%; width: min(56ch, 52vw);
+.ax-end-card { position: absolute; left: var(--ax-inset); top: 34%; width: min(56ch, 52vw);
   opacity: 0; transform: translateY(10px);
   transition: opacity 900ms var(--ax-ease), transform 900ms var(--ax-ease); }
 .ax-ending[data-phase="card"] .ax-end-card { opacity: 1; transform: none; }
@@ -240,7 +240,7 @@ export const END_CSS = /* css */ `
 .ax-end-line { font-family: var(--ax-type); font-size: 13px; line-height: 1.9; color: var(--ax-bone-2);
   max-width: 46ch; }
 
-.ax-end-roll { position: absolute; left: var(--ax-pad); right: var(--ax-pad);
+.ax-end-roll { position: absolute; left: var(--ax-inset); right: var(--ax-inset);
   top: 14vh; bottom: 10vh; overflow: hidden; opacity: 0;
   transition: opacity 700ms var(--ax-ease);
   -webkit-mask-image: linear-gradient(180deg, #0000, #000 9%, #000 86%, #0000 100%);
@@ -248,7 +248,7 @@ export const END_CSS = /* css */ `
 .ax-ending[data-phase="roll"] .ax-end-roll { opacity: 1; }
 .ax-end-roll-inner { width: min(64ch, 56vw); will-change: transform; }
 
-.ax-end-coda { position: absolute; left: var(--ax-pad); top: 42%; width: min(64ch, 58vw);
+.ax-end-coda { position: absolute; left: var(--ax-inset); top: 42%; width: min(64ch, 58vw);
   opacity: 0; transform: translateY(8px);
   transition: opacity 1100ms var(--ax-ease), transform 1100ms var(--ax-ease); }
 .ax-ending[data-phase="coda"] .ax-end-coda { opacity: 1; transform: none; }

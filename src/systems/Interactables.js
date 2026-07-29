@@ -1530,6 +1530,9 @@ export function generator(ctx, {
     crank(dt) {
       if (!state.primed || state.running || state.coolDown > 0) return false;
       state.cranking += dt;
+      state._holding = true;          // consumed by update(); see below
+      // A starter motor on a 750 kg set is the loudest thing in the building
+      // apart from the set itself. Cranking is a commitment.
       player?.makeNoise?.(14);
       if (state.cranking > 15) {
         state.cranking = 0;
@@ -1540,7 +1543,10 @@ export function generator(ctx, {
       return true;
     },
     tryCatch() {
-      if (state.cranking > 3.2 && !state.running) {
+      // The interactor's 4 s hold gets you here; anything less and she does not
+      // catch, which is the whole point of the "do not hold longer than fifteen
+      // seconds" line in the procedure — you are meant to feel the risk.
+      if (state.cranking > 2.6 && !state.running) {
         state.running = true;
         state.cranking = 0;
         bus?.emit('gen:running', { id });
@@ -1596,10 +1602,13 @@ export function generator(ctx, {
     id, root, api, state: api.state, sockets,
     update(dt, t) {
       if (state.coolDown > 0) state.coolDown = Math.max(0, state.coolDown - dt);
-      if (state.cranking > 0 && state.stage === 'start') {
-        // Cranking decays if the player lets go — the interactor drives onHold.
-        state.cranking = Math.max(0, state.cranking - dt * 0.6);
+      // Cranking only decays once the player lets go of the button. `_holding`
+      // is set by `crank()` from the interactor's onHold and cleared here, so a
+      // released starter winds down and a held one does not.
+      if (!state._holding && state.cranking > 0) {
+        state.cranking = Math.max(0, state.cranking - dt * 0.9);
       }
+      state._holding = false;
       leverPivot.rotation.z = damp(leverPivot.rotation.z, state.fuel ? -1.42 : 0, 12, dt);
       glassMat.color.lerp(new THREE.Color(state.fuel ? 0xd8c9a0 : 0x3a2b12), 1 - Math.exp(-2.4 * dt));
       glassMat.opacity = lerp(0.85, 0.42, state.fuel ? 1 : 0);

@@ -320,7 +320,7 @@ export class Ambience {
 
     /** A grille or duct opening you can walk past. */
     E.register('amb.grille', {
-      bus: 'ambience', gain: 0.60, send: 0.24, ref: 1.6, rolloff: 1.7, maxDist: 22,
+      bus: 'ambience', gain: 0.80, send: 0.24, ref: 1.6, rolloff: 1.7, maxDist: 22,
       loop: true, dur: Infinity, maxVoices: 6,
       build: ({ ctx, bag, out, t, opts }) => {
         const n = noiseSource(ctx, bag, { type: 'brown', rate: 1.15 + Math.random() * 0.2 });
@@ -576,7 +576,7 @@ export class Ambience {
 
     /** Arc crackle: a fault somewhere in the building, never in front of you. */
     E.register('elec.arc', {
-      bus: 'ambience', gain: 0.4, send: 0.6, ref: 3.0, maxDist: 34, dur: 0.9, maxVoices: 3,
+      bus: 'ambience', gain: 0.72, send: 0.6, ref: 3.0, maxDist: 34, dur: 0.9, maxVoices: 3,
       build: varied(({ ctx, bag, out, t, rng, vary }) => {
         let end = t, tt = t;
         const n = 4 + Math.floor(rng() * 12);
@@ -605,7 +605,7 @@ export class Ambience {
         const bp2 = biquad(ctx, bag, 'bandpass', f0 * (2.1 + rng() * 0.9), q2);
         // Two cascaded narrow bandpasses on brown noise throw away nearly all
         // the energy; the makeup scales with the bandwidth discarded.
-        const makeup = gainNode(ctx, bag, clamp(Math.sqrt(q1 * q2) * 30, 1, 600));
+        const makeup = gainNode(ctx, bag, clamp(Math.sqrt(q1 * q2) * 11, 1, 240));
         const g = gainNode(ctx, bag, 0);
         const pan = panner2d(ctx, bag, vary.pan);
         n.connect(bp); bp.connect(bp2); bp2.connect(makeup); makeup.connect(g);

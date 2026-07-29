@@ -105,8 +105,11 @@ export function scrape(ctx, bag, out, t, {
   const n = noiseSource(ctx, bag, { type, rate: 0.8 + rng() * 0.5 });
   const bp = biquad(ctx, bag, 'bandpass', f0, q);
   const hp = biquad(ctx, bag, 'highpass', 180, 0.7);
+  // A narrow bandpass on noise passes only BW/nyquist of the energy; without
+  // makeup every scrape, squeal and hinge in the game sits 25 dB too low.
+  const makeup = gainNode(ctx, bag, clamp(Math.sqrt(q) * 1.9, 1, 14));
   const g = gainNode(ctx, bag, 0);
-  n.connect(hp); hp.connect(bp); bp.connect(g); g.connect(out);
+  n.connect(hp); hp.connect(bp); bp.connect(makeup); makeup.connect(g); g.connect(out);
 
   // The resonance wanders — a scrape that holds one pitch sounds like a filter.
   bp.frequency.setValueAtTime(f0, t);
@@ -646,7 +649,7 @@ export function registerLibrary(engine) {
   });
 
   R('ui.hover', {
-    bus: 'ui', gain: 0.36, send: 0.0, spatial: false, dur: 0.15,
+    bus: 'ui', gain: 0.62, send: 0.0, spatial: false, dur: 0.15,
     build: ({ ctx, bag, out, t, rng, vary }) => noiseBurst(ctx, bag, out, t, {
       type: 'white', filter: 'bandpass', f0: 5200 * vary.tone, q: 3,
       attack: 0.001, decay: 0.03, gain: 0.34 * vary.gain,

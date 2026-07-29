@@ -504,7 +504,7 @@ export function createJournal({ bus } = {}) {
 
 export const JOURNAL_CSS = /* css */ `
 .ax-jr-body {
-  position: absolute; left: var(--ax-pad); right: var(--ax-pad);
+  position: absolute; left: var(--ax-inset); right: var(--ax-inset);
   top: clamp(94px, 14vh, 148px); bottom: clamp(62px, 9vh, 92px);
   display: grid; grid-template-columns: clamp(240px, 25%, 340px) minmax(0, 1fr);
   gap: clamp(26px, 3.4vw, 62px);

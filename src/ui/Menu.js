@@ -165,7 +165,7 @@ export const MENU_CSS = /* css */ `
 .ax-menu-brand { display: flex; gap: 13px; align-items: flex-start; }
 .ax-menu-brand .ax-mark { margin-top: 1px; }
 
-.ax-menu-root { position: absolute; left: var(--ax-pad); top: 30%; width: min(48ch, 44vw); }
+.ax-menu-root { position: absolute; left: var(--ax-inset); top: 30%; width: min(48ch, 44vw); }
 .ax-menu-root[data-off] { opacity: 0; transform: translateY(-8px); pointer-events: none;
   transition: opacity 260ms var(--ax-ease), transform 260ms var(--ax-ease); }
 .ax-menu-root .ax-display { margin-left: -.03em; display: grid; line-height: .96; }
@@ -182,7 +182,7 @@ export const MENU_CSS = /* css */ `
 .ax-menu-note { margin-top: 18px; font-size: 10.5px; letter-spacing: .1em;
   color: var(--ax-bone-4); min-height: 1.4em; max-width: none; white-space: nowrap; }
 
-.ax-menu-stamp { right: clamp(60px, 9vw, 190px); bottom: clamp(96px, 18vh, 210px); }
+.ax-menu-stamp { right: calc(var(--ax-inset) + clamp(20px, 5vw, 120px)); bottom: clamp(96px, 18vh, 210px); }
 .ax-menu-stamp[data-off] { opacity: 0; transition: opacity 240ms var(--ax-ease); }
 
 .ax-menu-layer[data-reading] .ax-menu-scrim {
@@ -192,7 +192,7 @@ export const MENU_CSS = /* css */ `
     linear-gradient(0deg, rgba(4,3,2,.86) 0%, rgba(4,3,2,0) 34%);
 }
 .ax-menu-credits {
-  position: absolute; left: var(--ax-pad); top: clamp(96px, 14vh, 150px);
+  position: absolute; left: var(--ax-inset); top: clamp(96px, 14vh, 150px);
   bottom: clamp(62px, 9vh, 92px); width: min(62ch, 54vw);
   display: flex; flex-direction: column; min-height: 0;
   opacity: 0; transform: translateY(10px); pointer-events: none;

@@ -243,7 +243,7 @@ export class EntityAudio {
      * down BEFORE the mass arrives, so there is always a soft tick then a thud.
      */
     E.register('entity.step', {
-      bus: 'entity', gain: 0.95, send: 0.75, ref: 6.0, rolloff: 0.72, maxDist: 70,
+      bus: 'entity', gain: 0.80, send: 0.75, ref: 6.0, rolloff: 0.72, maxDist: 70,
       hrtf: true, dur: 2.4, maxVoices: 3, priority: 9,
       build: varied(({ ctx, bag, out, t, rng, vary }) => {
         // pre-tick: the blade of the foot finds the floor
@@ -388,7 +388,7 @@ export class EntityAudio {
     });
 
     E.register('attendant.breath', {
-      bus: 'entity', gain: 0.60, send: 1.0, ref: 2.4, rolloff: 1.4, maxDist: 16,
+      bus: 'entity', gain: 0.85, send: 1.0, ref: 2.4, rolloff: 1.4, maxDist: 16,
       dur: 1.6, maxVoices: 1, priority: 7,
       build: varied(({ ctx, bag, out, t, rng, vary }) => {
         // Not your breath. Slower than yours, and it does not match your bob.

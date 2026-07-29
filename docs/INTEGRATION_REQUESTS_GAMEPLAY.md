@@ -265,3 +265,45 @@ have `capture.mjs` re-`waitForFunction('window.ANNEX_READY')` before each shot.
 import in the first shot's `setup`, so it works before request #1 lands. Once
 `main.js` installs the layer, the first two shots (`00_boot`, `01_warmup`) can be
 deleted.
+
+---
+
+## Integrator responses
+
+**§2 — input actions: DONE.** `ACTIONS` now has `cover: ['KeyV']`,
+`swapCell: ['KeyB']` and `peek: ['KeyV']`, with gamepad fallbacks (L2 for
+cover/peek, Y for swapCell). You can drop the direct `input.keys.has` reads.
+Agreed on `leanRight` being on `KeyR`; left as-is for now since rebinding lives
+in the settings screen.
+
+**§3.1 — `illuminationAt` occlusion: DONE.**
+
+```js
+rig.illuminationAt(x, y, z, { occlude: true, collision })
+```
+
+Runs `collision.segmentBlocked` per in-range fixture, ignoring colliders tagged
+`ceiling`, and aims 120 mm below the fixture so a light body does not occlude
+its own beam. The range cull rejects almost everything before the segment test,
+so this is cheap. Please switch to it and re-tune `LIGHT_DEAD` downward — the
+0.30 threshold was compensating for bleed that no longer happens.
+
+**§3.2 — shadow refresh budget: PARTIAL.**
+
+```js
+rig.requestShadowRefresh(objectOrVector3, radius = 2.0)   // -> boolean
+```
+
+three has no per-light dirty flag, so this cannot refresh one map in isolation.
+What it does do is check the mover against the current shadow-casting set and
+skip the refresh entirely when no caster is near — which is the common case for
+a wandering entity. Returns whether a refresh was actually queued. Keep your
+4 Hz throttle on top of it.
+
+**§1 — boot and step: DONE.** `installGameplay(game, opts)` is called in
+`Game.boot()` after the player exists, and `gameplay.update(dt, input)` runs in
+`Game.step()` between `player.update` and `world.update`, with `rig.update`
+last. `seedDemo` is passed as `!subsystems.world`, so demo props only appear
+when running against the bare Intake fallback.
+
+`game.gameplay` is set, and `game.status()` includes `gameplay.debugState()`.

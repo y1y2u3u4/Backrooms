@@ -477,7 +477,7 @@ const UI_CSS = /* css */ `
 .ax-menu-layer[data-plate] .ax-menu-scrim { background:
   radial-gradient(120% 100% at 74% 46%, rgba(28,24,15,1) 0%, rgba(10,9,6,1) 55%, #040302 100%); }
 .ax-skip { }
-.ax-skip-box { position: absolute; right: var(--ax-pad); bottom: clamp(22px,3vh,34px);
+.ax-skip-box { position: absolute; right: var(--ax-inset); bottom: clamp(22px,3vh,34px);
   display: flex; align-items: center; gap: 9px; }
 .ax-skip-bar { position: absolute; left: 0; right: 0; bottom: -7px; height: 1px;
   background: rgba(207,200,180,.14); }

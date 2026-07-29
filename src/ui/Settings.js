@@ -288,7 +288,7 @@ export function createSettings({ bus, engine, player, input, onClose }) {
 
 export const SETTINGS_CSS = /* css */ `
 .ax-set-body {
-  position: absolute; left: var(--ax-pad); right: var(--ax-pad);
+  position: absolute; left: var(--ax-inset); right: var(--ax-inset);
   top: clamp(112px, 17vh, 168px); bottom: clamp(78px, 11vh, 108px);
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: clamp(34px, 5vw, 92px); align-content: start;
