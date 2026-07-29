@@ -101,11 +101,13 @@ function crawl(b, x0, z0, x1, z1, {
 
   const g = merge(parts);
   worldUV(g, 0.42);
-  vertexShade(g, (px, py, pz, nx, ny) => (ny > 0.5 ? 0.42 : ny < -0.5 ? 0.86 : 0.62));
+  // The inside of a duct is filthy and lit only by the player's lamp: keep the
+  // floor well down so a near light source cannot blow the frame to white.
+  vertexShade(g, (px, py, pz, nx, ny) => (ny > 0.5 ? 0.30 : ny < -0.5 ? 0.56 : 0.42));
   b.add(key, g);
   const fg = merge(flanges);
   worldUV(fg, 0.30);
-  vertexShade(fg, () => 0.78);
+  vertexShade(fg, () => 0.60);
   b.add('conduitMetal', fg);
 
   if (collide) {
@@ -333,8 +335,17 @@ export function buildDuct(ctx, opts = {}) {
   }
 
   // Emergency lighting: two battery units, and nothing else. The lamp is it.
-  emergencyLight(bMain, rigProxy(rig, bMain.origin, fixtures), -12.0, FLOOR + 0.62, SIZE / 2 - 0.03, { yaw: Math.PI, seed: 701 });
-  emergencyLight(bMain, rigProxy(rig, bMain.origin, fixtures), 7.4, FLOOR + 0.62, -SIZE / 2 + 0.03, { yaw: 0, seed: 702 });
+  // ONE battery unit, well down the run. Galvanised sheet 400 mm from your
+  // face will blow the frame out from any light closer than that, and the zone
+  // is supposed to belong to the lamp.
+  {
+    const f = emergencyLight(bMain, rigProxy(rig, bMain.origin, fixtures), -6.4, FLOOR + 0.60, SIZE / 2 - 0.03, { yaw: Math.PI, seed: 701 });
+    f.intensityScale = 0.35;
+  }
+  {
+    const f = emergencyLight(bBranch, rigProxy(rig, bBranch.origin, fixtures), J1[0] + SIZE / 2 - 0.03, FLOOR + 0.60, 8.4, { yaw: -Math.PI / 2, seed: 702 });
+    f.intensityScale = 0.30;
+  }
 
   if (D) {
     // Dust, drag marks and the fact that something has been through here.
@@ -381,7 +392,7 @@ export function buildDuct(ctx, opts = {}) {
     spawnYaw: -Math.PI / 2,
     fogProfile: 'duct',
     reverb: 'duct',
-    ambient: { sky: 0x0e0d0c, ground: 0x131211, intensity: 0.10 },
+    ambient: { sky: 0x0c0b0a, ground: 0x100f0e, intensity: 0.07 },
     bounds: new THREE.Box3(
       new THREE.Vector3(-16, FLOOR - 1.2, -10), new THREE.Vector3(12, FLOOR + 2.0, 12)),
   };

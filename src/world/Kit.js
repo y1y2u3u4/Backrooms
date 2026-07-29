@@ -333,6 +333,13 @@ export function ceilingGrid(b, rect, y, {
       const cluster = hash2(Math.round(cx / 2.6), Math.round(cz / 2.6));
       if (cluster < damage * 0.55 && h < 0.42) { missing.push([cx, cz, cw, cd]); continue; }
 
+      // Staining follows the same cluster logic as the holes and the same
+      // damage gradient as the fixture health. Distributed staining reads as
+      // material; concentrated staining reads as damage, so most of the plate
+      // stays clean and a few patches go dark and brown.
+      const stainCluster = hash2(Math.round(cx / 3.1) + 13, Math.round(cz / 3.1) + 7);
+      const stain = clamp01((damage * 1.7 - stainCluster) * 2.0) * (0.35 + h * 0.75);
+
       const sag = h < damage ? (h / Math.max(damage, 1e-4)) * 0.055 : 0;
       // Tiles must run UNDER the tee flange, not stop short of it. A gap of a
       // couple of millimetres between tile and tee shows the black plenum
@@ -353,7 +360,7 @@ export function ceilingGrid(b, rect, y, {
       }
       g.translate(cx, y - TILE_FACE, cz);
       worldUV(g, 1.22);
-      const shade = 0.86 + h * 0.20;
+      const shade = lerp(1.04, 0.46, stain) * (0.93 + h * 0.11);
       vertexShade(g, (px, py, pz) => {
         // Darker toward the tile edge where the grid shades it.
         const ex = 1 - clamp01(Math.abs(px - cx) / (tw / 2));

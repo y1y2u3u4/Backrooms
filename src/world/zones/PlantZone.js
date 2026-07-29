@@ -317,6 +317,12 @@ export function buildPlant(ctx, opts = {}) {
     const b = x < 0 ? bWest : bEast;
     highbay(b, rigFor(b), x, ROOF - 0.55, z, { circuit: 'plant', health, seed: fs++, drop: 0.55 });
   }
+  // Two lower bays hung over the generator line. The roof bays establish the
+  // volume; these are what actually model the machines.
+  for (const [x, z, health] of [[-7.4, -4.2, 'good'], [2.6, -4.2, 'buzz']]) {
+    const b = x < 0 ? bWest : bEast;
+    highbay(b, rigFor(b), x, FLOOR + 6.4, z, { circuit: 'plant', health, seed: 30 + fs++, drop: 0.9 });
+  }
   // Walkway lighting so the gantries read as a route.
   for (const [x, z, yaw, health] of [
     [HX0 + 0.35, 0, -Math.PI / 2, 'good'], [HX0 + 0.35, 7.4, -Math.PI / 2, 'buzz'],
@@ -353,8 +359,9 @@ export function buildPlant(ctx, opts = {}) {
       face: '+z', x: -2.0, y: FLOOR + 3.6, z: HZ0 + 0.10, w: 2.4, h: 0.8, style: 'stencil',
       size: 74, colour: '#9c9585', distress: 0.55,
     });
+    // On the kickplate of the landing's outer rail, not floating in space.
     D.label(bDeck, ['MIND THE STEP'], {
-      face: '-x', x: HX0 + 4.24, y: G1 + 1.2, z: 0, w: 0.5, h: 0.14, style: 'warning', size: 26,
+      face: '-x', x: HX0 + 4.28, y: G1 + 0.065, z: 0, w: 0.42, h: 0.10, style: 'warning',
     });
     D.footprints(bEast, [[6.0, -8.0], [10.0, -6.0], [14.0, -1.0], [15.4, 0.0]], {
       seed: 210, boot: true, y: FLOOR + 0.003, fade: 2.0, strength: 0.6,
@@ -405,10 +412,12 @@ export function buildPlant(ctx, opts = {}) {
     root, chunks, builders, portals, interactables,
     spawn: [HX0 + 2.2, G1, 0],
     spawnYaw: -Math.PI / 2,
-    lightBudget: 15,
+    lightBudget: 17,
     fogProfile: 'plant',
     reverb: 'plant',
-    ambient: { sky: 0x141820, ground: 0x2a2620, intensity: 0.30 },
+    // The hall is 14 m tall and lit from the roof; without a real bounce
+    // term the machinery in the middle of the floor has nothing on it at all.
+    ambient: { sky: 0x1b1f28, ground: 0x4a3a24, intensity: 0.46 },
     bounds: new THREE.Box3(
       new THREE.Vector3(HX0, FLOOR, HZ0), new THREE.Vector3(HX1, ROOF, HZ1)),
   };

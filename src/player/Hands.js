@@ -179,8 +179,8 @@ const POSES = {
   lamp_R: { p: [0.295, -0.305, -0.475], r: [-0.06, -0.12, 0.06], curl: [0.86, 0.90, 0.92, 0.94], thumb: 0.70 },
   reach_R: { p: [0.205, -0.215, -0.700], r: [-0.42, -0.06, 0.02], curl: [0.10, 0.10, 0.12, 0.16], thumb: 0.10 },
   reach_L: { p: [-0.285, -0.330, -0.640], r: [-0.18, 0.24, -0.10], curl: [0.24, 0.26, 0.28, 0.32], thumb: 0.20 },
-  carry_R: { p: [0.265, -0.410, -0.530], r: [0.62, -0.30, -0.30], curl: [0.72, 0.76, 0.78, 0.80], thumb: 0.55 },
-  carry_L: { p: [-0.265, -0.410, -0.530], r: [0.62, 0.30, 0.30], curl: [0.72, 0.76, 0.78, 0.80], thumb: 0.55 },
+  carry_R: { p: [0.265, -0.335, -0.560], r: [0.62, -0.30, -0.30], curl: [0.72, 0.76, 0.78, 0.80], thumb: 0.55 },
+  carry_L: { p: [-0.265, -0.335, -0.560], r: [0.62, 0.30, 0.30], curl: [0.72, 0.76, 0.78, 0.80], thumb: 0.55 },
   cover_L: { p: [0.215, -0.240, -0.450], r: [-0.30, 0.55, -0.35], curl: [0.16, 0.18, 0.18, 0.22], thumb: 0.10 },
   stow_R: { p: [0.380, -0.640, -0.420], r: [-0.60, -0.30, 0.20], curl: [0.55, 0.58, 0.60, 0.62], thumb: 0.45 },
   stow_L: { p: [-0.400, -0.660, -0.420], r: [-0.60, 0.30, -0.20], curl: [0.50, 0.52, 0.54, 0.56], thumb: 0.40 },
@@ -537,7 +537,7 @@ export class Hands {
       // The core hangs between the hands and lags them both.
       this.carried.position.set(
         (this.posR.value.x + this.posL.value.x) * 0.5,
-        (this.posR.value.y + this.posL.value.y) * 0.5 + 0.055,
+        (this.posR.value.y + this.posL.value.y) * 0.5 + 0.075,
         (this.posR.value.z + this.posL.value.z) * 0.5 - 0.055);
       this.carried.rotation.z = Math.PI / 2 + swayX * 0.8;
       this.carried.rotation.x = swayY * 1.5;

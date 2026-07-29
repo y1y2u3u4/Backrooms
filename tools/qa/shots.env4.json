@@ -1,0 +1,12 @@
+[
+  { "name": "p01_entry", "setup": "g.stop(); g.rig.maxActiveLights=24; g.world.maxResident=2; g.world.goto('plant'); g.look(384.6, 0.74, 400.0, -1.5708, -0.16)" },
+  { "name": "p02_floor", "setup": "g.look(392.0, -6.0, 396.5, -1.35, 0.14)" },
+  { "name": "p03_lift", "setup": "g.look(408.0, -6.0, 400.0, -1.5708, 0.05)" },
+  { "name": "c01_tunnel", "setup": "g.world.goto('cistern'); g.look(788.0, 0.0, 0, -1.5708, -0.06)" },
+  { "name": "c02_chamber", "setup": "g.look(812.0, -0.3, 400.0, 0, 0); g.look(812.0, -0.32, 0.0, 1.5708, 0.0)" },
+  { "name": "k01_stack", "setup": "g.world.goto('stack'); g.look(-3.2, 0, 790.6, 3.1416, -0.28)" },
+  { "name": "k02_stack_up", "setup": "g.look(-9.6, 0, 800.0, -1.5708, 0.55)" },
+  { "name": "d01_duct", "setup": "g.world.goto('duct'); g.look(786.6, 0, 400.0, -1.5708, 0.0); g.player.crouchAmt=1" },
+  { "name": "o01_safe", "setup": "g.world.goto('safe'); g.look(400.4, 0, 798.6, 3.1416, -0.06)" },
+  { "name": "i01_arrival", "setup": "g.world.goto('intake'); g.look(-29.6, 0, 25.2, -1.5708, -0.02)" }
+]

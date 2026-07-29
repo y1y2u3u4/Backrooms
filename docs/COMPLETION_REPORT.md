@@ -58,7 +58,24 @@ the third independent judge round._
   ending sequences.
 
 ### Blender assets
-_(filled in at final verification)_
+Authored headless in Blender 4.0.2 (`tools/blender/`), exported as GLB, and
+re-materialised in-engine against the procedural palette so they share the
+game's lighting and wear language rather than carrying baked textures.
+
+| asset | tris | size (m) | named parts |
+|---|---:|---|---:|
+| `surveyor.glb` — the entity | 9 680 | 0.96 × 2.95 × 0.46 | 9 |
+| `breaker_panel.glb` | 7 264 | 0.61 × 0.90 × 0.19 | 15 |
+| `hands_lowpoly.glb` | 5 304 | 0.36 × 0.24 × 0.11 | 2 |
+| `fuse_core.glb` — hero puzzle item | 4 470 | 0.11 × 0.31 × 0.12 | 16 |
+| `handheld_lamp.glb` | 2 660 | 0.06 × 0.07 × 0.26 | 14 |
+| `valve_wheel.glb` | 2 016 | 0.39 × 0.36 × 0.28 | 6 |
+
+Every asset keeps its moving parts as separately-named objects with pivots on
+the real axis, so the game animates them procedurally: breaker toggles, the
+valve wheel on its stem, the panel door on its hinge, and the Surveyor's nine
+joints. `public/assets/models/manifest.json` documents every sub-object and its
+material slot; turntables are in `docs/assets/`.
 
 ---
 

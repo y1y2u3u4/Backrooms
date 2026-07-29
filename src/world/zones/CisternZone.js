@@ -407,7 +407,7 @@ export function buildCistern(ctx, opts = {}) {
     reverb: 'cistern',
     waterLine: WATER,
     wetness: 0.9,
-    ambient: { sky: 0x0d1416, ground: 0x18211f, intensity: 0.20 },
+    ambient: { sky: 0x101a1c, ground: 0x243029, intensity: 0.30 },
     water,
     update(dt, local, worldPos) { water.update(dt, worldPos); },
     updateIdle(dt) { water.update(dt * 0.25, null); },
