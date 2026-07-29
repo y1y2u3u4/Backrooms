@@ -6,11 +6,32 @@ that the build works today without it.
 
 ---
 
-## 1. `src/main.js` — install and step the gameplay layer
+## 1. `src/Game.js` — install and step the gameplay layer — **DONE**
 
-**This is the only blocking item.** Nothing in `src/systems/**`, `src/entities/**`
-or the new `src/player/*` files runs until `main.js` calls into them, because I
-must not edit `main.js`.
+✅ **Resolved by the integrator.** `Game._bootGameplay()` calls
+`installGameplay(this, {...})` and `Game.step()` calls
+`this.gameplay?.update?.(dt, this.input)` in the right slot. The aliases
+(`this.flashlight`, `this.hands`, `this.inventory`, `this.interactor`,
+`this.entities`, `this.director`, `this.progression`) are all live and
+`debugState()` is exposed. Nothing further is needed here.
+
+Two follow-ups I have already handled from my side:
+
+* `Game.respawn()` calls `progression.respawn()` and
+  `progression.lastSafePoint()`. Those did not exist; they do now
+  (`Progression.respawn()`, `lastSafePoint()`, `lastSafeYaw()`,
+  `registerSafeRoom()`), and they forward to the Director, which owns the
+  world-changing half of a respawn.
+* `seedDemo: !this.subsystems.world` is exactly the right call. The demo bench
+  in `GameplayBoot.seedIntakeDemo()` is a test fixture, not content, and it
+  should stay off whenever `World.js` builds.
+
+The original request is kept below for the record.
+
+<details><summary>original request</summary>
+
+Nothing in `src/systems/**`, `src/entities/**` or the new `src/player/*` files
+runs until the bootstrap calls into them.
 
 ### 1.1 Boot
 
@@ -89,6 +110,8 @@ debugState() { return this.gameplay?.debugState() ?? null; }
 
 The capture harness reads `g.gameplay.debugState()` directly today, so this is
 convenience only.
+
+</details>
 
 ---
 

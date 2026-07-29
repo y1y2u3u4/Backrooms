@@ -324,11 +324,19 @@ export class LightRig {
     this.ambient.intensity = this.ambientTarget.intensity;
   }
 
-  setCircuit(name, powered) {
-    const c = this.circuits.get(name) || { powered: false, level: 0, target: 0 };
+  setCircuit(name, powered, { immediate = false } = {}) {
+    const existing = this.circuits.get(name);
+    // A circuit that is created already powered — which is every circuit a zone
+    // builder registers — should start at full, not ramp up from black. The
+    // ramp exists for a breaker being thrown, not for a zone being built.
+    const c = existing || { powered: false, level: powered ? 1 : 0, target: 0 };
     c.powered = powered;
     c.target = powered ? 1 : 0;
+    if (immediate) c.level = c.target;
     this.circuits.set(name, c);
+    // Re-rank on the next update so a newly powered circuit's fixtures can
+    // claim their place in the active-light budget straight away.
+    this._sortTimer = 0;
   }
   isPowered(name) { return this.circuits.get(name)?.powered ?? false; }
   circuitLevel(name) { return this.circuits.get(name)?.level ?? 0; }
@@ -424,8 +432,8 @@ export class LightRig {
     this.ambient.intensity += (this.ambientTarget.intensity - this.ambient.intensity) * k;
 
     this._sortTimer -= dt;
-    const resort = this._sortTimer <= 0;
-    if (resort) this._sortTimer = 0.22;
+    const resort = this._sortTimer <= 0 || !this._activeSet;
+    if (resort) this._sortTimer = 0.18;
 
     const camPos = camera.position;
     let shadowChanged = false;
@@ -435,9 +443,21 @@ export class LightRig {
         const p = f.group.position;
         f.distToCam = Math.hypot(p.x - camPos.x, p.y - camPos.y, p.z - camPos.z);
       }
-      // Rank by distance, but only fixtures that are actually on.
+      // Rank by distance among fixtures that are *supposed* to be on.
+      //
+      // This deliberately tests the circuit's TARGET and the fixture's health,
+      // not its instantaneous `level`. Level is a transient: a freshly built
+      // zone's fixtures all start at zero and its circuits ramp up over a
+      // fraction of a second, so filtering on current brightness selected an
+      // empty active set on the first frame after a zone change and then left
+      // every light in that zone switched off until the next re-sort. Whole
+      // zones rendered unlit.
       const live = this.fixtures
-        .filter((f) => f.level > 0.05 && this.circuitLevel(f.circuit) > 0.05)
+        .filter((f) => {
+          if (f._dead || !f.on) return false;
+          const c = this.circuits.get(f.circuit);
+          return c ? c.target > 0.05 : true;
+        })
         .sort((a, b) => a.distToCam - b.distToCam);
 
       // Distance-ranked active set. Without this the "keep the first N" loop

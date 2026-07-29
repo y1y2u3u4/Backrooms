@@ -306,7 +306,8 @@ export class Game {
   respawn() {
     this.progression?.respawn?.();
     const point = this.progression?.lastSafePoint?.() || this.world?.spawn || [0, 0, 0];
-    this.player.teleport(point[0], point[1], point[2], this.world?.spawnYaw || 0);
+    const yaw = this.progression?.lastSafeYaw?.() ?? this.world?.spawnYaw ?? 0;
+    this.player.teleport(point[0], point[1], point[2], yaw);
     this.player.controlEnabled = true;
     this.player.lookEnabled = true;
     this.player.frozen = false;

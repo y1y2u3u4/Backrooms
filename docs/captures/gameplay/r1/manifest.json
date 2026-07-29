@@ -1,0 +1,359 @@
+[
+  {
+    "name": "00_spawn",
+    "settle": 30,
+    "setup": "const gp = g.gameplay; if (!gp) return; window.__GP = JSON.stringify(gp.debugState()); gp.qa.lamp(true, 1);",
+    "file": "docs/captures/gameplay/r1/00_spawn.png",
+    "stats": {
+      "ms": 14.738235294188867,
+      "fps": 67.85072839719757,
+      "p90": 31.600000000558794,
+      "calls": 167,
+      "tris": 385066,
+      "quality": "low",
+      "res": "595x335",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "10_hands_lamp",
+    "settle": 40,
+    "setup": "const gp = g.gameplay; if (!gp) return; gp.qa.lamp(true, 1); g.look(g.player.position.x, 0, g.player.position.z, g.player.yaw, -0.16);",
+    "file": "docs/captures/gameplay/r1/10_hands_lamp.png",
+    "stats": {
+      "ms": 8.337209302303922,
+      "fps": 119.94421199473281,
+      "p90": 13,
+      "calls": 166,
+      "tris": 384986,
+      "quality": "low",
+      "res": "595x335",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "11_hands_carry_core",
+    "settle": 60,
+    "setup": "const gp = g.gameplay; if (!gp) return; gp.inventory.add('fuse_core', 1); g.look(g.player.position.x, 0, g.player.position.z, g.player.yaw, -0.22);",
+    "file": "docs/captures/gameplay/r1/11_hands_carry_core.png",
+    "stats": {
+      "ms": 264.8390625000029,
+      "fps": 3.775878039139294,
+      "p90": 26.5,
+      "calls": 154,
+      "tris": 382926,
+      "quality": "low",
+      "res": "595x335",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "12_hands_reach",
+    "settle": 40,
+    "setup": "const gp = g.gameplay; if (!gp) return; gp.inventory.take('fuse_core', 1); gp.hands.setReaching(true, true); g.look(g.player.position.x, 0, g.player.position.z, g.player.yaw, -0.16);",
+    "file": "docs/captures/gameplay/r1/12_hands_reach.png",
+    "stats": {
+      "ms": 5.160869565265982,
+      "fps": 193.7657961228597,
+      "p90": 9.5,
+      "calls": 166,
+      "tris": 384986,
+      "quality": "low",
+      "res": "595x335",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "13_lamp_dying_in_dark",
+    "settle": 40,
+    "setup": "const gp = g.gameplay; if (!gp) return; gp.hands.setReaching(false); gp.qa.circuits(false); gp.qa.lamp(true, 0.10); g.look(g.player.position.x, 0, g.player.position.z, g.player.yaw, -0.05);",
+    "file": "docs/captures/gameplay/r1/13_lamp_dying_in_dark.png",
+    "stats": {
+      "ms": 8.006666666579743,
+      "fps": 124.89592006796707,
+      "p90": 12.199999999254942,
+      "calls": 167,
+      "tris": 385066,
+      "quality": "low",
+      "res": "595x335",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 0,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "14_lamp_healthy_in_dark",
+    "settle": 40,
+    "setup": "const gp = g.gameplay; if (!gp) return; gp.qa.lamp(true, 1.0); g.look(g.player.position.x, 0, g.player.position.z, g.player.yaw, -0.05);",
+    "file": "docs/captures/gameplay/r1/14_lamp_healthy_in_dark.png",
+    "stats": {
+      "ms": 12.054545454490421,
+      "fps": 82.95625942722639,
+      "p90": 25.09999999962747,
+      "calls": 112,
+      "tris": 380426,
+      "quality": "low",
+      "res": "595x335",
+      "lights": {
+        "fixtures": 127,
+        "lit": 0,
+        "active": 0,
+        "shadows": 0
+      }
+    }
+  },
+  {
+    "name": "15_lamp_covered",
+    "settle": 40,
+    "setup": "const gp = g.gameplay; if (!gp) return; gp.flashlight.setCover(1); for (let i=0;i<40;i++) gp.flashlight.update(1/60, null); g.look(g.player.position.x, 0, g.player.position.z, g.player.yaw, -0.05);",
+    "file": "docs/captures/gameplay/r1/15_lamp_covered.png",
+    "stats": {
+      "ms": 3.127906976809162,
+      "fps": 319.7026022238421,
+      "p90": 7.400000000372529,
+      "calls": 112,
+      "tris": 380426,
+      "quality": "low",
+      "res": "595x335",
+      "lights": {
+        "fixtures": 127,
+        "lit": 0,
+        "active": 0,
+        "shadows": 0
+      }
+    }
+  },
+  {
+    "name": "20_surveyor_lit_full",
+    "settle": 30,
+    "setup": "const gp = g.gameplay; if (!gp || !gp.surveyor) return; gp.flashlight.setCover(0); gp.qa.circuits(true); gp.qa.lamp(false); const p = g.player.position, y = g.player.yaw; const fx = -Math.sin(y), fz = -Math.cos(y); gp.qa.surveyorTo(p.x + fx * 6.5, p.z + fz * 6.5, y + Math.PI); gp.qa.pose(0.9, 0.4); g.look(p.x, 0, p.z, y, 0.10);",
+    "file": "docs/captures/gameplay/r1/20_surveyor_lit_full.png",
+    "stats": {
+      "ms": 242.52727272728401,
+      "fps": 4.123247619761409,
+      "p90": 81,
+      "calls": 182,
+      "tris": 394746,
+      "quality": "low",
+      "res": "595x335",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "21_surveyor_scale_vs_player",
+    "settle": 26,
+    "setup": "const gp = g.gameplay; if (!gp || !gp.surveyor) return; const p = g.player.position, y = g.player.yaw; const fx = -Math.sin(y), fz = -Math.cos(y); gp.qa.surveyorTo(p.x + fx * 3.4, p.z + fz * 3.4, y + Math.PI); gp.qa.pose(0.0, 0.0); g.look(p.x, 0, p.z, y, 0.22);",
+    "file": "docs/captures/gameplay/r1/21_surveyor_scale_vs_player.png",
+    "stats": {
+      "ms": 5.206896551884711,
+      "fps": 192.0529801265277,
+      "p90": 8.600000000558794,
+      "calls": 181,
+      "tris": 394666,
+      "quality": "low",
+      "res": "595x335",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "22_surveyor_frozen_midstride",
+    "settle": 26,
+    "setup": "const gp = g.gameplay; if (!gp || !gp.surveyor) return; const p = g.player.position, y = g.player.yaw; const fx = -Math.sin(y), fz = -Math.cos(y); gp.qa.surveyorTo(p.x + fx * 5.5, p.z + fz * 5.5, y + Math.PI + 0.45); gp.qa.pose(1.55, 0.78); g.look(p.x, 0, p.z, y, 0.12);",
+    "file": "docs/captures/gameplay/r1/22_surveyor_frozen_midstride.png",
+    "stats": {
+      "ms": 3.853333333414048,
+      "fps": 259.51557092882007,
+      "p90": 8.399999999441206,
+      "calls": 182,
+      "tris": 394746,
+      "quality": "low",
+      "res": "595x335",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "23_surveyor_measuring",
+    "settle": 26,
+    "setup": "const gp = g.gameplay; if (!gp || !gp.surveyor) return; const p = g.player.position, y = g.player.yaw; const fx = -Math.sin(y), fz = -Math.cos(y); const rx = Math.cos(y), rz = -Math.sin(y); gp.qa.surveyorTo(p.x + fx * 5.0 + rx * 1.4, p.z + fz * 5.0 + rz * 1.4, y + Math.PI - 0.9); gp.qa.measure(8); g.look(p.x, 0, p.z, y, 0.14);",
+    "file": "docs/captures/gameplay/r1/23_surveyor_measuring.png",
+    "stats": {
+      "ms": 3.3066666667660076,
+      "fps": 302.4193548296242,
+      "p90": 6.300000000745058,
+      "calls": 182,
+      "tris": 394746,
+      "quality": "low",
+      "res": "595x335",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "24_surveyor_head_plate",
+    "settle": 26,
+    "setup": "const gp = g.gameplay; if (!gp || !gp.surveyor) return; const p = g.player.position, y = g.player.yaw; const fx = -Math.sin(y), fz = -Math.cos(y); gp.qa.surveyorTo(p.x + fx * 2.4, p.z + fz * 2.4, y + Math.PI); gp.qa.pose(0.4, -0.5); g.look(p.x, 0, p.z, y, 0.46);",
+    "file": "docs/captures/gameplay/r1/24_surveyor_head_plate.png",
+    "stats": {
+      "ms": 4.4300000000745055,
+      "fps": 225.73363430771593,
+      "p90": 8.599999999627471,
+      "calls": 179,
+      "tris": 394506,
+      "quality": "low",
+      "res": "595x335",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "25_surveyor_lamp_only",
+    "settle": 26,
+    "setup": "const gp = g.gameplay; if (!gp || !gp.surveyor) return; gp.qa.circuits(false); gp.qa.lamp(true, 1.0); const p = g.player.position, y = g.player.yaw; const fx = -Math.sin(y), fz = -Math.cos(y); gp.qa.surveyorTo(p.x + fx * 5.0, p.z + fz * 5.0, y + Math.PI); gp.qa.pose(0.9, 0.25); g.look(p.x, 0, p.z, y, 0.12);",
+    "file": "docs/captures/gameplay/r1/25_surveyor_lamp_only.png",
+    "stats": {
+      "ms": 18.40344827586849,
+      "fps": 54.33764287050755,
+      "p90": 13.099999999627471,
+      "calls": 182,
+      "tris": 394746,
+      "quality": "low",
+      "res": "595x335",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "26_surveyor_capture",
+    "settle": 26,
+    "setup": "const gp = g.gameplay; if (!gp || !gp.surveyor) return; gp.qa.circuits(true); gp.qa.lamp(false); const p = g.player.position, y = g.player.yaw; const fx = -Math.sin(y), fz = -Math.cos(y); gp.qa.surveyorTo(p.x + fx * 1.15, p.z + fz * 1.15, y + Math.PI); const s = gp.surveyor; s.captureBlend = 1; s.state = 'CAPTURING'; gp.qa.pose(0.2, 0.0); g.look(p.x, 0, p.z, y, 0.36);",
+    "file": "docs/captures/gameplay/r1/26_surveyor_capture.png",
+    "stats": {
+      "ms": 5.620000000018626,
+      "fps": 177.9359430599085,
+      "p90": 10.099999999627471,
+      "calls": 180,
+      "tris": 394586,
+      "quality": "low",
+      "res": "595x335",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "27_surveyor_far_down_a_run",
+    "settle": 26,
+    "setup": "const gp = g.gameplay; if (!gp || !gp.surveyor) return; const p = g.player.position, y = g.player.yaw; const fx = -Math.sin(y), fz = -Math.cos(y); gp.qa.surveyorTo(p.x + fx * 16, p.z + fz * 16, y + Math.PI); gp.qa.pose(2.2, 0.2); g.look(p.x, 0, p.z, y, 0.02);",
+    "file": "docs/captures/gameplay/r1/27_surveyor_far_down_a_run.png",
+    "stats": {
+      "ms": 7.175862068984786,
+      "fps": 139.35607880789104,
+      "p90": 9.900000000372529,
+      "calls": 182,
+      "tris": 394746,
+      "quality": "low",
+      "res": "595x335",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "30_props_in_world",
+    "settle": 30,
+    "setup": "const gp = g.gameplay; if (!gp) return; gp.surveyor && gp.surveyor.despawn(); const props = gp.interactables.props.filter(p => p.root); window.__PROPS = JSON.stringify(props.map(p => p.id)); if (!props.length) return; const r = props[0].root; const pos = r.position; const yaw = Math.atan2(-(pos.x - (pos.x - 2.4)), -(pos.z - (pos.z - 2.4))); g.look(pos.x, 0, pos.z + 2.6, Math.PI, -0.06);",
+    "file": "docs/captures/gameplay/r1/30_props_in_world.png",
+    "stats": {
+      "ms": 5.697058823562282,
+      "fps": 175.52916881674668,
+      "p90": 10,
+      "calls": 167,
+      "tris": 385066,
+      "quality": "low",
+      "res": "595x335",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "31_debug_dump",
+    "settle": 12,
+    "setup": "const gp = g.gameplay; if (!gp) return; window.__GP_FINAL = JSON.stringify(gp.debugState());",
+    "file": "docs/captures/gameplay/r1/31_debug_dump.png",
+    "stats": {
+      "ms": 6.718749999941792,
+      "fps": 148.83720930361503,
+      "p90": 13.900000000372529,
+      "calls": 167,
+      "tris": 385066,
+      "quality": "low",
+      "res": "595x335",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  }
+]
