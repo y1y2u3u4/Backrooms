@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>THE ANNEX — audio probe harness</title>
+<style>
+  body { background:#0b0b0c; color:#c9c2ae; font:12px/1.6 ui-monospace,monospace; padding:16px; }
+  h1 { font-size:13px; letter-spacing:.3em; color:#d8b45a; text-transform:uppercase; }
+  canvas { display:block; margin:6px 0; background:#141412; }
+  #log { white-space:pre; }
+</style>
+</head>
+<body>
+<h1>audio probe harness</h1>
+<div id="log">booting…</div>
+
+<script type="module">
+/**
+ * Offline harness for the audio system. Loaded by tools/qa/audio-probe.mjs in
+ * headless Chromium. Renders every registered sound through an
+ * OfflineAudioContext — the same build() code the live game runs — and hands
+ * back numeric analysis.
+ *
+ * It also exercises the real CollisionWorld so that occlusion is measured
+ * rather than asserted.
+ */
+import { createAudio } from '/src/audio/index.js';
+import { analyseBuffer, renderIR, goertzel } from '/src/audio/Synth.js';
+import { REVERB_PROFILES } from '/src/audio/AudioEngine.js';
+import { CollisionWorld } from '/src/player/Physics.js';
+
+const log = (m) => { document.getElementById('log').textContent = m; };
+
+const audio = createAudio({ bus: null, collision: null, camera: null, rig: null, options: { autoInit: false } });
+const engine = audio.engine;
+
+/** Loops and drones need a level driven in; one-shots do not. */
+const PARAMS = {
+  'amb.hum': { level: 0.85 },
+  'entity.presence': { level: 0.85, mode: 1 },
+  'music.bed': { level: 0.8 },
+  'music.warm': { level: 0.75 },
+  'amb.machine': { proximity: 0.9 },
+};
+const OPTS = {
+  'amb.machine': { proximity: 0.9 },
+  'amb.vent': { level: 0.8, tone: 620, sweep: 1 },
+  'amb.grille': { level: 0.8, tone: 900 },
+  'amb.room': { level: 0.7, freq: 120 },
+  'amb.transformer': { level: 0.7 },
+  'amb.water.lap': { level: 0.7 },
+  'amb.water.run': { level: 0.7 },
+  'entity.whine': { duration: 3.4 },
+  'step.carpet': { strength: 0.8, left: true },
+  'step.carpet_damp': { strength: 0.8, left: false },
+  'step.concrete': { strength: 0.9, left: true },
+  'step.lino': { strength: 0.8, left: false },
+  'step.tread': { strength: 0.9, left: true },
+  'step.duct': { strength: 0.7, crouch: true },
+  'step.water': { strength: 0.8, water: 0.55 },
+  'splash': { depth: 0.6, strength: 0.9 },
+  'land': { force: 0.8, surface: 'concrete' },
+  'breath': { effort: 0.8, inhale: true },
+  'cloth.rustle': { amount: 0.9 },
+  'drip': { vessel: 0.4 },
+  'music.motif': { root: 0 },
+  'music.bowed': { duration: 8, bow: 0.9 },
+  'silence.vacuum': { duration: 4, depth: 0.8 },
+};
+/** Render window per sound. Long tails need room or `duration` lies. */
+const SECONDS = {
+  'entity.capture': 5.0, 'entity.measure': 4.2, 'entity.whine': 4.6,
+  'music.motif': 13.0, 'music.bowed': 10.0, 'music.bed': 8.0, 'music.warm': 8.0,
+  'entity.presence': 6.0, 'kettle.boil': 12.0, 'silence.vacuum': 6.0,
+  'struct.impact': 4.0, 'struct.creak': 3.5, 'cable.twang': 3.0,
+  'metal.clang': 3.0, 'pickup.core': 3.6, 'lift.arrive': 4.0, 'door.heavy': 3.5,
+};
+
+function secondsFor(name) {
+  if (SECONDS[name]) return SECONDS[name];
+  const def = engine.registry.get(name);
+  if (!def) return 2.5;
+  if (def.loop) return 6.0;
+  return Math.min(12, Math.max(2.0, (def.dur ?? 1.5) + 1.0));
+}
+
+/** Render one sound and analyse it. */
+async function renderOne(name, seed) {
+  const buf = await engine.renderOffline(name, {
+    seconds: secondsFor(name),
+    opts: OPTS[name] || {},
+    params: PARAMS[name] || null,
+    sampleRate: 48000,
+  });
+  const a = analyseBuffer(buf);
+  return { buf, a };
+}
+
+/** Sample-level difference between two renders of the same sound. */
+function differenceScore(a, b) {
+  const n = Math.min(a.length, b.length, 48000 * 2);
+  const da = a.getChannelData(0), db = b.getChannelData(0);
+  let diff = 0, ea = 0, eb = 0;
+  for (let i = 0; i < n; i++) {
+    const x = da[i], y = db[i];
+    diff += (x - y) * (x - y); ea += x * x; eb += y * y;
+  }
+  const denom = Math.sqrt(ea / n) + Math.sqrt(eb / n);
+  return denom > 1e-9 ? Math.sqrt(diff / n) / denom : 0;
+}
+
+window.AUDIO_PROBE = {
+  names: () => engine.names,
+
+  /** Render every sound twice and return the full analysis table. */
+  async runAll() {
+    const out = [];
+    for (const name of engine.names) {
+      try {
+        const r1 = await renderOne(name, 1);
+        const r2 = await renderOne(name, 2);
+        out.push({
+          name,
+          peak: r1.a.peak, rms: r1.a.rms, dc: r1.a.dc,
+          duration: r1.a.duration, centroid: r1.a.centroid, crest: r1.a.crest,
+          zcr: r1.a.zcr, clipped: r1.a.clipped,
+          window: secondsFor(name),
+          loop: !!engine.registry.get(name).loop,
+          bus: engine.registry.get(name).bus || 'world',
+          diff: differenceScore(r1.buf, r2.buf),
+          peak2: r2.a.peak, rms2: r2.a.rms, centroid2: r2.a.centroid,
+        });
+      } catch (e) {
+        out.push({ name, error: String(e && e.message || e) });
+      }
+    }
+    return out;
+  },
+
+  /**
+   * Measure the actual audible consequence of occlusion, using the real
+   * CollisionWorld and the engine's own occlusion->filter mapping.
+   */
+  async occlusion() {
+    const cw = new CollisionWorld();
+    // A 0.16 m wall (DESIGN.md: wall thickness 160 mm) across z = 0.
+    cw.addBox([-8, 0, -0.08], [8, 3, 0.08], { tag: 'wall' });
+    // And a narrow gap in a second wall, to prove the 5-probe estimate reads a
+    // slot as PARTLY open rather than fully open or fully shut. CollisionWorld
+    // offsets its probes by +/-0.35 m laterally, so a 0.5 m slot is the widest
+    // opening that still registers as partial.
+    cw.addBox([-8, 0, 5.92], [-0.25, 3, 6.08], { tag: 'wall' });
+    cw.addBox([0.25, 0, 5.92], [8, 3, 6.08], { tag: 'wall' });
+
+    const open = cw.occlusion(0, 1.6, -3, 0, 1.6, -6);
+    const solid = cw.occlusion(0, 1.6, -3, 0, 1.6, 3);
+    const doorway = cw.occlusion(0, 1.6, 3, 0, 1.6, 9);
+
+    // Render the same sound through the chain the engine would build at a given
+    // occlusion, taking the dry and wet paths SEPARATELY so the wet/dry ratio
+    // is a real measurement rather than an early/late energy guess.
+    const render = async (occ, path) => {
+      const OC = window.OfflineAudioContext;
+      const ctx = new OC(2, 48000 * 2.5, 48000);
+      const master = ctx.createGain(); master.connect(ctx.destination);
+      const lpf = ctx.createBiquadFilter(); lpf.type = 'lowpass'; lpf.Q.value = 0.4;
+      const dry = ctx.createGain();
+      const out = ctx.createGain();
+      // The exact mapping from AudioEngine._updateVoiceOcclusion.
+      lpf.frequency.value = Math.max(180, Math.min(19000, 19000 + (340 - 19000) * Math.pow(occ, 0.75)));
+      dry.gain.value = 1 + (0.20 - 1) * occ;
+      out.connect(dry); dry.connect(lpf);
+      if (path === 'dry') {
+        lpf.connect(master);
+      } else {
+        const conv = ctx.createConvolver(); conv.normalize = false;
+        conv.buffer = renderIR(ctx, REVERB_PROFILES.service);
+        const wet = ctx.createGain();
+        // Base send 0.5, distance factor 1, occlusion boost — as in the engine.
+        wet.gain.value = 0.5 * (1 + occ * 1.85);
+        lpf.connect(wet); wet.connect(conv); conv.connect(master);
+      }
+      const def = engine.registry.get('metal.clang');
+      const bag = { sources: [], nodes: [], src(n) { this.sources.push(n); return n; }, add(n) { this.nodes.push(n); return n; }, stopAll() {}, dispose() {} };
+      def.build({ ctx, bag, out, t: 0.02, engine, opts: {}, rng: Math.random, name: 'metal.clang' });
+      return analyseBuffer(await ctx.startRendering());
+    };
+    const at = async (occ) => {
+      const d = await render(occ, 'dry');
+      const w = await render(occ, 'wet');
+      return {
+        dryRms: d.rms, dryCentroid: d.centroid, dryPeak: d.peak,
+        wetRms: w.rms, wetDry: w.rms / Math.max(1e-12, d.rms),
+        centroid: d.centroid, rms: d.rms,
+      };
+    };
+    return { open, solid, doorway, clear: await at(0), half: await at(0.5), blocked: await at(1) };
+  },
+
+  /** Analyse the generated impulse responses themselves. */
+  async reverbs() {
+    const OC = window.OfflineAudioContext;
+    const rows = [];
+    for (const key of Object.keys(REVERB_PROFILES)) {
+      const p = REVERB_PROFILES[key];
+      const ctx = new OC(2, Math.round(48000 * (p.seconds + 0.2)), 48000);
+      const buf = renderIR(ctx, p);
+      const a = analyseBuffer(buf);
+      // Measured T60 from the energy decay curve.
+      const d = buf.getChannelData(0);
+      let peak = 0;
+      for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]));
+      const win = 512;
+      let t60 = 0;
+      for (let i = 0; i < d.length - win; i += win) {
+        let e = 0;
+        for (let j = 0; j < win; j++) e += d[i + j] * d[i + j];
+        const rms = Math.sqrt(e / win);
+        if (rms < peak * 0.001) { t60 = i / 48000; break; }
+      }
+      // Stereo decorrelation: 1 = fully decorrelated, 0 = mono.
+      const l = buf.getChannelData(0), r = buf.getChannelData(1);
+      let lr = 0, ll = 0, rr = 0;
+      for (let i = 0; i < l.length; i += 3) { lr += l[i] * r[i]; ll += l[i] * l[i]; rr += r[i] * r[i]; }
+      const corr = lr / Math.max(1e-12, Math.sqrt(ll * rr));
+      rows.push({
+        name: key, target: p.decay, t60, rms: a.rms, peak: a.peak,
+        centroid: a.centroid, corr, length: p.seconds, dc: a.dc,
+      });
+    }
+    return rows;
+  },
+
+  /**
+   * Prove the fluorescent hum tracks a fixture's live level: render the hum
+   * while driving `set('level', ...)` with a dying-tube flicker curve, and
+   * report the frame-by-frame envelope so the caller can correlate it.
+   */
+  async humFlicker() {
+    const OC = window.OfflineAudioContext;
+    const sr = 48000, secs = 3;
+    const ctx = new OC(2, sr * secs, sr);
+    const master = ctx.createGain(); master.connect(ctx.destination);
+    const out = ctx.createGain(); out.connect(master);
+    const def = engine.registry.get('amb.hum');
+    const bag = { sources: [], nodes: [], src(n) { this.sources.push(n); return n; }, add(n) { this.nodes.push(n); return n; }, stopAll() {}, dispose() {} };
+    const res = def.build({ ctx, bag, out, t: 0, engine, opts: { detune: 9, whine: 9400, rasp: 0.5 }, rng: Math.random, name: 'amb.hum' });
+    // A DYING tube: healthy, then a restrike burst, then healthy again.
+    const drive = [];
+    for (let i = 0; i < secs * 100; i++) {
+      const t = i / 100;
+      let v;
+      if (t < 1.0) v = 0.88 + 0.05 * Math.sin(t * 9.1);
+      else if (t < 1.6) v = (Math.sin(t * 61) * 0.5 + 0.5) * (Math.sin(t * 23.7) * 0.5 + 0.5) * 1.5;
+      else v = 0.9;
+      v = Math.max(0, Math.min(1, v));
+      drive.push(v);
+      res.set('level', Math.pow(v, 0.45) * 0.9, t);
+    }
+    const buf = await ctx.startRendering();
+    // Envelope of the rendered audio at the same 100 Hz grid.
+    const d = buf.getChannelData(0);
+    const envOut = [];
+    const win = Math.round(sr / 100);
+    for (let i = 0; i + win < d.length; i += win) {
+      let e = 0;
+      for (let j = 0; j < win; j++) e += d[i + j] * d[i + j];
+      envOut.push(Math.sqrt(e / win));
+    }
+    // Correlate drive against output envelope.
+    const n = Math.min(drive.length, envOut.length);
+    let ma = 0, mb = 0;
+    for (let i = 0; i < n; i++) { ma += drive[i]; mb += envOut[i]; }
+    ma /= n; mb /= n;
+    let cov = 0, va = 0, vb = 0;
+    for (let i = 0; i < n; i++) {
+      const x = drive[i] - ma, y = envOut[i] - mb;
+      cov += x * y; va += x * x; vb += y * y;
+    }
+    const corr = cov / Math.max(1e-12, Math.sqrt(va * vb));
+    // Also check the 100 Hz mains partial is actually present and dominant.
+    const g100 = goertzel(d, sr, 100);
+    const g200 = goertzel(d, sr, 200);
+    const g137 = goertzel(d, sr, 137);
+    return { corr, ...analyseBuffer(buf), g100, g200, g137, samples: n };
+  },
+
+  /** Render a waveform strip as a PNG data URL for eyeball verification. */
+  async waveform(name, width = 900, height = 130) {
+    const { buf } = await renderOne(name, 1);
+    const c = document.createElement('canvas');
+    c.width = width; c.height = height;
+    const g = c.getContext('2d');
+    g.fillStyle = '#141412'; g.fillRect(0, 0, width, height);
+    g.strokeStyle = '#2c2a24'; g.beginPath();
+    g.moveTo(0, height / 2); g.lineTo(width, height / 2); g.stroke();
+    const d = buf.getChannelData(0);
+    const step = Math.max(1, Math.floor(d.length / width));
+    g.fillStyle = '#d8b45a';
+    for (let x = 0; x < width; x++) {
+      let lo = 1, hi = -1;
+      for (let i = 0; i < step; i++) {
+        const v = d[x * step + i] || 0;
+        if (v < lo) lo = v; if (v > hi) hi = v;
+      }
+      const y0 = (1 - hi) * height / 2, y1 = (1 - lo) * height / 2;
+      g.fillRect(x, y0, 1, Math.max(1, y1 - y0));
+    }
+    g.fillStyle = '#8a7134';
+    g.font = '11px monospace';
+    g.fillText(`${name}  ${(d.length / 48000).toFixed(2)}s`, 6, 14);
+    document.body.appendChild(c);
+    return c.toDataURL('image/png');
+  },
+};
+
+window.AUDIO_READY = true;
+log(`ready — ${engine.names.length} registered sounds`);
+</script>
+</body>
+</html>

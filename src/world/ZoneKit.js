@@ -542,10 +542,10 @@ export function stripLight(b, rig, x, y, z, { rotation = 0, circuit = 'service',
     }
   }
   const hg = merge(parts);
+  hg.rotateY(rotation); hg.translate(x, y, z);
   worldUV(hg, 0.9); whiteColors(hg);
-  const mesh = new THREE.Mesh(hg, bodyMat);
-  mesh.receiveShadow = true;
-  g.add(mesh);
+  vertexShade(hg, (px, py, pz, nx, ny) => (ny < -0.4 ? 0.9 : 0.6));
+  b.add('fixtureBodyStrip', hg, () => bodyMat);
 
   const t = new THREE.CylinderGeometry(0.019, 0.019, 1.44, 8, 1);
   t.rotateZ(Math.PI / 2); t.translate(0, 0.002, 0);
@@ -586,9 +586,10 @@ export function bulkhead(b, rig, x, y, z, { yaw = 0, circuit = 'service', health
     parts.push(bar);
   }
   const gd = merge(parts);
+  gd.rotateY(yaw); gd.translate(x, y, z);
   worldUV(gd, 0.4); whiteColors(gd);
-  const mesh = new THREE.Mesh(gd, mat); mesh.receiveShadow = true;
-  g.add(mesh);
+  vertexShade(gd, () => 0.7);
+  b.add('bulkheadBody', gd, () => mat);
 
   const glass = new THREE.SphereGeometry(0.115, 12, 8, 0, TAU, 0, Math.PI / 2);
   glass.scale(1.25, 0.9, 0.55); glass.rotateX(Math.PI / 2); glass.translate(0, 0, 0.02);
@@ -635,9 +636,10 @@ export function highbay(b, rig, x, y, z, { circuit = 'plant', health = 'good', s
     parts.push(rib);
   }
   const hg = merge(parts);
+  hg.translate(x, y, z);
   worldUV(hg, 0.6); whiteColors(hg);
-  const mesh = new THREE.Mesh(hg, mat); mesh.receiveShadow = true;
-  g.add(mesh);
+  vertexShade(hg, () => 0.66);
+  b.add('highbayBody', hg, () => mat);
 
   const lamp = lathe([[0, 0], [0.045, -0.03], [0.05, -0.10], [0.03, -0.15], [0, -0.16]], 12);
   lamp.translate(0, -0.10, 0);
@@ -680,9 +682,10 @@ export function pendant(b, rig, x, y, z, { circuit = 'residence', health = 'good
     parts.push(sh);
   }
   const hg = merge(parts);
+  hg.translate(x, y, z);
   worldUV(hg, 0.35); whiteColors(hg);
-  const mesh = new THREE.Mesh(hg, mat); mesh.receiveShadow = true;
-  g.add(mesh);
+  vertexShade(hg, () => 0.74);
+  b.add('pendantBody', hg, () => mat);
 
   const bulbG = new THREE.SphereGeometry(0.033, 10, 8);
   bulbG.translate(0, -drop - 0.09, 0);
@@ -719,8 +722,10 @@ export function emergencyLight(b, rig, x, y, z, { yaw = 0, circuit = 'emergency'
     head.translate(sx * 0.075, 0.005, 0.02);
     parts.push(head);
   }
-  const hg = merge(parts); worldUV(hg, 0.3); whiteColors(hg);
-  g.add(new THREE.Mesh(hg, mat));
+  const hg = merge(parts);
+  hg.rotateY(yaw); hg.translate(x, y, z);
+  worldUV(hg, 0.3); whiteColors(hg);
+  b.add('emergBody', hg, () => mat);
   const lensG = [];
   for (const sx of [-1, 1]) {
     const l = cyl(0.026, 0.026, 0.006, 10); l.rotateX(Math.PI / 2);

@@ -409,6 +409,7 @@ export function createJournal({ bus } = {}) {
   return {
     node,
     state,
+    setTab,
     /** @param {{id,title,body,ref?,date?,kind?,stamp?,stampSub?,sign?}} n */
     addNote(n) {
       if (notes.some((x) => x.id === n.id)) return false;
@@ -488,7 +489,9 @@ export const JOURNAL_CSS = /* css */ `
 }
 .ax-jr-left { display: flex; flex-direction: column; min-height: 0; }
 .ax-jr-left .ax-rule { margin: 12px 0 4px; }
-.ax-jr-right { position: relative; min-width: 0; min-height: 0; display: flex; }
+.ax-jr-right { position: relative; min-width: 0; min-height: 0; display: flex;
+  align-items: stretch; }
+.ax-jr-stage { display: flex; width: 100%; min-width: 0; min-height: 0; }
 
 .ax-jr-tabs { display: flex; gap: 22px; }
 .ax-jr-tab { background: none; border: 0; padding: 0 0 3px; cursor: pointer;
@@ -522,10 +525,10 @@ export const JOURNAL_CSS = /* css */ `
 
 /* ---- note sheet --------------------------------------------------------- */
 .ax-jr-sheet {
-  width: min(660px, 100%); max-height: 100%; overflow: hidden;
-  padding: clamp(24px,2.6vw,36px) clamp(30px,3.2vw,46px) clamp(30px,3.4vw,48px) clamp(46px,4.6vw,64px);
-  transform: rotate(var(--rot, -0.5deg)); margin: auto auto auto 0;
-  display: flex; flex-direction: column;
+  width: min(600px, 100%); height: 100%; overflow: hidden;
+  padding: clamp(24px,2.6vw,34px) clamp(30px,3.2vw,44px) clamp(26px,3vw,40px) clamp(48px,4.8vw,66px);
+  transform: rotate(var(--rot, -0.5deg)); transform-origin: 50% 50%;
+  display: flex; flex-direction: column; flex: 0 0 auto;
 }
 .ax-jr-sheet-head { display: flex; justify-content: space-between; align-items: flex-start;
   gap: 24px; padding-bottom: 14px; }
@@ -550,11 +553,11 @@ export const JOURNAL_CSS = /* css */ `
 .ax-jr-stamp { position: absolute; }
 
 /* ---- tape transport ----------------------------------------------------- */
-.ax-tp-wrap { display: flex; flex-direction: column; width: min(660px, 100%); margin: auto auto auto 0;
-  max-height: 100%; }
+.ax-tp-wrap { display: flex; flex-direction: column; width: min(660px, 100%);
+  height: 100%; min-height: 0; }
 .ax-tp-title { display: flex; justify-content: space-between; align-items: baseline;
   gap: 20px; padding-bottom: 13px; border-bottom: 1px solid var(--ax-rule-2); }
-.ax-tp { display: flex; flex-direction: column; min-height: 0; }
+.ax-tp { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
 .ax-tp-deck { display: grid; grid-template-columns: 92px minmax(0,1fr) 92px; align-items: center;
   gap: 22px; padding: 26px 0 20px; }
 .ax-tp-reel { width: 92px; height: 92px; color: var(--ax-bone-2); }
@@ -577,9 +580,13 @@ export const JOURNAL_CSS = /* css */ `
   transform: translate(-1px,-50%); transition: left 120ms linear; }
 
 .ax-tp-transcript { overflow-y: auto; padding-top: 16px; border-top: 1px solid var(--ax-bone-4);
-  max-height: min(38vh, 320px); scrollbar-width: thin;
-  scrollbar-color: rgba(207,200,180,.18) transparent; }
-.ax-tp-line { display: grid; grid-template-columns: 46px 96px minmax(0,1fr); gap: 14px;
+  flex: 1 1 auto; min-height: 0; scrollbar-width: thin;
+  scrollbar-color: rgba(207,200,180,.18) transparent;
+  -webkit-mask-image: linear-gradient(180deg, #000 0 88%, #0000 100%);
+  mask-image: linear-gradient(180deg, #000 0 88%, #0000 100%); }
+.ax-tp-transcript::-webkit-scrollbar { width: 3px; }
+.ax-tp-transcript::-webkit-scrollbar-thumb { background: rgba(207,200,180,.18); }
+.ax-tp-line { display: grid; grid-template-columns: 42px 82px minmax(0,1fr); gap: 11px;
   padding: 7px 0; align-items: baseline; opacity: .34;
   transition: opacity 260ms var(--ax-ease); }
 .ax-tp-line[data-past] { opacity: .62; }

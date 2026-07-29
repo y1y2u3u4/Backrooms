@@ -1,0 +1,6 @@
+[
+  { "name": "q1_spine",   "setup": "g.look(-28.0, 0, -8.4, -1.5708, 0.0)" },
+  { "name": "q2_cross",   "setup": "g.look(4.2, 0, -8.4, -0.9, -0.02)" },
+  { "name": "q3_ceiling", "setup": "g.look(-8.4, 0, -8.4, 0.4, 0.72)" },
+  { "name": "q4_bay",     "setup": "g.look(-12.6, 0, 4.2, 0.7, 0.0)" }
+]

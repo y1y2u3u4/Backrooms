@@ -35,7 +35,10 @@ export function el(spec, attrs, ...kids) {
   const [tag, ...classes] = String(spec).split('.');
   const n = document.createElement(tag || 'div');
   if (classes.length) n.className = classes.join(' ');
-  if (attrs && (attrs.nodeType || typeof attrs === 'string')) { kids.unshift(attrs); attrs = null; }
+  // A node, a string or an array in the attrs slot is a child, not attributes.
+  if (attrs && (attrs.nodeType || typeof attrs === 'string' || Array.isArray(attrs))) {
+    kids.unshift(attrs); attrs = null;
+  }
   if (attrs) {
     for (const [k, v] of Object.entries(attrs)) {
       if (v == null || v === false) continue;
@@ -158,7 +161,7 @@ const CSS = /* css */ `
 .ax-ground {
   position: absolute; inset: 0;
   background:
-    radial-gradient(122% 96% at 22% 30%, rgba(10,9,6,.80) 0%, rgba(6,5,4,.95) 62%, #050403 100%);
+    radial-gradient(126% 100% at 20% 28%, rgba(13,11,8,.975) 0%, rgba(7,6,4,.995) 58%, #050403 100%);
 }
 .ax-ground.ax-solid { background: #06050300; background-color: #060503; }
 .ax-scrim { position: absolute; inset: 0; background: rgba(5,4,3,.62); }
@@ -166,10 +169,10 @@ const CSS = /* css */ `
 /* Reprographic tone: a fixed, static unevenness across every screen so the UI
    sits on the same "sheet" everywhere. Static — never animated. */
 .ax-tone {
-  position: absolute; inset: 0; pointer-events: none; opacity: .5;
+  position: absolute; inset: 0; pointer-events: none; opacity: .42;
   background:
-    radial-gradient(60% 40% at 12% 8%,  rgba(216,180,90,.045), #0000 70%),
-    radial-gradient(50% 60% at 92% 88%, rgba(207,200,180,.035), #0000 72%),
+    linear-gradient(163deg, rgba(216,180,90,.030) 0%, rgba(0,0,0,0) 46%),
+    linear-gradient(8deg,  rgba(207,200,180,.022) 0%, rgba(0,0,0,0) 38%),
     repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, #0000 1px 3px);
 }
 .ax-vig { position: absolute; inset: 0; pointer-events: none;
@@ -217,9 +220,10 @@ const CSS = /* css */ `
   text-align: center; margin-top: 3px; opacity: .85; }
 .ax-stamp.ax-on-paper { mix-blend-mode: multiply; opacity: .78; }
 
-.ax-punch { position: absolute; left: 13px; top: 12%; display: grid; gap: 22vh; }
+.ax-punch { position: absolute; left: 15px; top: 0; bottom: 0; width: 13px;
+  display: flex; flex-direction: column; justify-content: space-evenly; padding: 17% 0; }
 .ax-punch i { display: block; width: 13px; height: 13px; border-radius: 50%;
-  background: #07060400; box-shadow: inset 0 0 0 1px rgba(0,0,0,.30); background-color: rgba(9,8,6,.72); }
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.55); background-color: rgba(10,9,7,.80); }
 
 /* ---- sheets ------------------------------------------------------------- */
 .ax-sheet {

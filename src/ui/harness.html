@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>THE ANNEX — UI harness</title>
+    <style>
+      /* Mirrors index.html exactly so what we screenshot is what ships. */
+      :root {
+        --amber: #d8b45a;
+        --amber-dim: #8a7134;
+        --paper: #cfc8b4;
+        --ink: #0a0906;
+        --ui-font: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0; padding: 0; width: 100%; height: 100%;
+        background: #000; color: var(--paper);
+        font-family: var(--ui-font);
+        overflow: hidden; overscroll-behavior: none;
+        -webkit-font-smoothing: antialiased;
+      }
+      #app { position: fixed; inset: 0; }
+      canvas#view { display: block; width: 100%; height: 100%; }
+      #ui-root { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+      #ui-root > * { pointer-events: none; }
+      .clickable { pointer-events: auto; }
+      ::selection { background: var(--amber-dim); color: #000; }
+
+      /* harness-only chrome, hidden when ?bare=1 */
+      #hx {
+        position: fixed; left: 0; top: 0; z-index: 999; padding: 6px 8px;
+        background: rgba(0,0,0,.72); font: 10px/1.5 var(--mono); color: #8a7134;
+        max-width: 240px; display: flex; flex-wrap: wrap; gap: 3px;
+      }
+      #hx a { color: #cfc8b4; text-decoration: none; border: 1px solid #2a2418; padding: 1px 4px; }
+      #hx a:hover { color: #d8b45a; border-color: #8a7134; }
+      body[data-bare] #hx { display: none; }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="view"></canvas>
+      <div id="ui-root"></div>
+    </div>
+    <nav id="hx"></nav>
+    <script type="module" src="./harness.js"></script>
+  </body>
+</html>

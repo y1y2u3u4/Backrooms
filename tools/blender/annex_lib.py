@@ -115,6 +115,7 @@ def finalize_pivot(obj, pivot_world):
 
 
 def parent_keep_transform(child, parent):
+    bpy.context.view_layer.update()  # avoid a stale parent.matrix_world (see join_objects)
     child.parent = parent
     child.matrix_parent_inverse = parent.matrix_world.inverted()
 
@@ -143,6 +144,12 @@ def join_objects(objs, name=None):
     """Join a list of mesh objects into the first one (destructive)."""
     if not objs:
         return None
+    # Freshly-created objects can have a stale (identity) matrix_world until
+    # the dependency graph recomputes it; bpy.ops.object.join() transforms
+    # each selected object's geometry into the active object's local space
+    # using that matrix, so a stale one silently mis-joins geometry (seen as
+    # huge, wrong-looking bounding boxes with no error). Force the update.
+    bpy.context.view_layer.update()
     select_many(objs)
     bpy.context.view_layer.objects.active = objs[0]
     bpy.ops.object.join()
@@ -376,6 +383,26 @@ def helix_points(turns, radius, pitch, segments_per_turn=12, start=(0, 0, 0), ax
         else:
             pts.append((sx + a, sy + b, sz + along))
     return pts
+
+
+def cylinder_between(name, p0, p1, r0, r1=None, segments=10, cap_ends=True):
+    """
+    A (optionally tapered) cylinder spanning two world-space points — the
+    workhorse for limb segments, fingers, pipe runs between fixed points.
+    """
+    p0, p1 = Vector(p0), Vector(p1)
+    length = (p1 - p0).length
+    if length < 1e-6:
+        length = 1e-6
+    mid = (p0 + p1) / 2
+    obj = prim_cylinder(name, r0, length, segments, location=(0, 0, 0),
+                         cap_ends=cap_ends, radius2=(r1 if r1 is not None else r0))
+    direction = (p1 - p0).normalized()
+    rot = direction.to_track_quat('Z', 'Y')
+    obj.rotation_euler = rot.to_euler()
+    apply_transforms(obj, loc=False, rot=True, scale=False)
+    obj.location = mid
+    return obj
 
 
 def rounded_rect_profile(w, h, r, segs=3):
@@ -743,6 +770,11 @@ def render_turntable(objs, out_png, engine='BLENDER_EEVEE', res=520, front_sign=
     key = add_light("_QA_key", (center.x + radius * 2.2, center.y - radius * 2.2, center.z + radius * 2.6), 3.0)
     fill = add_light("_QA_fill", (center.x - radius * 2.6, center.y - radius * 1.6, center.z + radius * 1.4), 1.1, angle_deg=12)
     rim = add_light("_QA_rim", (center.x, center.y + radius * 2.6, center.z + radius * 2.0), 1.8, angle_deg=8)
+    # A near-horizontal grazing light, off by default, switched in only for
+    # the "raking" QA view — this is what actually exposes surface relief
+    # (bevels, ribs, fastener heads) that flat 3-point light hides.
+    raking = add_light("_QA_raking", (center.x + radius * 3.0, center.y - radius * 0.15, center.z + size.z * 0.08), 2.6, angle_deg=2)
+    raking.data.energy = 0.0
 
     def aim_light(o):
         direction = (center - o.location)
@@ -762,6 +794,7 @@ def render_turntable(objs, out_png, engine='BLENDER_EEVEE', res=520, front_sign=
         "front": Vector((0, front_sign * dist, center.z + size.z * 0.15)),
         "three_quarter": Vector((dist * 0.82, front_sign * dist * 0.82, center.z + size.z * 0.35)),
         "side": Vector((dist, 0, center.z + size.z * 0.15)),
+        "raking": Vector((dist * 0.55, front_sign * dist * 0.95, center.z + size.z * 0.05)),
     }
 
     prev_engine = scene.render.engine
@@ -789,6 +822,11 @@ def render_turntable(objs, out_png, engine='BLENDER_EEVEE', res=520, front_sign=
     os.makedirs(tmp_dir, exist_ok=True)
     frame_paths = []
     for name, pos in views.items():
+        if name == "raking":
+            key.data.energy *= 0.15
+            fill.data.energy *= 0.15
+            rim.data.energy = 0.0
+            raking.data.energy = 2.6
         cam.location = pos + Vector((center.x, center.y, 0))
         direction = center - cam.location
         cam.rotation_euler = direction.to_track_quat('-Z', 'Y').to_euler()

@@ -259,7 +259,7 @@ export class Footsteps {
 
     /** Clothing. Separate layer, separate bus level, never in step with itself. */
     E.register('cloth.rustle', {
-      bus: 'player', spatial: false, gain: 0.4, send: 0.12, dur: 0.6, maxVoices: 5, priority: 1,
+      bus: 'player', spatial: false, gain: 0.78, send: 0.12, dur: 0.6, maxVoices: 5, priority: 1,
       build: varied(({ ctx, bag, out, t, rng, vary, opts }) => {
         const amt = clamp01(opts.amount ?? 0.5);
         let end = t;
@@ -279,7 +279,7 @@ export class Footsteps {
 
     /** Breath. Sprinting adds it; fear makes it shallow and fast. */
     E.register('breath', {
-      bus: 'player', spatial: false, gain: 0.42, send: 0.14, dur: 1.2, maxVoices: 3, priority: 2,
+      bus: 'player', spatial: false, gain: 0.62, send: 0.14, dur: 1.2, maxVoices: 3, priority: 2,
       build: varied(({ ctx, bag, out, t, rng, vary, opts }) => {
         const inhale = opts.inhale !== false;
         const effort = clamp01(opts.effort ?? 0.5);
@@ -308,7 +308,7 @@ export class Footsteps {
 
     /** Landing. Heavier than a step, with a knee-and-cloth component. */
     E.register('land', {
-      bus: 'player', spatial: false, gain: 0.85, send: 0.4, dur: 1.6, maxVoices: 3, priority: 4,
+      bus: 'player', spatial: false, gain: 0.62, send: 0.4, dur: 1.6, maxVoices: 3, priority: 4,
       build: varied(({ ctx, bag, out, t, rng, vary, opts }) => {
         const S = SURFACES[resolveSurface(opts.surface)] || SURFACES.concrete;
         const f = clamp01(opts.force ?? 0.5);
@@ -318,23 +318,23 @@ export class Footsteps {
           type: S.heel.type, filter: S.heel.filter, q: S.heel.q,
           f0: S.heel.f0 * 0.82, f1: S.heel.f1 ? S.heel.f1 * 0.8 : null,
           attack: 0.0012, decay: S.heel.decay * 1.8,
-          gain: S.heel.gain * (0.7 + f) * vary.gain,
+          gain: S.heel.gain * (0.5 + f * 0.55) * vary.gain,
         });
         end = Math.max(end, modalRing(ctx, bag, tone, t, {
           modes: S.body.modes.map((m) => ({ f: m.f * 0.86, t60: m.t60 * 1.7, gain: m.gain })),
-          gain: S.body.gain * (0.9 + f * 1.2) * vary.gain,
+          gain: S.body.gain * (0.5 + f * 0.6) * vary.gain,
           excite: { dur: 0.005, tone: S.body.tone, gain: 1.1 }, rng,
         }));
         // Both feet at once, offset by a few milliseconds.
         end = Math.max(end, modalRing(ctx, bag, tone, t + 0.014 + rng() * 0.012, {
           modes: S.body.modes.map((m) => ({ f: m.f * 0.93, t60: m.t60 * 1.2, gain: m.gain })),
-          gain: S.body.gain * 0.5 * (0.9 + f) * vary.gain,
+          gain: S.body.gain * 0.30 * (0.6 + f * 0.5) * vary.gain,
           excite: { dur: 0.004, tone: S.body.tone * 0.8 }, rng,
         }));
         if (S.room > 0.02) {
           noiseBurst(ctx, bag, out, t, {
             type: 'white', filter: 'highpass', f0: 1200, q: 0.6,
-            attack: 0.0008, decay: 0.02, gain: S.room * 0.3 * (0.6 + f) * vary.gain,
+            attack: 0.0008, decay: 0.02, gain: S.room * 0.18 * (0.6 + f) * vary.gain,
           });
         }
         return end;

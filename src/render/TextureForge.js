@@ -92,7 +92,7 @@ function makeTexture(data, size, { srgb = false, linearFilter = true } = {}) {
   t.magFilter = linearFilter ? THREE.LinearFilter : THREE.NearestFilter;
   t.minFilter = THREE.LinearMipmapLinearFilter;
   t.generateMipmaps = true;
-  t.anisotropy = 8;
+  t.anisotropy = 16;
   if (srgb) t.colorSpace = THREE.SRGBColorSpace;
   t.needsUpdate = true;
   return t;
@@ -194,7 +194,7 @@ function registerRecipes(forge) {
   // vinyl with a slubbed texture, sun-bleached in bands, blooming with damp
   // near the skirting. Colour drifts green in the shadows, never flat.
   forge.define('wallpaper', {
-    size: 512, normalStrength: 1.4,
+    size: 512, normalStrength: 1.0,
     fill(c, S) {
       const base = hexLin('#b8973f');
       const warm = hexLin('#cdae55');
@@ -209,8 +209,8 @@ function registerRecipes(forge) {
           // The warp frequency is a fixed cycle count, NOT a multiple of the
           // texture size — tying it to S puts the pattern at ~1 texel per cycle
           // at any sane resolution, which aliases into vertical streaks.
-          const warp = Math.sin(u * 6.2831853 * 72) * 0.5 + 0.5;
-          const weft = tileNoise(u * P * 22, v * P * 5.0, P * 22, 5);
+          const warp = Math.sin(u * 6.2831853 * 26) * 0.5 + 0.5;
+          const weft = tileNoise(u * P * 14, v * P * 4.0, P * 14, 5);
           const slub = tileFbm(u * P * 3, v * P * 3, P * 3, 4, 11);
           let h = warp * 0.14 + weft * 0.18 + slub * 0.26;
 
@@ -723,8 +723,8 @@ function registerRecipes(forge) {
         for (let x = 0; x < S; x++) {
           const i = y * S + x;
           const u = x / S, v = y / S;
-          const weaveU = Math.sin(u * 6.2831853 * 96) * 0.5 + 0.5;
-          const weaveV = Math.sin(v * 6.2831853 * 96) * 0.5 + 0.5;
+          const weaveU = Math.sin(u * 6.2831853 * 40) * 0.5 + 0.5;
+          const weaveV = Math.sin(v * 6.2831853 * 40) * 0.5 + 0.5;
           const weave = (weaveU + weaveV) * 0.5;
           const nap = tileFbm(u * P * 12, v * P * 12, P * 12, 3, 7);
           const stain = smoothstep(0.6, 0.92, tileFbm(u * P * 1.1, v * P * 1.1, P, 4, 41));

@@ -96,6 +96,20 @@ export function createSettings({ bus, engine, player, input, onClose }) {
     for (const item of group.items) target.appendChild(makeRow(item, target));
   });
 
+  // A closing note in the same register as the rest of the paperwork, so the
+  // bottom of the form is a form and not empty screen.
+  cols[0].appendChild(el('div.ax-set-note.ax-rise',
+    el('hr.ax-rule', { style: { margin: '30px 0 14px' } }),
+    el('p.ax-set-p', { text:
+      'Preferences are recorded against docket 7/CO-2214 and are retained on this ' +
+      'terminal only. They are not transferable between contractors and do not ' +
+      'form part of the site record.' })));
+  cols[1].appendChild(el('div.ax-set-note.ax-rise',
+    el('hr.ax-rule', { style: { margin: '30px 0 14px' } }),
+    field('Subtitles', 'Speaker + position', { mono: false }),
+    field('Head motion', 'Bob, sway and shake', { mono: false }),
+    field('Prompts', 'Shape and word tokens', { mono: false })));
+
   function makeRow(item) {
     const name = el('div.ax-ctl-n', { text: item.name });
     let mid, val;
@@ -269,6 +283,11 @@ export const SETTINGS_CSS = /* css */ `
   letter-spacing: .26em; text-transform: uppercase; color: var(--ax-bone-4); }
 .ax-set-hint span { color: var(--ax-amber-2); }
 .ax-settings .ax-ctl { grid-template-columns: minmax(0,1fr) clamp(120px,12vw,172px) 62px; }
+.ax-set-note { transition-delay: 220ms; }
+.ax-set-p { font-family: var(--ax-type); font-size: 11.5px; line-height: 1.9;
+  color: var(--ax-bone-4); margin: 0; max-width: 48ch; }
+.ax-set-note .ax-field { padding: 3px 0; }
+.ax-set-note .ax-value { color: var(--ax-bone-4); font-size: 11.5px; }
 `;
 
 export default createSettings;

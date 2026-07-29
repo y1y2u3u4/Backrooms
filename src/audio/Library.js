@@ -339,13 +339,13 @@ export function registerLibrary(engine) {
           { f: 1830 * vary.pitch, t60: 0.045, gain: 0.4 },
           { f: 3410 * vary.pitch, t60: 0.02, gain: 0.25 },
         ],
-        gain: 0.85 * vary.gain, excite: { dur: 0.0026, tone: 6400 }, rng,
+        gain: 0.45 * vary.gain, excite: { dur: 0.0026, tone: 6400 }, rng,
       });
-      const b = thud(ctx, bag, out, t, { f: 84, decay: 0.16, gain: 0.34, click: 0.2, rng });
+      const b = thud(ctx, bag, out, t, { f: 84, decay: 0.16, gain: 0.22, click: 0.14, rng });
       // A big contactor pulls in with a moment of arc.
       const c = noiseBurst(ctx, bag, out, t + 0.004, {
         type: 'white', filter: 'highpass', f0: 3800, q: 0.6,
-        attack: 0.0008, decay: 0.035, gain: 0.18 * vary.gain,
+        attack: 0.0008, decay: 0.035, gain: 0.12 * vary.gain,
       });
       return Math.max(a, b, c);
     },
@@ -428,14 +428,14 @@ export function registerLibrary(engine) {
   });
 
   R('paper.rustle', {
-    bus: 'ambience', gain: 0.3, send: 0.4, ref: 2.5, dur: 1.6,
+    bus: 'ambience', gain: 0.6, send: 0.4, ref: 2.5, dur: 1.6,
     build: ({ ctx, bag, out, t, rng, vary }) => {
       let end = t;
       const n = 4 + Math.floor(rng() * 4);
       for (let i = 0; i < n; i++) {
         end = Math.max(end, noiseBurst(ctx, bag, out, t + rng() * 0.9, {
           type: 'white', filter: 'bandpass', f0: 2200 + rng() * 4000, q: 0.9,
-          attack: 0.01, decay: 0.06 + rng() * 0.14, gain: (0.05 + rng() * 0.08) * vary.gain,
+          attack: 0.01, decay: 0.06 + rng() * 0.14, gain: (0.09 + rng() * 0.14) * vary.gain,
         }));
       }
       return end;
@@ -621,11 +621,13 @@ export function registerLibrary(engine) {
       n.connect(hp); hp.connect(bp); bp.connect(g); g.connect(out);
       // The boil ramps: quiet hiss -> rolling -> chatter.
       env(g.gain, t, 0.0001, [[8, 0.45], [26, 0.75], [40, 0.5]]);
-      const lfo = ctx.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 0.23;
+      const lfo = ctx.createOscillator(); lfo.type = 'sine';
+      lfo.frequency.value = 0.23 * (0.7 + Math.random() * 0.7);
       bag.src(lfo);
       const lg = gainNode(ctx, bag, 380);
       lfo.connect(lg); lg.connect(bp.frequency);
-      n.start(t); lfo.start(t);
+      bp.frequency.value = 1700 * (0.86 + Math.random() * 0.28);
+      n.start(t, Math.random() * 2); lfo.start(t);
       return {
         dur: Infinity,
         stop: (tt, fade) => { glide(g.gain, 0.0001, tt, Math.max(0.02, fade * 0.4)); },
@@ -644,10 +646,10 @@ export function registerLibrary(engine) {
   });
 
   R('ui.hover', {
-    bus: 'ui', gain: 0.16, send: 0.0, spatial: false, dur: 0.15,
+    bus: 'ui', gain: 0.36, send: 0.0, spatial: false, dur: 0.15,
     build: ({ ctx, bag, out, t, rng, vary }) => noiseBurst(ctx, bag, out, t, {
       type: 'white', filter: 'bandpass', f0: 5200 * vary.tone, q: 3,
-      attack: 0.001, decay: 0.03, gain: 0.16 * vary.gain,
+      attack: 0.001, decay: 0.03, gain: 0.34 * vary.gain,
     }),
   });
 
@@ -669,13 +671,13 @@ export function registerLibrary(engine) {
   });
 
   R('ui.note', {
-    bus: 'ui', gain: 0.4, send: 0.05, spatial: false, dur: 0.7,
+    bus: 'ui', gain: 0.6, send: 0.05, spatial: false, dur: 0.7,
     build: ({ ctx, bag, out, t, rng, vary }) => {
       let end = t;
       for (let i = 0; i < 2; i++) {
         end = Math.max(end, noiseBurst(ctx, bag, out, t + i * (0.05 + rng() * 0.05), {
           type: 'white', filter: 'highpass', f0: 3000 + rng() * 2500, q: 0.5,
-          attack: 0.005, decay: 0.10, gain: 0.13 * vary.gain, pan: (rng() * 2 - 1) * 0.3,
+          attack: 0.005, decay: 0.10, gain: 0.21 * vary.gain, pan: (rng() * 2 - 1) * 0.3,
         }));
       }
       return end;

@@ -80,8 +80,12 @@ export function createMenu({ onSelect, hasSave = () => false }) {
     creditsColumn(),
     el('div', { style: { marginTop: '26px' } }, creditsBack));
 
+  // Two lines, always. The lockup is a deliberate stack, not a wrap, so it
+  // reads the same at 1280x720 and on a 21:9 monitor.
   const rootView = el('div.ax-menu-root',
-    el('h1.ax-display.ax-rise', { text: 'The Annex' }),
+    el('h1.ax-display.ax-rise',
+      el('span.ax-menu-t1', { text: 'The' }),
+      el('span.ax-menu-t2', { text: 'Annex' })),
     el('div.ax-menu-rule.ax-wipe'),
     el('div.ax-menu-sub.ax-rise',
       el('span.ax-micro', { text: 'Annex 7' }),
@@ -157,22 +161,24 @@ export const MENU_CSS = /* css */ `
 .ax-menu-brand { display: flex; gap: 13px; align-items: flex-start; }
 .ax-menu-brand .ax-mark { margin-top: 1px; }
 
-.ax-menu-root { position: absolute; left: var(--ax-pad); top: 40%; width: min(52ch, 46vw); }
+.ax-menu-root { position: absolute; left: var(--ax-pad); top: 30%; width: min(48ch, 44vw); }
 .ax-menu-root[data-off] { opacity: 0; transform: translateY(-8px); pointer-events: none;
   transition: opacity 260ms var(--ax-ease), transform 260ms var(--ax-ease); }
-.ax-menu-root .ax-display { margin-left: -.06em; }
+.ax-menu-root .ax-display { margin-left: -.03em; display: grid; line-height: .96; }
+.ax-menu-t2 { padding-left: .30em; }
 
 .ax-menu-rule { position: absolute; left: 0; right: -60vw; height: 1px; margin-top: 20px;
   background: linear-gradient(90deg, var(--ax-rule-2) 0%, var(--ax-rule) 34%, rgba(207,200,180,0) 82%); }
 .ax-menu-sub { display: flex; align-items: center; gap: 12px; margin-top: 34px; flex-wrap: wrap;
   transition-delay: 90ms; }
 .ax-menu-dot { width: 3px; height: 3px; background: var(--ax-amber-2); flex: 0 0 auto; }
-.ax-menu-list { margin-top: clamp(28px, 4.4vh, 46px); transition-delay: 170ms; }
-.ax-menu-list .ax-item { padding-right: 30px; }
-.ax-menu-note { margin-top: 20px; font-size: 10.5px; letter-spacing: .1em;
-  color: var(--ax-bone-4); min-height: 1.4em; }
+.ax-menu-list { margin-top: clamp(26px, 4vh, 42px); transition-delay: 170ms;
+  width: min(38ch, 34vw); }
+.ax-menu-list .ax-item { padding-right: 4px; }
+.ax-menu-note { margin-top: 18px; font-size: 10.5px; letter-spacing: .1em;
+  color: var(--ax-bone-4); min-height: 1.4em; max-width: 46ch; }
 
-.ax-menu-stamp { right: clamp(60px, 9vw, 190px); top: clamp(96px, 17vh, 190px); }
+.ax-menu-stamp { right: clamp(60px, 9vw, 190px); bottom: clamp(96px, 18vh, 210px); }
 .ax-menu-stamp[data-off] { opacity: 0; transition: opacity 240ms var(--ax-ease); }
 
 .ax-menu-credits {
@@ -183,8 +189,8 @@ export const MENU_CSS = /* css */ `
 }
 .ax-menu-credits[data-on] { opacity: 1; transform: none; pointer-events: auto; }
 
-@media (max-height: 700px) {
-  .ax-menu-root { top: 36%; }
+@media (max-height: 760px) {
+  .ax-menu-root { top: 26%; }
   .ax-menu-sub { margin-top: 26px; }
 }
 `;

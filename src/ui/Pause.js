@@ -108,7 +108,9 @@ export function createPause({ onSelect }) {
 }
 
 export const PAUSE_CSS = /* css */ `
-.ax-pause .ax-scrim { background: rgba(5,4,3,.70); }
+/* Dark enough to read against, transparent enough that the fluorescents behind
+   it keep flickering. Anything above about .80 and the world stops moving. */
+.ax-pause .ax-scrim { background: rgba(5,4,3,.78); }
 .ax-pause-body {
   position: absolute; left: var(--ax-pad); right: var(--ax-pad);
   top: clamp(96px, 15vh, 150px); bottom: clamp(70px, 10vh, 100px);

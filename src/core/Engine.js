@@ -167,9 +167,17 @@ export class Engine {
     this.overlayPass = {
       enabled: true,
       render: (renderer, writeBuffer, readBuffer) => {
+        // renderer.render() clears colour, depth AND stencil by default. Left
+        // on, this pass wipes the entire world and leaves only the hands on a
+        // black frame — which is exactly what happened the first time hands
+        // were added. Only the depth buffer may be cleared here: that is what
+        // lets held items render in front of geometry they are standing in.
+        const prevAutoClear = renderer.autoClear;
+        renderer.autoClear = false;
         renderer.setRenderTarget(readBuffer);
         renderer.clearDepth();
         renderer.render(this.overlayScene, this.overlayCamera);
+        renderer.autoClear = prevAutoClear;
       },
     };
   }

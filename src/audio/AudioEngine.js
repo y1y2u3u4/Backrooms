@@ -870,8 +870,11 @@ export class AudioEngine {
    * The QA probe uses this; nothing in the game does. Returns a Promise.
    *
    *   engine.renderOffline('step.concrete', { seconds: 2, opts: {...} })
+   *
+   * `params` is applied through the definition's own `set()` shortly after the
+   * start, which is how loops (whose level is driven live) get a level at all.
    */
-  async renderOffline(name, { seconds = 2.5, opts = {}, sampleRate = 48000, reverb = null } = {}) {
+  async renderOffline(name, { seconds = 2.5, opts = {}, sampleRate = 48000, reverb = null, params = null } = {}) {
     const OC = globalThis.OfflineAudioContext || globalThis.webkitOfflineAudioContext;
     if (!OC) throw new Error('OfflineAudioContext unavailable');
     const def = this.registry.get(name);
@@ -899,6 +902,9 @@ export class AudioEngine {
     const bag = new NodeBag();
     const t = 0.02;
     const res = def.build({ ctx, bag, out, t, engine: this, opts, rng: this.rng, name });
+    if (params && res && typeof res.set === 'function') {
+      for (const k in params) { try { res.set(k, params[k], t + 0.03); } catch { /* def bug */ } }
+    }
     // Loops never end on their own; stop them just before the render finishes.
     if (def.loop || (res && res.dur === Infinity)) {
       const stopAt = seconds - 0.05;

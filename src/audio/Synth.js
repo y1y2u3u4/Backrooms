@@ -397,8 +397,13 @@ export function modalRing(ctx, bag, dest, t, {
   out.connect(dest);
 
   const ex = {
-    dur: 0.004, type: 'white', tone: 5200, q: 0.6, gain: 1, impulse: true, ...excite,
+    dur: 0.004, type: 'white', tone: 5200, q: 0.6, gain: 1, noise: 0.22, impulse: true, ...excite,
   };
+  // Normalise the bank so `gain` IS the peak amplitude of the summed ring,
+  // regardless of how many modes there are.
+  let sumG = 0;
+  for (const m of modes) sumG += Math.abs(m.gain ?? 1);
+  const norm = 1 / Math.max(1e-6, sumG);
 
   // Exciter: an impulse plus an optional short noise chirp. The impulse gives a
   // clean modal onset; the noise gives the strike its material (wood vs steel).
@@ -411,12 +416,12 @@ export function modalRing(ctx, bag, dest, t, {
     imp.connect(ig); ig.connect(exBus);
     try { imp.start(t); } catch { /* noop */ }
   }
-  if (ex.dur > 0) {
+  if (ex.dur > 0 && ex.noise > 0) {
     const n = noiseSource(ctx, bag, { type: ex.type, rate: 1 });
     const nf = biquad(ctx, bag, 'lowpass', ex.tone, ex.q);
     const ng = gainNode(ctx, bag, 0);
     n.connect(nf); nf.connect(ng); ng.connect(exBus);
-    hit(ng.gain, t, 0.9, 0.0008, ex.dur);
+    hit(ng.gain, t, ex.noise, 0.0008, ex.dur);
     try { n.start(t, Math.random() * 2); } catch { n.start(t); }
     n.stop(t + ex.dur + 0.05);
   }
@@ -427,10 +432,15 @@ export function modalRing(ctx, bag, dest, t, {
     const t60 = Math.max(0.006, (m.t60 ?? 0.4) * damp);
     const q = m.q ?? t60ToQ(t60, f);
     const bp = biquad(ctx, bag, 'bandpass', f, q);
-    // Bandpass gain falls as 1/Q at resonance; compensate so high-Q modes are
-    // not silent and low-Q modes do not dominate.
-    const comp = Math.min(6, Math.sqrt(q) * 0.5);
-    const mg = gainNode(ctx, bag, (m.gain ?? 1) * comp);
+    // A constant-0dB-peak bandpass (which is what Web Audio's 'bandpass' is)
+    // has an impulse response that STARTS at alpha = sin(w0)/2Q, not at 1. For
+    // a 5-second piano-ish mode that is 1e-5, which is why the first version of
+    // this function rendered the game's entire modal palette 60 dB too quiet.
+    // Compensating by exactly 1/alpha makes each mode ring at its stated gain.
+    const w0 = TAU * f / ctx.sampleRate;
+    const alpha = Math.sin(w0) / (2 * q);
+    const comp = clamp(1 / Math.max(alpha, 1e-7), 1, 8e4);
+    const mg = gainNode(ctx, bag, (m.gain ?? 1) * norm * comp);
     exBus.connect(bp); bp.connect(mg);
     if (spread > 0) {
       const p = panner2d(ctx, bag, clamp((rng() * 2 - 1) * spread, -1, 1));

@@ -172,7 +172,7 @@ export class Ambience {
      * slow enough that it never clicks.
      */
     E.register('amb.hum', {
-      bus: 'ambience', gain: 0.34, send: 0.28, ref: 2.6, rolloff: 1.35, maxDist: 34,
+      bus: 'ambience', gain: 0.30, send: 0.28, ref: 2.6, rolloff: 1.35, maxDist: 34,
       loop: true, dur: Infinity, maxVoices: MAX_HUM_VOICES + 2, priority: 1,
       build: ({ ctx, bag, out, t, opts }) => {
         const detune = opts.detune ?? 0;
@@ -181,7 +181,10 @@ export class Ambience {
         const wave = mainsWave(ctx);
 
         const level = gainNode(ctx, bag, 0.0001);
-        level.connect(out);
+        // Output trim: up to eight hums are live at once and their sum must be
+        // something the limiter never has to think about.
+        const trim = gainNode(ctx, bag, 0.5);
+        level.connect(trim); trim.connect(out);
 
         // -- mains buzz --------------------------------------------------
         const mix = gainNode(ctx, bag, 1);
@@ -190,7 +193,9 @@ export class Ambience {
           const o = ctx.createOscillator();
           o.setPeriodicWave(wave);
           o.frequency.value = 100;
-          o.detune.value = detune + (i ? 6.5 : -6.5);
+          // Per-instance scatter on top of the per-fixture detune, so two tubes
+          // of the same type in the same corridor still beat against each other.
+          o.detune.value = detune + (i ? 6.5 : -6.5) + (Math.random() * 2 - 1) * 4.5;
           bag.src(o);
           const lp = biquad(ctx, bag, 'lowpass', 1350 + rasp * 2600, 0.8);
           const g = gainNode(ctx, bag, i ? 0.42 : 0.5);
@@ -232,7 +237,7 @@ export class Ambience {
 
         // -- slow internal variation --------------------------------------
         const wobble = ctx.createOscillator();
-        wobble.type = 'sine'; wobble.frequency.value = 0.0731 + Math.random() * 0.06;
+        wobble.type = 'sine'; wobble.frequency.value = 0.0731 + Math.random() * 0.09;
         bag.src(wobble);
         const wobbleG = gainNode(ctx, bag, 0.09);
         wobble.connect(wobbleG); wobbleG.connect(mix.gain);
@@ -253,7 +258,7 @@ export class Ambience {
 
     /** Starter crackle — a fluorescent striking, or failing to. */
     E.register('amb.strike', {
-      bus: 'ambience', gain: 0.42, send: 0.35, ref: 2.4, maxDist: 26, dur: 0.5, maxVoices: 4,
+      bus: 'ambience', gain: 0.62, send: 0.35, ref: 2.4, maxDist: 26, dur: 0.5, maxVoices: 4,
       build: varied(({ ctx, bag, out, t, rng, vary }) => {
         let end = t;
         const n = 3 + Math.floor(rng() * 7);
@@ -315,7 +320,7 @@ export class Ambience {
 
     /** A grille or duct opening you can walk past. */
     E.register('amb.grille', {
-      bus: 'ambience', gain: 0.36, send: 0.24, ref: 1.6, rolloff: 1.7, maxDist: 22,
+      bus: 'ambience', gain: 0.60, send: 0.24, ref: 1.6, rolloff: 1.7, maxDist: 22,
       loop: true, dur: Infinity, maxVoices: 6,
       build: ({ ctx, bag, out, t, opts }) => {
         const n = noiseSource(ctx, bag, { type: 'brown', rate: 1.15 + Math.random() * 0.2 });
@@ -342,10 +347,11 @@ export class Ambience {
       bus: 'ambience', gain: 0.26, send: 0.1, spatial: false, loop: true, dur: Infinity,
       build: ({ ctx, bag, out, t, opts }) => {
         const n = noiseSource(ctx, bag, { type: 'brown', rate: 0.7 });
+        const dcb = biquad(ctx, bag, 'highpass', 24, 0.6);
         const lp = biquad(ctx, bag, 'lowpass', 180, 0.6);
         const pk = biquad(ctx, bag, 'peaking', opts.freq ?? 120, 6, 11);
         const g = gainNode(ctx, bag, 0.0001);
-        n.connect(lp); lp.connect(pk); pk.connect(g); g.connect(out);
+        n.connect(dcb); dcb.connect(lp); lp.connect(pk); pk.connect(g); g.connect(out);
         const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = 0.0197;
         bag.src(o);
         const og = gainNode(ctx, bag, 0.3);
@@ -485,11 +491,13 @@ export class Ambience {
 
         // Two shafts running at slightly different speeds: the beat between
         // them is what makes a plant room sound alive rather than sampled.
-        const base = 29.5;
+        // Never quite the same machine twice: shaft speed scatters per instance.
+        const base = 29.5 * (0.96 + Math.random() * 0.08);
         for (const [mult, gg] of [[1, 0.55], [1.0137, 0.4], [2.0, 0.16], [0.5, 0.22]]) {
           const o = ctx.createOscillator();
           o.setPeriodicWave(wave);
           o.frequency.value = base * mult;
+          o.detune.value = (Math.random() * 2 - 1) * 12;
           bag.src(o);
           const og = gainNode(ctx, bag, gg);
           o.connect(og); og.connect(lp);
@@ -536,12 +544,13 @@ export class Ambience {
         const wave = transformerWave(ctx);
         const o = ctx.createOscillator();
         o.setPeriodicWave(wave);
-        o.frequency.value = opts.freq ?? 100;
+        o.frequency.value = (opts.freq ?? 100) * (1 + (Math.random() * 2 - 1) * 0.0016);
+        o.detune.value = (Math.random() * 2 - 1) * 6;
         bag.src(o);
         const o2 = ctx.createOscillator();
         o2.setPeriodicWave(wave);
         o2.frequency.value = (opts.freq ?? 100) * 0.5;
-        o2.detune.value = 4;
+        o2.detune.value = 4 + (Math.random() * 2 - 1) * 7;
         bag.src(o2);
         const sat = shaper(ctx, bag, 0.65);
         const lp = biquad(ctx, bag, 'lowpass', 2600, 0.7);
@@ -550,7 +559,8 @@ export class Ambience {
         const pre = gainNode(ctx, bag, 0.6);
         o.connect(pre); o2.connect(pre);
         pre.connect(sat); sat.connect(lp); lp.connect(hp); hp.connect(g); g.connect(out);
-        const lfo = ctx.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 0.0311;
+        const lfo = ctx.createOscillator(); lfo.type = 'sine';
+        lfo.frequency.value = 0.0311 * (0.7 + Math.random() * 0.7);
         bag.src(lfo);
         const lg = gainNode(ctx, bag, 0.22);
         lfo.connect(lg); lg.connect(g.gain);
@@ -589,12 +599,17 @@ export class Ambience {
       build: varied(({ ctx, bag, out, t, rng, vary }) => {
         const dur = 0.5 + rng() * 1.4;
         const f0 = (70 + rng() * 180) * vary.pitch;
+        const q1 = 9 + rng() * 8, q2 = 6 + rng() * 4;
         const n = noiseSource(ctx, bag, { type: 'brown', rate: 0.5 + rng() * 0.4 });
-        const bp = biquad(ctx, bag, 'bandpass', f0, 14 + rng() * 12);
-        const bp2 = biquad(ctx, bag, 'bandpass', f0 * (2.1 + rng() * 0.9), 9);
+        const bp = biquad(ctx, bag, 'bandpass', f0, q1);
+        const bp2 = biquad(ctx, bag, 'bandpass', f0 * (2.1 + rng() * 0.9), q2);
+        // Two cascaded narrow bandpasses on brown noise throw away nearly all
+        // the energy; the makeup scales with the bandwidth discarded.
+        const makeup = gainNode(ctx, bag, clamp(Math.sqrt(q1 * q2) * 30, 1, 600));
         const g = gainNode(ctx, bag, 0);
         const pan = panner2d(ctx, bag, vary.pan);
-        n.connect(bp); bp.connect(bp2); bp2.connect(g); g.connect(pan); pan.connect(out);
+        n.connect(bp); bp.connect(bp2); bp2.connect(makeup); makeup.connect(g);
+        g.connect(pan); pan.connect(out);
 
         // A creak is stick-slip: the pitch walks up in uneven jumps.
         bp.frequency.setValueAtTime(f0, t);

@@ -466,14 +466,6 @@ export function troffer(b, rig, x, y, z, {
     f.translate(ox, 0.004, oz);
     frameParts.push(f);
   }
-  const hg = merge([housing, reflector, ...frameParts]);
-  worldUV(hg, 0.9);
-  whiteColors(hg);
-  const housingMesh = new THREE.Mesh(hg, bodyMat);
-  housingMesh.castShadow = false;
-  housingMesh.receiveShadow = true;
-  g.add(housingMesh);
-
   // Two tubes with visible end caps.
   const tubeGeos = [];
   for (const off of [-W * 0.24, W * 0.24]) {
@@ -497,8 +489,16 @@ export function troffer(b, rig, x, y, z, {
       capGeos.push(c);
     }
   }
-  const caps = new THREE.Mesh(merge(capGeos), bodyMat);
-  g.add(caps);
+  // The housing never moves and never changes colour, so it is baked into the
+  // chunk's static geometry instead of costing a draw call per fixture. Only
+  // the emissive tube stays an independent object, because it animates.
+  const staticGeo = merge([housing, reflector, ...frameParts, ...capGeos]);
+  staticGeo.rotateY(rotation);
+  staticGeo.translate(x, y, z);
+  worldUV(staticGeo, 0.9);
+  whiteColors(staticGeo);
+  vertexShade(staticGeo, (px, py, pz, nx, ny) => (ny < -0.4 ? 0.92 : 0.62));
+  b.add('fixtureBody', staticGeo, () => bodyMat);
 
   const fixture = rig.add({ type, position: [x, y, z], rotation, circuit, health, seed });
   fixture.tube = tubes;
@@ -648,15 +648,17 @@ export function doorway(b, x, y, z, {
   thr.translate(0, 0.004, 0);
   parts.push(thr);
 
+  // The frame is static: bake it into the chunk rather than spend a draw call
+  // on every doorway in the building. Only the leaf and its furniture move.
   const frameGeo = merge(parts);
+  frameGeo.rotateY(rotation);
+  frameGeo.translate(x, y, z);
   worldUV(frameGeo, 0.7);
   whiteColors(frameGeo);
-  vertexShade(frameGeo, (px, py) => 0.80 + clamp01(py / height) * 0.12);
-  const frameMesh = new THREE.Mesh(frameGeo, b.mat(frameKey, () => b.materials.get('doorPaint', {
+  vertexShade(frameGeo, (px, py) => 0.80 + clamp01((py - y) / height) * 0.12);
+  b.add(frameKey, frameGeo, () => b.materials.get('doorPaint', {
     repeat: [1.2, 1.2], roughness: 0.62, metalness: 0, dirtAmount: 0.5, detailStrength: 0.3,
-  })));
-  frameMesh.castShadow = true; frameMesh.receiveShadow = true;
-  grp.add(frameMesh);
+  }));
 
   // Leaf, pivoting on a hinge group.
   const pivot = new THREE.Group();

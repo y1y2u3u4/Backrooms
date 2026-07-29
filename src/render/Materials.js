@@ -174,10 +174,18 @@ const FRAG_ROUGH = /* glsl */ `
 const FRAG_DETAIL_NORMAL = /* glsl */ `
   #ifdef USE_NORMALMAP_TANGENTSPACE
     if (uDetailStrength > 0.001) {
-      vec3 dN = texture2D(normalMap, vNormalMapUv * uDetailTile).xyz * 2.0 - 1.0;
-      dN.xy *= uDetailStrength;
-      // UDN blend keeps the base map's low-frequency shape intact.
-      normal = normalize(tbn * normalize(vec3(mapN.xy + dN.xy, mapN.z * max(dN.z, 0.1))));
+      // Fade the detail layer out as soon as it approaches one texel per pixel.
+      // Without this it shimmers violently on any surface seen at a grazing
+      // angle — a corridor wall is the worst case, and it was producing hard
+      // vertical banding down every wall in the build.
+      vec2 duv = fwidth(vNormalMapUv * uDetailTile);
+      float detailFade = 1.0 - smoothstep(0.0035, 0.020, max(duv.x, duv.y));
+      if (detailFade > 0.004) {
+        vec3 dN = texture2D(normalMap, vNormalMapUv * uDetailTile).xyz * 2.0 - 1.0;
+        dN.xy *= uDetailStrength * detailFade;
+        // UDN blend keeps the base map's low-frequency shape intact.
+        normal = normalize(tbn * normalize(vec3(mapN.xy + dN.xy, mapN.z * max(dN.z, 0.1))));
+      }
     }
   #endif
 `;
@@ -193,8 +201,8 @@ const DEFAULTS = {
   envMapIntensity: 0.55,
   dirtBase: -0.4,      // world Y at which grounding dirt reaches full strength
   dirtAmount: 0.55,
-  detailTile: 7.0,
-  detailStrength: 0.35,
+  detailTile: 4.0,
+  detailStrength: 0.26,
   stochastic: 0.62,
   tint: 0xffffff,
   tintAmount: 0,
