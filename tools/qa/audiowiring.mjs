@@ -139,7 +139,13 @@ const MUST_BE_HEARD = [
   'hide:enter', 'hide:exit',
   'item:pickup', 'story:note', 'story:tape',
   'progress:objective', 'progress:hint', 'progress:discovery',
-  'ui:refuse', 'portal:locked', 'light:circuit', 'game:ending',
+  'ui:refuse', 'portal:locked', 'light:circuit',
+  // The two ends of the game. `Surveyor` emits the first when a capture
+  // completes and `Progression` the second when the lift reaches the surface;
+  // for a long time nothing at the level that owns the SCREENS listened to
+  // either, so being caught froze the player with no way back and finishing the
+  // game after forty minutes showed nothing at all.
+  'game:death', 'game:ending',
 ];
 
 // ---------------------------------------------------------------------------

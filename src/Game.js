@@ -326,6 +326,48 @@ export class Game {
       console.warn(`[game] player left the world (${(e?.drop ?? 0).toFixed(1)} m); respawning`);
       this.respawn();
     });
+
+    // THE TWO ENDS OF THE GAME. Neither was connected.
+    //
+    // `Surveyor` emits `game:death` when a capture completes and `Progression`
+    // emits `game:ending` when the lift arrives at the surface. The Director
+    // listened for the first (to freeze the body and run the death cinematic) and
+    // NOTHING listened for either at the level that owns the screens — so being
+    // caught froze the player in place with no screen and no way back, and
+    // finishing the game after forty minutes showed nothing at all. Both screens
+    // exist in `src/ui/EndScreens.js`; the UI harness was the only thing that had
+    // ever opened them.
+    this.bus.on('game:death', (e) => {
+      if (this.state === 'dead' || this.state === 'ended') return;
+      this.state = 'dead';
+      this.input.exitLock();
+      // The death cinematic runs first; the screen comes up behind it. The
+      // Director's respawn delay is the beat the sequence is written against.
+      const at = e?.position;
+      const zone = this.world?.currentZone || '';
+      this.ui?.show?.('death', {
+        cause: e?.cause || 'unknown',
+        location: at ? `${zone} ${at.x.toFixed(0)}, ${at.z.toFixed(0)}` : zone,
+        elapsed: this.time,
+        deaths: this.director?.deaths ?? 1,
+      });
+    });
+    this.bus.on('game:ending', (e) => {
+      this.state = 'ended';
+      this.input.exitLock();
+      this.ui?.show?.('ending', {
+        ending: e?.ending || 'left',
+        time: e?.time ?? this.time,
+        deaths: e?.deaths ?? 0,
+        objectives: e?.objectives ?? 0,
+        discoveries: e?.discoveries ?? [],
+        notes: e?.notes ?? null,
+      });
+      // The run is over; a checkpoint pointing at the inside of a departed lift is
+      // worse than none.
+      SaveGame.clearSave();
+      this.ui?.setHasSave?.(false);
+    });
     this.bus.on('zone:enter', (e) => {
       const key = e?.zone || e?.id;
       if (key) this.applyZoneProfile(key, { immediate: !!e?.immediate });
@@ -356,7 +398,21 @@ export class Game {
         break;
       case 'retry':
       case 'respawn':
+        // "Report to the Office of Record" — the death screen's only other
+        // option. It has to put the state machine back to `play` and re-take the
+        // pointer, or the player comes back to a live world they cannot look at.
+        this.state = 'play';
+        this.ui?.show?.(null);
+        this.input.requestLock();
         this.respawn(data);
+        break;
+      case 'menu':
+        // The death screen's "Abandon shift". There was no handler, so the button
+        // did nothing and a dead player had exactly one working option.
+        this.state = 'menu';
+        this.paused = false;
+        this.input.exitLock();
+        this.ui?.show?.('title');
         break;
       case 'ending:done':
         this.state = 'menu';
