@@ -920,6 +920,38 @@ dangerous than no tool.
 
 ---
 
+## 6.8 Final verification state
+
+Four audits, all of which run in seconds without a browser, and one continuous
+session. Every one of these can be re-run by anyone reading this.
+
+```
+npm run aotest                    PASS   8 checks on the baked AO field
+node tools/qa/portalgraph.mjs     PASS   all 8 zones reachable on foot, 19 doors
+node tools/qa/floorgaps.mjs       PASS   no walkable rectangle fails the stand test
+node tools/qa/lightreach.mjs      —      worst-case metres to the nearest live lamp
+node tools/qa/playthrough.mjs     8/10   7.5 min continuous, real input
+```
+
+Light reach, all eight zones:
+
+| zone | fixtures | worst reach | area beyond 5 m |
+|---|---:|---:|---:|
+| Intake | 210 | 9.86 m | 9 % |
+| Service Spine | 68 | 2.79 m | **0 %** |
+| Cistern | 17 | 7.21 m | 9 % |
+| Residence | 33 | 2.40 m | **0 %** |
+| Plant | 19 | 6.71 m | 10 % |
+| Ductwork | 25 | 1.53 m | **0 %** |
+| Stack | 73 | 4.99 m | **0 %** |
+| Office of Record | 5 | 2.24 m | **0 %** |
+
+The Intake's and Plant's worst cases are the deliberately ruined far corner and a
+large hall respectively. The two playthrough assertions still failing are the
+CPU-rasteriser frame stall (p50 is 0.20 ms; the outliers are shader compiles) and
+two single frames at a zone boundary reporting no active light, which is the
+one-frame transient the light re-rank is allowed.
+
 ## 7. Artefacts
 
 | what | where |
