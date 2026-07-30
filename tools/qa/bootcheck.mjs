@@ -98,6 +98,110 @@ const status = ok ? await page.evaluate(() => {
   };
 }) : null;
 
+/**
+ * LIVE AUDIO INTEGRATION.
+ *
+ * `audiowiring.mjs` proves statically that every mechanism event has a handler
+ * and that every sound name resolves, and `audio-probe.mjs` proves every
+ * registered sound renders with real energy and no clipping. Neither proves the
+ * middle: that firing the event actually reaches the engine and spawns a voice.
+ * A handler that throws, a sound denied by the voice budget, or a `playAt` with a
+ * position the panner rejects all read as silence, and silence in a horror game
+ * looks like intent.
+ *
+ * So: start the audio, fire each event on the real bus, and count voices.
+ */
+const audio = ok ? await page.evaluate(async () => {
+  const g = window.ANNEX;
+  if (!g.audio) return { skipped: 'no audio subsystem' };
+  try { await g.audio.init(); } catch (e) { return { skipped: String(e.message || e) }; }
+  const eng = g.audio.engine;
+  if (!eng?.available) return { skipped: `context ${eng?.ctx?.state || 'absent'}` };
+
+  const here = { x: g.player.position.x, y: g.player.position.y + 1.6, z: g.player.position.z };
+  // One representative payload per mechanism event. `position` is the listener's
+  // own spot so nothing is culled for distance — this asks whether the voice is
+  // created, not whether it is audible from across the building.
+  const CASES = [
+    ['door:state', { id: 'x', state: 'opening', position: here }],
+    ['door:state', { id: 'x', state: 'closing', position: here }],
+    ['door:refused', { id: 'x', reason: 'Locked.', position: here }],
+    ['door:pried', { id: 'x', position: here }],
+    ['door:slam', { id: 'x', position: here }],
+    ['sfx:breaker', { position: here, heavy: false }],
+    ['sfx:breaker', { position: here, heavy: true }],
+    ['light:overload', { board: 'board_c', tripped: 'intake' }],
+    ['sfx:valve', { id: 'p1', position: here }],
+    ['valve:complete', { id: 'p1', open: false, position: here }],
+    ['sfx:detent', { id: 't', value: 3 }],
+    ['sfx:keypad', { id: 'k' }],
+    ['keypad:reject', { id: 'k' }],
+    ['keypad:unlock', { id: 'k' }],
+    ['reader:unlock', { id: 'r' }],
+    ['terminal:reject', { id: 't' }],
+    ['terminal:solved', { id: 't' }],
+    ['lift:call', { id: 'l', position: here }],
+    ['lift:travel', { id: 'l', position: here }],
+    ['lift:arrive', { id: 'l', position: here }],
+    ['lift:power', { id: 'l', on: true }],
+    ['gen:core', { id: 'g', cores: 1, required: 3 }],
+    ['gen:fuel', { id: 'g', open: true }],
+    ['gen:prime', { id: 'g', strokes: 12, firm: true }],
+    ['gen:fail', { id: 'g', reason: 'starter overheated' }],
+    ['hide:enter', { id: 'h', kind: 'locker', position: here }],
+    ['hide:exit', { id: 'h', kind: 'locker' }],
+    ['lamp:toggle', { on: true }],
+    ['lamp:swap', {}],
+    ['attendant:act', { kind: 'chair', position: here }],
+    ['attendant:act', { kind: 'locker', position: here }],
+    ['attendant:act', { kind: 'door', position: here }],
+    ['attendant:act', { kind: 'kettle', position: here }],
+    ['kettle:on', { position: here }],
+    ['ui:hover', {}],
+    ['ui:screen', { screen: 'journal', open: true }],
+    ['item:pickup', { id: 'fuse_core' }],
+    ['story:note', { id: 'nb_1', title: 'x', body: 'y' }],
+    ['light:circuit', { circuit: 'intake', powered: true, position: here }],
+  ];
+
+  // COUNT SPAWNS, NOT POOL GROWTH.
+  //
+  // `_budget` STEALS when the global or per-name cap is reached: it kills the
+  // oldest instance and reaps it, so a successful spawn leaves `voices.length`
+  // exactly where it was. Measuring the delta made every event after the pool
+  // filled up look silent — the first version of this check reported `item:pickup`,
+  // `story:note` and `light:circuit` as broken purely because they happened to be
+  // last in the list. Wrapping the engine's own `_spawn` counts what actually
+  // happened, and the wrapper is removed again afterwards.
+  const spawnedNames = [];
+  const real = eng._spawn.bind(eng);
+  eng._spawn = (name, position, opts, loop) => {
+    const v = real(name, position, opts, loop);
+    if (v) spawnedNames.push(name);
+    return v;
+  };
+
+  const rows = [];
+  try {
+    for (const [name, payload] of CASES) {
+      const before = spawnedNames.length;
+      const deniedBefore = eng.stats.denied;
+      let threw = null;
+      try { g.bus.emit(name, payload); } catch (e) { threw = String(e.message || e); }
+      rows.push({
+        name,
+        spawned: spawnedNames.length - before,
+        sounds: spawnedNames.slice(before),
+        denied: eng.stats.denied - deniedBefore,
+        threw,
+      });
+    }
+  } finally {
+    eng._spawn = real;
+  }
+  return { rows, registered: eng.registry.size, total: spawnedNames.length };
+}) : { skipped: 'boot failed' };
+
 await browser.close();
 server?.kill();
 
@@ -123,6 +227,23 @@ if (status) {
     `${status.props} props, ${status.interactables} interactor items, ${status.doors} doors`);
   check('an objective is active', !!status.objective, status.objective || 'none');
 }
+if (audio?.rows) {
+  const threw = audio.rows.filter((r) => r.threw);
+  const silent = audio.rows.filter((r) => !r.threw && r.spawned <= 0 && r.denied <= 0);
+  const denied = audio.rows.filter((r) => r.denied > 0 && r.spawned <= 0);
+  check('no audio handler throws', threw.length === 0,
+    threw.map((r) => `${r.name}: ${r.threw}`).join(' | '));
+  check('every mechanism event spawns a voice', silent.length === 0,
+    silent.length ? silent.map((r) => r.name).join(', ')
+      : `${audio.rows.length} events, ${audio.total} voices from ${
+        new Set(audio.rows.flatMap((r) => r.sounds || [])).size} distinct sounds`);
+  if (denied.length) {
+    console.log(`       (${denied.length} denied by the voice budget rather than missing: ${denied.map((r) => r.name).join(', ')})`);
+  }
+} else if (audio?.skipped) {
+  console.log(`  --   live audio not exercised — ${audio.skipped}`);
+}
+
 if (warnings.length) {
   console.log('');
   console.log(`  ${warnings.length} console warning(s); first few:`);
