@@ -170,24 +170,29 @@ export const BUSES = ['ambience', 'world', 'entity', 'player', 'music', 'ui'];
  */
 const BUS_CONFIG = {
   // gain, compressor {threshold, knee, ratio, attack, release}
-  // STILL 0.20, and there is an open defect behind that.
+  // AMBIENCE: gain 0.62 -> 0.20 -> 0.09, and the compressor stops levelling.
   //
-  // This number does not currently control the loud zone beds, and making the
-  // reverb sends post-fader did not give it control either. Three measurements,
-  // all on the Intake's 65 s bed: holding the bus's breath stage at 0.2 for the
-  // whole render left it at -9.4 dBFS against -12.1 unpinned; cutting this gain
-  // to 0.075 moved it by nothing; cutting it to 0.085 with post-fader sends
-  // moved it by nothing. Meanwhile the four zones that were never limiter-bound
-  // — residence, safe, cistern, duct — respond to the same gestures normally and
-  // went from a quiet fraction of exactly zero to 0.01-0.07.
+  // The bed had no dynamics and nothing done to this bus would give it any.
+  // Muting both of the bus's entry points proved the ambience does all run
+  // through here, so the fader was in the path and simply had no authority, and
+  // the reason is two compressors in series. This one at 3:1 above -22 dBFS,
+  // with a bed arriving far above that, then the master limiter at 18:1 above
+  // -6.5. For a slow change the two multiply: about 54:1. A 7.4 dB fader move
+  // arrives at the output as 0.14 dB, which is exactly the "moved by nothing"
+  // that two separate attempts at this number measured.
   //
-  // So something in the Intake/Service/Stack/Plant beds reaches the master
-  // without passing this fader, and it has not been identified. Two attempts to
-  // fix the level by changing this number would have been changing a number for
-  // an effect it does not have, so it is left where the mix was balanced.
-  // Next diagnostic: zero `buses.ambience.input` in the offline harness and see
-  // whether the bed goes silent. If it does not, the layers are not on this bus.
-  ambience: { gain: 0.20, comp: { threshold: -22, knee: 10, ratio: 3.0, attack: 0.05, release: 0.5 } },
+  // It also explains which zones responded to the breath gesture and which did
+  // not. Residence, safe, cistern and duct never reach the master limiter, so
+  // they only ever saw 3:1 -- and those are precisely the four that went from a
+  // quiet fraction of zero to 0.01-0.07. Intake, service, stack and plant sit on
+  // the limiter continuously and saw 54:1.
+  //
+  // So: threshold up and ratio down, because a bus compressor on an ambience bed
+  // should be glue and this one was a leveller; and the fader down, which now
+  // does something. The file's own note sixty lines above -- "a limiter working
+  // continuously is not a safety net, it is a compressor" -- was right, and was
+  // being defeated one stage earlier than it looked.
+  ambience: { gain: 0.16, comp: { threshold: -10, knee: 8, ratio: 1.6, attack: 0.05, release: 0.5 } },
   world: { gain: 0.85, comp: { threshold: -16, knee: 8, ratio: 3.5, attack: 0.006, release: 0.22 } },
   entity: { gain: 1.05, comp: { threshold: -12, knee: 4, ratio: 2.2, attack: 0.004, release: 0.30 } },
   player: { gain: 0.80, comp: { threshold: -14, knee: 6, ratio: 3.0, attack: 0.003, release: 0.16 } },
@@ -545,13 +550,20 @@ export class AudioEngine {
       // to wet and dry alike, which is what a mix expects.
       const sendIn = ctx.createGain(); sendIn.gain.value = 1;
       const sendDuck = ctx.createGain(); sendDuck.gain.value = 1;
+      // The FADER has to be mirrored too, not just the gestures. The first
+      // version of this send chain carried `duck` and `breath` but not `gain`,
+      // which left the bus fader controlling the dry path only -- the very
+      // defect the post-fader send exists to remove. It measured as the ambience
+      // gain having no authority at all: cuts of 7.4 dB and 8.5 dB each moved the
+      // Intake's rendered RMS by under a tenth of a decibel.
+      const sendGain = ctx.createGain(); sendGain.gain.value = cfg.gain;
       const sendBreath = ctx.createGain(); sendBreath.gain.value = 1;
-      sendIn.connect(sendDuck); sendDuck.connect(sendBreath);
-      sendBreath.connect(this.reverbSend);
+      sendIn.connect(sendDuck); sendDuck.connect(sendGain);
+      sendGain.connect(sendBreath); sendBreath.connect(this.reverbSend);
 
       this.buses[name] = {
         name, input, breath, duck, gain, comp, base: cfg.gain, duckAmount: 0,
-        sendIn, sendDuck, sendBreath,
+        sendIn, sendDuck, sendGain, sendBreath,
       };
     }
 
@@ -657,7 +669,10 @@ export class AudioEngine {
     if (this.buses[key]) {
       const b = this.buses[key];
       b.base = value;
-      if (this.available) glide(b.gain.gain, value, this.now, time);
+      if (this.available) {
+        glide(b.gain.gain, value, this.now, time);
+        if (b.sendGain) glide(b.sendGain.gain, value, this.now, time);
+      }
       return this;
     }
     if (key === 'wet' && this.available) {

@@ -1558,28 +1558,57 @@ own signal. That has a consequence well past this feature: **`Silence`, the
 system the whole design leans on, was ducking a minority of the signal too.**
 Sends are now post-fader, per bus, and `setDuck` drives wet and dry together.
 
+### The fader was mirrored, and then it worked
+
+The post-fader send above carried the bus's `duck` and `breath` into the wet
+path but **not its `gain`**, so the fader still controlled the dry signal only —
+the exact defect the change existed to remove, reintroduced inside the fix. That
+is what made the ambience gain look like it had no authority: cuts of 7.4 dB and
+8.5 dB each moved the Intake's rendered RMS by under a tenth of a decibel, and
+what was actually happening was two compressors in series, the bus at 3:1 and
+the master limiter at 18:1, multiplying to about 54:1 for a slow change.
+
+With the fader mirrored into the send stage, the bus compressor relaxed from a
+leveller to glue (threshold −22 → −10, ratio 3.0 → 1.6) and the gain trimmed to
+0.16, the beds came off the limiter for the first time:
+
+| | before this pass | after |
+|---|---|---|
+| peak, loud zones | −3 dBFS, every zone | **−6.5 to −24.5** |
+| zones flagged HOT | 5 of 8 | **0 of 8** |
+| zones with any quiet at all | **0 of 8** | **7 of 8** |
+| loudness range | 0.7 – 5.8 LU | **3.0 – 6.8 LU** |
+| crest factor, loud zones | 8 – 9 dB | **12 – 19 dB** |
+
+Peak pinned at −3 in every zone regardless of what was done to the mix was the
+signature of a limiter doing all the level-setting, and it is gone.
+
+The budgets in `audiodyn` — 6 LU and a 0.10 quiet fraction — are still not met by
+most zones, and they have not been moved to say otherwise. What changed is that
+the beds are no longer a wall: every zone now has somewhere to go.
+
 ### What that fixed, and what it did not
 
 | zone | quiet fraction before | after |
 |---|---:|---:|
-| residence | 0.000 | **0.069** |
-| safe | 0.000 | **0.045** |
-| cistern | 0.000 | **0.026** |
-| duct | 0.000 | 0.011 |
-| intake, service, stack, plant | 0.000 | **0.000** |
+| residence | 0.000 | **0.058** |
+| safe | 0.000 | **0.040** |
+| cistern | 0.000 | **0.039** |
+| service | 0.000 | **0.034** |
+| intake | 0.000 | **0.032** |
+| plant | 0.000 | **0.029** |
+| stack | 0.000 | **0.026** |
+| duct | 0.000 | 0.000 |
 
-Four of eight zones went from no dynamics at all to measurable quiet. The four
-that did not are exactly the four that sit on the master limiter continuously,
-and **their bus fader still does not control them**: cutting the ambience gain to
-0.075, and again to 0.085 with post-fader sends, moved the Intake's rendered RMS
-by nothing on either occasion. Something in those beds reaches the master without
-passing the fader and it has not been identified.
+Seven of eight zones went from no dynamics anywhere to a measurable quiet
+fraction. The Ductwork is the exception and is the one zone where that may be
+correct: it is a 0.8 m galvanised box whose entire soundscape is one vent bed at
+full level, and there is nothing in it to take away.
 
-That is left as a documented defect rather than a third guess at a number. Two
-changes were already made to that gain for an effect it does not have; a third
-would be the same mistake. The next diagnostic is named in the code: zero
-`buses.ambience.input` in the offline harness and see whether the bed goes
-silent. If it does not, those layers are not on that bus.
+The diagnostic that unlocked this was the one named in the code rather than
+guessed at: zeroing both of the ambience bus's entry points in the offline
+harness. The bed went completely silent, which proved the layers *were* all on
+that bus and sent the search to the fader itself rather than to the routing.
 
 ### Also this pass
 
@@ -1594,7 +1623,13 @@ with `stack: 1` is a defect, and the evidence now says which.
 
 ### Still open from this pass
 
-- The four limiter-bound zone beds, above.
+- **`audiodyn`'s own budgets are not met.** 6 LU and a 0.10 quiet fraction remain
+  the targets; the beds now measure 3.0–6.8 LU and 0.026–0.058. The wall is gone,
+  the shape is not finished, and the numbers are reported as they are.
+- **The mix balance now needs a listening pass.** The ambience is roughly 10 dB
+  quieter than it was and every other bus was left where it stood, because
+  rebalancing six buses against each other by measurement alone is how the
+  original defect was created.
 - **Nobody has still actually listened.** The files exist and can be listened to,
   which is further than this project has ever been, but every judgement in this
   section is a measurement. Whether the Intake hum *sounds like* a fluorescent is

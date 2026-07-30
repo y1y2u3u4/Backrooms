@@ -357,7 +357,16 @@ async function renderBed(zone, seconds, script = null, seed = 20250729, opts = {
   engine.setListener(camera);
   audio.ambience.init();
   if (PIN_BREATH != null) {
-    engine.buses.ambience.breath.gain.value = PIN_BREATH;
+    // `pinBreath: 0` mutes the ambience bus at BOTH of its entry points -- the
+    // dry input and the post-fader send input. If a zone bed is still audible
+    // with both at zero, its layers are not routed through this bus at all,
+    // which is the open question section 9 of the completion report leaves.
+    const b = engine.buses.ambience;
+    b.breath.gain.value = PIN_BREATH;
+    if (PIN_BREATH === 0) {
+      b.input.gain.value = 0;
+      if (b.sendIn) b.sendIn.gain.value = 0;
+    }
     audio.ambience._breathe = () => {};      // stop the feature fighting the pin
   }
   audio.setZone(zone, 0.05);
