@@ -628,9 +628,18 @@ async function main() {
   page.on('console', (m) => logs.push({ type: m.type(), text: m.text() }));
   page.on('pageerror', (e) => logs.push({ type: 'pageerror', text: `${e.message}\n${(e.stack || '').split('\n').slice(0, 6).join('\n')}` }));
 
-  console.log(`→ ${url}?quality=${QUALITY}&qa=1   ${WIDTH}x${HEIGHT}`);
+  // `prewarm=0`: skip the per-zone shader pre-warm. It is the right behaviour on
+  // real hardware — `compileAsync` links off-thread where the driver supports it —
+  // but this environment is a software rasteriser with no GPU, where compiling one
+  // zone measured 190 SECONDS. Left on, a session with five zone changes spends
+  // most of an hour linking programs, and the numbers it produces are about
+  // SwiftShader's compiler rather than about the game. The consequence is stated
+  // rather than hidden: with it off, the transition stalls this harness reports are
+  // the UNWARMED ones, which is exactly what the pre-warm exists to remove.
+  const QS = `?quality=${QUALITY}&qa=1&prewarm=${args.prewarm === '1' ? '1' : '0'}`;
+  console.log(`→ ${url}${QS}   ${WIDTH}x${HEIGHT}`);
   const bootT0 = Date.now();
-  await page.goto(`${url}?quality=${QUALITY}&qa=1`, { waitUntil: 'domcontentloaded', timeout: 90000 });
+  await page.goto(`${url}${QS}`, { waitUntil: 'domcontentloaded', timeout: 90000 });
   try {
     await page.waitForFunction('window.ANNEX_READY === true || window.ANNEX_ERROR', { timeout: BOOT_TIMEOUT });
   } catch {

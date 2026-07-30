@@ -142,18 +142,34 @@ export class Game {
     // leads to while the player is still walking toward it. The zone's own root
     // is the target and the scene supplies the lights, so this compiles the new
     // material set and not the whole building again.
+    // `compileAsync` rather than `compile`, and awaited by nobody on purpose.
+    // Where `KHR_parallel_shader_compile` exists — every current desktop and
+    // mobile GPU driver — three links the programs off the main thread and the
+    // promise resolves when they are ready, so the work leaves the frame entirely.
+    // Where it does not, it degrades to the synchronous path.
+    //
+    // Measured here: on a software rasteriser (SwiftShader, no GPU, which is what
+    // this environment has) compiling the start zone costs about 190 seconds. That
+    // is not a number a real GPU produces, but it is a fair indication of how much
+    // work was landing on one frame after every transition. `?prewarm=0` turns it
+    // off, which is how the CPU-bound QA harness stays runnable.
+    this._prewarm = new URLSearchParams(location.search).get('prewarm') !== '0';
     this.bus.on('zone:build', (e) => {
+      if (!this._prewarm) return;
       const z = this.world?.zones?.[e?.zone];
       if (!z?.root || !this.engine?.renderer) return;
       const t0 = performance.now();
+      const done = () => {
+        const ms = performance.now() - t0;
+        if (ms > 40) console.info(`[game] pre-warmed ${e.zone} shaders in ${ms.toFixed(0)} ms`);
+      };
       try {
-        this.engine.renderer.compile(z.root, this.engine.camera, this.engine.scene);
+        const r = this.engine.renderer;
+        if (r.compileAsync) r.compileAsync(z.root, this.engine.camera, this.engine.scene).then(done, done);
+        else { r.compile(z.root, this.engine.camera, this.engine.scene); done(); }
       } catch (err) {
         console.warn('[game] shader pre-warm failed for', e?.zone, err);
-        return;
       }
-      const ms = performance.now() - t0;
-      if (ms > 40) console.info(`[game] pre-warmed ${e.zone} shaders in ${ms.toFixed(0)} ms`);
     });
 
     const worldMod = await optional('world', 'world/World.js');
