@@ -512,7 +512,17 @@ export function cagedLadder(b, x, y, z, h, { yaw = 0, key = 'machinePaint', cage
 // ---------------------------------------------------------------------------
 
 /** Surface strip light — the Service Spine's signature. */
-export function stripLight(b, rig, x, y, z, { rotation = 0, circuit = 'service', health = 'good', seed = 1, cone = true, cage = false } = {}) {
+/**
+ * Surface strip fitting.
+ *
+ * `intensityScale` exists because a fixture's candela rating is only half of what
+ * decides whether a room reads: the other half is how far the light has to travel.
+ * The same 28 cd strip delivers roughly nine times more at the floor from a 2.8 m
+ * corridor ceiling than from a 9 m gallery soffit, and the Annex uses these in
+ * both. Measured: direct light at head height came out at 37.0 units in the Intake
+ * against 4.5 in the Stack, using fittings of near-identical rating.
+ */
+export function stripLight(b, rig, x, y, z, { rotation = 0, circuit = 'service', health = 'good', seed = 1, cone = true, cage = false, intensityScale = 1 } = {}) {
   const g = new THREE.Group();
   g.position.set(x, y, z); g.rotation.y = rotation;
   const bodyMat = b.mat('fixtureBodyStrip', () => b.materials.get('steelPainted', {
@@ -552,7 +562,7 @@ export function stripLight(b, rig, x, y, z, { rotation = 0, circuit = 'service',
   const tube = new THREE.Mesh(t, tubeMat);
   g.add(tube);
 
-  const f = rig.add({ type: 'strip', position: [x, y, z], rotation, circuit, health, seed });
+  const f = rig.add({ type: 'strip', position: [x, y, z], rotation, circuit, health, seed, intensityScale });
   f.tube = tube;
   b.addObject(g);
   if (cone) {
@@ -564,7 +574,8 @@ export function stripLight(b, rig, x, y, z, { rotation = 0, circuit = 'service',
 }
 
 /** Vapour-tight bulkhead. Wall or ceiling mounted, with a wire guard. */
-export function bulkhead(b, rig, x, y, z, { yaw = 0, circuit = 'service', health = 'good', seed = 1, mount = 'wall', cone = true } = {}) {
+/** Vapour-tight bulkhead. See stripLight for why `intensityScale` is needed. */
+export function bulkhead(b, rig, x, y, z, { yaw = 0, circuit = 'service', health = 'good', seed = 1, mount = 'wall', cone = true, intensityScale = 1 } = {}) {
   const g = new THREE.Group();
   g.position.set(x, y, z); g.rotation.y = yaw;
   const mat = b.mat('bulkheadBody', () => b.materials.get('steelPainted', {
@@ -596,7 +607,7 @@ export function bulkhead(b, rig, x, y, z, { yaw = 0, circuit = 'service', health
   const lens = new THREE.Mesh(glass, glassMat);
   g.add(lens);
 
-  const f = rig.add({ type: 'bulkhead', position: [x, y, z], rotation: yaw, circuit, health, seed });
+  const f = rig.add({ type: 'bulkhead', position: [x, y, z], rotation: yaw, circuit, health, seed, intensityScale });
   f.tube = lens;
   // A wall bulkhead throws light outward and slightly down.
   f.target.position.set(0, -1.0, 2.4);

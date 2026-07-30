@@ -231,6 +231,9 @@ export function buildCistern(ctx, opts = {}) {
     const side = (fs % 2) ? R_TUNNEL[3] - 0.10 : R_TUNNEL[1] + 0.10;
     const f = bulkhead(bTunnel, rigFor(bTunnel), x, 2.30, side, {
       yaw: (fs % 2) ? Math.PI : 0, circuit: 'cistern', health, seed: 50 + fs,
+      // See the chamber block below: this zone measured 1.0 unit of direct light
+      // at head height against the Intake's 37.
+      intensityScale: 3.0,
     });
     if (health !== 'dead') waterFixtures.push(f);
     fs++;
@@ -249,7 +252,14 @@ export function buildCistern(ctx, opts = {}) {
     [19.6, -6.9, 0, 'buzz'], [11.4, 4.4, Math.PI, 'dying'], [15.2, -2.0, 0, 'buzz'],
     [19.9, -1.6, -Math.PI / 2, 'good'],
   ]) {
-    const f = bulkhead(bChamber, rigFor(bChamber), x, 2.10, z, { yaw, circuit: 'cistern', health, seed: 70 + fs++ });
+    // intensityScale 3.0. Direct light at head height in this zone measured 1.0
+    // unit against the Intake corridor's 37 — a wall bulkhead is rated at 20 cd
+    // against a troffer's 31, but it is also mounted on the wall of a chamber
+    // several times the size, and inverse-square does the rest. Raising the bounce
+    // fill was tried and measured first: it lifted fill from 0.048 to 0.296 and
+    // moved the frame's crushed-pixel fraction from 0.911 to 0.904, i.e. not at
+    // all. Direct light is the lever in this zone, and this is it.
+    const f = bulkhead(bChamber, rigFor(bChamber), x, 2.10, z, { yaw, circuit: 'cistern', health, seed: 70 + fs++, intensityScale: 3.0 });
     waterFixtures.push(f);
   }
   bulkhead(bGallery, rigFor(bGallery), R_GALLERY[0] + 0.12, 2.05, 7.6, { yaw: Math.PI / 2, circuit: 'cistern', health: 'dying', seed: 90 });

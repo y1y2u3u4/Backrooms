@@ -382,7 +382,14 @@ export class LightRig {
       const range = f.def.distance;
       if (d2 > range * range) continue;
       const atten = clamp01(1 - Math.sqrt(d2) / range);
-      let contribution = f.level * atten * atten * (f.def.intensity / 5);
+      // intensityScale has to be in here. Fixture.update applies it to the actual
+      // light (`this.level * this.intensityScale`) and this did not, so the two
+      // disagreed: raising the Cistern's bulkheads to 3x visibly lifted the frame —
+      // crushed pixels 0.911 to 0.842, dynamic range from 0.21 to 0.47 — while this
+      // metric reported the illumination unchanged at 1.03. A probe that cannot see
+      // a change the renderer can see is worse than no probe, because it reads as
+      // evidence that the change did nothing.
+      let contribution = f.level * f.intensityScale * atten * atten * (f.def.intensity / 5);
       if (occlude && collision && contribution > 0.02) {
         // Aim slightly below the fixture: the light body itself is a collider
         // in some zones and would occlude its own beam.

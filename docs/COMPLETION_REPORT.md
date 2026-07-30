@@ -652,14 +652,18 @@ Fixed. `lookOpen` now rejects any position with less than 1.75 m of headroom.
 
 ### Not fixed
 
-- **The Stack and the Cistern have had their fill raised on the strength of the
-  measurement above, and that change is not yet visually re-verified.** The
-  diagnosis is solid — 37:4.5:1 in direct light, 12:1 in fill — and the enclosure,
-  the light reach and the circuit state are all confirmed good. What is missing is a
-  capture after the change showing the frames read. Everything needed to check it is
-  in place (`node tools/qa/capture.mjs --shots circ2`); it did not fit in the
-  remaining budget.
-- **The Cistern still has 9 %** of its walkable area beyond 5 m from a lamp.
+- **The Stack is the one zone still not fixed.** Everything measurable about it
+  improved: light reach from 10.66 m worst case and 39 % of its area beyond 5 m to
+  4.99 m and 0 %, a real enclosing shaft wall (124 colliders, 22 322 triangles
+  facing into the well), fill raised, fixture output tripled, crushed pixels 0.934 →
+  0.925. It still does not read. The cause is understood and is geometric: a strip
+  fitting under a gallery soffit over an 18 m void throws most of its output into
+  the void, and with no global illumination nothing brings it back. The fix is a
+  different class of fitting — high-bay rather than strip — which is a lighting
+  design decision for the zone, not a number to raise.
+- **The Cistern is now dim rather than unreadable** (crushed 0.911 → 0.842, dynamic
+  range 0.21 → 0.47) but still measures 0.84 crushed at the low tier, and 9 % of its
+  walkable area is beyond 5 m from a lamp.
 - **Still never run on a GPU**, and no frame-rate verdict exists.
 - **The playthrough and audio-export harnesses are written but their runs are not
   in this report.** `tools/qa/playthrough.mjs` drives a continuous session with real

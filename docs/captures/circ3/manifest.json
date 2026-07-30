@@ -1,0 +1,128 @@
+[
+  {
+    "name": "01_stack_settle",
+    "settle": 140,
+    "setup": "const r=g.world.goto&&g.world.goto('stack'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0.06)",
+    "file": "docs/captures/circ3/01_stack_settle.png",
+    "stats": {
+      "ms": 6.9008333330663545,
+      "fps": 144.91003502553139,
+      "p90": 10.599999997764826,
+      "calls": 132,
+      "tris": 423788,
+      "quality": "low",
+      "res": "446x251",
+      "lights": {
+        "fixtures": 342,
+        "lit": 270,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "02_stack_probe",
+    "settle": 1,
+    "setup": "console.info('PS '+JSON.stringify(g.lightProbe()))",
+    "file": "docs/captures/circ3/02_stack_probe.png",
+    "stats": {
+      "ms": 4.466666667411725,
+      "fps": 223.88059697758118,
+      "p90": 6.700000002980232,
+      "calls": 132,
+      "tris": 423788,
+      "quality": "low",
+      "res": "446x251",
+      "lights": {
+        "fixtures": 342,
+        "lit": 270,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "03_cistern_settle",
+    "settle": 140,
+    "setup": "const r=g.world.goto&&g.world.goto('cistern'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,-0.08)",
+    "file": "docs/captures/circ3/03_cistern_settle.png",
+    "stats": {
+      "ms": 6.079166666573534,
+      "fps": 164.49623029724248,
+      "p90": 9.299999997019768,
+      "calls": 152,
+      "tris": 114024,
+      "quality": "low",
+      "res": "446x251",
+      "lights": {
+        "fixtures": 158,
+        "lit": 144,
+        "active": 5,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "04_cistern_probe",
+    "settle": 1,
+    "setup": "console.info('PC '+JSON.stringify(g.lightProbe()))",
+    "file": "docs/captures/circ3/04_cistern_probe.png",
+    "stats": {
+      "ms": 8.066666666418314,
+      "fps": 123.96694215257696,
+      "p90": 11.800000000745058,
+      "calls": 152,
+      "tris": 114024,
+      "quality": "low",
+      "res": "446x251",
+      "lights": {
+        "fixtures": 158,
+        "lit": 144,
+        "active": 5,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "05_intake_settle",
+    "settle": 140,
+    "setup": "const r=g.world.goto&&g.world.goto('intake'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0)",
+    "file": "docs/captures/circ3/05_intake_settle.png",
+    "stats": {
+      "ms": 6.4991666664058965,
+      "fps": 153.8658802472302,
+      "p90": 11.300000000745058,
+      "calls": 243,
+      "tris": 482284,
+      "quality": "low",
+      "res": "446x251",
+      "lights": {
+        "fixtures": 286,
+        "lit": 224,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "06_intake_probe",
+    "settle": 1,
+    "setup": "console.info('PI '+JSON.stringify(g.lightProbe()))",
+    "file": "docs/captures/circ3/06_intake_probe.png",
+    "stats": {
+      "ms": 70.23333333308499,
+      "fps": 14.238253440961595,
+      "p90": 178.09999999776483,
+      "calls": 243,
+      "tris": 482284,
+      "quality": "low",
+      "res": "446x251",
+      "lights": {
+        "fixtures": 286,
+        "lit": 224,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  }
+]

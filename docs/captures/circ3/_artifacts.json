@@ -1,0 +1,134 @@
+{
+  "dir": "docs/captures/circ3",
+  "limits": {
+    "crushed": 0.16,
+    "clipped": 0.03,
+    "dynamicRange": 0.22,
+    "banding": 0.055,
+    "speckle": 0.0035,
+    "emptiness": 0.72
+  },
+  "hfMedian": 0.04188796302329643,
+  "rows": [
+    {
+      "file": "01_stack_settle.png",
+      "W": 446,
+      "H": 251,
+      "mean": 0.0181118758082086,
+      "contrast": 0.09604667859148414,
+      "dynamicRange": 0.7118760943412781,
+      "crushed": 0.9346827934897183,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.03948330122636141,
+      "speckle": 0.000009045189768081334,
+      "emptiness": 0.9348614510567596,
+      "colourCast": 0.11666418325360138
+    },
+    {
+      "file": "02_stack_probe.png",
+      "W": 446,
+      "H": 251,
+      "mean": 0.021295203176332284,
+      "contrast": 0.10690369915802872,
+      "dynamicRange": 0.7194360494613647,
+      "crushed": 0.9307791256498669,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.04188796302329643,
+      "speckle": 0.00003618075907232534,
+      "emptiness": 0.9309488503385561,
+      "colourCast": 0.11657942340654046
+    },
+    {
+      "file": "03_cistern_settle.png",
+      "W": 446,
+      "H": 251,
+      "mean": 0.01185046410354215,
+      "contrast": 0.044885142873165015,
+      "dynamicRange": 0.23327215015888214,
+      "crushed": 0.903533846676076,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.02871142201536742,
+      "speckle": 0,
+      "emptiness": 0.9050167044825184,
+      "colourCast": 0.5207335338607341
+    },
+    {
+      "file": "04_cistern_probe.png",
+      "W": 446,
+      "H": 251,
+      "mean": 0.01181643792474095,
+      "contrast": 0.044548385590224414,
+      "dynamicRange": 0.2313215732574463,
+      "crushed": 0.9035785110678363,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.028409553935782515,
+      "speckle": 0.000009045189768081334,
+      "emptiness": 0.9050077716041663,
+      "colourCast": 0.5207044545478007
+    },
+    {
+      "file": "05_intake_settle.png",
+      "W": 446,
+      "H": 251,
+      "mean": 0.1863158036933495,
+      "contrast": 0.09514781762046381,
+      "dynamicRange": 0.4332517683506012,
+      "crushed": 0.034150393939935325,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.06942015552782489,
+      "speckle": 0.00046130467817214805,
+      "emptiness": 0.12803494542011326,
+      "colourCast": 0.8619685015324664
+    },
+    {
+      "file": "06_intake_probe.png",
+      "W": 446,
+      "H": 251,
+      "mean": 0.18639194125104966,
+      "contrast": 0.09645335538429742,
+      "dynamicRange": 0.4360564649105072,
+      "crushed": 0.03865256462937488,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.06990235488469565,
+      "speckle": 0.0004884402474763921,
+      "emptiness": 0.12726671788183588,
+      "colourCast": 0.857672942664275
+    }
+  ],
+  "flagged": [
+    {
+      "file": "01_stack_settle.png",
+      "flags": [
+        "CRUSHED",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "02_stack_probe.png",
+      "flags": [
+        "CRUSHED",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "03_cistern_settle.png",
+      "flags": [
+        "CRUSHED",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "04_cistern_probe.png",
+      "flags": [
+        "CRUSHED",
+        "EMPTY"
+      ]
+    }
+  ]
+}

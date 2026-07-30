@@ -583,6 +583,12 @@ export function buildStack(ctx, opts = {}) {
         stripLight(b, rigFor(b), lx, y + LEVEL - 0.10, lz, {
           rotation: rot, circuit: 'stack', health, seed: 100 + i * 5 + lx,
           cage: false, cone: dist <= 1,
+          // Scaled for the volume, not for the fitting. A 3.4 m gallery soffit
+          // over an 18 m wide well loses most of a strip light's output into the
+          // void instead of bouncing it back, and measured direct light on the
+          // gantry was 4.5 units against the Intake corridor's 37 from a fitting
+          // of the same rating.
+          intensityScale: 3.4,
         });
       }
     }
