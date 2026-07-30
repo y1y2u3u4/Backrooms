@@ -71,7 +71,12 @@ const browser = await chromium.launch({
 });
 const page = await browser.newPage({ viewport: { width: WIDTH, height: HEIGHT } });
 page.on('pageerror', (e) => console.error('[pageerror]', e.message));
-await page.goto(`${url}?quality=${QUALITY}&qa=1`, { waitUntil: 'domcontentloaded' });
+// `prewarm=0`: this is a steady-state workload census, not a shader-compile
+// benchmark. The per-zone pre-warm added in Game.js costs about 190 seconds on
+// SwiftShader (see the comment there), which would be paid before the first
+// measurement and would land inside the frame samples of whichever zone streamed
+// next. Both are exactly the cost this tool is not trying to measure.
+await page.goto(`${url}?quality=${QUALITY}&qa=1&prewarm=0`, { waitUntil: 'domcontentloaded' });
 await page.waitForFunction('window.ANNEX_READY === true || window.ANNEX_ERROR', { timeout: 300000 });
 
 const scenarios = JSON.parse(await readFile('tools/qa/perf-scenarios.json', 'utf8').catch(() => 'null'))

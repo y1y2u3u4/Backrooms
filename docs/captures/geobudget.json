@@ -1,0 +1,93 @@
+{
+  "at": "2026-07-30T11:09:13.296Z",
+  "zones": {
+    "intake": {
+      "id": "intake",
+      "meshes": 300,
+      "triangles": 473888,
+      "chunks": 4,
+      "colliders": 161,
+      "floors": 4,
+      "fixtures": 217,
+      "props": 6,
+      "portals": 3
+    },
+    "service": {
+      "id": "service",
+      "meshes": 172,
+      "triangles": 289732,
+      "chunks": 3,
+      "colliders": 134,
+      "floors": 35,
+      "fixtures": 74,
+      "props": 11,
+      "portals": 7
+    },
+    "cistern": {
+      "id": "cistern",
+      "meshes": 79,
+      "triangles": 105832,
+      "chunks": 4,
+      "colliders": 72,
+      "floors": 33,
+      "fixtures": 20,
+      "props": 10,
+      "portals": 2
+    },
+    "residence": {
+      "id": "residence",
+      "meshes": 146,
+      "triangles": 152502,
+      "chunks": 4,
+      "colliders": 120,
+      "floors": 21,
+      "fixtures": 37,
+      "props": 12,
+      "portals": 2
+    },
+    "plant": {
+      "id": "plant",
+      "meshes": 91,
+      "triangles": 271404,
+      "chunks": 5,
+      "colliders": 114,
+      "floors": 50,
+      "fixtures": 25,
+      "props": 11,
+      "portals": 2
+    },
+    "duct": {
+      "id": "duct",
+      "meshes": 55,
+      "triangles": 67932,
+      "chunks": 2,
+      "colliders": 25,
+      "floors": 7,
+      "fixtures": 25,
+      "props": 5,
+      "portals": 2
+    },
+    "stack": {
+      "id": "stack",
+      "meshes": 121,
+      "triangles": 420380,
+      "chunks": 3,
+      "colliders": 304,
+      "floors": 4,
+      "fixtures": 78,
+      "props": 8,
+      "portals": 2
+    },
+    "safe": {
+      "id": "safe",
+      "meshes": 63,
+      "triangles": 43932,
+      "chunks": 1,
+      "colliders": 21,
+      "floors": 1,
+      "fixtures": 5,
+      "props": 7,
+      "portals": 1
+    }
+  }
+}
