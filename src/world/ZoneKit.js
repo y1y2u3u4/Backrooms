@@ -83,6 +83,11 @@ export class ZoneBuilder extends Builder {
     obj.position.x += ox; obj.position.y += oy; obj.position.z += oz;
     return super.addObject(obj);
   }
+  tube(key, geoFactory, baseColor, position, rotationY = 0) {
+    const [ox, oy, oz] = this.origin;
+    return super.tube(key, geoFactory, baseColor,
+      [position[0] + ox, position[1] + oy, position[2] + oz], rotationY);
+  }
 }
 
 /** Rig proxy that offsets fixture positions into the zone's world patch. */
@@ -523,8 +528,6 @@ export function cagedLadder(b, x, y, z, h, { yaw = 0, key = 'machinePaint', cage
  * against 4.5 in the Stack, using fittings of near-identical rating.
  */
 export function stripLight(b, rig, x, y, z, { rotation = 0, circuit = 'service', health = 'good', seed = 1, cone = true, cage = false, intensityScale = 1 } = {}) {
-  const g = new THREE.Group();
-  g.position.set(x, y, z); g.rotation.y = rotation;
   const bodyMat = b.mat('fixtureBodyStrip', () => b.materials.get('steelPainted', {
     repeat: [1.6, 1.6], color: 0xcfcdc4, metalness: 0.85, roughness: 0.5,
     dirtAmount: 0.35, detailStrength: 0.25, envMapIntensity: 0.8,
@@ -555,16 +558,12 @@ export function stripLight(b, rig, x, y, z, { rotation = 0, circuit = 'service',
   vertexShade(hg, (px, py, pz, nx, ny) => (ny < -0.4 ? 0.9 : 0.6));
   b.add('fixtureBodyStrip', hg, () => bodyMat);
 
-  const t = new THREE.CylinderGeometry(0.019, 0.019, 1.44, 8, 1);
-  t.rotateZ(Math.PI / 2); t.translate(0, 0.002, 0);
-  const tubeMat = new THREE.MeshBasicMaterial({ color: 0xdfeaff, fog: true, toneMapped: true });
-  tubeMat.userData.baseColor = new THREE.Color(0xdfeaff);
-  const tube = new THREE.Mesh(t, tubeMat);
-  g.add(tube);
-
   const f = rig.add({ type: 'strip', position: [x, y, z], rotation, circuit, health, seed, intensityScale });
-  f.tube = tube;
-  b.addObject(g);
+  f.tube = b.tube('strip', () => {
+    const t = new THREE.CylinderGeometry(0.019, 0.019, 1.44, 8, 1);
+    t.rotateZ(Math.PI / 2); t.translate(0, 0.002, 0);
+    return t;
+  }, 0xdfeaff, [x, y, z], rotation);
   if (cone) {
     const cn = makeLightCone(3.4, 1.5, 0xdfeaff);
     cn.position.set(0, -0.02, 0);
@@ -576,8 +575,6 @@ export function stripLight(b, rig, x, y, z, { rotation = 0, circuit = 'service',
 /** Vapour-tight bulkhead. Wall or ceiling mounted, with a wire guard. */
 /** Vapour-tight bulkhead. See stripLight for why `intensityScale` is needed. */
 export function bulkhead(b, rig, x, y, z, { yaw = 0, circuit = 'service', health = 'good', seed = 1, mount = 'wall', cone = true, intensityScale = 1 } = {}) {
-  const g = new THREE.Group();
-  g.position.set(x, y, z); g.rotation.y = yaw;
   const mat = b.mat('bulkheadBody', () => b.materials.get('steelPainted', {
     repeat: [2, 2], color: 0x8d8a80, metalness: 0.6, roughness: 0.62,
     dirtAmount: 0.6, dirtBase: -0.2, detailStrength: 0.3, envMapIntensity: 0.6,
@@ -600,19 +597,15 @@ export function bulkhead(b, rig, x, y, z, { yaw = 0, circuit = 'service', health
   vertexShade(gd, () => 0.7);
   b.add('bulkheadBody', gd, () => mat);
 
-  const glass = new THREE.SphereGeometry(0.115, 12, 8, 0, TAU, 0, Math.PI / 2);
-  glass.scale(1.25, 0.9, 0.55); glass.rotateX(Math.PI / 2); glass.translate(0, 0, 0.02);
-  const glassMat = new THREE.MeshBasicMaterial({ color: 0xffe3b4, fog: true, toneMapped: true });
-  glassMat.userData.baseColor = new THREE.Color(0xffe3b4);
-  const lens = new THREE.Mesh(glass, glassMat);
-  g.add(lens);
-
   const f = rig.add({ type: 'bulkhead', position: [x, y, z], rotation: yaw, circuit, health, seed, intensityScale });
-  f.tube = lens;
+  f.tube = b.tube('bulkhead', () => {
+    const glass = new THREE.SphereGeometry(0.115, 12, 8, 0, TAU, 0, Math.PI / 2);
+    glass.scale(1.25, 0.9, 0.55); glass.rotateX(Math.PI / 2); glass.translate(0, 0, 0.02);
+    return glass;
+  }, 0xffe3b4, [x, y, z], yaw);
   // A wall bulkhead throws light outward and slightly down.
   f.target.position.set(0, -1.0, 2.4);
   if (mount === 'ceiling') f.target.position.set(0, -3, 0);
-  b.addObject(g);
   if (cone) {
     const cn = makeLightCone(2.6, 1.5, 0xffd8a0);
     cn.rotation.x = mount === 'ceiling' ? 0 : -1.15;
@@ -623,8 +616,6 @@ export function bulkhead(b, rig, x, y, z, { yaw = 0, circuit = 'service', health
 
 /** High-bay sodium lamp on a drop rod — the Plant's ceiling. */
 export function highbay(b, rig, x, y, z, { circuit = 'plant', health = 'good', seed = 1, drop = 0.7, cone = true, intensityScale = 1 } = {}) {
-  const g = new THREE.Group();
-  g.position.set(x, y, z);
   const mat = b.mat('highbayBody', () => b.materials.get('steelPainted', {
     repeat: [1.4, 1.4], color: 0x6f6b60, metalness: 0.8, roughness: 0.55,
     dirtAmount: 0.65, dirtBase: -1, detailStrength: 0.3, envMapIntensity: 0.7,
@@ -650,16 +641,12 @@ export function highbay(b, rig, x, y, z, { circuit = 'plant', health = 'good', s
   vertexShade(hg, () => 0.66);
   b.add('highbayBody', hg, () => mat);
 
-  const lamp = lathe([[0, 0], [0.045, -0.03], [0.05, -0.10], [0.03, -0.15], [0, -0.16]], 12);
-  lamp.translate(0, -0.10, 0);
-  const lampMat = new THREE.MeshBasicMaterial({ color: 0xffca80, fog: true, toneMapped: true });
-  lampMat.userData.baseColor = new THREE.Color(0xffca80);
-  const bulb = new THREE.Mesh(lamp, lampMat);
-  g.add(bulb);
-
   const f = rig.add({ type: 'highbay', position: [x, y - 0.2, z], circuit, health, seed, intensityScale });
-  f.tube = bulb;
-  b.addObject(g);
+  // The lamp hangs 100 mm inside the reflector; the light itself sits lower, at
+  // -0.2, which is where a sodium lamp's output actually leaves the fitting.
+  f.tube = b.tube('highbay',
+    () => lathe([[0, 0], [0.045, -0.03], [0.05, -0.10], [0.03, -0.15], [0, -0.16]], 12),
+    0xffca80, [x, y - 0.10, z]);
   if (cone) {
     const cn = makeLightCone(9.5, 4.6, 0xffb45c);
     cn.position.set(0, -0.25, 0);
@@ -670,8 +657,6 @@ export function highbay(b, rig, x, y, z, { circuit = 'plant', health = 'good', s
 
 /** Domestic pendant with a shade — the Residence and the Office of Record. */
 export function pendant(b, rig, x, y, z, { circuit = 'residence', health = 'good', seed = 1, drop = 0.42, shade = 'cone', cone = true, intensityScale = 1 } = {}) {
-  const g = new THREE.Group();
-  g.position.set(x, y, z);
   const mat = b.mat('pendantBody', () => b.materials.get('doorPaint', {
     repeat: [2, 2], color: 0xd6c8a4, metalness: 0.05, roughness: 0.55,
     dirtAmount: 0.55, dirtBase: -1, detailStrength: 0.25, envMapIntensity: 0.5,
@@ -696,16 +681,11 @@ export function pendant(b, rig, x, y, z, { circuit = 'residence', health = 'good
   vertexShade(hg, () => 0.74);
   b.add('pendantBody', hg, () => mat);
 
-  const bulbG = new THREE.SphereGeometry(0.033, 10, 8);
-  bulbG.translate(0, -drop - 0.09, 0);
-  const bm = new THREE.MeshBasicMaterial({ color: 0xffd08a, fog: true, toneMapped: true });
-  bm.userData.baseColor = new THREE.Color(0xffd08a);
-  const bulb = new THREE.Mesh(bulbG, bm);
-  g.add(bulb);
-
   const f = rig.add({ type: 'pendant', position: [x, y - drop - 0.08, z], circuit, health, seed, intensityScale });
-  f.tube = bulb;
-  b.addObject(g);
+  // `drop` varies per pendant, so it goes through the instance position rather
+  // than the geometry — otherwise every distinct drop would need its own batch.
+  f.tube = b.tube('pendant', () => new THREE.SphereGeometry(0.033, 10, 8),
+    0xffd08a, [x, y - drop - 0.09, z]);
   if (cone) {
     const cn = makeLightCone(2.4, 1.25, 0xffb964);
     cn.position.set(0, -drop - 0.14, 0);
@@ -716,8 +696,6 @@ export function pendant(b, rig, x, y, z, { circuit = 'residence', health = 'good
 
 /** Battery emergency light with two spot heads. */
 export function emergencyLight(b, rig, x, y, z, { yaw = 0, circuit = 'emergency', seed = 1, health = 'good' } = {}) {
-  const g = new THREE.Group();
-  g.position.set(x, y, z); g.rotation.y = yaw;
   const mat = b.mat('emergBody', () => b.materials.get('doorPaint', {
     repeat: [2.5, 2.5], color: 0xcfcabb, metalness: 0, roughness: 0.5,
     dirtAmount: 0.5, detailStrength: 0.2, envMapIntensity: 0.5,
@@ -735,20 +713,13 @@ export function emergencyLight(b, rig, x, y, z, { yaw = 0, circuit = 'emergency'
   hg.rotateY(yaw); hg.translate(x, y, z);
   worldUV(hg, 0.3); whiteColors(hg);
   b.add('emergBody', hg, () => mat);
-  const lensG = [];
-  for (const sx of [-1, 1]) {
+  const f = rig.add({ type: 'emergency', position: [x, y, z], rotation: yaw, circuit, health, seed });
+  f.tube = b.tube('emergency', () => merge([-1, 1].map((sx) => {
     const l = cyl(0.026, 0.026, 0.006, 10); l.rotateX(Math.PI / 2);
     l.rotateY(sx * 0.35); l.translate(sx * 0.075, 0.005, 0.045);
-    lensG.push(l);
-  }
-  const lm = new THREE.MeshBasicMaterial({ color: 0x9dffbe, fog: true, toneMapped: true });
-  lm.userData.baseColor = new THREE.Color(0x9dffbe);
-  const lens = new THREE.Mesh(merge(lensG), lm);
-  g.add(lens);
-  const f = rig.add({ type: 'emergency', position: [x, y, z], rotation: yaw, circuit, health, seed });
-  f.tube = lens;
+    return l;
+  })), 0x9dffbe, [x, y, z], yaw);
   f.target.position.set(0, -0.8, 2.5);
-  b.addObject(g);
   return f;
 }
 

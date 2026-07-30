@@ -786,12 +786,15 @@ export class Game {
       .sort((a, b) => a.d - b.d)
       .slice(0, n)
       .map(({ f, d }) => {
+        // `tube` is a slot in a batched instanced mesh; what matters for the
+        // "why is this zone black" question it was written to answer is whether
+        // the batch reached the scene and whether the slot is lit within it.
         const t = f.tube;
         let inScene = false;
-        for (let o = t; o; o = o.parent) if (o === this.engine.scene) { inScene = true; break; }
-        let visibleChain = !!t;
-        for (let o = t; o; o = o.parent) if (!o.visible) { visibleChain = false; break; }
-        const c = t?.material?.color;
+        for (let o = t?.mesh; o; o = o.parent) if (o === this.engine.scene) { inScene = true; break; }
+        let visibleChain = !!t?.visible;
+        for (let o = t?.mesh; o && visibleChain; o = o.parent) if (!o.visible) { visibleChain = false; break; }
+        const c = t?.color;
         return {
           type: f.type,
           d: +d.toFixed(2),

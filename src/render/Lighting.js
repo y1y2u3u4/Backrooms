@@ -67,13 +67,6 @@ export const HEALTH = { GOOD: 'good', BUZZ: 'buzz', DYING: 'dying', STROBE: 'str
 
 const _v = new THREE.Vector3();
 
-/**
- * Beyond this many metres a fixture's emissive mesh is not drawn. See the comment
- * at its use in `LightRig.update`; it is a draw-call budget, not a look choice, and
- * it is set well past anything that still reads in frame.
- */
-const TUBE_FAR = 40;
-
 export class Fixture {
   constructor(rig, { type = 'troffer', position, rotation = 0, circuit = 'main', health = HEALTH.GOOD, seed = 1, intensityScale = 1, coneScale = 1 }) {
     const def = FIXTURE_TYPES[type];
@@ -168,10 +161,8 @@ export class Fixture {
    * @param {number} t
    * @param {number} dt
    * @param {boolean} powered
-   * @param {boolean} [tubeVisible] false to hide the emissive source mesh
-   *   regardless of level — a distance cull owned by the rig, not by the fixture.
    */
-  update(t, dt, powered, tubeVisible = true) {
+  update(t, dt, powered) {
     const raw = powered && this.on ? this._flicker(t, dt) : 0;
     // Fluorescent tubes have thermal inertia: they fall faster than they rise.
     const rate = raw > this.level ? 26 : 34;
@@ -180,11 +171,9 @@ export class Fixture {
     const lit = this.level * this.intensityScale;
     this.light.intensity = this.def.intensity * lit;
     this.light.visible = lit > 0.004;
-    if (this.tube) {
-      const c = this.tube.material.userData.baseColor;
-      this.tube.material.color.copy(c).multiplyScalar(this.def.tubeIntensity * lit);
-      this.tube.visible = tubeVisible && lit > 0.002;
-    }
+    // The emissive source is a slot in the chunk's shared instanced mesh, not a
+    // mesh of its own — see render/EmissiveBatch.js.
+    if (this.tube) this.tube.setLevel(this.def.tubeIntensity * lit, lit > 0.002);
     if (this.coneMesh) {
       this.coneMesh.material.uniforms.uIntensity.value = lit * this.def.cone * this.coneScale;
       this.coneMesh.visible = lit > 0.02;
@@ -535,25 +524,17 @@ export class LightRig {
     const active = this._activeSet;
     for (const f of this.fixtures) {
       const power = this.circuitLevel(f.circuit);
-      // TUBE DISTANCE CULL.
+      // No distance cull on the emissive sources, deliberately.
       //
-      // A fixture's emissive tube or lens is an INDEPENDENT mesh — it has to be,
-      // because it flickers on its own curve — so it is one draw call each, and
-      // its visibility was decided by light level alone. In a 63 x 63 m floor
-      // plate with 217 fixtures that meant every burning tube in every resident
-      // zone was submitted, including ones 60 m away through two walls. Measured
-      // by `perf.mjs`: the Intake's worst scenario submitted 226 draw calls
-      // against a budget of 180, and the tubes were most of the excess.
-      //
-      // TUBE_FAR is deliberately generous. The rule this project holds to is that
-      // if the player can see light they can see what is making it, so a tube must
-      // not vanish anywhere it could still be picked out — and the longest
-      // authored sightline in the game is the Service Spine's 57 m corridor.
-      // Beyond 40 m the atmospheric fog has taken a 1.2 m tube to a few pixels of
-      // haze, and the light itself is already culled at `def.distance * 1.5`
-      // (25.5 m for a troffer), so nothing that still contributes is being hidden.
-      const nearEnough = f.distToCam < TUBE_FAR;
-      const lit = f.update(t, dt, power > 0.02 ? power : 0, nearEnough);
+      // There used to be one, hiding any source past 40 m, on the theory that
+      // 217 independent tube meshes per zone were what pushed the Intake to 221
+      // draw calls. Measured, it recovered five: the Intake is a dense 63 x 63 m
+      // plate, so nearly everything lit is already inside 40 m. The cost was one
+      // mesh per fixture, not distance, and batching them (EmissiveBatch) took
+      // the whole zone's sources down to one draw call per fixture type. With
+      // that done a distance cull buys nothing and can only break the rule that
+      // if the player can see light, they can see what is making it.
+      const lit = f.update(t, dt, power > 0.02 ? power : 0);
       if (f.tube?.visible) tubeCount++;
       // Distance is recomputed EVERY frame, not only on the throttled re-sort.
       //
@@ -611,7 +592,9 @@ export class LightRig {
       fixtures: this.fixtures.length,
       lit: on,
       active: this.litCount ?? 0,     // lights actually uploaded to shaders
-      tubes: this.tubeCount ?? 0,     // emissive source meshes drawn
+      // Emissive sources currently glowing. This is an ART metric, not a cost
+      // one: they are batched, so 200 of them and 2 of them draw the same.
+      tubes: this.tubeCount ?? 0,
       shadows: this._shadowSet.size,
     };
   }

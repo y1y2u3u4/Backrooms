@@ -52,8 +52,6 @@ const BUDGETS = {
    * screen, not on the first frame after a transition.
    */
   programs: 140,
-  /** Emissive fixture meshes drawn. See TUBE_FAR in Lighting.js. */
-  tubeMeshes: 90,
   logicMs: 4.0,
 };
 
@@ -151,7 +149,12 @@ const worst = {
   // the wrong quantity and failing meaninglessly. `lit` is still printed above as
   // context, which is where it belongs.
   activeLights: Math.max(...results.map((r) => r.lights?.active ?? 0)),
-  tubeMeshes: Math.max(...results.map((r) => r.lights?.tubes ?? 0)),
+  // No budget on the number of glowing emissive sources any more. There was one
+  // — 90 — for exactly as long as each source was its own mesh and therefore its
+  // own draw call. Batching them (render/EmissiveBatch.js) severed that link, so
+  // the proxy now measures how much of the world is lit, which is an art
+  // decision. `drawCalls` below measures the thing the proxy stood in for, so
+  // dropping it removes a duplicate reading, not a constraint.
   shadowLights: Math.max(...results.map((r) => r.lights?.shadows ?? 0)),
   programs: Math.max(...results.map((r) => r.programs)),
   logicMs: Math.max(...results.map((r) => r.logicMs.p95)),

@@ -554,9 +554,6 @@ export function troffer(b, rig, x, y, z, {
   const def = { troffer: [1.20, 0.30], strip: [1.55, 0.14] }[type] || [1.2, 0.3];
   const [L, W] = def;
   y = y - TILE_FACE;
-  const g = new THREE.Group();
-  g.position.set(x, y, z);
-  g.rotation.y = rotation;
 
   const bodyMat = b.mat('fixtureBody', () => b.materials.get('steelPainted', {
     repeat: [1.6, 1.6], color: 0xbfbfb8, metalness: 0.9, roughness: 0.55,
@@ -580,20 +577,6 @@ export function troffer(b, rig, x, y, z, {
     f.translate(ox, 0.004, oz);
     frameParts.push(f);
   }
-  // Two tubes with visible end caps.
-  const tubeGeos = [];
-  for (const off of [-W * 0.24, W * 0.24]) {
-    const t = new THREE.CylinderGeometry(0.019, 0.019, L - 0.10, 10, 1);
-    t.rotateZ(Math.PI / 2);
-    t.translate(0, 0.040, off);
-    tubeGeos.push(t);
-  }
-  const tubeGeo = merge(tubeGeos);
-  const tubeMat = new THREE.MeshBasicMaterial({ color: 0xfff6e2, fog: true, toneMapped: true });
-  tubeMat.userData.baseColor = new THREE.Color(0xfff6e2);
-  const tubes = new THREE.Mesh(tubeGeo, tubeMat);
-  g.add(tubes);
-
   const capGeos = [];
   for (const off of [-W * 0.24, W * 0.24]) {
     for (const s of [-1, 1]) {
@@ -604,8 +587,10 @@ export function troffer(b, rig, x, y, z, {
     }
   }
   // The housing never moves and never changes colour, so it is baked into the
-  // chunk's static geometry instead of costing a draw call per fixture. Only
-  // the emissive tube stays an independent object, because it animates.
+  // chunk's static geometry instead of costing a draw call per fixture. The
+  // tubes animate, so they cannot be baked — they go into the chunk's shared
+  // instanced emissive mesh instead, which costs one draw call for every
+  // troffer in the zone put together.
   const staticGeo = merge([housing, reflector, ...frameParts, ...capGeos]);
   staticGeo.rotateY(rotation);
   staticGeo.translate(x, y, z);
@@ -615,8 +600,14 @@ export function troffer(b, rig, x, y, z, {
   b.add('fixtureBody', staticGeo, () => bodyMat);
 
   const fixture = rig.add({ type, position: [x, y, z], rotation, circuit, health, seed });
-  fixture.tube = tubes;
-  b.addObject(g);
+  // Twin tubes with their end caps, authored about the fixture's own origin so
+  // every troffer of this type shares the geometry.
+  fixture.tube = b.tube(`troffer:${type}`, () => merge([-W * 0.24, W * 0.24].map((off) => {
+    const t = new THREE.CylinderGeometry(0.019, 0.019, L - 0.10, 10, 1);
+    t.rotateZ(Math.PI / 2);
+    t.translate(0, 0.040, off);
+    return t;
+  })), 0xfff6e2, [x, y, z], rotation);
 
   if (cone) {
     const c = makeLightCone(3.2, 1.55, 0xfff0cf);

@@ -89,7 +89,14 @@ async function audit(id, { step = 0.5, verbose = false } = {}) {
   const collision = new CollisionWorld();
   const ctx = {
     materials, collision, rig: makeRig(), palette, scene: new THREE.Group(),
-    bus: { on() {}, emit() {} }, assets: permissive(),
+    // `assets: null`, NOT a permissive stub. With a stub, `Props.lockers` takes
+    // its GLB branch and hands `addObject` a Proxy whose position cannot be
+    // added to a number, so the Service Spine threw on build — and this tool
+    // caught the throw, printed one line, and went on to report "no point of any
+    // walkable rectangle fails the stand test" while having tested nothing at
+    // all in the zone the player spends the most time in. A skipped zone must
+    // never read as a clean zone; see the exit code below.
+    bus: { on() {}, emit() {} }, assets: null,
     engine: { q: { textureQuality: 1, lights: 14 }, envMap: null },
     zoneId: id, decals: permissive(),
   };
@@ -167,10 +174,11 @@ console.log('floor coverage — points on a walkable rect that fail the playthro
 console.log('');
 console.log('zone         rects   sampled   on-surface failures   just-off-edge failures');
 let total = 0;
+const errors = [];
 const detail = [];
 for (const id of ids) {
   const r = await audit(id, { step: only ? 0.35 : 0.6 });
-  if (r.error) { console.log(`${id.padEnd(12)} ${r.error}`); continue; }
+  if (r.error) { console.log(`${id.padEnd(12)} ${r.error}`); errors.push(`${id}: ${r.error}`); continue; }
   total += r.badPts;
   console.log(
     `${r.id.padEnd(12)} ${String(r.floors).padStart(5)}   ${String(r.tested).padStart(7)}`
@@ -191,7 +199,12 @@ for (const r of detail) {
   }
 }
 console.log('');
+if (errors.length) {
+  console.log(`${errors.length} zone(s) could not be built, so they were NOT tested:`);
+  for (const e of errors) console.log(`  ${e}`);
+  console.log('An untested zone is not a passing zone.');
+}
 console.log(total === 0
-  ? 'No point of any walkable rectangle fails the stand test.'
+  ? `No point of any walkable rectangle fails the stand test${errors.length ? ' in the zones that built' : ''}.`
   : `${total} sampled points stand on nothing. Each ON SURFACE site is a hole a player can walk into.`);
-process.exit(total === 0 ? 0 : 1);
+process.exit(total === 0 && !errors.length ? 0 : 1);

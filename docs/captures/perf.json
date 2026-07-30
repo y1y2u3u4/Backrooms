@@ -7,39 +7,42 @@
     "triangles": 1200000,
     "activeLights": 28,
     "shadowLights": 3,
-    "programs": 90,
+    "programs": 140,
+    "tubeMeshes": 90,
     "logicMs": 4
   },
   "worst": {
-    "drawCalls": 226,
-    "triangles": 478202,
-    "activeLights": 149,
+    "drawCalls": 221,
+    "triangles": 477802,
+    "activeLights": 6,
+    "tubeMeshes": 139,
     "shadowLights": 1,
     "programs": 128,
-    "logicMs": 2.2000000029802322
+    "logicMs": 0.7000000029802322
   },
   "pass": false,
   "results": [
     {
       "name": "corridor",
       "frameMs": {
-        "mean": 2.1733333334326743,
-        "p50": 1.9000000059604645,
-        "p95": 3.1999999955296516
+        "mean": 2.0600000000662275,
+        "p50": 1.8999999985098839,
+        "p95": 3
       },
       "logicMs": {
-        "mean": 0.1733333334326744,
-        "p95": 0.5
+        "mean": 0.1699999999254942,
+        "p95": 0.7000000029802322
       },
       "drawCalls": 90,
       "triangles": 187854,
       "programs": 99,
-      "geometries": 264,
+      "geometries": 219,
       "textures": 54,
       "lights": {
         "fixtures": 208,
         "lit": 149,
         "active": 6,
+        "tubes": 94,
         "shadows": 1
       },
       "res": "397x223",
@@ -48,23 +51,24 @@
     {
       "name": "open_bay",
       "frameMs": {
-        "mean": 4.093333333399561,
-        "p50": 2.7000000029802322,
-        "p95": 9.899999998509884
+        "mean": 3.4688888889220024,
+        "p50": 2.899999998509884,
+        "p95": 7.700000002980232
       },
       "logicMs": {
-        "mean": 0.32333333330849806,
-        "p95": 2.2000000029802322
+        "mean": 0.38500000002483525,
+        "p95": 0.6000000014901161
       },
-      "drawCalls": 194,
-      "triangles": 441796,
+      "drawCalls": 185,
+      "triangles": 441076,
       "programs": 127,
-      "geometries": 322,
+      "geometries": 277,
       "textures": 56,
       "lights": {
         "fixtures": 208,
         "lit": 148,
         "active": 6,
+        "tubes": 133,
         "shadows": 1
       },
       "res": "397x223",
@@ -73,23 +77,24 @@
     {
       "name": "long_view",
       "frameMs": {
-        "mean": 1.6533333333002196,
-        "p50": 1.6000000014901161,
-        "p95": 2.2999999970197678
+        "mean": 1.897777777744664,
+        "p50": 1.7000000029802322,
+        "p95": 2.7000000029802322
       },
       "logicMs": {
-        "mean": 0.1,
-        "p95": 0.20000000298023224
+        "mean": 0.13833333340783913,
+        "p95": 0.30000000447034836
       },
       "drawCalls": 84,
       "triangles": 156942,
       "programs": 127,
-      "geometries": 322,
+      "geometries": 277,
       "textures": 58,
       "lights": {
         "fixtures": 208,
         "lit": 149,
         "active": 6,
+        "tubes": 48,
         "shadows": 1
       },
       "res": "397x223",
@@ -98,23 +103,24 @@
     {
       "name": "many_lights",
       "frameMs": {
-        "mean": 4.428888888822661,
-        "p50": 3.399999998509884,
-        "p95": 7.699999995529652
+        "mean": 3.8688888889220028,
+        "p50": 3,
+        "p95": 7.899999998509884
       },
       "logicMs": {
-        "mean": 0.11333333340783915,
+        "mean": 0.12999999995032946,
         "p95": 0.30000000447034836
       },
-      "drawCalls": 226,
-      "triangles": 478202,
+      "drawCalls": 221,
+      "triangles": 477802,
       "programs": 128,
-      "geometries": 337,
+      "geometries": 306,
       "textures": 60,
       "lights": {
         "fixtures": 208,
         "lit": 149,
         "active": 6,
+        "tubes": 139,
         "shadows": 1
       },
       "res": "397x223",

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { merge, whiteColors, triCount } from '../render/geo.js';
+import { EmissiveBatch } from '../render/EmissiveBatch.js';
 
 /**
  * Builder — accumulates geometry into per-material buckets and merges each
@@ -33,6 +34,8 @@ export class Builder {
     this.root.name = name;
     this.bounds = new THREE.Box3();
     this._matCache = new Map();
+    /** Batched emissive fixture sources — see EmissiveBatch. */
+    this.emissive = new EmissiveBatch();
   }
 
   /** Register (or fetch) a material under a stable key. */
@@ -72,6 +75,17 @@ export class Builder {
     return obj;
   }
 
+  /**
+   * Claim a slot in this chunk's batched emissive mesh for a fixture's glowing
+   * part. Returns the handle a `Fixture` keeps as its `tube`. Unlike
+   * `addObject`, this costs no draw call of its own — every fixture of a type
+   * shares one.
+   * @returns {import('../render/EmissiveBatch.js').EmissiveSlot}
+   */
+  tube(key, geoFactory, baseColor, position, rotationY = 0) {
+    return this.emissive.claim(key, geoFactory, baseColor, position, rotationY);
+  }
+
   addCollider(min, max, meta) { return this.collision.addBox(min, max, meta); }
   addColliderAt(cx, cy, cz, sx, sy, sz, meta) {
     return this.collision.addBoxAt(cx, cy, cz, sx, sy, sz, meta);
@@ -107,6 +121,7 @@ export class Builder {
       for (const g of bucket.geos) g.dispose();
       bucket.geos.length = 0;
     }
+    this.emissive.materialize(this.root, this.name);
     this.root.userData.tris = triCount(this.root);
     return this.root;
   }

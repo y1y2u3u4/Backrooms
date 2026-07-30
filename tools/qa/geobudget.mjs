@@ -119,19 +119,29 @@ const ZONES = {
   safe: '../../src/world/zones/SafeRoom.js',
 };
 
-/** Count meshes and triangles in a built subtree. */
+/**
+ * Count meshes and triangles in a built subtree.
+ *
+ * An InstancedMesh is ONE mesh — that is the point of it — but it submits its
+ * geometry once per instance, so its triangles must be multiplied by `count`.
+ * Getting this wrong is not harmless: when the fixture emissive sources were
+ * batched, this function's first version reported the Intake as 16,720 triangles
+ * lighter, which reads exactly like geometry that has gone missing.
+ */
 function census(root) {
-  let meshes = 0, tris = 0;
+  let meshes = 0, tris = 0, instances = 0;
   root.traverse((o) => {
     if (!o.isMesh || !o.geometry) return;
     meshes++;
     const g = o.geometry;
     const idx = g.getIndex();
     const pos = g.getAttribute('position');
-    if (idx) tris += idx.count / 3;
-    else if (pos) tris += pos.count / 3;
+    const n = o.isInstancedMesh ? o.count : 1;
+    if (o.isInstancedMesh) instances += o.count;
+    if (idx) tris += (idx.count / 3) * n;
+    else if (pos) tris += (pos.count / 3) * n;
   });
-  return { meshes, tris: Math.round(tris) };
+  return { meshes, tris: Math.round(tris), instances };
 }
 
 async function audit(id) {
@@ -158,10 +168,17 @@ async function audit(id) {
     id,
     meshes: c.meshes,
     triangles: c.tris,
+    instances: c.instances,
     chunks: (zone.chunks || []).length,
     colliders: collision.boxes.length,
     floors: collision.floors.length,
     fixtures: rig.fixtures.length,
+    // Every fixture must own a slot in a materialised emissive batch. This is a
+    // tripwire for the batching itself: a fixture whose slot never got bound is
+    // a light that emits from nothing visible, and the one time that happened
+    // for real — the safe room's hand-assembled desk lamp — it went unnoticed
+    // through sixty capture screenshots.
+    unlit: rig.fixtures.filter((f) => !f.tube?.mesh).map((f) => f.type),
     props: (zone.interactables || []).length,
     portals: (zone.portals || []).length,
   };
@@ -175,11 +192,11 @@ for (const id of ids) rows.push(await audit(id));
 console.log('');
 console.log('geometry census — per zone TOTAL, an upper bound on one frame');
 console.log('');
-console.log('zone         meshes  chunks   triangles  colliders  floors  fixtures  props  portals');
+console.log('zone         meshes  inst  chunks   triangles  colliders  floors  fixtures  props  portals');
 for (const r of rows) {
   if (r.error) { console.log(`${r.id.padEnd(12)} ${r.error}`); continue; }
   console.log(
-    `${r.id.padEnd(12)} ${String(r.meshes).padStart(6)}  ${String(r.chunks).padStart(6)}`
+    `${r.id.padEnd(12)} ${String(r.meshes).padStart(6)}  ${String(r.instances).padStart(4)}  ${String(r.chunks).padStart(6)}`
     + `  ${r.triangles.toLocaleString().padStart(10)}  ${String(r.colliders).padStart(9)}`
     + `  ${String(r.floors).padStart(6)}  ${String(r.fixtures).padStart(8)}`
     + `  ${String(r.props).padStart(5)}  ${String(r.portals).padStart(7)}`);
@@ -195,6 +212,13 @@ for (const [k, budget] of Object.entries(BUDGETS)) {
   ok.push(pass);
   console.log(`  ${pass ? 'ok  ' : 'FAIL'} ${k.padEnd(10)} ${String(v.toLocaleString()).padStart(9)} / ${budget.toLocaleString()}`
     + `   (${worst?.id})`);
+}
+{
+  const bad = rows.filter((r) => !r.error && r.unlit.length);
+  const n = bad.reduce((a, r) => a + r.unlit.length, 0);
+  ok.push(n === 0);
+  console.log(`  ${n === 0 ? 'ok  ' : 'FAIL'} ${'unlit fixtures'.padEnd(10)} ${String(n).padStart(9)} / 0`
+    + (n ? `   (${bad.map((r) => `${r.id}: ${r.unlit.join(',')}`).join('; ')})` : ''));
 }
 
 // ---- regression diff -----------------------------------------------------

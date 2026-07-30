@@ -142,6 +142,15 @@ export function buildSafeRoom(ctx, opts = {}) {
     circuit: 'safe', health: 'good', seed: 52, intensityScale: 0.85,
   });
   lampFix.target.position.set(0.4, -1.2, -0.6);
+  // The desk lamp is the only fixture in the game assembled by hand rather than
+  // by a ZoneKit builder, and it was the only one with no emissive source: the
+  // shade is open and pointed at the desk, so the player got light pouring out
+  // of a dark cavity. Same key, colour and geometry as the ceiling pendants
+  // above, so it joins their batch and costs no draw call of its own — and the
+  // geometry here must match theirs, because only the first claim of a key
+  // builds it.
+  lampFix.tube = b.tube('pendant', () => new THREE.SphereGeometry(0.033, 10, 8),
+    0xffd08a, lamp.bulb);
   // Explicitly on 'emergency', which LightRig registers powered at construction
   // and no breaker in the game can switch off.
   emergencyLight(b, rigFor(b), X0 + 0.12, 2.20, Z0 + 1.0, { yaw: Math.PI / 2, seed: 53, circuit: 'emergency' });
