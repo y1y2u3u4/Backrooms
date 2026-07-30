@@ -261,6 +261,7 @@ function installDriver(cfg) {
     PT.panT = 0;
     PT.seekId = null; PT.seekDone = false; PT.seekTries = 0; PT.seekCool = 0;
     PT.seekHeld = false;
+    PT.seekBest = undefined; PT.seekStall = 0; PT.seekDetour = 0;
     PT.hold('KeyW', false);
     PT.hold('KeyE', false);
     if (mode === 'seek') {
@@ -404,7 +405,31 @@ function installDriver(cfg) {
     // steering off-axis rather than grinding into it.
     const close = flat < range * 0.62 + 0.25;
     PT.hold('KeyW', !close);
-    if (!close && clearAhead(g.player.yaw, 2.0) < 1.2) {
+
+    // STUCK-BREAKER. Aiming straight at a target and walking is enough in a room
+    // and hopeless in a building: without a navmesh the bot grinds into the corner
+    // between itself and a prop two metres away and stays there. A run had it spend
+    // 26 seconds covering none of 11.9 m. So: if the distance has not dropped in
+    // three seconds, commit to a detour — a fixed 80 degrees off the direct line,
+    // held for a second and a half, alternating sides. It is not pathfinding; it is
+    // the wall-follow a person does, and it is enough to get round furniture.
+    if (PT.seekBest === undefined || flat < PT.seekBest - 0.25) {
+      PT.seekBest = flat; PT.seekStall = 0;
+    } else {
+      PT.seekStall = (PT.seekStall || 0) + 1 / 60;
+    }
+    if (PT.seekStall > 3 && !PT.seekDetour) {
+      PT.seekDetour = 1.5;
+      PT.seekSide = (PT.seekSide || 1) * -1;
+      PT.seekStall = 0;
+    }
+    if (PT.seekDetour > 0) {
+      PT.seekDetour -= 1 / 60;
+      if (PT.seekDetour <= 0) { PT.seekDetour = 0; PT.seekBest = flat; }
+      const alt = wantYaw + (PT.seekSide || 1) * 1.4;
+      g.input.mouse.dx += -Math.max(-3.0 / 60, Math.min(3.0 / 60, wrap(alt - g.player.yaw))) / sens;
+      PT.hold('KeyW', true);
+    } else if (!close && clearAhead(g.player.yaw, 2.0) < 1.2) {
       const alt = bestHeading(wantYaw + (PT.frame % 240 < 120 ? 0.9 : -0.9));
       g.input.mouse.dx += -Math.max(-3.0 / 60, Math.min(3.0 / 60, wrap(alt - g.player.yaw))) / sens;
     }

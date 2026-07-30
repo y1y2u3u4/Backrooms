@@ -145,6 +145,27 @@ import { createSequencer } from '../cinematics/Sequencer.js';
 import { installCinematics } from '../cinematics/index.js';
 
 const MODAL = new Set(['title', 'pause', 'journal', 'settings', 'credits', 'death', 'ending', 'loading']);
+
+/**
+ * Where each zone sits on the journal's plan.
+ *
+ * NOT `ZONE_ORIGIN`. Those are the streaming patches — eight squares 400 m apart
+ * in a grid, chosen so nothing in one zone can be seen from another, and they say
+ * nothing about how the building connects. These are the graph in `ZONE_GRAPH`
+ * laid out by hand as a person sketching it would: the Spine across the middle
+ * because everything hangs off it, the Cistern below because it is down a stair,
+ * the Plant below and east because the pipes run that way.
+ */
+const ZONE_MAP = {
+  intake: { x: -26, z: 0, label: 'INTAKE L-100', kind: 'lift' },
+  duct: { x: -14, z: -16, label: 'AHU 3', kind: 'junction' },
+  service: { x: 0, z: 0, label: 'SERVICE SPINE', kind: 'junction' },
+  safe: { x: 4, z: -14, label: 'OFFICE OF RECORD', kind: 'room' },
+  stack: { x: -12, z: 15, label: 'THE STACK', kind: 'lift' },
+  residence: { x: 6, z: 17, label: 'RESIDENCE 2nd', kind: 'room' },
+  cistern: { x: 18, z: 8, label: 'CISTERN', kind: 'room' },
+  plant: { x: 22, z: -6, label: 'PLANT P-10', kind: 'room' },
+};
 /** Screens that black the world out behind them. */
 const OPAQUE = new Set(['loading', 'death', 'ending']);
 
@@ -364,7 +385,27 @@ export function createUI({
   const unsub = [
     bus?.on('story:note', (n) => { if (journal.addNote(n)) subs.say({ text: 'sheet filed', sound: true, hint: '', duration: 2.2 }); }),
     bus?.on('story:tape', (t) => journal.addTape(t)),
-    bus?.on('zone:enter', ({ zone }) => { if (zone) journal.mapHere?.(player?.position.x ?? 0, player?.position.z ?? 0); }),
+    /**
+     * The plan tab. Nothing had ever added a node to it, so the journal's map was
+     * a blank sheet for the whole game — and the one thing that did touch it,
+     * `mapHere`, was fed the player's WORLD position, which for zones authored 400 m
+     * apart in disjoint patches is a number with no relation to a floor plan.
+     *
+     * A zone map rather than a room map: eight nodes on the graph the building
+     * actually has, each appearing the first time the player stands in it, with the
+     * edges drawn between the ones they have seen. That is exactly the map Kearns
+     * describes keeping — "what I do and when I do it and which way I turned" — and
+     * it is honest: the player never gets a plan of a room they have not entered.
+     */
+    bus?.on('zone:enter', ({ zone, from }) => {
+      if (!zone) return;
+      const n = ZONE_MAP[zone];
+      if (n) journal.mapAdd?.({ id: zone, x: n.x, z: n.z, label: n.label, kind: n.kind });
+      if (from && ZONE_MAP[from]) journal.mapLink?.(from, zone);
+      // `here` is in the same space as the nodes, so it has to be the zone's own
+      // slot on the plan, not the player's world coordinate.
+      if (n) journal.mapHere?.(n.x, n.z);
+    }),
 
     // ---- the gameplay layer ------------------------------------------------
     // None of this was connected. `Progression` announced every objective change
