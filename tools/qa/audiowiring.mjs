@@ -145,7 +145,7 @@ const MUST_BE_HEARD = [
   // for a long time nothing at the level that owns the SCREENS listened to
   // either, so being caught froze the player with no way back and finishing the
   // game after forty minutes showed nothing at all.
-  'game:death', 'game:ending',
+  'game:death', 'game:ending', 'death:settled',
 ];
 
 // ---------------------------------------------------------------------------

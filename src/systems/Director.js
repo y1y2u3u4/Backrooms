@@ -98,6 +98,17 @@ export class Director {
     this.dying = 0;               // >0 while the death sequence runs
     this.hidden = false;          // player is inside a locker/cupboard
     this.respawnDelay = 4.2;
+    /**
+     * Whether the death sequence puts the player back by itself.
+     *
+     * The UI ships a death screen with two options — "Report to the Office of
+     * Record" and "Abandon shift" — so the authored intent is that the player
+     * CHOOSES. With an unconditional timer here, the world would respawn behind a
+     * modal screen and then respawn again when the button was pressed. `Game`
+     * clears this when it has a UI that can offer the choice; without one (the
+     * capture harness, a headless run) the timer stands and death still resolves.
+     */
+    this.autoRespawn = true;
 
     this._unsub = [];
     this._wire();
@@ -440,7 +451,11 @@ export class Director {
 
     if (this.dying > 0) {
       this.dying -= dt;
-      if (this.dying <= 0) { this.dying = 0; this.respawn(); }
+      if (this.dying <= 0) {
+        this.dying = 0;
+        if (this.autoRespawn) this.respawn();
+        else this.bus.emit('death:settled', { deaths: this.deaths });
+      }
       return;
     }
     if (!this.enabled) return;

@@ -341,16 +341,28 @@ export class Game {
       if (this.state === 'dead' || this.state === 'ended') return;
       this.state = 'dead';
       this.input.exitLock();
+      // The Director's own timer would put the player back by itself, which would
+      // respawn the world behind the modal screen and again when the button was
+      // pressed. With a UI present, the player chooses.
+      if (this.director) this.director.autoRespawn = !this.ui;
       // The death cinematic runs first; the screen comes up behind it. The
       // Director's respawn delay is the beat the sequence is written against.
       const at = e?.position;
       const zone = this.world?.currentZone || '';
-      this.ui?.show?.('death', {
+      this._deathData = {
         cause: e?.cause || 'unknown',
         location: at ? `${zone} ${at.x.toFixed(0)}, ${at.z.toFixed(0)}` : zone,
         elapsed: this.time,
         deaths: this.director?.deaths ?? 1,
-      });
+      };
+    });
+    // The Director's death sequence has finished its cinematic and changed the
+    // world; only now does the screen make sense as a decision rather than an
+    // interruption. Without a UI the Director respawns on its own and this never
+    // fires.
+    this.bus.on('death:settled', () => {
+      if (this.state !== 'dead') return;
+      this.ui?.show?.('death', this._deathData || {});
     });
     this.bus.on('game:ending', (e) => {
       this.state = 'ended';
