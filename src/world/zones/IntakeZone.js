@@ -179,6 +179,17 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
   // leave those tiles out; building the ceiling first and the lights second
   // buries every fixture in the plenum.
   const fixturePlan = [];
+
+  /** Wear-gradient failure roll, shared by both placement passes. */
+  const healthAt = (r, c, salt = 0) => {
+    const dmg = damageAt(r, c);
+    const hh = hash2(r * 11 + 3 + salt, c * 7 + 5 + salt);
+    if (hh < 0.015 + dmg * 0.42) return 'dead';
+    if (hh < 0.06 + dmg * 0.55) return 'dying';
+    if (hh < 0.22 + dmg * 0.55) return 'buzz';
+    return 'good';
+  };
+
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const t = grid[r][c];
@@ -191,22 +202,68 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
       // an atmospheric ruin, which is the wrong zone.
       if (!isSpine && h > 0.90) continue;
       const [x, z] = cellPos(r, c);
-      const dmg = damageAt(r, c);
-      // Failure rate follows the wear gradient: near the entrance almost
-      // everything works, and the far corner is where the ceiling came down.
-      let health = 'good';
-      const hh = hash2(r * 11 + 3, c * 7 + 5);
-      if (hh < 0.015 + dmg * 0.42) health = 'dead';
-      else if (hh < 0.06 + dmg * 0.55) health = 'dying';
-      else if (hh < 0.22 + dmg * 0.55) health = 'buzz';
       fixturePlan.push({
-        r, c, x, z, health,
+        r, c, x, z, health: healthAt(r, c),
         rotation: isSpine && r === plan.spineRow ? Math.PI / 2 : 0,
         // Volumetric cones are pure overdraw and Intake runs ~130 fixtures.
         // A third of them establishes the haze; the ones that get it are
         // weighted onto the spines, where the long views are.
         cone: isSpine ? hash2(r * 5, c * 9) < 0.5 : hash2(r * 5, c * 9) < 0.22,
       });
+    }
+  }
+
+  // WALL CELLS GET FIXTURES TOO — one either side of the partition.
+  //
+  // This is the fix for a real defect, and the defect was invisible in every
+  // metric until someone stood in the room and looked up. A WALL cell is a 4.2 m
+  // cell containing a 160 mm partition through its centre: 96% of it is open
+  // floor. The loop above skipped the entire cell because a fixture at the cell
+  // centre would be buried in the partition — which is true, and is why the
+  // fixture goes to one side of it rather than nowhere.
+  //
+  // The consequence of skipping was that a run of WALL cells produced two
+  // parallel unlit corridors flanking the partition. Measured with
+  // Game.fixtureReport() from a camera standing in one: the four nearest
+  // troffers were 6.31, 6.79, 6.76 and 7.33 m away, all of them on the far side
+  // of a partition, and the corridor was lit only by spill and bounce fill. A
+  // ceiling-facing capture of it showed a lit ceiling with no fixture in it,
+  // which breaks the project's own first rule about light having a visible
+  // source.
+  const OFFSET = cell * 0.30;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (grid[r][c] !== WALL) continue;
+      const [x, z] = cellPos(r, c);
+      // Which way the partition runs decides which way to step off it.
+      const horiz = grid[r][c - 1] === WALL || grid[r][c + 1] === WALL;
+      for (const side of [-1, 1]) {
+        // Only light a side that is actually a space. Stepping off the
+        // partition into the neighbouring cell is pointless if that cell is
+        // another partition or outside the plate.
+        const nr = horiz ? r + side : r;
+        const nc = horiz ? c : c + side;
+        const n = grid[nr]?.[nc];
+        if (n === undefined || n === WALL) continue;
+        // Only circulation. An enclosed ROOM already has fixtures planned to the
+        // room in the pass above, and a second one hard against its wall would
+        // both double-light it and cost a draw call for the emissive tube —
+        // every fixture's tube is an independent object because it animates.
+        if (n === ROOM) continue;
+        // A fixture 1.26 m off a partition in a corridor lit from a 4.2 m grid
+        // is a realistic centre; a real fit-out runs a line of troffers down a
+        // corridor rather than centring one on the wall.
+        const fx = horiz ? x : x + side * OFFSET;
+        const fz = horiz ? z + side * OFFSET : z;
+        fixturePlan.push({
+          r, c, x: fx, z: fz,
+          health: healthAt(r, c, side * 17),
+          // A corridor troffer runs ALONG the corridor, i.e. parallel to the
+          // partition it sits beside.
+          rotation: horiz ? 0 : Math.PI / 2,
+          cone: hash2(r * 5 + side, c * 9) < 0.30,
+        });
+      }
     }
   }
 
@@ -242,16 +299,18 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
   const spineZ = (INTAKE_SPINE_ROW_Z(plan) );
   const liftZ = (rows - 2 - rows / 2 + 0.5) * cell;
   wallRun(per, -halfW, -halfD, halfW, -halfD, {
-    height: ceiling, key: 'wallpaper', seed: 11,
+    height: ceiling, key: 'wallpaper', seed: 11, dado: true,
     openings: [{ at: ductX + halfW, width: 0.90, height: 0.90 }],
   });
   wallRun(per, halfW, -halfD, halfW, halfD, {
-    height: ceiling, key: 'wallpaper', seed: 12,
+    height: ceiling, key: 'wallpaper', seed: 12, dado: true,
     openings: [{ at: spineZ + halfD, width: 1.06, height: 2.12 }],
   });
-  wallRun(per, halfW, halfD, -halfW, halfD, { height: ceiling, key: 'wallpaper', seed: 13 });
+  wallRun(per, halfW, halfD, -halfW, halfD, {
+    height: ceiling, key: 'wallpaper', seed: 13, dado: true,
+  });
   wallRun(per, -halfW, halfD, -halfW, -halfD, {
-    height: ceiling, key: 'wallpaper', seed: 14,
+    height: ceiling, key: 'wallpaper', seed: 14, dado: true,
     openings: [{ at: halfD - liftZ, width: 1.98, height: 2.34 }],
   });
 
@@ -266,12 +325,12 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
       const dmg = damageAt(r, c);
       if (horiz) {
         wallRun(b, x - cell / 2, z, x + cell / 2, z, {
-          height: ceiling, key: 'wallpaper', seed: r * 31 + c,
+          height: ceiling, key: 'wallpaper', seed: r * 31 + c, dado: true,
           capEnds: grid[r][c - 1] !== WALL || grid[r][c + 1] !== WALL,
         });
       } else {
         wallRun(b, x, z - cell / 2, x, z + cell / 2, {
-          height: ceiling, key: 'wallpaper', seed: r * 31 + c + 7,
+          height: ceiling, key: 'wallpaper', seed: r * 31 + c + 7, dado: true,
           capEnds: grid[r - 1]?.[c] !== WALL || grid[r + 1]?.[c] !== WALL,
         });
       }
@@ -299,6 +358,7 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
       const openings = i === doorSide ? [{ at: doorAt(len), width: 0.98, height: 2.08 }] : [];
       wallRun(b, s.a[0], s.a[1], s.b[0], s.b[1], {
         height: ceiling, key: 'wallpaper', openings, seed: room.r * 97 + i,
+        dado: true,
       });
       if (i === doorSide) {
         const t = openings[0].at / len;

@@ -25,6 +25,37 @@ export function buildPalette(materials) {
       repeat: [1.25, 1.25], roughness: 1, metalness: 0, dirtBase: -0.3, dirtAmount: 0.45,
       detailTile: 6, detailStrength: 0.42, normalScale: 0.9, envMapIntensity: 0.34,
     }),
+    // Hessian-faced dado lining for the lower wall — see wallRun's `dado`
+    // option in Kit.js for why the Intake has one at all.
+    //
+    // The colour is doing two jobs. It is the institutional deep olive that a
+    // 1994 commercial fit-out actually used below the rail, and it is the only
+    // COOL, desaturated mass in a zone otherwise made entirely of warm yellows.
+    // Before this there was no colour-temperature contrast anywhere within a
+    // single Intake frame; a wall that is warm above the rail and cold below it
+    // supplies that contrast as a property of the architecture rather than as a
+    // grade applied over the top of it.
+    dado: M('acousticPanel', {
+      repeat: [2.1, 2.1], roughness: 0.94, metalness: 0,
+      // CALIBRATION NOTE, because the first attempt at this was a solid black
+      // band across every wall in the zone.
+      //
+      // Five separate multipliers land on this surface — texture albedo, the
+      // `color` tint, the grounding-dirt gradient, the vertex shade baked by
+      // wallRun, and the baked AO volume — and it is lit almost entirely by
+      // bounce because every fixture in the building points straight down onto a
+      // wall at a grazing angle. Choosing each multiplier to look "suitably
+      // grubby" in isolation multiplied out to about 0.13 of the upper wall,
+      // i.e. a void. A dado is a MID-TONE: darker than the wall above it, and
+      // that is all. It should read at roughly half the upper wall's value.
+      //
+      // dirtBase sits at the floor, not at the rail, so the grime is a gradient
+      // rising off the skirting the way a real one is, rather than a flat
+      // darkening of the whole band.
+      dirtBase: 0.02, dirtAmount: 0.42,
+      detailTile: 7.5, detailStrength: 0.52, normalScale: 1.30, envMapIntensity: 0.18,
+      color: 0xa8b69a, tint: 0x93a2ad, tintAmount: 0.14,
+    }),
     carpet: M('carpet', {
       repeat: [1.7, 1.7], roughness: 1, metalness: 0, dirtAmount: 0.25, dirtBase: -2,
       detailTile: 5, detailStrength: 0.55, normalScale: 1.35, envMapIntensity: 0.10,
@@ -128,6 +159,12 @@ export function buildPalette(materials) {
     damask: M('wallpaperResidence', {
       repeat: [1.7, 1.7], roughness: 1, metalness: 0, dirtBase: -0.1, dirtAmount: 0.65,
       detailTile: 6, detailStrength: 0.35, normalScale: 0.85, envMapIntensity: 0.25,
+      // 530 mm drops. This is the one surface in the game with a figurative
+      // motif, so it is the one the stochastic re-tile cannot save: the eye
+      // recognises the flower as a shape and reads the grid straight through any
+      // amount of tonal variation. Hanging it in strips with a per-drop vertical
+      // offset is what actually breaks it. See FRAG_MAP in Materials.js.
+      rollWidth: 0.53,
     }),
     fabric: M('acousticPanel', {
       repeat: [1.8, 1.8], roughness: 1, metalness: 0, dirtAmount: 0.4, dirtBase: -0.3,

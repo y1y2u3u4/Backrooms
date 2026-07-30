@@ -31,6 +31,36 @@ import { box, cyl, merge, worldUV, vertexShade, pipeRun, weather } from '../../r
 const SIZE = 0.80;              // internal clear
 const FLOOR = 0;                // duct floor
 const HEAD = SIZE;              // duct soffit
+const WALL = SIZE / 2 - 0.03;   // inside face of a side wall, where a lamp goes
+
+/**
+ * Fixture output scales.
+ *
+ * The zone was authored as "no lights but the lamp", which is the right feel and
+ * the wrong exposure: the artifact analyser measured 79 % of an inspection frame
+ * at pure black, and `lightProbe` put 0.4 units of direct light where the player
+ * spawns against the Intake's 19. A frame with nothing in it but a torch pool
+ * has no construction in it either, and the construction is the entire point of
+ * this zone — the joints, the rivets, the hanger straps, the dished sheet.
+ *
+ * It cannot be recovered downstream: the grade's eye adaptation clamps itself to
+ * 1.55x (`GradePass`, `autoGain`), and the bounce fill is written by
+ * `AMBIENT_PROFILES` and was measured to do nothing. So the crawl gets what a
+ * building actually gives a crawl route it expects fitters to use: lamps screwed
+ * to the sheet at regular centres, battery units on the emergency circuit and
+ * vapour-tights on the mains, at well under half their rated output because
+ * galvanised sheet 400 mm from the lens will blow the frame out otherwise.
+ *
+ * This is still the darkest zone in the game by a wide margin — a third of the
+ * Service Spine and a twentieth of the Intake.
+ */
+// `borrowed` is kept close to rated on purpose. A spotlight that is not one of
+// the two or three the rig lets cast shadows passes straight through geometry,
+// so a lamp turned up inside a diorama room does not light the room — it lights
+// the crawl through 0.9 mm of galvanised sheet, which is exactly the "fixture on
+// the far side of a wall lighting a visibly dark room" that the rig's own
+// occlusion test exists to prevent. The crawl gets lit by lamps that are in it.
+const OUT = { bulk: 0.50, emerg: 0.85, borrowed: 1.1 };
 
 /** Interior of a straight duct run, with seams, rivets and hanger straps. */
 function crawl(b, x0, z0, x1, z1, {
@@ -154,6 +184,43 @@ function elbow(b, x, z, fromYaw, toYaw, { seed = 1 } = {}) {
 }
 
 /**
+ * One maintenance lamp on the inside face of a crawl.
+ *
+ * `along` is the axis the crawl runs on, so the lamp lands on a genuine side
+ * wall and its beam is aimed DOWN THE CRAWL rather than across it: the default
+ * bulkhead aim of 23 degrees below horizontal puts the whole pool on the sheet
+ * two metres away, which in an 800 mm duct is a bright rectangle and nothing
+ * else. Flattened to about 10 degrees it runs the length of the section and the
+ * joints and rivets read as a rhythm receding into the dark, which is what the
+ * zone is for.
+ *
+ * No volumetric cone on any of them. A 2.6 m cone with a 1.5 m radius inside an
+ * 800 mm duct is geometry hanging through the walls.
+ */
+function ductLamp(b, rig, { axis, at, u, side, kind = 'bulk', health = 'good', seed = 1 }) {
+  // `u` runs along the crawl; `at` is the crawl's fixed coordinate on the other
+  // axis; `side` picks which of the two side walls the lamp is screwed to.
+  const alongX = axis === 'x';
+  const px = alongX ? u : at + side * WALL;
+  const pz = alongX ? at + side * WALL : u;
+  const yaw = alongX
+    ? (side > 0 ? Math.PI : 0)
+    : (side > 0 ? -Math.PI / 2 : Math.PI / 2);
+  if (kind === 'emerg') {
+    const f = emergencyLight(b, rig, px, FLOOR + 0.58, pz, { yaw, seed, health });
+    f.intensityScale = OUT.emerg;
+    f.target.position.set(0, -0.35, 2.5);
+    return f;
+  }
+  const f = bulkhead(b, rig, px, FLOOR + 0.50, pz, {
+    yaw, circuit: 'duct', health, seed, cone: false,
+  });
+  f.intensityScale = OUT.bulk;
+  f.target.position.set(0, -0.42, 2.4);
+  return f;
+}
+
+/**
  * A grille in the duct wall, and behind it a shallow diorama of a room the
  * player cannot reach. This is the only wide view in the zone.
  */
@@ -173,9 +240,19 @@ function window_(b, rig, x, z, yaw, { seed = 1, kind = 'office', decals = null }
   vertexShade(room, (px, py, pz, mx, my) => (my > 0.5 ? 0.42 : my < -0.5 ? 0.66 : 0.55));
   b.add(kind === 'office' ? 'wallpaper' : 'tileWall', room);
 
-  const f = bulkhead(b, rigProxy(rig, b.origin, []), cx, FLOOR - 0.9 + H - 0.22, cz + (yaw % Math.PI === 0 ? 1 : 0) * 1.4, {
+  // Borrowed light. This lamp is the brightest thing in the zone and it is the
+  // right thing to be brightest: it is 2 m away behind a louvre, so it can be
+  // run well above rated output without any risk of blowing out sheet metal at
+  // arm's length, and a glowing grille is the one legible focal element in a
+  // crawl that is otherwise all foreground. It also spills enough through the
+  // blades to give the duct around the grille some shape.
+  // Pushed 1.4 m further from the grille ALONG THE WALL'S OWN NORMAL. The old
+  // form offset it in +z regardless of which way the room faced, so for half the
+  // orientations it moved the lamp toward the grille instead of away from it.
+  const f = bulkhead(b, rigProxy(rig, b.origin, []), cx + nx * 1.4, FLOOR - 0.9 + H - 0.22, cz + nz * 1.4, {
     yaw: yaw + Math.PI, circuit: 'duct', health: kind === 'office' ? 'buzz' : 'dying', seed, mount: 'ceiling',
   });
+  f.intensityScale = OUT.borrowed;
 
   // A little dressing, seen through louvres, so the room reads as inhabited.
   if (kind === 'office') {
@@ -293,9 +370,19 @@ export function buildDuct(ctx, opts = {}) {
   }
 
   // Grilles into rooms you cannot reach.
-  window_(bMain, rig, -8.4, 0, Math.PI / 2, { seed: 601, kind: 'office', decals: D });
-  window_(bBranch, rig, J1[0], 5.6, 0, { seed: 602, kind: 'nest', decals: D });
-  window_(bMain, rig, 4.6, 0, -Math.PI / 2, { seed: 603, kind: 'locker', decals: D });
+  // A grille goes in a SIDE WALL, and `yaw` is that wall's outward normal — so a
+  // crawl running along X takes yaw 0 or PI and a crawl running along Z takes
+  // +/- PI/2. All three of these had it the other way round, which put the
+  // louvred panel across the middle of the crawl and built the 4.4 x 3.6 x 2.5 m
+  // diorama room straight through the duct: the room's inward-facing shell
+  // enclosed the section the player crawls along, its desk and lockers sat 900 mm
+  // under the duct floor where nothing can see them, and its lamp — the
+  // brightest fixture in the zone — hung in mid-air over the crawl's own axis
+  // with no wall between it and the player. The only wide views in the Ductwork
+  // did not work at all.
+  window_(bMain, rig, -8.4, 0, 0, { seed: 601, kind: 'office', decals: D });
+  window_(bBranch, rig, J1[0], 5.6, Math.PI / 2, { seed: 602, kind: 'nest', decals: D });
+  window_(bMain, rig, 4.6, 0, Math.PI, { seed: 603, kind: 'locker', decals: D });
 
   // The Plant end: a hinged grille that opens into the hall's duct riser.
   {
@@ -334,17 +421,62 @@ export function buildDuct(ctx, opts = {}) {
     b.addColliderAt(6.4, FLOOR + 0.62 + 0.30, 0, 1.2, 0.6, SIZE, { tag: 'ceiling' });
   }
 
-  // Emergency lighting: two battery units, and nothing else. The lamp is it.
-  // ONE battery unit, well down the run. Galvanised sheet 400 mm from your
-  // face will blow the frame out from any light closer than that, and the zone
-  // is supposed to belong to the lamp.
-  {
-    const f = emergencyLight(bMain, rigProxy(rig, bMain.origin, fixtures), -6.4, FLOOR + 0.60, SIZE / 2 - 0.03, { yaw: Math.PI, seed: 701 });
-    f.intensityScale = 0.35;
+  // -------------------------------------------------------------------------
+  // lighting: maintenance lamps at regular centres along every crawl
+  // -------------------------------------------------------------------------
+  //
+  // Two battery units in 42 m of crawl left the whole zone to the player's lamp
+  // and left 79 % of an inspection frame at pure black. These are on roughly
+  // 2 m centres, alternating side walls, so the sheet always has a second light
+  // on it besides the torch and the crawl has a receding rhythm to it — and so
+  // that the rig's active-light budget (the 10 nearest live fixtures at the
+  // medium tier) is spent on the section the player is actually inside rather
+  // than on the three diorama rooms behind the grilles.
+  //
+  // Mains vapour-tights and battery units alternate on purpose: the mains ones
+  // are on the `duct` circuit and can be switched off, the battery ones cannot,
+  // so killing the circuit leaves a much dimmer green crawl instead of a black
+  // one. Both are far below rated output.
+  const rMain = rigProxy(rig, bMain.origin, fixtures);
+  const rBranch = rigProxy(rig, bBranch.origin, fixtures);
+  for (const [b, rg, spec] of [
+    // the entry run, west to the first junction
+    [bMain, rMain, { axis: 'x', at: 0, stations: [
+      [-13.6, +1, 'bulk', 'buzz', 701], [-11.4, -1, 'emerg', 'good', 702],
+      [-9.4, -1, 'bulk', 'dying', 703], [-6.4, +1, 'emerg', 'good', 704],
+      [-4.6, -1, 'bulk', 'buzz', 705], [-3.0, +1, 'emerg', 'good', 706],
+    ] }],
+    // the east run to the Plant junction. 5.8-7.0 is the crushed section: the
+    // soffit is dented down to 540 mm there and a bulkhead would not fit.
+    [bMain, rMain, { axis: 'x', at: 0, stations: [
+      [-1.2, -1, 'bulk', 'good', 710], [0.8, +1, 'emerg', 'buzz', 711],
+      [2.8, -1, 'bulk', 'dying', 712], [4.8, +1, 'emerg', 'good', 713],
+      [7.6, -1, 'bulk', 'buzz', 714], [9.0, +1, 'emerg', 'good', 715],
+    ] }],
+    // the drop south to the Plant grille
+    [bMain, rMain, { axis: 'z', at: J2[0], stations: [
+      [-1.6, +1, 'bulk', 'good', 720], [-3.6, -1, 'emerg', 'buzz', 721],
+      [-5.6, +1, 'bulk', 'dying', 722], [-7.6, -1, 'emerg', 'good', 723],
+    ] }],
+    // the north branch to the fan housing — the worst-maintained leg
+    [bBranch, rBranch, { axis: 'z', at: J1[0], stations: [
+      [1.6, +1, 'bulk', 'buzz', 730], [3.6, -1, 'emerg', 'good', 731],
+      [5.6, -1, 'bulk', 'dying', 732], [7.4, +1, 'emerg', 'good', 733],
+      [8.4, +1, 'emerg', 'good', 734],
+    ] }],
+  ]) {
+    for (const [u, side, kind, health, sd] of spec.stations) {
+      ductLamp(b, rg, { axis: spec.axis, at: spec.at, u, side, kind, health, seed: sd });
+    }
   }
+  // The fan housing is a 1.5 m box off the end of the branch and the only place
+  // in the zone the player can nearly kneel up in. One vapour-tight on its west
+  // wall, aimed at the impeller, because the impeller is the thing worth seeing.
   {
-    const f = emergencyLight(bBranch, rigProxy(rig, bBranch.origin, fixtures), J1[0] + SIZE / 2 - 0.03, FLOOR + 0.60, 8.4, { yaw: -Math.PI / 2, seed: 702 });
-    f.intensityScale = 0.30;
+    const f = bulkhead(bBranch, rBranch, J1[0] - 0.72, FLOOR + 0.78, 10.2,
+      { yaw: Math.PI / 2, circuit: 'duct', health: 'dying', seed: 740, cone: false });
+    f.intensityScale = OUT.bulk * 1.5;
+    f.target.position.set(0.9, -0.5, 2.4);
   }
 
   if (D) {

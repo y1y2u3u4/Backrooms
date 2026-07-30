@@ -56,6 +56,26 @@ const ANGLE_PROFILE = [
 ];
 
 /**
+ * Dado rail — a moulded PVC capping section, 42 mm tall, 14 mm proud.
+ *
+ * A commercial fit-out of this period caps a vinyl or hessian dado with an
+ * extruded capping bead: a bullnose top, an undercut throat, and a short return
+ * onto the wall. The undercut is the part that matters, because it is what casts
+ * the thin horizontal shadow line that makes the rail read as a separate applied
+ * component rather than as a change of paint colour.
+ */
+const DADO_RAIL_PROFILE = [
+  [0, 0],
+  [0.010, 0],
+  [0.014, 0.006],
+  [0.014, 0.026],
+  [0.011, 0.034],
+  [0.005, 0.040],
+  [0.005, 0.042],
+  [0, 0.042],
+];
+
+/**
  * Extrude a profile (X = proud of the wall, Y = up) along Z by `length`,
  * centred on the origin. `side` mirrors it for the opposite wall face.
  */
@@ -124,6 +144,10 @@ export function wallRun(b, ax, az, bx, bz, {
   key = 'wallpaper', skirtKey = 'trim', angleKey = 'trim',
   openings = [], skirting = true, perimeterAngle = true,
   collide = true, seed = 1, shadeFloorY = null, capEnds = true,
+  // Dado: an applied lower wall lining capped with a moulded rail. Off by
+  // default so no existing zone changes behaviour; see the block that builds it
+  // for why the Intake turns it on.
+  dado = false, dadoHeight = 1.06, dadoKey = 'dado', dadoRailKey = 'trim',
 } = {}) {
   const dx = bx - ax, dz = bz - az;
   const len = Math.hypot(dx, dz);
@@ -199,6 +223,76 @@ export function wallRun(b, ax, az, bx, bz, {
       worldUV(m, 0.6);
       vertexShade(m, (px, py) => 0.72 + clamp01(py / KIT.skirtingHeight) * 0.16);
       b.add(skirtKey, m);
+    }
+  }
+
+  if (dado) {
+    // WHY THIS EXISTS
+    //
+    // The honest criticism of this project's headline zone was that its visual
+    // identity was not original: an unbroken field of pale yellow wallpaper under
+    // a fluorescent-lit suspended ceiling is the single most reproduced image in
+    // this entire genre, and however well the material was synthesised it was
+    // still that image. The fiction, the zone structure, the creature rules and
+    // the interface were original; the first thing the player looks at was not.
+    //
+    // A dado fixes it at the level where the problem actually is — the wall's
+    // construction — rather than by recolouring. It splits the wall horizontally
+    // into two materials at 1.06 m with a moulded rail on the joint, which is
+    // both period-correct for a 1994 commercial fit-out and, more importantly,
+    // gives every corridor a strong horizontal line at chest height. That line
+    // does three things at once: it breaks the flat field, it gives perspective
+    // something to converge along, and it puts the wall's dirtiest, most-scuffed
+    // band where a real building's is, under a hard edge that justifies it.
+    const panels = [];
+    const rails = [];
+    for (const side of [-1, 1]) {
+      for (const s of spans) {
+        // Skip a doorway: a dado stops at the opening and returns on the reveal,
+        // it does not run across thin air.
+        if (s.bottom > 0.001) continue;
+        const segLen = s.z1 - s.z0;
+        if (segLen < 0.10) continue;
+        const zc = (s.z0 + s.z1) / 2 - len / 2;
+
+        // The lining itself, sitting on top of the skirting and proud of the
+        // wall by 6 mm. Proud, not flush: a flush panel is a paint change and
+        // reads as one, and the whole point is that this is applied material.
+        const top = dadoHeight;
+        const bottom = skirting ? KIT.skirtingHeight : 0.0;
+        const ph = top - bottom;
+        if (ph > 0.02) {
+          const g = box(0.006, ph, segLen - 0.004, 0.0018, 1);
+          g.translate(side * (thickness / 2 + 0.003), bottom + ph / 2, zc);
+          panels.push(g);
+        }
+
+        // bevel 0: the profile carries its own moulding, and an extrude bevel on
+        // an 8-point section across every wall in the zone cost most of the
+        // 193k triangles the dado added on its first pass.
+        const r = profileRunZ(DADO_RAIL_PROFILE, segLen - 0.004, side, 0);
+        r.translate(side * (thickness / 2), top, zc);
+        rails.push(r);
+      }
+    }
+    if (panels.length) {
+      const m = orient(merge(panels), cx, y, cz, ang);
+      worldUV(m, 1.3);
+      // Darker at the bottom: this band takes the mop, the trolley and the
+      // shoulder, and the grime gradient in the material shader is keyed off
+      // world height, so the vertex shade only has to reinforce it.
+      // 0.82..0.99, not 0.60..0.86. The material's own grime gradient already
+      // darkens the bottom of this band; doubling it in the vertex colours was
+      // part of what turned the dado into a black stripe.
+      vertexShade(m, (px, py) => 0.82 + clamp01((py - y) / dadoHeight) * 0.17);
+      mottle(m, 0.05, 1.4, seed + 41);
+      b.add(dadoKey, m);
+    }
+    if (rails.length) {
+      const m = orient(merge(rails), cx, y, cz, ang);
+      worldUV(m, 0.5);
+      vertexShade(m, () => 0.80);
+      b.add(dadoRailKey, m);
     }
   }
 

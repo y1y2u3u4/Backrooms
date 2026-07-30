@@ -571,6 +571,25 @@ export class Game {
    * one run answer the question.
    */
   setGTAO(on) { this.engine.gtao.enabled = !!on; return !!on; }
+  /**
+   * QA: force the MSAA sample count for this session.
+   *
+   * Not a gameplay setting. Resolving a multisampled half-float target is
+   * fixed-function on hardware and pure software on a CPU rasteriser, where it
+   * costs orders of magnitude more than everything else in the frame put
+   * together — 80 minutes of CPU for six frames it never finished, measured.
+   * Without a way to turn it off, the headless harness cannot verify anything
+   * else at a tier above the lowest.
+   */
+  setMSAA(n) {
+    const e = this.engine;
+    e.q = { ...e.q, msaa: Math.max(0, Math.min(8, n | 0)) };
+    for (const rt of [e.composer.renderTarget1, e.composer.renderTarget2]) {
+      if (rt && rt.samples !== e.q.msaa) { rt.samples = e.q.msaa; rt.dispose(); }
+    }
+    e.resize();
+    return e.q.msaa;
+  }
   setShadows(on) {
     this.engine.renderer.shadowMap.enabled = !!on;
     this.rig.invalidateShadows();
@@ -729,6 +748,13 @@ export class Game {
         px, y0, pz, this.player.radius + 0.08, this.player.height);
       const fl = this.collision.sampleFloor(r.x, r.z, y0 + 1.2, 2.5);
       if (!fl) return null;
+      // Headroom. Without this a capture aimed at a zone with a mezzanine can
+      // put the eye inside a soffit, which the player controller's own ceiling
+      // probe would never allow — the frame then shows the inside of a slab and
+      // says nothing about the zone. 1.75 m is the standing eye height plus a
+      // little; anything less is somewhere the player cannot stand.
+      const ceil = this.collision.ceilingAbove(r.x, r.z, fl.y + 0.05);
+      if (ceil != null && ceil - fl.y < 1.75) return null;
       const ey = fl.y + 1.6;
       let yaw = prefer, score = -1, clearAt = 0;
       for (let i = 0; i < samples; i++) {

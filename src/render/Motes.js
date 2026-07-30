@@ -53,6 +53,20 @@ const VERT = /* glsl */ `
 
   varying vec3 vTint;
 
+  float mxHash(vec3 p) {
+    p = fract(p * 0.1031);
+    p += dot(p, p.yzx + 33.33);
+    return fract((p.x + p.y) * p.z);
+  }
+  float mxNoise(vec3 x) {
+    vec3 i = floor(x), f = fract(x);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(mix(mxHash(i), mxHash(i + vec3(1,0,0)), f.x),
+                   mix(mxHash(i + vec3(0,1,0)), mxHash(i + vec3(1,1,0)), f.x), f.y),
+               mix(mix(mxHash(i + vec3(0,0,1)), mxHash(i + vec3(1,0,1)), f.x),
+                   mix(mxHash(i + vec3(0,1,1)), mxHash(i + vec3(1,1,1)), f.x), f.y), f.z);
+  }
+
   void main() {
     // ---- position -------------------------------------------------------
     // Home position in the unit cube, drifted, then wrapped into the cube
@@ -67,9 +81,30 @@ const VERT = /* glsl */ `
     vec3 home = aSeed * uExtent + drift;
     vec3 wp = uCam + mod(home - uCam + uExtent * 0.5, uExtent) - uExtent * 0.5;
 
+    // DENSITY IS NOT UNIFORM.
+    //
+    // A wrapped cube of evenly-distributed particles gives every cubic metre of
+    // the building exactly the same amount of dust in it, and that is the one
+    // property real airborne dust never has — it clumps where the air moves and
+    // thins where it is still, which is why a beam of light through a room shows
+    // drifting patches rather than an even fog of specks. Without this the cloud
+    // reads as a uniform screen effect laid over the scene instead of as
+    // something in the room.
+    //
+    // The field is keyed on world position, so the clumps stay put in the
+    // building and the player moves through them, and it drifts slowly on its
+    // own so a stationary player does not see a frozen pattern.
+    float clump = mxNoise(wp * 0.14 + vec3(0.0, uTime * 0.02, uTime * 0.013));
+    clump = smoothstep(0.34, 0.78, clump);
+    float density = 0.18 + 1.55 * clump;
+
     vec4 view = viewMatrix * vec4(wp, 1.0);
     float dist = -view.z;
     gl_Position = projectionMatrix * view;
+    // A particle sitting in one of the field's voids is cheaper to throw off
+    // screen here than to rasterise at a brightness the frame buffer cannot
+    // represent anyway.
+    if (density < 0.24) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
 
     // ---- lighting -------------------------------------------------------
     vec3 toEye = normalize(uCam - wp);
@@ -118,7 +153,7 @@ const VERT = /* glsl */ `
     // huge unfocused blob if it were in focus at all.
     fade *= smoothstep(0.10, 0.45, dist);
 
-    vTint = lit * fade;
+    vTint = lit * fade * density;
   }
 `;
 

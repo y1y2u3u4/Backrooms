@@ -33,6 +33,30 @@ import { box, cyl, merge, worldUV, vertexShade, pipeRun, weather } from '../../r
  * always has somewhere to go, and it is always further in.
  */
 
+/**
+ * Fixture output scales.
+ *
+ * `FIXTURE_TYPES` calibrates a lamp against the Intake: a 2.78 m plate with
+ * mustard wallcovering and loop carpet, a bounce fill of 2.05, and 19 units of
+ * direct light at head height. The Service Spine is 2.95 m to a bare concrete
+ * soffit, every surface in it is between 0.18 and 0.28 albedo, and its fill is
+ * 0.70 — so the same rated lamp landed under 3 units at head height and the
+ * artifact analyser measured 77 % of the frame crushed to black.
+ *
+ * That cannot be recovered downstream: the grade's eye adaptation clamps its
+ * correction to 1.55x (`GradePass`, `autoGain`), so an under-lit zone stays
+ * under-lit and the shadows stay at zero. It also cannot be recovered with more
+ * bounce fill, which was measured and does nothing. It has to be lit at the
+ * source, and the lamps have to be ON the route rather than in the rooms beside
+ * it, because the rig keeps only the 10 nearest live fixtures at the shipping
+ * medium tier and ranks them by distance to the camera with no idea which side
+ * of a wall they are on.
+ *
+ * The zone is still the coldest, grimmest place in the game — it is lit to
+ * roughly a third of the Intake, not to match it.
+ */
+const OUT = { strip: 1.35, wash: 0.85, room: 1.15 };
+
 const CEIL = KIT.ceilingService;          // 2.95
 const HW = 1.35;                          // corridor half-width
 const X0 = -32, X1 = 25.2;                // spine extent
@@ -67,6 +91,33 @@ function soffit(b, rect, y, { key = 'boardConcrete', shade = 0.66, collide = tru
   });
   b.add(key, g);
   if (collide) b.addColliderAt((x0 + x1) / 2, y + 0.3, (z0 + z1) / 2, w, 0.6, d, { tag: 'ceiling' });
+}
+
+/**
+ * Vapour-tight bulkhead on a corridor wall, aimed nearly horizontally across
+ * the corridor instead of down at the floor.
+ *
+ * Every other practical in the Annex is a ceiling fixture pointing straight
+ * down, which is right for the period and is also why the vertical surfaces —
+ * most of any frame in a 2.7 m corridor — used to be lit by the bounce fill
+ * alone. Tilting a bulkhead's target to about 10 degrees below horizontal puts
+ * a grazing wash on the opposite wall's board marks, which is both the cheapest
+ * shape in the zone and the thing a corridor needs to read at all.
+ *
+ * These are deliberately dim (about half a bulkhead's rated output). The rig's
+ * active-light budget is ranked by distance to the camera and capped by the
+ * quality tier at 6/10/14, so what wins is MORE, DIMMER, CLOSER fixtures: a
+ * dozen half-power lamps along the route beat four bright ones two rooms away,
+ * which is what the budget used to be spent on.
+ */
+function wallWash(b, rig, x, y, z, {
+  yaw = 0, health = 'good', seed = 1, scale = 0.55, cone = false, circuit = 'service',
+} = {}) {
+  const f = bulkhead(b, rig, x, y, z, { yaw, circuit, health, seed, cone });
+  f.intensityScale = scale;
+  f.target.position.set(0, -0.42, 2.4);
+  if (f.coneMesh) f.coneMesh.rotation.x = -1.40;
+  return f;
 }
 
 /** Downstand concrete beam across the corridor. */
@@ -175,25 +226,80 @@ export function buildService(ctx, opts = {}) {
   }
 
   // =========================================================================
-  // 3. lighting — strips between the beams, failing toward the middle
+  // 3. lighting — strips between the beams, bulkheads on the half-centres
   // =========================================================================
+  //
+  // A 57 m corridor lit only at 4.2 m centres from directly overhead is a
+  // corridor whose walls are lit by nothing, and the rig's active-light budget
+  // makes it worse than that: it keeps the N nearest fixtures to the camera and
+  // N is 10 at the shipping medium tier, so for anyone standing in the west half
+  // of the spine six of those ten used to be the pump room's and the store's,
+  // spending the whole budget on rooms behind a 160 mm wall. Two fixes, both of
+  // them what a real building does:
+  //
+  //   * a strip on the CENTRE of every beam bay (see below — they used to be on
+  //     the beams themselves),
+  //   * a wall bulkhead on every half-centre, alternating sides, washing the
+  //     opposite wall.
+  //
+  // That is a working source every 2.1 m along the whole route, which both puts
+  // light where the player actually walks and starves the adjacent rooms of
+  // budget slots they were never visible through anyway.
+  const OPENINGS = { [HW]: northOpenings, [-HW]: southOpenings };
+  /** Is `x` inside a door opening on the wall at `zSide`? */
+  const inOpening = (x, zSide) =>
+    (OPENINGS[zSide] || []).some((o) => Math.abs(o.x - x) < o.w / 2 + 0.45);
+
   let fseed = 1;
   for (let x = X0 + 4.2; x < X1 - 1; x += 4.2) {
     const b = byX(x);
     // Failure is worst in the middle of the run, where the damp gets in.
+    // A DEAD strip is an 8.4 m hole in a corridor, so it stays rare and the
+    // failure gradient is carried by flicker personality instead — which is the
+    // part that reads anyway, and it keeps emitting light while it does it.
     const t = 1 - Math.abs(x - 2) / 32;
     const h = hash2(Math.round(x * 3), 17);
     let health = 'good';
-    if (h < 0.10 + t * 0.22) health = 'dead';
-    else if (h < 0.24 + t * 0.30) health = 'dying';
-    else if (h < 0.5) health = 'buzz';
-    stripLight(b, rigFor(b), x + 2.1, CEIL - 0.10, 0.12, {
+    if (h < 0.04 + t * 0.05) health = 'dead';
+    else if (h < 0.24 + t * 0.34) health = 'dying';
+    else if (h < 0.62) health = 'buzz';
+    // ON THE BAY CENTRE, not on the beam. Every one of these used to be emitted
+    // at `x + 2.1`, which is exactly where `downstand` puts a 340 mm deep beam:
+    // the housing was buried in the concrete and the spotlight sat 220 mm ABOVE
+    // the beam soffit, so whenever the fixture won a shadow-caster slot its own
+    // beam cast a full-width shadow of the beam it was inside and the bay went
+    // black. Mid-bay is where a surface strip goes anyway.
+    const f = stripLight(b, rigFor(b), x, CEIL - 0.10, 0.12, {
       rotation: Math.PI / 2, circuit: 'service', health, seed: fseed++, cage: true,
       // Volumetric cones are pure overdraw; every other fixture is plenty to
       // establish the haze and it halves the transparent draw count.
       cone: fseed % 2 === 0,
     });
+    f.intensityScale = OUT.strip;
   }
+  // Bulkheads on the half-centres: the beam lines, where a fitter would find
+  // something to drill into. Sides alternate so the wash crosses the corridor
+  // both ways down the run, and a station whose preferred side lands in a door
+  // reveal takes the other wall.
+  let wseed = 400;
+  for (let i = 0, x = X0 + 2.1; x < X1 - 0.6; x += 4.2, i++) {
+    const b = byX(x);
+    let side = i % 2 === 0 ? 1 : -1;
+    if (inOpening(x, side * HW)) side = -side;
+    if (inOpening(x, side * HW)) continue;          // both sides are doorway
+    const t = 1 - Math.abs(x - 2) / 32;
+    const h = hash2(Math.round(x * 7) + 3, 29);
+    const health = h < 0.06 + t * 0.05 ? 'dead' : h < 0.30 + t * 0.28 ? 'buzz' : 'good';
+    wallWash(b, rigFor(b), x, 2.30, side * (HW - 0.11), {
+      yaw: side > 0 ? Math.PI : 0, health, seed: wseed++, scale: OUT.wash,
+      cone: i % 3 === 0,
+    });
+  }
+  // One over each end of the run. You light the door you came through: the west
+  // end is where the player arrives from Intake and the last 2 m of the corridor
+  // had nothing but the fill.
+  wallWash(bWest, rigFor(bWest), X0 + 1.1, 2.30, -(HW - 0.11), { yaw: 0, health: 'good', seed: 380, scale: OUT.wash, cone: true });
+  wallWash(bEast, rigFor(bEast), X1 - 1.1, 2.30, HW - 0.11, { yaw: Math.PI, health: 'buzz', seed: 381, scale: OUT.wash });
   emergencyLight(bMid, rigFor(bMid), -6.3, 2.55, HW - 0.09, { yaw: Math.PI, seed: 2 });
   emergencyLight(bEast, rigFor(bEast), 18.9, 2.55, HW - 0.09, { yaw: Math.PI, seed: 3 });
 
@@ -306,9 +412,25 @@ export function buildService(ctx, opts = {}) {
       { zone: 'plant', portalId: 'to_service' }, 'door',
       { arrive: [LOBBY[2] - 1.6, LOBBY_Y, 0], arriveYaw: Math.PI / 2 }));
 
-    bulkhead(b, rigFor(b), LOBBY[2] - 0.22, LOBBY_Y + 2.55, -1.9, { yaw: -Math.PI / 2, circuit: 'service', seed: 51, health: 'good' });
-    bulkhead(b, rigFor(b), LOBBY[2] - 0.22, LOBBY_Y + 2.55, 1.9, { yaw: -Math.PI / 2, circuit: 'service', seed: 52, health: 'buzz' });
-    stripLight(b, rigFor(b), 28.6, LOBBY_CEIL - 0.10, 0, { rotation: 0, circuit: 'service', health: 'good', seed: 53 });
+    // The lobby is the terminal focal element of the longest sightline in the
+    // game, so it is the one part of the zone allowed to be properly lit: two
+    // bulkheads flanking the Plant doors, and a strip on each half of the plan
+    // so the lockers and the coat hooks read from the bottom of the steps.
+    for (const [lz, hl, sd] of [[-1.9, 'good', 51], [1.9, 'buzz', 52]]) {
+      const f = bulkhead(b, rigFor(b), LOBBY[2] - 0.22, LOBBY_Y + 2.55, lz,
+        { yaw: -Math.PI / 2, circuit: 'service', seed: sd, health: hl });
+      f.intensityScale = OUT.room;
+    }
+    for (const [lx, lz, hl, sd] of [[28.0, -1.4, 'good', 53], [29.9, 1.4, 'buzz', 54]]) {
+      const f = stripLight(b, rigFor(b), lx, LOBBY_CEIL - 0.10, lz,
+        { rotation: 0, circuit: 'service', health: hl, seed: sd, cage: true, cone: sd === 53 });
+      f.intensityScale = OUT.strip;
+    }
+    // And a wash on the return walls, so the lobby is not a bright floor in a
+    // black box when you are standing in it.
+    for (const [lx, lz, sy, hl, sd] of [[27.6, -3.05, 0, 'good', 55], [30.4, 3.05, Math.PI, 'buzz', 56]]) {
+      wallWash(b, rigFor(b), lx, LOBBY_Y + 2.15, lz, { yaw: sy, health: hl, seed: sd, scale: OUT.wash });
+    }
 
     if (D) {
       D.hazardRun(b, LOBBY[2] - 0.12, LOBBY_Y + 0.001, 0, 2.4, { face: 'up', axis: 'z', h: 0.5, tile: 0.5, chevron: true, strength: 0.7 });
@@ -371,8 +493,26 @@ export function buildService(ctx, opts = {}) {
     Props.wasteBin(b, -21.6, 0, -11.6, { seed: 97, kind: 'mesh', full: 0.6 });
     cagedLadder(b, -22.2, 0, -12.2, 3.6, { yaw: 0, cage: false });
 
-    for (const [lx, lz, hl] of [[-27.5, -5.0, 'good'], [-23.5, -5.0, 'buzz'], [-27.5, -10.5, 'dying'], [-23.5, -10.5, 'good']]) {
-      stripLight(b, rigFor(b), lx, H - 0.10, lz, { rotation: 0, circuit: 'service', health: hl, seed: 100 + lx, cage: true });
+    // Six strips on a 3 m grid rather than four on a 5.5 m one: a 9 x 11 m plant
+    // room at 3.9 m to the soffit needs a lamp over each machine, not one in
+    // each quarter, and the corners were reading black.
+    [
+      [-27.6, -4.4, 'good'], [-23.4, -4.4, 'buzz'],
+      [-27.6, -7.6, 'buzz'], [-23.4, -7.6, 'good'],
+      [-27.6, -10.8, 'dying'], [-23.4, -10.8, 'good'],
+    ].forEach(([lx, lz, hl], i) => {
+      const f = stripLight(b, rigFor(b), lx, H - 0.10, lz, {
+        rotation: 0, circuit: 'service', health: hl, seed: 100 + i, cage: true, cone: i < 2,
+      });
+      f.intensityScale = OUT.room;
+    });
+    // Wall bulkheads down the long walls, aimed across the room: the blockwork
+    // and the pipework on it get nothing at all from a downlight.
+    for (const [lx, lz, sy, hl, sd] of [
+      [x0 + 0.12, -6.2, Math.PI / 2, 'good', 160], [x0 + 0.12, -11.0, Math.PI / 2, 'buzz', 161],
+      [x1 - 0.12, -9.4, -Math.PI / 2, 'dying', 162],
+    ]) {
+      wallWash(b, rigFor(b), lx, 2.45, lz, { yaw: sy, health: hl, seed: sd, scale: OUT.wash });
     }
     if (D) {
       D.wallBase(b, x0 + 0.1, z0 + 0.1, x1 - 0.1, z0 + 0.1, { amount: 0.75, seed: 111, face: '+z' });
@@ -416,8 +556,18 @@ export function buildService(ctx, opts = {}) {
     }
     Props.wasteBin(b, 15.4, 0, -1.9, { seed: 145, kind: 'plastic', full: 0.9 });
     Props.fireExtinguisher(b, 9.25, 0.30, -2.2, { seed: 146, yaw: Math.PI / 2 });
-    stripLight(b, rigFor(b), 12.6, CEIL - 0.10, -3.2, { rotation: Math.PI / 2, circuit: 'service', health: 'buzz', seed: 147, cage: true });
-    stripLight(b, rigFor(b), 12.6, CEIL - 0.10, -7.0, { rotation: Math.PI / 2, circuit: 'service', health: 'dying', seed: 148, cage: true });
+    // Four strips across the switchroom's 7 x 8 m plan instead of two down its
+    // centreline, plus a wash on the gear itself — this is the room where the
+    // player has to read a breaker chart off a panel.
+    [[10.8, -3.0, 'buzz'], [14.4, -3.0, 'good'], [10.8, -6.6, 'dying'], [14.4, -6.6, 'good']]
+      .forEach(([lx, lz, hl], i) => {
+        const f = stripLight(b, rigFor(b), lx, CEIL - 0.10, lz, {
+          rotation: Math.PI / 2, circuit: 'service', health: hl, seed: 147 + i, cage: true, cone: i === 1,
+        });
+        f.intensityScale = OUT.room;
+      });
+    wallWash(b, rigFor(b), x0 + 0.12, 2.45, -5.0, { yaw: Math.PI / 2, health: 'good', seed: 151, scale: OUT.wash });
+    wallWash(b, rigFor(b), 15.4, 2.45, z0 + 0.12, { yaw: 0, health: 'buzz', seed: 152, scale: OUT.wash });
     if (D) {
       D.roomPlate(b, 12.6, 2.30, z1 + 0.09, 0, roomNumber('S', 132), 'SWITCHROOM');
       D.label(b, ['DANGER', '415V'], { face: '-x', x: x1 - 0.11, y: 1.95, z: -4.2, w: 0.26, h: 0.20, style: 'warning', size: 30 });
@@ -447,6 +597,25 @@ export function buildService(ctx, opts = {}) {
     });
   };
 
+  /**
+   * A door lobby's lighting: one wall bulkhead and one ceiling strip.
+   *
+   * These lobbies are the hinge points of the whole zone — each one is a portal
+   * to another wing — and each had exactly one fixture on a side wall, so the
+   * door the player is looking for was in its own shadow.
+   */
+  function lobbyLight(b, x0, z0, x1, z1, { seed: sd, bulkYaw, bulkAt, health }) {
+    const bx = bulkAt === 'east' ? x1 - 0.12 : x0 + 0.12;
+    const f = bulkhead(b, rigFor(b), bx, 2.35, (z0 + z1) / 2, { yaw: bulkYaw, seed: sd, health });
+    f.intensityScale = OUT.room;
+    const s = stripLight(b, rigFor(b), (x0 + x1) / 2, CEIL - 0.10, (z0 + z1) / 2, {
+      rotation: Math.PI / 2, circuit: 'service', health: health === 'dying' ? 'buzz' : 'good',
+      seed: sd + 1, cage: true, cone: true,
+    });
+    s.intensityScale = OUT.room;
+    return f;
+  }
+
   // Store off the north side.
   {
     const b = bWest;
@@ -462,7 +631,14 @@ export function buildService(ctx, opts = {}) {
     Props.boxStack(b, -11.9, 0, 5.2, { seed: 213, count: 5, soakBase: 0.1 });
     Props.chairStack(b, -12.9, 0, 1.95, { seed: 214, yaw: 0.4, count: 7 });
     Props.cardboardBox(b, -10.9, 0, 2.0, { seed: 215, yaw: 0.9, state: 'collapsed' });
-    stripLight(b, rigFor(b), -11.8, CEIL - 0.10, 3.6, { rotation: 0, circuit: 'service', health: 'good', seed: 216, cage: true });
+    // Two strips across the aisle between the racks, and a wash on the back
+    // wall: one lamp in the middle of a store leaves both racks in their own
+    // shadow, which is exactly what a downlight between two 2.2 m racks does.
+    for (const [lz, hl, sd] of [[2.4, 'good', 216], [4.8, 'buzz', 217]]) {
+      const f = stripLight(b, rigFor(b), -11.8, CEIL - 0.10, lz, { rotation: 0, circuit: 'service', health: hl, seed: sd, cage: true, cone: sd === 216 });
+      f.intensityScale = OUT.room;
+    }
+    wallWash(b, rigFor(b), -11.8, 2.45, z1 - 0.12, { yaw: Math.PI, health: 'good', seed: 218, scale: OUT.wash });
     if (D) D.roomPlate(b, -11.8, 2.30, z0 - 0.09, Math.PI, roomNumber('S', 108), 'STORE');
   }
 
@@ -474,7 +650,10 @@ export function buildService(ctx, opts = {}) {
     doorway(b, (x0 + x1) / 2, 0, z0, { rotation: 0, width: 1.0, height: 2.08, open: 0, hinge: 1, seed: 221 });
     portals.push(portal('to_stack', 'service', [(x0 + x1) / 2, 0, z0 + 0.2], Math.PI,
       { zone: 'stack', portalId: 'to_service' }, 'door'));
-    bulkhead(b, rigFor(b), x1 - 0.12, 2.35, (z0 + z1) / 2, { yaw: -Math.PI / 2, seed: 222, health: 'dying' });
+    // A lobby the size of a lift car got one dying bulkhead on a side wall, so
+    // the door you are trying to find was the darkest thing in it. It gets a
+    // ceiling fitting as well, which is what a lobby has.
+    lobbyLight(b, x0, z0, x1, z1, { seed: 222, bulkYaw: -Math.PI / 2, bulkAt: 'east', health: 'dying' });
     if (D) {
       D.roomPlate(b, (x0 + x1) / 2, 2.28, z0 + 0.10, 0, roomNumber('S', 121), null);
       D.quad(b, { stamp: STAMP.tapeResidue, face: '+z', x: (x0 + x1) / 2, y: 1.55, z: z0 + 0.03, w: 0.34, h: 0.44, strength: 1 });
@@ -490,7 +669,7 @@ export function buildService(ctx, opts = {}) {
     doorway(b, (x0 + x1) / 2, 0, z1, { rotation: 0, width: 1.0, height: 2.06, open: 0, hinge: 1, seed: 231, glazed: true });
     portals.push(portal('to_safe', 'service', [(x0 + x1) / 2, 0, z1 - 0.2], 0,
       { zone: 'safe', portalId: 'to_service' }, 'door'));
-    bulkhead(b, rigFor(b), x0 + 0.12, 2.35, (z0 + z1) / 2, { yaw: Math.PI / 2, seed: 232, health: 'good' });
+    lobbyLight(b, x0, z0, x1, z1, { seed: 232, bulkYaw: Math.PI / 2, bulkAt: 'west', health: 'good' });
     Props.coatHooks(b, (x0 + x1) / 2, 1.70, z0 + 0.04, { seed: 233, yaw: 0, w: 0.7, coats: 0.5 });
     if (D) {
       D.roomPlate(b, (x0 + x1) / 2, 2.26, z1 - 0.10, Math.PI, roomNumber('S', 100), 'OFFICE OF RECORD');
@@ -506,7 +685,7 @@ export function buildService(ctx, opts = {}) {
     doorway(b, (x0 + x1) / 2, 0, z0, { rotation: 0, width: 1.0, height: 2.06, open: 0.4, hinge: -1, seed: 241 });
     portals.push(portal('to_residence', 'service', [(x0 + x1) / 2, 0, z0 + 0.2], Math.PI,
       { zone: 'residence', portalId: 'to_service' }, 'door'));
-    bulkhead(b, rigFor(b), x0 + 0.12, 2.35, (z0 + z1) / 2, { yaw: Math.PI / 2, seed: 242, health: 'buzz' });
+    lobbyLight(b, x0, z0, x1, z1, { seed: 242, bulkYaw: Math.PI / 2, bulkAt: 'west', health: 'buzz' });
     Props.payphone(b, x1 - 0.10, 1.42, (z0 + z1) / 2 + 0.4, { seed: 243, yaw: -Math.PI / 2, handsetOff: true });
     Props.drinkingFountain(b, x1 - 0.10, 0.98, (z0 + z1) / 2 - 0.7, { seed: 244, yaw: -Math.PI / 2 });
     if (D) {
@@ -565,9 +744,34 @@ export function buildService(ctx, opts = {}) {
     portals.push(portal('to_cistern', 'service', [cx, STAIR_BOTTOM, z1 - 0.3], 0,
       { zone: 'cistern', portalId: 'to_service' }, 'stair'));
 
-    bulkhead(b, rigFor(b), x0 + 0.12, 2.2, 6.6, { yaw: Math.PI / 2, seed: 341, health: 'good' });
-    bulkhead(b, rigFor(b), x1 - 0.12, STAIR_BOTTOM + 2.1, 9.4, { yaw: -Math.PI / 2, seed: 342, health: 'dying' });
-    stripLight(b, rigFor(b), cx, H - 0.10, 2.9, { rotation: 0, circuit: 'service', health: 'good', seed: 343, cage: true });
+    // A stairwell is lit at every landing and at every turn, because that is
+    // where people fall. This one had one lamp at the top, one at the bottom and
+    // seventeen unlit treads in between, and the lower landing — which the
+    // player has to cross to reach the Cistern — measured 3 units of direct
+    // light against the Intake's 19.
+    for (const [ly, lz, sy, hl, sd] of [
+      [2.20, 6.6, Math.PI / 2, 'good', 341],
+      [2.20, 2.6, Math.PI / 2, 'buzz', 345],
+      [STAIR_BOTTOM + 2.10, 9.4, -Math.PI / 2, 'dying', 342],
+      [STAIR_BOTTOM + 2.10, 9.4, Math.PI / 2, 'good', 346],
+    ]) {
+      const wx = sy > 0 ? x0 + 0.12 : x1 - 0.12;
+      const f = bulkhead(b, rigFor(b), wx, ly, lz, { yaw: sy, seed: sd, health: hl });
+      f.intensityScale = OUT.room;
+    }
+    // Over the flight itself, so the treads have an edge.
+    for (const [lz, hl, sd] of [[2.9, 'good', 343], [6.4, 'buzz', 347]]) {
+      const f = stripLight(b, rigFor(b), cx, H - 0.10, lz, { rotation: 0, circuit: 'service', health: hl, seed: sd, cage: true, cone: sd === 343 });
+      f.intensityScale = OUT.room;
+    }
+    // The well is 7.35 m from the lower landing to the soffit, so a strip up
+    // there is a long throw; it is worth it for the shape it puts on the string
+    // and the balustrade, and the landing itself is carried by the two
+    // bulkheads.
+    {
+      const f = stripLight(b, rigFor(b), cx, H - 0.10, 9.4, { rotation: Math.PI / 2, circuit: 'service', health: 'dying', seed: 348, cage: true, cone: true });
+      f.intensityScale = OUT.room;
+    }
     emergencyLight(b, rigFor(b), x0 + 0.12, 2.5, 4.9, { yaw: Math.PI / 2, seed: 344 });
 
     if (D) {
@@ -597,6 +801,11 @@ export function buildService(ctx, opts = {}) {
     root, chunks, builders, portals, interactables,
     spawn: [X0 + 2.4, 0, 0],
     spawnYaw: -Math.PI / 2,
+    // A 57 m corridor with a station every 2.1 m is the zone that most wants
+    // more simultaneous lights, and it is the zone where the ones it drops are
+    // furthest away. The tier still caps this at 6 / 10 / 14, so this only buys
+    // anything on high — but on high it is two more bays of visible corridor.
+    lightBudget: 14,
     fogProfile: 'service',
     reverb: 'service',
     ambient: { sky: 0x161a1e, ground: 0x24262a, intensity: 0.26 },

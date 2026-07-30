@@ -27,6 +27,30 @@ import { box, cyl, merge, worldUV, vertexShade, pipeRun, weather } from '../../r
  * end, exactly on the corridor axis, there is a full-length mirror.
  */
 
+/**
+ * Fixture output scales.
+ *
+ * `FIXTURE_TYPES.pendant` is calibrated for a small warm room, and one pendant
+ * every 3.6 m in a 37 m corridor put 2.1 units of direct light at head height
+ * against the Intake's 19 — which the artifact analyser measured as 61 % of the
+ * frame crushed to pure black, the thing the brief explicitly forbids.
+ *
+ * Neither of the two obvious fixes works. The bounce fill is written by
+ * `AMBIENT_PROFILES` and raising it was measured and moves nothing. The grade
+ * cannot rescue it either: its eye adaptation clamps the correction it will
+ * apply to 1.55x (`GradePass`, `autoGain`), so an under-lit frame stays
+ * under-lit. What is left is the source, and the constraint on the source is the
+ * rig's active-light budget — the 10 nearest live fixtures at the shipping
+ * medium tier, ranked by distance to the camera with no knowledge of walls. Over
+ * five of those ten used to be pendants in rooms the player could not see into.
+ *
+ * So: a fitting per door bay rather than one per two bays, each one dimmer than
+ * a rated pendant, which is both how a real corridor is lit and what wins the
+ * budget. The zone stays warm, low and intimate; it is lit to about two thirds
+ * of the Intake, not to match it.
+ */
+const OUT = { corridor: 0.86, room: 1.45, hall: 1.30 };
+
 const CEIL = 2.62;
 const HW = 1.15;                        // corridor half width
 const X0 = -19.4, X1 = 18.2;
@@ -213,20 +237,37 @@ export function buildResidence(ctx, opts = {}) {
     D.leak(bMid, -2.2, CEIL - 0.02, -0.5, { seed: 52, amount: 0.6, floorY: 0.014 });
   }
 
-  // Pendants down the corridor. Warm, low, and one of them is out.
+  // Pendants down the corridor: one per door bay, on the same 1.8 m rhythm as
+  // the doors, so every point of the runner is within 0.9 m of a fitting.
+  //
+  // Warm, low, and some of them are out — but a DEAD pendant on a 3.6 m rhythm
+  // was a 7.2 m hole in the only route through the zone, and the wear gradient
+  // put most of the holes at the east end, which is where the mirror that the
+  // whole composition points at lives. The gradient now runs through flicker
+  // personality instead of absence: a dying lamp still emits, and a corridor of
+  // buzzing and restriking lamps reads as more wrong than a corridor of dark
+  // ones, because you can see what is wrong with it.
   let fs = 1;
-  for (let x = X0 + 3.0; x < X1 - 1.0; x += BAY) {
+  // Starts at X0 + 1.2, not X0 + 3.0: the first 3 m of the corridor is what you
+  // see from the stair hall the moment you arrive in the zone, and it had no
+  // fitting in it at all.
+  for (let x = X0 + 1.2; x < X1 - 1.0; x += BAY / 2) {
     const b = byX(x);
     const w = wear(x);
     const h2 = hash2(Math.round(x * 5), 11);
     let health = 'good';
-    if (h2 < 0.05 + w * 0.35) health = 'dead';
-    else if (h2 < 0.18 + w * 0.4) health = 'dying';
-    pendant(b, rigFor(b), x, CEIL - 0.02, 0, {
+    if (h2 < 0.02 + w * 0.09) health = 'dead';
+    else if (h2 < 0.20 + w * 0.45) health = 'dying';
+    else if (h2 < 0.44) health = 'buzz';
+    const f = pendant(b, rigFor(b), x, CEIL - 0.02, 0, {
       circuit: 'residence', health, seed: fs++, drop: 0.34,
       shade: hash2(Math.round(x), 2) > 0.5 ? 'cone' : 'globe',
+      // A pendant's cone is a small soft shaft; at 1.8 m centres they overlap
+      // into haze, so every other one is enough and it halves the overdraw.
+      cone: fs % 2 === 0,
     });
-    smokeDetector(b, x + 1.4, CEIL - 0.014, 0.5, 'plasticWhite');
+    f.intensityScale = OUT.corridor;
+    if (fs % 2 === 0) smokeDetector(b, x + 0.7, CEIL - 0.014, 0.5, 'plasticWhite');
   }
   emergencyLight(bEast, rigFor(bEast), X1 - 0.14, 2.28, 0.6, { yaw: Math.PI / 2, seed: 90 });
 
@@ -289,7 +330,23 @@ export function buildResidence(ctx, opts = {}) {
       b.add('plaster', cap);
       b.addColliderAt(sx0 + 2.3, 1.76, -0.10, 1.6, 0.24, 1.2, { tag: 'ceiling' });
     }
-    pendant(b, rigFor(b), sx0 + 2.3, CEIL + 1.34, 1.4, { circuit: 'residence', health: 'buzz', seed: 73, drop: 0.85, shade: 'globe' });
+    // The hall is where the player arrives in the zone, so it is the frame the
+    // artifact analyser photographs — and it had exactly one buzzing globe in a
+    // 4.6 x 6.4 m room 4 m to the ceiling, which measured 2.1 units of direct
+    // light at head height. Three fittings: the main globe on its long drop over
+    // the void, one over the foot of the flight, one at the mouth of the
+    // corridor. They are the biggest lamps in the zone because it is the tallest
+    // room in it, and they are still domestic pendants.
+    for (const [px, pz, drop, hl, sc, sd] of [
+      [sx0 + 2.3, 1.4, 0.85, 'buzz', OUT.hall * 1.08, 73],
+      [sx0 + 1.2, -2.2, 0.50, 'good', OUT.hall, 78],
+      [sx0 + 3.8, 0.0, 0.40, 'dying', OUT.hall * 0.92, 79],
+    ]) {
+      const f = pendant(b, rigFor(b), px, CEIL + 1.34, pz, {
+        circuit: 'residence', health: hl, seed: sd, drop, shade: 'globe', cone: sd !== 79,
+      });
+      f.intensityScale = sc;
+    }
     Props.coatHooks(b, sx0 + 2.4, 1.68, 3.14, { seed: 74, yaw: Math.PI, w: 1.1, coats: 0.7 });
     Props.suitcase(b, sx0 + 3.6, 0, 2.5, { seed: 75, yaw: 0.5, standing: false });
     Props.suitcase(b, sx0 + 3.9, 0, 2.1, { seed: 76, yaw: 1.9, standing: true });
@@ -321,10 +378,16 @@ export function buildResidence(ctx, opts = {}) {
     mouldings(b, x0, zFar, x1, zFar, { sides: [d.north ? -1 : 1] });
     cornice(b, rect, CEIL);
     const cx = (x0 + x1) / 2, cz = (rect[1] + rect[3]) / 2;
-    pendant(b, rigFor(b), cx, CEIL - 0.02, cz, {
-      circuit: 'residence', health: dress === 'dark' ? 'dead' : hash2(d.i, 9) > 0.7 ? 'dying' : 'good',
+    // A stripped room's fitting used to be DEAD, which read as a hole rather
+    // than as a room — nothing in it was visible at all, and a room you cannot
+    // see is not a story. It restrikes instead: the lamp is the last thing left
+    // in there and it is failing, which says the same thing and lets the frame
+    // show the bare plaster it is meant to be about.
+    const f = pendant(b, rigFor(b), cx, CEIL - 0.02, cz, {
+      circuit: 'residence', health: dress === 'dark' ? 'dying' : hash2(d.i, 9) > 0.7 ? 'dying' : 'good',
       seed: 500 + d.i, drop: 0.30, shade: 'globe',
     });
+    f.intensityScale = dress === 'dark' ? OUT.room * 0.7 : OUT.room;
     outlet(b, x1 - 0.12, 0.28, cz, { rotation: -Math.PI / 2 });
     const w = wear(d.x);
     if (D) {
@@ -433,8 +496,18 @@ export function buildResidence(ctx, opts = {}) {
     Props.radiator(b, (x0 + x1) / 2 - 0.4, 0, z1 - 0.10, { seed: 731, yaw: Math.PI, w: 0.9, h: 0.55 });
     Props.wasteBin(b, x0 + 0.4, 0, z1 - 0.5, { seed: 732, kind: 'plastic', full: 0.7 });
     Props.mopBucket(b, x1 - 0.6, 0, z1 - 0.6, { seed: 733, yaw: 2.1 });
-    pendant(b, rigFor(b), (x0 + x1) / 2, CEIL - 0.02, z0 + 1.6, { circuit: 'residence', health: 'dying', seed: 740, drop: 0.26, shade: 'globe' });
-    pendant(b, rigFor(b), (x0 + x1) / 2, CEIL - 0.02, z1 - 1.4, { circuit: 'residence', health: 'good', seed: 741, drop: 0.26, shade: 'globe' });
+    // Four globes on a 2 m grid over a 6.4 x 5.4 m wet room: two down the middle
+    // left the sinks and the cubicles — the only two things in here worth
+    // looking at — outside every light pool.
+    for (const [px, pz, hl, sd] of [
+      [x0 + 1.6, z0 + 1.5, 'dying', 740], [x1 - 1.6, z0 + 1.5, 'good', 741],
+      [x0 + 1.6, z1 - 1.4, 'good', 742], [x1 - 1.6, z1 - 1.4, 'buzz', 743],
+    ]) {
+      const f = pendant(b, rigFor(b), px, CEIL - 0.02, pz, {
+        circuit: 'residence', health: hl, seed: sd, drop: 0.26, shade: 'globe', cone: sd % 2 === 1,
+      });
+      f.intensityScale = OUT.room;
+    }
     if (D) {
       D.roomPlate(b, 14.0, 1.90, z0 - 0.10, Math.PI, roomNumber('R', 230), 'BATHROOM');
       D.wallBase(b, x0 + 0.2, z1 - 0.03, x1 - 0.2, z1 - 0.03, { amount: 0.8, seed: 750, face: '-z' });

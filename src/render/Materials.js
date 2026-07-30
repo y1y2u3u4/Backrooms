@@ -75,6 +75,7 @@ const FRAG_HEAD = /* glsl */ `
   uniform float uDetailStrength;
   uniform float uTintAmount;
   uniform vec3  uTintColor;
+  uniform float uRollWidth;
 
   float axHash(vec3 p) {
     p = fract(p * 0.1031);
@@ -152,6 +153,49 @@ const FRAG_MAP = /* glsl */ `
         vec3 s1 = texture2D(map, vMapUv).rgb;
         vec3 s2 = texture2D(map, ruv * 0.6180 + vec2(0.317, 0.771)).rgb;
         diffuseColor.rgb *= mix(vec3(1.0), s2 / max(s1, vec3(1e-3)), w);
+      }
+    #endif
+
+
+    // WALLPAPER ROLL SEAMS.
+    //
+    // The stochastic re-tile above defeats repetition in LUMINANCE, and for a
+    // surface whose pattern is noise-like that is enough. It cannot defeat a
+    // figurative motif: the Residence's damask flower is recognised by the eye
+    // as a shape, and once you have seen it twice you see the grid, however much
+    // its tone has been varied. That was a real and visible defect down the
+    // Residence corridor.
+    //
+    // The fix is to model what a papered wall actually is. Paper comes in rolls
+    // about 530 mm wide, hung as vertical drops; each drop is cut from the roll
+    // at a different point, so the pattern's vertical registration differs from
+    // its neighbour, an installer working badly reverses the occasional drop,
+    // and there is a hairline seam where two butt together. Offsetting the
+    // sample per drop means the motif no longer lines up horizontally across the
+    // wall at all, which is what stops the repeat reading as a repeat — and it
+    // is correct rather than a trick.
+    #ifdef USE_MAP
+      if (uRollWidth > 0.001 && axVert > 0.5) {
+        // Which way the drops run: the wall's horizontal axis, not the world's.
+        float along = abs(vAnnexNormal.x) > abs(vAnnexNormal.z)
+          ? vAnnexWorld.z : vAnnexWorld.x;
+        float rollU = along / uRollWidth;
+        float roll = floor(rollU);
+        float rh = axHash(vec3(roll, 3.7, 11.3));
+        vec2 ruv2 = vMapUv + vec2(0.0, rh * 1.371);
+        // Roughly one drop in three goes up reversed.
+        if (rh > 0.66) ruv2.x = -ruv2.x;
+        vec3 r1 = texture2D(map, vMapUv).rgb;
+        vec3 r2 = texture2D(map, ruv2).rgb;
+        diffuseColor.rgb *= r2 / max(r1, vec3(1e-3));
+
+        // The seam. Width comes from fwidth so it stays about a pixel at any
+        // distance instead of aliasing into a dashed line down the corridor.
+        float f = fract(rollU);
+        float dSeam = min(f, 1.0 - f);
+        float w = fwidth(rollU) * 1.5 + 0.0015;
+        float seam = 1.0 - smoothstep(0.0, w, dSeam);
+        diffuseColor.rgb *= mix(1.0, 0.82, seam);
       }
     #endif
 
@@ -288,6 +332,9 @@ const DEFAULTS = {
   detailTile: 4.0,
   detailStrength: 0.26,
   stochastic: 0.62,
+  // Width of a wallpaper roll in metres, or 0 for surfaces that are not hung
+  // in strips. See the roll-seam block in FRAG_MAP.
+  rollWidth: 0,
   tint: 0xffffff,
   tintAmount: 0,
   side: THREE.FrontSide,
@@ -384,6 +431,7 @@ export class MaterialLibrary {
         uTintColor: { value: new THREE.Color(o.tint) },
         uTintAmount: { value: o.tintAmount },
         uStochastic: { value: o.stochastic },
+        uRollWidth: { value: o.rollWidth },
       });
       shader.vertexShader = shader.vertexShader
         .replace('void main() {', VERT_HEAD + '\nvoid main() {')
@@ -400,7 +448,7 @@ export class MaterialLibrary {
     // Distinct cache key so three does not share a program with an
     // undecorated standard material.
     mat.customProgramCacheKey = () =>
-      `annex|${o.dirtBase}|${o.dirtAmount}|${o.detailTile}|${o.detailStrength}|${o.tintAmount}|${o.stochastic}`;
+      `annex|${o.dirtBase}|${o.dirtAmount}|${o.detailTile}|${o.detailStrength}|${o.tintAmount}|${o.stochastic}|${o.rollWidth > 0 ? 1 : 0}`;
     this.all.add(mat);
     return mat;
   }

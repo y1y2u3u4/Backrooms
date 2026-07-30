@@ -1,0 +1,82 @@
+[
+  {
+    "name": "i1_spine",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,0); console.info('S1 '+JSON.stringify(q)); console.info('F1 '+JSON.stringify(g.fixtureReport(4)))",
+    "file": "docs/captures/intake/i1_spine.png",
+    "stats": {
+      "ms": 2082.5058333333272,
+      "fps": 0.48019073175865595,
+      "p90": 12.599999999627471,
+      "calls": 375,
+      "tris": 955152,
+      "quality": "medium",
+      "res": "880x496",
+      "lights": {
+        "fixtures": 201,
+        "lit": 142,
+        "active": 12,
+        "shadows": 3
+      }
+    }
+  },
+  {
+    "name": "i2_ceiling",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,((r&&r.yaw)||0)+0.5,0.45)",
+    "file": "docs/captures/intake/i2_ceiling.png",
+    "stats": {
+      "ms": 14.46250000007761,
+      "fps": 69.14433880688911,
+      "p90": 28,
+      "calls": 198,
+      "tris": 481164,
+      "quality": "low",
+      "res": "682x384",
+      "lights": {
+        "fixtures": 201,
+        "lit": 142,
+        "active": 12,
+        "shadows": 3
+      }
+    }
+  },
+  {
+    "name": "i3_dado",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,((r&&r.yaw)||0)+2.2,-0.12)",
+    "file": "docs/captures/intake/i3_dado.png",
+    "stats": {
+      "ms": 3.4658333332277835,
+      "fps": 288.5308968589914,
+      "p90": 4.899999998509884,
+      "calls": 203,
+      "tris": 481564,
+      "quality": "low",
+      "res": "682x384",
+      "lights": {
+        "fixtures": 201,
+        "lit": 142,
+        "active": 12,
+        "shadows": 3
+      }
+    }
+  },
+  {
+    "name": "i4_wall_near",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,((r&&r.yaw)||0)+1.57,-0.05)",
+    "file": "docs/captures/intake/i4_wall_near.png",
+    "stats": {
+      "ms": 4.317499999981374,
+      "fps": 231.6155182407213,
+      "p90": 7.799999997019768,
+      "calls": 203,
+      "tris": 481564,
+      "quality": "low",
+      "res": "682x384",
+      "lights": {
+        "fixtures": 201,
+        "lit": 142,
+        "active": 12,
+        "shadows": 3
+      }
+    }
+  }
+]

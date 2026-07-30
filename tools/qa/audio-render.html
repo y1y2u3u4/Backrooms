@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>THE ANNEX — audio render harness</title>
+<style>
+  body { background:#0b0b0c; color:#c9c2ae; font:12px/1.6 ui-monospace,monospace; padding:16px; }
+  h1 { font-size:13px; letter-spacing:.3em; color:#d8b45a; text-transform:uppercase; }
+  #log { white-space:pre; }
+</style>
+</head>
+<body>
+<h1>audio render harness</h1>
+<div id="log">booting…</div>
+
+<script type="module">
+/**
+ * OFFLINE RENDER HARNESS — makes .wav files a human can listen to.
+ *
+ * `audio-harness.html` (used by audio-probe.mjs) measures sounds. This one
+ * *renders* them, including things the probe cannot produce at all: a continuous
+ * multi-minute mix of a whole zone's ambience bed, with the fluorescent hum
+ * driven by flickering fixtures, footsteps under a walking listener, Poisson
+ * events firing at the zone's own rates, and the zone's convolution reverb on
+ * the send. A horror soundscape can only be judged as a continuous bed.
+ *
+ * HOW THE CONTINUOUS MIX IS PRODUCED, because it is the one non-obvious part.
+ *
+ * The whole audio system is designed around a live AudioContext whose
+ * `currentTime` advances by itself. An OfflineAudioContext's clock does not
+ * advance until `startRendering()`, so if the simulation were stepped against it
+ * every scheduled event would land at t = 0 and the sixty-second bed would be a
+ * one-frame pile-up.
+ *
+ * So the engine is given a VIRTUAL CLOCK: `engine.now` is shadowed with an own
+ * property that returns the simulation's time. Every `setTargetAtTime`,
+ * `oscillator.start`, `hit()` and `glide()` in the codebase reads its time from
+ * that one getter, so the entire graph is scheduled into the future of a single
+ * offline render — exactly the sounds a live context would have produced, at
+ * exactly the same times, with none of the code changed.
+ *
+ * One consequence has to be handled: `AudioEngine.update()` reaps finished
+ * voices, and reaping calls `NodeBag.dispose()`, which *disconnects* the nodes.
+ * In a live context that is correct — the sound has already been heard. Offline
+ * nothing has been rendered yet, so disconnecting would delete the sound from
+ * the output. `_spawn` is therefore wrapped to give each voice a `kill()` that
+ * stops its sources at the right time but never disconnects them.
+ *
+ * Everything else — occlusion through a real CollisionWorld, the hum tracking
+ * per-fixture flicker, the bus compressors, the master limiter, the convolvers
+ * — is the shipping code path.
+ */
+import { createAudio } from '/src/audio/index.js';
+import { analyseBuffer } from '/src/audio/Synth.js';
+import { ZONE_REVERB, REVERB_PROFILES } from '/src/audio/AudioEngine.js';
+import { ZONE_AMBIENCE } from '/src/audio/Ambience.js';
+import { CollisionWorld } from '/src/player/Physics.js';
+import { Bus, makeRng, clamp01, lerp } from '/src/core/util.js';
+
+const log = (m) => { document.getElementById('log').textContent = m; };
+const SR = 48000;
+
+// ---------------------------------------------------------------------------
+// Per-sound render tables. Kept in step with tools/qa/audio-harness.html so the
+// files written here are the same renders the probe measures.
+// ---------------------------------------------------------------------------
+const PARAMS = {
+  'amb.hum': { level: 0.85 },
+  'entity.presence': { level: 0.85, mode: 1 },
+  'music.bed': { level: 0.8 },
+  'music.warm': { level: 0.75 },
+  'amb.machine': { proximity: 0.9 },
+};
+const OPTS = {
+  'amb.machine': { proximity: 0.9 },
+  'amb.vent': { level: 0.8, tone: 620, sweep: 1 },
+  'amb.grille': { level: 0.8, tone: 900 },
+  'amb.room': { level: 0.7, freq: 120 },
+  'amb.transformer': { level: 0.7 },
+  'amb.water.lap': { level: 0.7 },
+  'amb.water.run': { level: 0.7 },
+  'entity.whine': { duration: 3.4 },
+  'step.carpet': { strength: 0.8, left: true },
+  'step.carpet_damp': { strength: 0.8, left: false },
+  'step.concrete': { strength: 0.9, left: true },
+  'step.lino': { strength: 0.8, left: false },
+  'step.tread': { strength: 0.9, left: true },
+  'step.duct': { strength: 0.7, crouch: true },
+  'step.water': { strength: 0.8, water: 0.55 },
+  'splash': { depth: 0.6, strength: 0.9 },
+  'land': { force: 0.8, surface: 'concrete' },
+  'breath': { effort: 0.8, inhale: true },
+  'cloth.rustle': { amount: 0.9 },
+  'drip': { vessel: 0.4 },
+  'music.motif': { root: 0 },
+  'music.bowed': { duration: 8, bow: 0.9 },
+  'silence.vacuum': { duration: 4, depth: 0.8 },
+};
+const SECONDS = {
+  'entity.capture': 5.0, 'entity.measure': 4.2, 'entity.whine': 4.6,
+  'music.motif': 13.0, 'music.bowed': 10.0, 'music.bed': 8.0, 'music.warm': 8.0,
+  'entity.presence': 6.0, 'kettle.boil': 12.0, 'silence.vacuum': 6.0,
+  'struct.impact': 4.0, 'struct.creak': 3.5, 'cable.twang': 3.0,
+  'metal.clang': 3.0, 'pickup.core': 3.6, 'lift.arrive': 4.0, 'door.heavy': 3.5,
+};
+
+/** A throwaway engine used only for the per-sound renders. */
+const soloAudio = createAudio({ bus: null, collision: null, camera: null, rig: null, options: { autoInit: false } });
+const soloEngine = soloAudio.engine;
+
+function secondsFor(name) {
+  if (SECONDS[name]) return SECONDS[name];
+  const def = soloEngine.registry.get(name);
+  if (!def) return 2.5;
+  if (def.loop) return 6.0;
+  return Math.min(12, Math.max(2.0, (def.dur ?? 1.5) + 1.0));
+}
+
+// ---------------------------------------------------------------------------
+// WAV
+// ---------------------------------------------------------------------------
+
+/** 16-bit PCM WAV. Dither-free straight quantisation; the sources are float. */
+function encodeWav(buf) {
+  const nch = buf.numberOfChannels, len = buf.length, sr = buf.sampleRate;
+  const chans = [];
+  for (let c = 0; c < nch; c++) chans.push(buf.getChannelData(c));
+  const dataLen = len * nch * 2;
+  const ab = new ArrayBuffer(44 + dataLen);
+  const v = new DataView(ab);
+  const str = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  str(0, 'RIFF'); v.setUint32(4, 36 + dataLen, true); str(8, 'WAVE');
+  str(12, 'fmt '); v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true); v.setUint16(22, nch, true);
+  v.setUint32(24, sr, true); v.setUint32(28, sr * nch * 2, true);
+  v.setUint16(32, nch * 2, true); v.setUint16(34, 16, true);
+  str(36, 'data'); v.setUint32(40, dataLen, true);
+  let o = 44;
+  for (let i = 0; i < len; i++) {
+    for (let c = 0; c < nch; c++) {
+      let s = chans[c][i];
+      s = s < -1 ? -1 : s > 1 ? 1 : s;
+      v.setInt16(o, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+      o += 2;
+    }
+  }
+  return new Uint8Array(ab);
+}
+
+function toBase64(u8) {
+  let s = '';
+  for (let i = 0; i < u8.length; i += 0x8000) {
+    s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+  }
+  return btoa(s);
+}
+
+/** Per-channel and summed statistics, in the units a mix engineer wants. */
+function measure(buf) {
+  const nch = buf.numberOfChannels;
+  const per = [];
+  let peak = 0, sum = 0, n = 0, clipped = 0, dcSum = 0;
+  for (let c = 0; c < nch; c++) {
+    const d = buf.getChannelData(c);
+    let p = 0, s = 0, dc = 0, cl = 0;
+    for (let i = 0; i < d.length; i++) {
+      const a = Math.abs(d[i]);
+      if (a > p) p = a;
+      if (a >= 0.999) cl++;
+      s += d[i] * d[i]; dc += d[i];
+    }
+    per.push({ peak: p, rms: Math.sqrt(s / d.length), dc: dc / d.length, clipped: cl });
+    peak = Math.max(peak, p); sum += s; n += d.length; clipped += cl; dcSum += dc / d.length;
+  }
+  const a = analyseBuffer(buf);
+  return {
+    peak, rms: Math.sqrt(sum / n), dc: dcSum / nch, clipped,
+    duration: buf.duration, sampleRate: buf.sampleRate, channels: nch,
+    centroid: a.centroid, crest: a.crest, per,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// The simulated world a zone bed is rendered in.
+// ---------------------------------------------------------------------------
+
+/**
+ * A plausible room for the zone: a perimeter, two internal partitions with a
+ * doorway gap in each. This is here so occlusion is *measured* through the real
+ * CollisionWorld during the mix — a drip behind a partition should be duller,
+ * quieter and wetter than one in the open, and that is audible on a bed in a way
+ * it is not on a one-shot.
+ */
+function buildRoom(zone) {
+  const cw = new CollisionWorld();
+  const W = 11, D = 22, H = zone === 'plant' ? 12 : zone === 'duct' ? 0.9 : 2.9;
+  const wall = (a, b) => cw.addBox(a, b, { tag: 'wall' });
+  wall([-W - 0.16, 0, -D], [-W, H, D]);
+  wall([W, 0, -D], [W + 0.16, H, D]);
+  wall([-W, 0, -D - 0.16], [W, H, -D]);
+  wall([-W, 0, D], [W, H, D + 0.16]);
+  // Two partitions on the 4.2 m structural grid, each with a 0.9 m opening.
+  for (const z of [-8.4, 4.2]) {
+    wall([-W, 0, z - 0.08], [-1.2, H, z + 0.08]);
+    wall([-0.3, 0, z - 0.08], [W, H, z + 0.08]);
+  }
+  cw.addFloor([-W, -D, W, D], 0, { surface: zone === 'cistern' ? 'water' : 'concrete' });
+  return cw;
+}
+
+/** Fixture stand-ins with the fields Ambience._updateHum actually reads. */
+function buildRig(zone) {
+  const type = zone === 'plant' ? 'highbay'
+    : zone === 'cistern' ? 'bulkhead'
+      : zone === 'service' || zone === 'duct' ? 'strip' : 'troffer';
+  const fixtures = [];
+  let i = 0;
+  // One per 4.2 m grid cell down the corridor, as DESIGN.md §3 specifies.
+  for (let z = -18.9; z <= 18.9; z += 4.2) {
+    for (const x of [-5.25, 5.25]) {
+      // Every fifth tube is dying and one in eleven is dead: the hum has to
+      // stutter somewhere or the bed is a synth pad.
+      const health = i % 11 === 3 ? 'dead' : i % 5 === 2 ? 'dying' : 'good';
+      fixtures.push({
+        type, health, level: health === 'dead' ? 0 : 1,
+        group: { position: { x, y: zone === 'plant' ? 9.2 : 2.62, z } },
+        _seed: i * 0.618,
+      });
+      i++;
+    }
+  }
+  return { fixtures };
+}
+
+/** Drive fixture levels the way LightRig's flicker personalities would. */
+function flicker(rig, t) {
+  for (const f of rig.fixtures) {
+    if (f.health === 'dead') { f.level = 0; continue; }
+    const s = f._seed;
+    if (f.health === 'dying') {
+      // Long healthy stretches punctuated by a restrike burst. The burst is
+      // what makes `amb.strike` fire and the hum crackle back in.
+      const cycle = (t * 0.11 + s) % 1;
+      if (cycle > 0.72) {
+        const k = (cycle - 0.72) / 0.28;
+        f.level = clamp01((Math.sin(t * 61 + s * 9) * 0.5 + 0.5)
+          * (Math.sin(t * 23.7 + s) * 0.5 + 0.5) * 1.6 * (1 - k * 0.3));
+      } else f.level = 0.9 + 0.05 * Math.sin(t * 8.3 + s * 3);
+    } else {
+      f.level = 0.97 + 0.03 * Math.sin(t * 3.1 + s * 6.28);
+    }
+  }
+}
+
+/** A camera-shaped listener: position plus a matrixWorld the engine can read. */
+function makeCamera() {
+  const cam = {
+    position: { x: 0, y: 1.62, z: 0 },
+    matrixWorld: { elements: new Float32Array(16) },
+    yaw: 0,
+  };
+  cam.setYaw = (y) => {
+    cam.yaw = y;
+    const s = Math.sin(y), c = Math.cos(y);
+    const e = cam.matrixWorld.elements;
+    // Column-major, YXZ with pitch 0: right, up, back(-forward).
+    e[0] = c; e[1] = 0; e[2] = -s; e[3] = 0;
+    e[4] = 0; e[5] = 1; e[6] = 0; e[7] = 0;
+    e[8] = s; e[9] = 0; e[10] = c; e[11] = 0;
+    e[12] = cam.position.x; e[13] = cam.position.y; e[14] = cam.position.z; e[15] = 1;
+  };
+  cam.setYaw(0);
+  return cam;
+}
+
+/** Surface the listener's feet are on, per zone. */
+const ZONE_SURFACE = {
+  intake: 'carpet', service: 'concrete', cistern: 'water', residence: 'carpet',
+  plant: 'tread', duct: 'duct', stack: 'lino', safe: 'carpet',
+};
+
+/** Zone-authored emitters, roughly what the zone builders are meant to add. */
+const ZONE_EMITTERS = {
+  intake: [['vent', [-9.5, 2.4, -6], { gain: 0.8, tone: 820 }], ['drip', [8.5, 0.1, 12], { vessel: 0.8 }]],
+  service: [['vent', [9.5, 2.5, -2], { gain: 1.0, tone: 480 }],
+    ['transformer', [-9.6, 1.4, 14], { gain: 0.9, freq: 100 }],
+    ['drip', [-4, 0.05, -14], { vessel: 0.25 }]],
+  cistern: [['water', [6, 0.2, -10], { gain: 1.0, radius: 22 }],
+    ['drip', [-6, 0.05, 3], { vessel: 0.1 }], ['drip', [4.5, 0.05, 16], { vessel: 0.9 }],
+    ['drip', [-8, 0.05, -18], { vessel: 0.5 }]],
+  residence: [['drip', [7, 0.05, -3], { vessel: 0.7 }]],
+  plant: [['transformer', [-9, 2.0, -12], { gain: 1.1, freq: 100 }],
+    ['vent', [9, 6.0, 8], { gain: 1.0, tone: 300 }]],
+  duct: [['vent', [0, 0.4, -19], { gain: 1.2, tone: 900 }]],
+  stack: [['vent', [-9.5, 2.4, 0], { gain: 0.6, tone: 540 }]],
+  safe: [['vent', [-9.5, 2.3, -4], { gain: 0.4, tone: 420 }]],
+};
+
+/**
+ * Render `seconds` of a zone's continuous soundscape.
+ *
+ * @param {string} zone    a DESIGN.md §3 zone key
+ * @param {number} seconds length of the excerpt
+ * @param {function} script optional (t, api) hook for scripted beats
+ */
+async function renderBed(zone, seconds, script = null, seed = 20250729) {
+  const OC = window.OfflineAudioContext;
+  const ctx = new OC(2, Math.round(seconds * SR), SR);
+  const bus = new Bus();
+  const collision = buildRoom(zone);
+  const camera = makeCamera();
+  const rig = buildRig(zone);
+  const rng = makeRng(seed);
+
+  const audio = createAudio({
+    bus, collision, camera, rig,
+    options: { autoInit: false, seed, maxVoices: 44 },
+  });
+  const engine = audio.engine;
+
+  // ---- the virtual clock (see the file header) ----------------------------
+  let vt = 0;
+  Object.defineProperty(engine, 'now', { get: () => vt, configurable: true });
+
+  // ---- non-destructive voice reaping (see the file header) ----------------
+  const rawSpawn = engine._spawn.bind(engine);
+  let spawned = 0, denied0 = 0;
+  engine._spawn = (name, position, o, loop) => {
+    const v = rawSpawn(name, position, o, loop);
+    if (v) {
+      spawned++;
+      const bag = v.bag;
+      v.kill = function kill() {
+        if (this.dead) return;
+        this.dead = true;
+        try { bag.stopAll(vt); } catch { /* not started */ }
+      };
+    }
+    return v;
+  };
+
+  const ok = await engine.init({ context: ctx, zone: ZONE_REVERB[zone] || 'corridor' });
+  if (!ok) throw new Error(`engine.init failed for ${zone}`);
+  engine.setListener(camera);
+  audio.ambience.init();
+  audio.setZone(zone, 0.05);
+  for (const [kind, pos, o] of ZONE_EMITTERS[zone] || []) audio.addEmitter(kind, pos, o);
+  if (zone === 'plant') audio.setMachineProximity(0.95);
+  else if (zone === 'service' || zone === 'cistern') audio.setMachineProximity(0.35);
+
+  // ---- the walk ----------------------------------------------------------
+  // A slow patrol up and down the corridor, through the partition doorways, so
+  // every loop in the bed is heard near and far and the panning moves. Standing
+  // still for the first and last eight seconds gives the bed room to be judged
+  // on its own before footsteps arrive.
+  const surface = ZONE_SURFACE[zone] || 'concrete';
+  const dt = 1 / 60;
+  const steps = Math.floor(seconds / dt);
+  const SPEED = zone === 'cistern' ? 0.85 : zone === 'duct' ? 0.7 : 1.35;
+  const STRIDE = 0.92;
+  let strideAccum = 0, left = true;
+  let z = -16, dir = 1;
+  const api = {
+    bus, audio, engine, camera,
+    play: (n, o) => engine.play(n, o),
+    playAt: (n, p, o) => engine.playAt(n, p, o),
+    emit: (k, p) => bus.emit(k, p),
+    entityAt: (x, y, zz) => { audio.entity.position.x = x; audio.entity.position.y = y; audio.entity.position.z = zz; },
+    setFixtures: (v) => { for (const f of rig.fixtures) if (f.health !== 'dead') f.level = v; },
+  };
+
+  const marks = [];
+  for (let i = 0; i < steps; i++) {
+    vt = i * dt;
+    const t = vt;
+
+    flicker(rig, t);
+    if (script) {
+      const m = script(t, api, i);
+      if (m) marks.push({ t: +t.toFixed(2), what: m });
+    }
+
+    const walking = t > 8 && t < seconds - 8;
+    if (walking) {
+      z += dir * SPEED * dt;
+      if (z > 18) { z = 18; dir = -1; }
+      if (z < -18) { z = -18; dir = 1; }
+      // Weave through the doorway gaps at x ≈ -0.75.
+      const nearGap = Math.min(Math.abs(z - (-8.4)), Math.abs(z - 4.2));
+      camera.position.x = nearGap < 2.2 ? lerp(camera.position.x, -0.75, 0.06) : lerp(camera.position.x, 3.4 * dir, 0.02);
+      camera.position.z = z;
+      camera.setYaw(dir > 0 ? Math.PI : 0);
+
+      strideAccum += SPEED * dt;
+      if (strideAccum >= STRIDE) {
+        strideAccum -= STRIDE;
+        left = !left;
+        bus.emit('player:step', {
+          surface, water: zone === 'cistern' ? 0.45 : 0,
+          strength: 0.7 + rng() * 0.2, crouch: false, left,
+          position: { x: camera.position.x, y: 0, z: camera.position.z },
+        });
+      }
+    }
+
+    audio.update(dt, camera.position);
+  }
+
+  // Let the tails ring out rather than being cut off at the file end.
+  vt = seconds;
+  const buf = await ctx.startRendering();
+  return { buf, marks, stats: { spawned, denied: engine.stats.denied, hums: audio.ambience.humVoices.length } };
+}
+
+// ---------------------------------------------------------------------------
+// Scripted scenes: the things a bed alone cannot show.
+// ---------------------------------------------------------------------------
+
+/** The Surveyor announces itself, arrives, loses you, measures, freezes, goes. */
+function surveyorScript() {
+  const beats = [
+    [10.0, 'approach', 'the whine begins — 3-4 s of warning, direction-ambiguous'],
+    [14.0, 'hunt', 'it commits to a straight line and walks'],
+    [34.0, 'search', 'it has lost the trail'],
+    [40.0, 'measure', 'it stops and measures a wall — your window to move'],
+    [52.0, 'frozen', 'the lights go and it freezes mid-stride'],
+    [62.0, 'despawn', 'it leaves'],
+  ];
+  let bi = 0;
+  return (t, api) => {
+    // Walk it from 30 m away to 6 m and back out again.
+    const d = t < 34 ? Math.max(6, 30 - (t - 10) * 1.0) : Math.min(34, 6 + (t - 34) * 0.9);
+    api.entityAt(0, 0, -d);
+    if (bi < beats.length && t >= beats[bi][0]) {
+      const [, state, why] = beats[bi++];
+      api.emit('entity:state', { entity: 'surveyor', state, position: { x: 0, y: 0, z: -d } });
+      if (state === 'frozen') api.setFixtures(0);
+      return `entity:state ${state} — ${why}`;
+    }
+    if (Math.abs(t - 30) < 1 / 120) {
+      api.emit('entity:heard', { entity: 'surveyor', position: { x: 3, y: 1, z: -12 }, radius: 8, strength: 0.7 });
+      return 'entity:heard — the head-plate tick that gives you its bearing';
+    }
+    return null;
+  };
+}
+
+/** A breaker board, a circuit coming back, a fuse core, a note. */
+function breakerScript() {
+  const beats = [
+    [8.0, () => ({ k: 'light:circuit', p: { circuit: 'C', powered: false }, why: 'the circuit drops — contactor, then the hum dies away' })],
+    [22.0, () => ({ k: 'light:circuit', p: { circuit: 'C', powered: true }, why: 'back on — relays strike raggedly and the tubes restrike' })],
+    [34.0, () => ({ k: 'item:pickup', p: { id: 'fuse_core', name: 'fuse core' }, why: 'a fuse core: the pickup, then the three-note motif' })],
+    [46.0, () => ({ k: 'story:note', p: { id: 'nb_3', title: 'discrepancy log' }, why: 'paper, then the journal chime' })],
+  ];
+  let bi = 0;
+  return (t, api) => {
+    if (bi < beats.length && t >= beats[bi][0]) {
+      const b = beats[bi++]();
+      if (b.k === 'light:circuit') api.setFixtures(b.p.powered ? 1 : 0);
+      api.emit(b.k, b.p);
+      return `${b.k} — ${b.why}`;
+    }
+    return null;
+  };
+}
+
+// ---------------------------------------------------------------------------
+// The API the Node driver calls.
+// ---------------------------------------------------------------------------
+
+let held = null;   // base64 of the last render, fetched in slices
+
+window.AUDIO_RENDER = {
+  names: () => soloEngine.names,
+  zones: () => Object.keys(ZONE_AMBIENCE).filter((k) => k !== 'spine' && k !== 'office'),
+  reverbFor: (z) => ZONE_REVERB[z] || 'corridor',
+  profile: (z) => ZONE_AMBIENCE[z],
+
+  /** Render one registered sound; hold the WAV for slicing. */
+  async solo(name) {
+    const buf = await soloEngine.renderOffline(name, {
+      seconds: secondsFor(name),
+      opts: OPTS[name] || {},
+      params: PARAMS[name] || null,
+      sampleRate: SR,
+    });
+    const stats = measure(buf);
+    held = toBase64(encodeWav(buf));
+    const def = soloEngine.registry.get(name);
+    return {
+      name, stats, bytes: held.length,
+      bus: def.bus || 'world', loop: !!def.loop,
+      send: def.send ?? null, spatial: def.spatial !== false,
+    };
+  },
+
+  /** Render a continuous zone bed; hold the WAV for slicing. */
+  async bed(zone, seconds) {
+    const { buf, marks, stats: s } = await renderBed(zone, seconds);
+    const stats = measure(buf);
+    held = toBase64(encodeWav(buf));
+    return {
+      zone, seconds, stats, marks, voices: s, bytes: held.length,
+      reverb: ZONE_REVERB[zone], profile: ZONE_AMBIENCE[zone],
+    };
+  },
+
+  /** Render a scripted scene on top of a zone bed. */
+  async scene(name, zone, seconds) {
+    const script = name === 'surveyor' ? surveyorScript() : breakerScript();
+    const { buf, marks, stats: s } = await renderBed(zone, seconds, script);
+    const stats = measure(buf);
+    held = toBase64(encodeWav(buf));
+    return { name, zone, seconds, stats, marks, voices: s, bytes: held.length };
+  },
+
+  len: () => (held ? held.length : 0),
+  slice: (off, n) => (held ? held.slice(off, off + n) : ''),
+  release: () => { held = null; },
+};
+
+window.AUDIO_RENDER_READY = true;
+log(`ready — ${soloEngine.names.length} sounds, ${window.AUDIO_RENDER.zones().length} zones`);
+</script>
+</body>
+</html>

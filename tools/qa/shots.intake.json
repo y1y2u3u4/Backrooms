@@ -1,0 +1,18 @@
+[
+  {
+    "name": "i1_spine",
+    "setup": "g.setMSAA(0); const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,0); console.info('S1 '+JSON.stringify(q)); console.info('F1 '+JSON.stringify(g.fixtureReport(4)))"
+  },
+  {
+    "name": "i2_ceiling",
+    "setup": "g.setMSAA(0); const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,((r&&r.yaw)||0)+0.5,0.45)"
+  },
+  {
+    "name": "i3_dado",
+    "setup": "g.setMSAA(0); const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,((r&&r.yaw)||0)+2.2,-0.12)"
+  },
+  {
+    "name": "i4_wall_near",
+    "setup": "g.setMSAA(0); const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,((r&&r.yaw)||0)+1.57,-0.05)"
+  }
+]

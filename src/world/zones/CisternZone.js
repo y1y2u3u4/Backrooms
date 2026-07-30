@@ -235,8 +235,19 @@ export function buildCistern(ctx, opts = {}) {
     if (health !== 'dead') waterFixtures.push(f);
     fs++;
   }
+  // Vapour-tight bulkheads around the chamber perimeter on roughly 6 m centres.
+  //
+  // Three of these used to light a chamber about 12 x 14 m, which left its
+  // south-east quarter 8.67 m from the nearest lamp — measured with
+  // tools/qa/lightreach.mjs, 19 % of the zone's walkable area beyond 5 m. That
+  // is a lighting-design gap rather than an atmospheric choice: a flooded plant
+  // room has a fitting at every corner because someone has to be able to wade
+  // round it. Health is still mostly failing, so the room does not become bright
+  // — it becomes a room with a plausible number of half-dead lamps in it.
   for (const [x, z, yaw, health] of [
     [11.0, -6.9, 0, 'good'], [19.9, 3.0, -Math.PI / 2, 'buzz'], [15.0, 6.9, Math.PI, 'dying'],
+    [19.6, -6.9, 0, 'buzz'], [11.4, 4.4, Math.PI, 'dying'], [15.2, -2.0, 0, 'buzz'],
+    [19.9, -1.6, -Math.PI / 2, 'good'],
   ]) {
     const f = bulkhead(bChamber, rigFor(bChamber), x, 2.10, z, { yaw, circuit: 'cistern', health, seed: 70 + fs++ });
     waterFixtures.push(f);

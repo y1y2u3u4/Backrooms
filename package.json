@@ -13,6 +13,8 @@
     "aotest": "node tools/qa/aotest.mjs",
     "artifacts": "node tools/qa/artifacts.mjs",
     "playtest": "node tools/qa/playtest.mjs",
+    "playthrough": "node tools/qa/playthrough.mjs --port 4199 --quality low",
+    "audio:render": "node tools/qa/audio-render.mjs --port 5307",
     "crop": "node tools/qa/crop.mjs"
   },
   "dependencies": {
