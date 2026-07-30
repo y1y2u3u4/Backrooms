@@ -665,7 +665,13 @@ Fixed. `lookOpen` now rejects any position with less than 1.75 m of headroom.
   range 0.21 → 0.47) but still measures 0.84 crushed at the low tier, and 9 % of its
   walkable area is beyond 5 m from a lamp.
 - **Still never run on a GPU**, and no frame-rate verdict exists.
-- **The playthrough and audio-export harnesses are written but their runs are not
+- **The audio has still never been heard.** `tools/qa/audio-render.mjs` is written
+  and will export the synthesised sound to .wav files, but it has not been run, so
+  the 75 sounds remain verified only numerically. This is now the single largest
+  unexamined part of the project.
+- **(Superseded — the playthrough DID run. See §6.5.)** The note that follows is
+  kept because it was true when written:
+  **The playthrough and audio-export harnesses are written but their runs are not
   in this report.** `tools/qa/playthrough.mjs` drives a continuous session with real
   synthetic keyboard input through the real update path, and
   `tools/qa/audio-render.mjs` renders the synthesised audio to .wav files a human
@@ -730,6 +736,61 @@ at the wrong moment is more dangerous than no measurement**, because it comes wi
 the authority of a number. Four of the six wrong diagnoses in this report were of
 that kind — a 14-frame exposure settle, an AO statistic over void cells, a fill
 sweep that never changed the fill, and a probe read before the first frame.
+
+### 6.5 The game has now been played, and nothing happened
+
+This is the most important result in the report, and it is the one that could only
+ever have come from playing it.
+
+`tools/qa/playthrough.mjs` ran one unbroken session: **6000 frames, 100 seconds of
+simulated play at a fixed 1/60 step**, driven by real DOM keyboard events through
+the real update path — movement, sprint, crouch, lamp, interact. Not teleports.
+
+**What held up.** No console errors. Player position never NaN. Never fell through
+the floor — 0 of 6000 frames not standing on a floor. Simulated time advanced
+continuously. 135 footstep events fired while walking. The audio subsystem
+constructed and its AudioContext reached `running`. Every zone visited reported lit
+fixtures. For a build assembled from independently-authored subsystems and never
+once run continuously, that is a better result than I expected.
+
+**What did not.** Three assertions failed. Two are the CPU rasteriser: frame-time
+p50 is 5.20 ms and p99 is 17.7 *seconds*, which is first-frame shader compilation,
+not steady-state cost, and is called out as such rather than hidden.
+
+The third is the finding:
+
+> **at least one entity state transition occurred — FAIL — the Surveyor never
+> changed state**
+
+And the pacing analysis:
+
+| measure | value |
+|---|---|
+| zero-threat time | **100.0 %** |
+| threat episodes | **0** |
+| Director beats fired | **0** |
+| fear, peak over the whole session | **0.027** out of 1 |
+| longest stretch with nothing on the bus but footsteps | **100.0 s** |
+
+**In a hundred seconds of a horror game, nothing happened.** Not a chase, not a
+beat, not a distant sound — fear never rose above 0.027.
+
+The harness also reports the cause, which is a scheduling parameter rather than a
+broken system: the Director's quiet floor is 95 s and its first beat is scheduled at
+150 s. So the opening is *designed* to be empty for two and a half minutes, and the
+Surveyor is gated behind progression a walking bot never reaches.
+
+A slow burn is legitimate — *Alien: Isolation* takes about ten minutes to show you
+the Alien. But it does not give you two and a half minutes of *nothing*: it gives
+you a radio, a body, a door that will not open. The distinction is between delaying
+the monster and delaying every beat, and this build currently does the second. That
+is now measured rather than suspected, which is the whole point of having run it.
+
+**No fix is attempted here.** Retuning a horror game's opening pacing is a design
+decision, it cannot be validated by another automated run in this environment, and
+guessing at the numbers would be worse than reporting the measurement. What the
+project has now that it did not have before is the instrument: one command, and a
+timeline a human can read.
 
 ### A diagnostic of mine that was wrong, recorded because it nearly misled me
 
