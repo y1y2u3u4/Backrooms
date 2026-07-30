@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { AO_VOLUME_GLSL, AO_VOLUME_APPLY } from './AOVolume.js';
 
 /**
  * MaterialLibrary — wraps forged surface sets in MeshStandardMaterials and
@@ -35,6 +36,17 @@ export const materialGlobals = {
   uWetLine: { value: -999 },
   uWetAmount: { value: 0 },
   uDamage: { value: 0 },
+
+  // Baked zone-scale ambient occlusion. See AOVolume.js — this is the term that
+  // makes corners dark, which is the thing screen-space AO cannot do and the
+  // thing whose absence reads most immediately as "not a real room".
+  uAOAtlas: { value: null },
+  uAOMin: { value: new THREE.Vector3() },
+  uAOInvSize: { value: new THREE.Vector3(1, 1, 1) },
+  uAORes: { value: new THREE.Vector3(1, 1, 1) },
+  uAOTiles: { value: new THREE.Vector2(1, 1) },
+  uAOStrength: { value: 0.0 },
+  uAOFloor: { value: 0.35 },
 };
 
 const VERT_HEAD = /* glsl */ `
@@ -92,6 +104,7 @@ const FRAG_HEAD = /* glsl */ `
     return vec2(a * 0.66 + b * 0.34, b * 0.45 + c * 0.55);
   }
   float axFbm(vec3 p) { return axFbm2(p).x; }
+${AO_VOLUME_GLSL}
 `;
 
 /**
@@ -158,6 +171,52 @@ const FRAG_MAP = /* glsl */ `
     dirt *= uDirtAmount * (0.45 + 0.55 * axN.y) * axVert;
     diffuseColor.rgb *= mix(1.0, 0.55, clamp(dirt, 0.0, 1.0));
 
+    // CEILING STAINING on downward-facing surfaces.
+    //
+    // Every weathering term above is gated on axVert or axUp, so a suspended
+    // ceiling tile — normal pointing straight down — received none of them and
+    // was left with nothing but the isotropic macro noise. That is why the
+    // ceiling, which is a third of the screen in a building with 2.78 m heads,
+    // read as one flat repeated tone across an entire plate.
+    //
+    // Tiles do not weather like walls. They stain from discrete leaks in the
+    // plenum above, the stains dry with a hard tide line darker than their
+    // middle, and individual tiles get REPLACED over thirty years, so the
+    // dominant read at a glance is per-tile tonal variation.
+    float axDown = clamp(-vAnnexNormal.y, 0.0, 1.0);
+    if (axDown > 0.15) {
+      // 0.6 m is KIT.gridCross — the cross-tee spacing, so this is one tile.
+      vec2 cellId = floor(vAnnexWorld.xz / 0.6);
+      float tileRnd = axHash(vec3(cellId, 4.7));
+
+      // A tile is either the original or a replacement; there is no in-between,
+      // so this is a step and not a smoothstep.
+      float replaced = step(0.86, tileRnd);
+      // Age spread among the ones that were never changed.
+      float age = 0.55 + 0.45 * tileRnd;
+
+      // Damp field, low frequency so one stain spans two or three tiles.
+      vec2 dampN = axFbm2(vAnnexWorld * vec3(0.058, 0.02, 0.058) + 23.0);
+      float wet = smoothstep(0.50, 0.68, dampN.x);
+      // Tide line: a dried water stain is darkest at its perimeter.
+      float tide = smoothstep(0.485, 0.525, dampN.x)
+                 * (1.0 - smoothstep(0.545, 0.60, dampN.x));
+
+      float stain = (wet * 0.55 + tide * 0.9) * age * uGrimeAmount;
+      stain *= 1.0 - replaced * 0.85;
+      stain = clamp(stain, 0.0, 1.0) * axDown;
+
+      // Water stains on mineral fibre go amber-brown, not grey — the binder
+      // and the dust in it oxidise. Darkening alone reads as a dirty smudge.
+      const vec3 STAIN = vec3(0.52, 0.38, 0.24);
+      diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * STAIN, stain);
+
+      // Per-tile tone, applied everywhere including the replaced ones, so the
+      // grid reads as a grid of individual boards rather than one surface.
+      float tone = mix(0.90, 1.06, tileRnd) + replaced * 0.07;
+      diffuseColor.rgb *= mix(1.0, tone, axDown * 0.85);
+    }
+
     // damage darkening, used when a zone "turns"
     diffuseColor.rgb *= mix(1.0, 0.35 + 0.25 * axM, uDamage);
   }
@@ -196,6 +255,23 @@ const FRAG_DETAIL_NORMAL = /* glsl */ `
       }
     }
   #endif
+
+  // GEOMETRIC SPECULAR ANTI-ALIASING.
+  //
+  // A normal map finer than one texel per pixel produces specular aliasing —
+  // the crawling glitter you see on a grazing wall or a metal grating as the
+  // camera moves. The fix is not to blur the normal but to widen the roughness
+  // to match how much the normal varies inside this pixel: if the surface swings
+  // through many orientations across one pixel, its highlight is genuinely
+  // broader than the roughness map claims.
+  //
+  // Kaplanyan's formulation. This is why the metalwork here does not sparkle.
+  {
+    vec3 dndx = dFdx(normal), dndy = dFdy(normal);
+    float variance = 0.25 * (dot(dndx, dndx) + dot(dndy, dndy));
+    float kernel = min(variance * 2.0, 0.16);
+    roughnessFactor = sqrt(clamp(roughnessFactor * roughnessFactor + kernel, 0.0, 1.0));
+  }
 `;
 
 /** Options accepted by MaterialLibrary.get(). */
@@ -316,7 +392,9 @@ export class MaterialLibrary {
         .replace('void main() {', FRAG_HEAD + '\nvoid main() {')
         .replace('#include <map_fragment>', '#include <map_fragment>\n' + FRAG_MAP)
         .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n' + FRAG_ROUGH)
-        .replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\n' + FRAG_DETAIL_NORMAL);
+        .replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\n' + FRAG_DETAIL_NORMAL)
+        // Indirect only: direct light already has real shadow maps.
+        .replace('#include <lights_fragment_end>', '#include <lights_fragment_end>\n' + AO_VOLUME_APPLY);
       mat.userData.shader = shader;
     };
     // Distinct cache key so three does not share a program with an

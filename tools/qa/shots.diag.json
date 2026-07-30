@@ -1,0 +1,41 @@
+[
+  {
+    "name": "d0_baseline",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0); g.qaSteady(); console.info('PROBE '+JSON.stringify(g.lightProbe()))"
+  },
+  {
+    "name": "d1_no_gtao",
+    "settle": 2,
+    "setup": "g.engine.exposure.lock(); g.setGTAO(false)"
+  },
+  {
+    "name": "d2_no_shadows",
+    "settle": 6,
+    "setup": "g.setGTAO(true); g.setShadows(false)"
+  },
+  {
+    "name": "d3_no_detailnormal",
+    "settle": 2,
+    "setup": "g.setShadows(true); g.setDetailNormal(0)"
+  },
+  {
+    "name": "d4_no_ao_volume",
+    "settle": 2,
+    "setup": "g.setDetailNormal(0.85); g.setAO(0)"
+  },
+  {
+    "name": "d5_fill_quarter",
+    "settle": 2,
+    "setup": "g.setAO(0.9); g.engine.exposure.unlock(); g.setFill(0.25); console.info('PROBE-Q '+JSON.stringify(g.lightProbe()))"
+  },
+  {
+    "name": "d6_fill_half",
+    "settle": 14,
+    "setup": "g.setFill(0.5)"
+  },
+  {
+    "name": "d7_fill_full_aostrong",
+    "settle": 14,
+    "setup": "g.setFill(1.0); g.setAO(0.9)"
+  }
+]

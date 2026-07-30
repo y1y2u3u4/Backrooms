@@ -256,6 +256,9 @@ export class ExposureAdaptation {
 
   /** @returns {THREE.Texture} the 1x1 adapted log-luminance */
   update(sceneTexture, dt) {
+    // Locked by the QA harness so an A/B pair is not separated by the exposure
+    // drifting between the two frames.
+    if (this.locked) return this.accB.texture;
     const r = this.renderer;
     const prevTarget = r.getRenderTarget();
 
@@ -279,7 +282,9 @@ export class ExposureAdaptation {
     return this.accB.texture;
   }
 
-  reset() { this._primed = false; }
+  reset() { this._primed = false; this.locked = false; }
+  lock() { this.locked = true; }
+  unlock() { this.locked = false; }
   dispose() {
     this.lumRT.dispose(); this.accA.dispose(); this.accB.dispose();
     this.downMat.dispose(); this.adaptMat.dispose(); this.quad.dispose();

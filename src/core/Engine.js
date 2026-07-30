@@ -25,9 +25,9 @@ import { Rolling, clamp } from './util.js';
  * full extra texture fetch plus a noise field, worth it at high, not at low.
  */
 export const QUALITY = {
-  low:    { scale: 0.62, ao: false, aoScale: 0.5, bloom: true,  bloomDiv: 4, shadowMap: 512,  maxShadows: 1, aniso: 4,  textureQuality: 0.5,  lights: 6,  stochastic: 0.0 },
-  medium: { scale: 0.80, ao: true,  aoScale: 0.5, bloom: true,  bloomDiv: 3, shadowMap: 1024, maxShadows: 2, aniso: 8,  textureQuality: 0.75, lights: 10, stochastic: 0.45 },
-  high:   { scale: 1.00, ao: true,  aoScale: 1.0, bloom: true,  bloomDiv: 2, shadowMap: 1536, maxShadows: 3, aniso: 16, textureQuality: 1,    lights: 14, stochastic: 0.62 },
+  low:    { scale: 0.62, ao: false, aoScale: 0.5, bloom: true,  bloomDiv: 4, shadowMap: 512,  maxShadows: 1, aniso: 4,  textureQuality: 0.5,  lights: 6,  stochastic: 0.0,  aoVolume: 0.85, aoCell: 0.85, motes: 900,  moteScale: 0.85 },
+  medium: { scale: 0.80, ao: true,  aoScale: 0.5, bloom: true,  bloomDiv: 3, shadowMap: 1024, maxShadows: 2, aniso: 8,  textureQuality: 0.75, lights: 10, stochastic: 0.45, aoVolume: 0.90, aoCell: 0.60, motes: 2200, moteScale: 1.00 },
+  high:   { scale: 1.00, ao: true,  aoScale: 1.0, bloom: true,  bloomDiv: 2, shadowMap: 1536, maxShadows: 3, aniso: 16, textureQuality: 1,    lights: 14, stochastic: 0.62, aoVolume: 0.90, aoCell: 0.45, motes: 3800, moteScale: 1.00 },
 };
 
 export class Engine {

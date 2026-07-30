@@ -1,0 +1,166 @@
+[
+  {
+    "name": "ao_00_off_spine",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0); g.qaSteady(); g.setAO(0)",
+    "file": "docs/captures/ao/ao_00_off_spine.png",
+    "stats": {
+      "ms": 1014.2555555555866,
+      "fps": 0.9859448090005504,
+      "p90": 10.700000000186265,
+      "calls": 353,
+      "tris": 766116,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 127,
+        "lit": 127,
+        "active": 12,
+        "shadows": 4
+      }
+    }
+  },
+  {
+    "name": "ao_01_on_spine",
+    "settle": 1,
+    "setup": "g.engine.exposure.lock(); g.setAO(0.9)",
+    "file": "docs/captures/ao/ao_01_on_spine.png",
+    "stats": {
+      "ms": 5.719999999925494,
+      "fps": 174.825174827452,
+      "p90": 7.600000000093132,
+      "calls": 351,
+      "tris": 766114,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 127,
+        "lit": 127,
+        "active": 12,
+        "shadows": 4
+      }
+    }
+  },
+  {
+    "name": "ao_02_off_ceiling",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,((r&&r.yaw)||0)+0.5,0.58); g.qaSteady(); g.setAO(0)",
+    "file": "docs/captures/ao/ao_02_off_ceiling.png",
+    "stats": {
+      "ms": 6.966666666661492,
+      "fps": 143.54066985656596,
+      "p90": 14.100000000093132,
+      "calls": 317,
+      "tris": 758844,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 127,
+        "lit": 127,
+        "active": 12,
+        "shadows": 4
+      }
+    }
+  },
+  {
+    "name": "ao_03_on_ceiling",
+    "settle": 1,
+    "setup": "g.engine.exposure.lock(); g.setAO(0.9)",
+    "file": "docs/captures/ao/ao_03_on_ceiling.png",
+    "stats": {
+      "ms": 5.1500000000620885,
+      "fps": 194.17475727921243,
+      "p90": 11.099999999627471,
+      "calls": 315,
+      "tris": 758842,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 127,
+        "lit": 127,
+        "active": 12,
+        "shadows": 4
+      }
+    }
+  },
+  {
+    "name": "ao_04_off_floor",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,-0.55); g.qaSteady(); g.setAO(0)",
+    "file": "docs/captures/ao/ao_04_off_floor.png",
+    "stats": {
+      "ms": 4.0947368420464425,
+      "fps": 244.21593830685006,
+      "p90": 8.100000000093132,
+      "calls": 305,
+      "tris": 762212,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 127,
+        "lit": 127,
+        "active": 12,
+        "shadows": 4
+      }
+    }
+  },
+  {
+    "name": "ao_05_on_floor",
+    "settle": 1,
+    "setup": "g.engine.exposure.lock(); g.setAO(0.9)",
+    "file": "docs/captures/ao/ao_05_on_floor.png",
+    "stats": {
+      "ms": 7.4333333332712455,
+      "fps": 134.52914798318645,
+      "p90": 12.5,
+      "calls": 303,
+      "tris": 762210,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 127,
+        "lit": 127,
+        "active": 12,
+        "shadows": 4
+      }
+    }
+  },
+  {
+    "name": "ao_06_off_corner",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,((r&&r.yaw)||0)+2.2,-0.18); g.qaSteady(); g.setAO(0)",
+    "file": "docs/captures/ao/ao_06_off_corner.png",
+    "stats": {
+      "ms": 5.189473684215428,
+      "fps": 192.69776876249549,
+      "p90": 8.799999999813735,
+      "calls": 353,
+      "tris": 766116,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 127,
+        "lit": 127,
+        "active": 12,
+        "shadows": 4
+      }
+    }
+  },
+  {
+    "name": "ao_07_on_corner",
+    "settle": 1,
+    "setup": "g.engine.exposure.lock(); g.setAO(0.9)",
+    "file": "docs/captures/ao/ao_07_on_corner.png",
+    "stats": {
+      "ms": 5.279999999888242,
+      "fps": 189.39393939794817,
+      "p90": 6.199999999720603,
+      "calls": 351,
+      "tris": 766114,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 127,
+        "lit": 127,
+        "active": 12,
+        "shadows": 4
+      }
+    }
+  }
+]

@@ -6,6 +6,8 @@ import { Bus, clamp01, damp } from './core/util.js';
 import { TextureForge } from './render/TextureForge.js';
 import { MaterialLibrary, updateMaterialGlobals, setWetness, materialGlobals } from './render/Materials.js';
 import { LightRig } from './render/Lighting.js';
+import { AOVolume } from './render/AOVolume.js';
+import { Motes } from './render/Motes.js';
 import { FOG_PROFILES } from './render/AtmosphereFog.js';
 import { CollisionWorld } from './player/Physics.js';
 import { Player } from './player/Player.js';
@@ -105,6 +107,11 @@ export class Game {
       maxShadows: this.engine.q.maxShadows,
       shadowMapSize: this.engine.q.shadowMap,
     });
+
+    // Airborne dust. Cheap — one draw call, no per-frame CPU work beyond a few
+    // uniforms — and it is what stops a room reading as an empty volume with
+    // surfaces at the far end. See Motes.js.
+    this.motes = new Motes({ count: this.engine.q.motes ?? 2600 }).addTo(this.engine.scene);
 
     this.ctx = {
       materials: this.materials,
@@ -342,8 +349,61 @@ export class Game {
     // Hands live in a separate scene, so they need the zone's mood pushed to
     // them explicitly or they read as a flat cut-out pasted over the world.
     this._zoneAmbient = amb;
+    this.motes?.setProfile({
+      opacity: (amb.motes ?? 0.7) * (this.engine.q.moteScale ?? 1),
+      size: amb.moteSize ?? 1,
+      extent: amb.moteExtent ?? 16,
+    });
     this.audio?.setZone?.(z?.reverb || zoneKey);
     this.currentZone = zoneKey;
+    this._bindAOVolume(zoneKey, z);
+  }
+
+  /**
+   * Point the baked-AO uniforms at this zone's volume, baking it if this is the
+   * first visit.
+   *
+   * The volume is what gives the room's corners, reveals and column bases their
+   * darkening; the hemisphere bounce fill reaches everywhere equally and GTAO's
+   * radius is far too small to know about a room's shape. See AOVolume.js.
+   *
+   * Baked volumes are kept for the whole session even after the zone streams
+   * out. They are a fraction of a megabyte each and the bake is the expensive
+   * part — re-entering the Intake through a door should not cost a hitch, and a
+   * zone rebuilt from the same seed has identical colliders anyway.
+   *
+   * Only ONE volume is bound at a time even though up to three zones are
+   * resident. That is correct rather than a compromise: resident zones sit 400 m
+   * apart, so the other two sample outside the bound volume, and the sampler
+   * returns a neutral 1.0 for anything outside it. They are also past the far
+   * plane and therefore never on screen.
+   */
+  _bindAOVolume(zoneKey, zone) {
+    if (!this._aoVolumes) this._aoVolumes = new Map();
+    const strength = this.engine.q.aoVolume ?? 0.9;
+    if (strength <= 0) { materialGlobals.uAOStrength.value = 0; return; }
+
+    let vol = this._aoVolumes.get(zoneKey);
+    if (!vol) {
+      // Local bounds; the colliders themselves are already in world space
+      // because ZoneBuilder bakes the zone's origin into everything it emits.
+      const local = zone?.bounds;
+      if (!local) { materialGlobals.uAOStrength.value = 0; return; }
+      const [ox, oy, oz] = zone.origin || [0, 0, 0];
+      const box = local.clone().translate(new THREE.Vector3(ox, oy, oz));
+      vol = new AOVolume({ cell: this.engine.q.aoCell ?? 0.5 });
+      try {
+        vol.build(this.collision, box);
+      } catch (e) {
+        console.warn('[game] AO volume bake failed', e);
+        materialGlobals.uAOStrength.value = 0;
+        return;
+      }
+      this._aoVolumes.set(zoneKey, vol);
+      console.info(`[game] AO volume "${zoneKey}"`, vol.stats());
+    }
+    vol.writeUniforms(materialGlobals);
+    materialGlobals.uAOStrength.value = strength;
   }
 
   togglePause() {
@@ -419,6 +479,7 @@ export class Game {
       // the whole step stops the light flicker and it reads as a screenshot.
       updateMaterialGlobals(dt);
       this.rig.update(dt, this.engine.camera, this.engine.renderer);
+      this.motes?.update(dt, this.engine.camera, this.rig);
       this.ui?.update?.(dt);
     }
     this.engine.render(dt);
@@ -448,6 +509,12 @@ export class Game {
     this.gameplay?.update?.(dt, this.input);
     this.world?.update?.(dt, this.player.position);
     this.rig.update(dt, this.engine.camera, this.engine.renderer);
+    // After the rig, so a mote lit by a flickering tube flickers with it.
+    // gl_PointSize is in render-target pixels, not CSS pixels, and the player's
+    // FOV moves with sprint and lean — so the projection scale has to be
+    // refreshed whenever either changes or motes grow and shrink with the zoom.
+    this._refreshMoteScale();
+    this.motes?.update(dt, this.engine.camera, this.rig);
 
     // Overlay mood: the fill follows the zone, the key follows the lamp and the
     // light actually falling on the player, so hands darken when the player
@@ -481,6 +548,96 @@ export class Game {
   // ---- QA hooks -----------------------------------------------------------
 
   renderOnce(dt = 1 / 60) { this.step(dt); this.engine.render(dt); }
+
+  _refreshMoteScale() {
+    if (!this.motes) return;
+    const h = this.engine.renderHeight, f = this.engine.camera.fov;
+    if (h === this._moteH && f === this._moteFov) return;
+    this._moteH = h; this._moteFov = f;
+    this.motes.resize(this.engine.camera, h);
+  }
+
+  /** QA: override the baked-AO strength so an A/B pair can be captured. */
+  setAO(v) { materialGlobals.uAOStrength.value = v; return v; }
+
+  /**
+   * QA: isolate one contributor at a time.
+   *
+   * When a defect appears on a surface there are four plausible sources — the
+   * screen-space AO pass, the shadow maps, the injected detail normal, and the
+   * bounce fill — and guessing between them costs a capture run each. These let
+   * one run answer the question.
+   */
+  setGTAO(on) { this.engine.gtao.enabled = !!on; return !!on; }
+  setShadows(on) {
+    this.engine.renderer.shadowMap.enabled = !!on;
+    this.rig.invalidateShadows();
+    this.engine.renderer.shadowMap.needsUpdate = true;
+    // Every material has the shadow path compiled in; toggling the renderer
+    // flag changes the program, so they all have to be recompiled.
+    for (const m of this.materials.all) m.needsUpdate = true;
+    return !!on;
+  }
+  setDetailNormal(v) {
+    // uDetailStrength is per-material, not one of the shared globals, so this
+    // has to walk the library and reach into each compiled program's uniforms.
+    let n = 0;
+    for (const m of this.materials.all) {
+      const u = m.userData.shader?.uniforms;
+      if (u?.uDetailStrength) { u.uDetailStrength.value = v; n++; }
+    }
+    return n;
+  }
+  /** QA: scale the zone's bounce fill without editing the profile table. */
+  setFill(scale) {
+    const amb = this._zoneAmbient || AMBIENT_PROFILES.intake;
+    this.rig.setAmbient(amb.sky, amb.ground, amb.intensity * scale);
+    this.rig.snapAmbient();
+    return amb.intensity * scale;
+  }
+  /** QA: what is actually lighting the point in front of the camera. */
+  lightProbe() {
+    const p = this.player.position;
+    const amb = this._zoneAmbient || AMBIENT_PROFILES.intake;
+    const lum = (hex) => { const c = new THREE.Color(hex); return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b; };
+    const skyL = lum(amb.sky), grL = lum(amb.ground);
+    return {
+      zone: this.currentZone,
+      directAtHead: +this.rig.illuminationAt(p.x, p.y + 1.6, p.z).toFixed(3),
+      directAtFloor: +this.rig.illuminationAt(p.x, p.y + 0.1, p.z).toFixed(3),
+      fillUp: +(skyL * this.rig.ambient.intensity).toFixed(3),
+      fillDown: +(grL * this.rig.ambient.intensity).toFixed(3),
+      fixtures: this.rig.stats,
+      exposure: +this.engine.grade.uniforms.uExposure.value.toFixed(3),
+    };
+  }
+
+  /**
+   * QA: hold the frame still.
+   *
+   * An A/B pair captured across two settle runs is not comparable — flickering
+   * fixtures, the drifting exposure and the dust drift all move between the two
+   * frames, and the difference between them swamps whatever is being tested. This
+   * makes every fixture healthy and steady at full output and pins the exposure,
+   * so a second capture with one thing changed differs only by that thing.
+   */
+  qaSteady() {
+    for (const f of this.rig.fixtures) {
+      f.setHealth('good');
+      f.health = 'good';
+      f._dead = false;
+      f.level = 1;
+      f._burstLen = 0;
+    }
+    if (this.motes) this.motes.uniforms.uTime.value = 12.0;
+    this.engine.exposure?.unlock?.();
+    return true;
+  }
+  aoStats() {
+    const out = {};
+    for (const [k, v] of this._aoVolumes || []) out[k] = v.stats();
+    return out;
+  }
 
   /**
    * Place the camera for a capture.
@@ -615,15 +772,31 @@ export const AMBIENT_PROFILES = {
   // direct light and reads as pure black next to it. These values are chosen so
   // an unlit wall face sits about two stops under a lit one, which is what a
   // real room with white ceilings actually does.
-  intake:    { sky: 0x93907f, ground: 0xa8a48f, intensity: 2.05 },
-  service:   { sky: 0x5e646c, ground: 0x6c7178, intensity: 0.70 },
-  cistern:   { sky: 0x46545a, ground: 0x4e5e5e, intensity: 0.50 },
-  residence: { sky: 0x7e7462, ground: 0x8e806a, intensity: 1.05 },
-  plant:     { sky: 0x565e66, ground: 0x666861, intensity: 0.75 },
-  duct:      { sky: 0x34322d, ground: 0x3c3a34, intensity: 0.30 },
-  stack:     { sky: 0x8a8c98, ground: 0x9a9ca6, intensity: 1.55 },
-  safe:      { sky: 0x8e7e62, ground: 0x9c8862, intensity: 1.30 },
-  void:      { sky: 0x000000, ground: 0x000000, intensity: 0.0 },
+  //
+  // `motes` is the airborne dust density, `moteSize` its particle scale. Air is
+  // one of the things that distinguishes these rooms from each other: the Intake
+  // is a sealed office plate whose filters still half work, the Duct is where
+  // thirty years of it settled, and the Cistern's air is too wet to hold any.
+  //
+  // NOTE ON COLOUR TEMPERATURE. The sky and ground colours are deliberately
+  // pushed APART on the warm/cool axis rather than being two shades of the same
+  // hue, which is what they used to be. A HemisphereLight is the only tool here
+  // that can put two colour temperatures in one frame: everything facing up
+  // takes the sky colour, everything facing down takes the ground colour. Every
+  // reference photograph of a lit interior has that split — bounce off a warm lit
+  // floor going up under the desks and shelves, cooler light from the tube's own
+  // colour and the grey ceiling coming down — and its absence was why frames
+  // read as monochrome washes of a single hue no matter how good the albedo was.
+  // Sky and ground luminance are kept close so the exposure does not move.
+  intake:    { sky: 0x7f8a99, ground: 0xbfa87c, intensity: 2.05, motes: 0.55, moteSize: 0.85 },
+  service:   { sky: 0x525f70, ground: 0x776d5e, intensity: 0.70, motes: 0.85, moteSize: 1.00 },
+  cistern:   { sky: 0x3d5460, ground: 0x585a48, intensity: 0.50, motes: 0.30, moteSize: 1.35 },
+  residence: { sky: 0x6e7480, ground: 0x9a8258, intensity: 1.05, motes: 0.75, moteSize: 0.95 },
+  plant:     { sky: 0x4c5a6b, ground: 0x74684f, intensity: 0.75, motes: 1.15, moteSize: 1.10, moteExtent: 26 },
+  duct:      { sky: 0x2e343c, ground: 0x443c2c, intensity: 0.30, motes: 1.45, moteSize: 1.15, moteExtent: 11 },
+  stack:     { sky: 0x808ea6, ground: 0xa2977f, intensity: 1.55, motes: 0.90, moteSize: 1.05, moteExtent: 24 },
+  safe:      { sky: 0x7e8290, ground: 0xa88a55, intensity: 1.30, motes: 0.60, moteSize: 0.90, moteExtent: 12 },
+  void:      { sky: 0x000000, ground: 0x000000, intensity: 0.0,  motes: 0.0,  moteSize: 1.00 },
 };
 
 /** Minimal World shim used when `src/world/World.js` is not present. */

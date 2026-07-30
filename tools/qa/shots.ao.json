@@ -1,0 +1,38 @@
+[
+  {
+    "name": "ao_00_off_spine",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0); g.qaSteady(); g.setAO(0)"
+  },
+  {
+    "name": "ao_01_on_spine",
+    "settle": 1,
+    "setup": "g.engine.exposure.lock(); g.setAO(0.9)"
+  },
+  {
+    "name": "ao_02_off_ceiling",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,((r&&r.yaw)||0)+0.5,0.58); g.qaSteady(); g.setAO(0)"
+  },
+  {
+    "name": "ao_03_on_ceiling",
+    "settle": 1,
+    "setup": "g.engine.exposure.lock(); g.setAO(0.9)"
+  },
+  {
+    "name": "ao_04_off_floor",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,-0.55); g.qaSteady(); g.setAO(0)"
+  },
+  {
+    "name": "ao_05_on_floor",
+    "settle": 1,
+    "setup": "g.engine.exposure.lock(); g.setAO(0.9)"
+  },
+  {
+    "name": "ao_06_off_corner",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,((r&&r.yaw)||0)+2.2,-0.18); g.qaSteady(); g.setAO(0)"
+  },
+  {
+    "name": "ao_07_on_corner",
+    "settle": 1,
+    "setup": "g.engine.exposure.lock(); g.setAO(0.9)"
+  }
+]
