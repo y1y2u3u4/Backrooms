@@ -726,6 +726,55 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
     }
   }
 
+  // =========================================================================
+  // GAMEPLAY
+  //
+  // The Intake holds no core and no key. It holds the lamp, the induction sheet
+  // and one hiding place, because it is the tutorial: the player learns that
+  // things can be picked up, read and climbed into before anything is at stake.
+  //
+  // Coordinates come from the plan rather than being written down, because the
+  // floor plate is generated — a literal number here would land inside a wall the
+  // next time the seed changes.
+  // =========================================================================
+  const lz = spawnCell[1];
+  const interactables = [
+    // Not a lamp: you arrived with the lamp (see Inventory's constructor). What is
+    // on the floor by the matting is the spare cell for it and the dictaphone
+    // somebody left, which together teach both halves of picking things up — one
+    // stacks, one is a tool that goes in your hand.
+    { kind: 'pickup', item: 'battery_cell', position: [-halfW + 1.6, 0.02, lz - 0.9], rotation: 0.5 },
+    { kind: 'pickup', item: 'tape_player', position: [-halfW + 1.9, 0.02, lz - 1.3], rotation: 1.8 },
+    { kind: 'pickup', item: 'note', noteId: 'note_induction', position: [-halfW + 1.4, 0.02, lz + 1.9], rotation: -0.4 },
+    // The locker in the entrance bay. It is 3 m from where the player wakes up on
+    // purpose: the first thing the game teaches is where to go when it starts.
+    { kind: 'hide', id: 'locker_intake', position: [-halfW + 0.42, 0, lz + 3.9], rotation: Math.PI / 2 },
+  ];
+
+  // A dressed room gets the drawing and a cassette, so the first room the player
+  // walks into off the spine has something in it worth crossing the floor for.
+  {
+    const store = rooms.find((r) => r.dress === 'store') || rooms.find((r) => r.dress === 'records') || rooms[0];
+    if (store) {
+      const [scx, scz] = store.centre;
+      interactables.push(
+        { kind: 'pickup', item: 'note', noteId: 'note_12d_blank', position: [scx, 0.02, scz + 0.6], rotation: 0.3 },
+        { kind: 'pickup', item: 'battery_cell', position: [scx - 0.5, 0.02, scz + 0.2], rotation: 2.0 },
+      );
+    }
+    const records = rooms.find((r) => r.dress === 'records');
+    if (records) {
+      const [rcx, rcz] = records.centre;
+      interactables.push(
+        { kind: 'pickup', item: 'note', noteId: 'note_lost_property', position: [rcx + 0.2, 0.76, rcz - 0.7], rotation: -0.5 },
+      );
+    }
+  }
+
+  const attendantFloors = [
+    { id: 'entrance', rect: [-halfW + 1.0, lz - 3.0, -halfW + 4.0, lz + 4.5] },
+  ];
+
   // ---- finish ------------------------------------------------------------
   for (const b of builders) {
     const g = b.finish();
@@ -735,7 +784,7 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
 
   // Spawn in front of the lift, looking east into the floor plate.
   return {
-    root, chunks, plan, builders, portals, interactables: [],
+    root, chunks, plan, builders, portals, interactables, attendantFloors,
     spawn: [spawnCell[0] + 1.2, 0, spawnCell[1]],
     spawnYaw: -Math.PI / 2,
     fogProfile: 'intake',

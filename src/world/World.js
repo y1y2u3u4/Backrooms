@@ -178,6 +178,10 @@ export class World {
     zone.tris = zone.root.userData?.tris ?? 0;
     console.info(`[world] built ${id} in ${(performance.now() - t0).toFixed(0)} ms` +
       (zone.tris ? ` (${(zone.tris / 1000).toFixed(0)}k tris)` : ''));
+    // The gameplay layer hangs its doors, props and gates off this. It is emitted
+    // AFTER the zone is registered in `this.zones`, because the listener looks the
+    // zone up by id rather than trusting the event to carry it.
+    this.ctx.bus?.emit('zone:build', { zone: id, tris: zone.tris });
     this.evict(id);
     return zone;
   }
@@ -366,12 +370,17 @@ export class World {
         }
         this._lastGateNag = null;
         this._spentPortals.add(p.id);
-        this.enter(p.target.zone, p.target.portal || p.id);
+        // `portal()` stores the far-side door as `target.portalId`. Reading
+        // `target.portal` found undefined every time and fell back to `p.id` —
+        // the id of the door being LEFT, which no destination zone has — so
+        // `enter()` could not match a portal and dropped the player at the
+        // destination's default spawn instead of at the door they walked into.
+        this.enter(p.target.zone, p.target.portalId || p.target.portal || p.id);
         // The door on the far side is spent too, or it fires on the next frame
         // and sends the player back where they came from.
         const dest = this.zones[p.target.zone];
         for (const q of dest?.portals || []) {
-          if (q.target?.zone === this.currentZoneBefore || q.id === (p.target.portal || p.id)) {
+          if (q.target?.zone === this.currentZoneBefore || q.id === (p.target.portalId || p.id)) {
             this._spentPortals.add(q.id);
           }
         }

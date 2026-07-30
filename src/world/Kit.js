@@ -127,7 +127,14 @@ export function floorSlab(b, rect, y, {
     return 1 - edgeShade * (1 - Math.min(ex, ez));
   });
   b.add(key, g);
-  if (collide) b.addFloor([Math.min(x0, x1), Math.min(z0, z1), Math.max(x0, x1), Math.max(z0, z1)], y, { surface, water, tag });
+  if (collide) {
+    // Hand the collision handle back on the geometry. A zone that can change the
+    // state of a floor at run time — the Cistern draining — needs the record, and
+    // fishing it out of the builder's private `_records` afterwards is worse.
+    g.userData.floor = b.addFloor(
+      [Math.min(x0, x1), Math.min(z0, z1), Math.max(x0, x1), Math.max(z0, z1)], y,
+      { surface, water, tag });
+  }
   return g;
 }
 

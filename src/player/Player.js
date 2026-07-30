@@ -21,8 +21,19 @@ import { clamp, clamp01, damp, lerp, smoothstep, wobble, TAU } from '../core/uti
 
 const EYE_STAND = 1.63;
 const EYE_CROUCH = 0.94;
+/**
+ * On hands and knees. The Ductwork's internal clear is 800 mm, and a crouched
+ * capsule is 1.02 m — so the crawl's ceiling colliders overlapped the body all
+ * the way along and `resolveCapsule` shoved the player sideways out of the duct
+ * at every step. The whole zone, its two portals and everything in it were
+ * physically unreachable. A third posture fixes it at the source rather than by
+ * deleting the duct's ceiling, which is what the sound and the light need.
+ */
+const EYE_CRAWL = 0.52;
+const BODY_CRAWL = 0.62;
 const BODY_RADIUS = 0.29;
 const BODY_HEIGHT = 1.74;
+const BODY_CROUCH = 1.02;
 
 export class Player {
   constructor({ collision, camera, audio = null, bus }) {
@@ -42,6 +53,8 @@ export class Player {
 
     this.crouching = false;
     this.crouchAmt = 0;
+    this.crawling = false;
+    this.crawlAmt = 0;
     this.sprinting = false;
     this.grounded = true;
     this.groundY = 0;
@@ -145,12 +158,18 @@ export class Player {
     const wantSprint = this.controlEnabled && input?.down('sprint') && axis.y > 0.1 && this.stamina > 0.06;
     const wantCrouch = this.controlEnabled && input?.down('crouch');
 
-    // Crouch is blocked from releasing under low ceilings (vents).
+    // Posture is dictated by headroom, not by preference: crouch is blocked from
+    // releasing under a low ceiling, and below crouch height the player goes down
+    // onto hands and knees. `crawlAmt` is a second blend on top of `crouchAmt`, so
+    // standing -> crouched -> crawling is one continuous motion of the camera.
     const headroom = this.collision.ceilingAbove(this.position.x, this.position.z, this.position.y, this.radius) - this.position.y;
     const forcedCrouch = headroom < BODY_HEIGHT - 0.05;
+    const forcedCrawl = headroom < BODY_CROUCH + 0.08;
     this.crouching = wantCrouch || forcedCrouch;
+    this.crawling = forcedCrawl;
     this.crouchAmt = damp(this.crouchAmt, this.crouching ? 1 : 0, 11, dt);
-    this.height = lerp(BODY_HEIGHT, 1.02, this.crouchAmt);
+    this.crawlAmt = damp(this.crawlAmt || 0, forcedCrawl ? 1 : 0, 9, dt);
+    this.height = lerp(lerp(BODY_HEIGHT, BODY_CROUCH, this.crouchAmt), BODY_CRAWL, this.crawlAmt);
 
     this.sprinting = wantSprint && !this.crouching;
 
@@ -158,6 +177,9 @@ export class Player {
     const water = clamp01(this.waterDepth / 0.85);
     let speed = lerp(2.15, 3.62, this.sprinting ? 1 : 0);
     speed = lerp(speed, 1.08, this.crouchAmt);
+    // A crawl is slower than a crouch and it is the reason the Ductwork is a
+    // shortcut you have to want.
+    speed = lerp(speed, 0.74, this.crawlAmt);
     speed *= 1 - water * 0.42;                 // wading is slow and loud
     speed *= lerp(1, 0.86, clamp01(this.fear * 0.6));
     speed *= this.speedScale;
@@ -275,7 +297,7 @@ export class Player {
       this._lastStepPhase += Math.PI;
       if (speedNow > 0.35) {
         const strength = clamp01(speedNow / 3.4);
-        const loud = this.crouching ? 2.2 : this.sprinting ? 11 : 6;
+        const loud = this.crawling ? 3.4 : this.crouching ? 2.2 : this.sprinting ? 11 : 6;
         this.bus?.emit('player:step', {
           surface: this.surface,
           water: this.waterDepth,
@@ -327,7 +349,8 @@ export class Player {
     this.recoil.z = damp(this.recoil.z + this.recoilVel.z * dt, 0, 6, dt);
 
     // Bob: 2:1 Lissajous. Vertical at 2f, lateral at 1f, plus a small roll.
-    const a = this.bobAmount * lerp(1, 0.55, this.crouchAmt) * this.motionScale;
+    // A crawl bobs MORE, not less: the head is on the same axis as the shoulders.
+    const a = this.bobAmount * lerp(1, 0.55, this.crouchAmt) * lerp(1, 1.7, this.crawlAmt) * this.motionScale;
     const bobY = Math.sin(this.bobPhase * 2) * 0.026 * a;
     const bobX = Math.sin(this.bobPhase) * 0.030 * a;
     const bobRoll = Math.sin(this.bobPhase) * 0.011 * a;
@@ -343,7 +366,7 @@ export class Player {
     const driftX = wobble(t * 0.21, 3) * 0.0016 * (1 - a * 0.7) * this.motionScale;
     const driftY = wobble(t * 0.17, 8) * 0.0014 * (1 - a * 0.7) * this.motionScale;
 
-    const eyeY = lerp(EYE_STAND, EYE_CROUCH, this.crouchAmt);
+    const eyeY = lerp(lerp(EYE_STAND, EYE_CROUCH, this.crouchAmt), EYE_CRAWL, this.crawlAmt);
     this.eyeHeight = eyeY;
 
     this.right(this._right);

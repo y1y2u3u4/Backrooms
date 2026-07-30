@@ -114,11 +114,19 @@ export function buildCistern(ctx, opts = {}) {
   // =========================================================================
   // 1. shells
   // =========================================================================
+  /**
+   * Floors are registered with their standing water depth, which is what makes a
+   * footstep loud. `drainedFloors` keeps the handles so that opening the penstock
+   * can take the depth back out of them — otherwise the water visibly drops and
+   * the player still wades noisily through a dry chamber.
+   */
+  const drainedFloors = [];
   const shell = (b, r, { h = CEIL, key = 'concreteWall', floorKey = 'silt', sub = 2.4 } = {}) => {
     const [x0, z0, x1, z1, y] = r;
-    floorSlab(b, [x0, z0, x1, z1], y, {
+    const g = floorSlab(b, [x0, z0, x1, z1], y, {
       key: floorKey, surface: 'water', water: WATER - y, subdiv: sub, edgeShade: 0.36,
     });
+    if (g.userData.floor) drainedFloors.push({ floor: g.userData.floor, bedY: y });
     soffit(b, [x0, z0, x1, z1], y + h);
   };
 
@@ -441,6 +449,64 @@ export function buildCistern(ctx, opts = {}) {
   bTunnel.root.add(water.mesh);
 
   // =========================================================================
+  // 7. gameplay — the penstocks and the first core
+  //
+  // The isolation notice says Penstock 1 is open and must stay open, Penstock 2
+  // is padlocked, and "there is no configuration in which you may leave and
+  // neither of them matter". It is lying by omission: shutting 1 drains this
+  // floor, which is the thing the player wants, and the notice's own logic gives
+  // them every reason not to. The padlock on 2 is real — it needs the key from
+  // the sump — and turning 2 does nothing but make noise.
+  // =========================================================================
+  const interactables = [
+    // Both handwheels stand on the chamber walkway, 1.05 m above its deck.
+    {
+      kind: 'valve', id: 'penstock_1', position: [14.6, 2.27, 3.05], rotation: 0,
+      turns: 5, label: 'penstock 1', action: 'drain', targetZone: 'cistern', startOpen: true,
+    },
+    {
+      kind: 'valve', id: 'penstock_2', position: [16.4, 2.27, 3.05], rotation: 0,
+      turns: 5, label: 'penstock 2', action: 'flood', targetZone: 'cistern',
+      requires: 'key_penstock', requiresMessage: 'Padlocked. Brass tag, stamped P2.',
+    },
+    // The first core: on the chamber bed, in the deepest and loudest water in the
+    // zone, behind the tank. Wading to it is the price if the penstock stays open.
+    { kind: 'pickup', item: 'fuse_core', position: [12.5, -0.26, -6.3], rotation: 0.6 },
+    // The padlock key, in the sump, where a thing that has been in water a long
+    // time would be.
+    { kind: 'pickup', item: 'key_penstock', position: [-17.4, -0.50, -4.9], rotation: 1.4 },
+    // The notice that explains the penstocks, cable-tied where you come in.
+    { kind: 'pickup', item: 'note', noteId: 'note_cistern_isolation', position: [-24.4, ARRIVE_Y + 0.02, -1.2], rotation: 0.2 },
+    { kind: 'pickup', item: 'note', noteId: 'note_wading', position: [-10.0, 1.02, R_TUNNEL[1] + 0.30], rotation: 0 },
+    { kind: 'pickup', item: 'note', noteId: 'note_silt_log', position: [-3.5, 0.34, 8.95], rotation: -0.4 },
+    { kind: 'pickup', item: 'cassette', tapeId: 'tape_cistern', position: [-5.3, 0.20, 10.3], rotation: 0.9 },
+    { kind: 'pickup', item: 'battery_cell', position: [-3.5, 0.34, 9.4], rotation: 2.1 },
+    // The gallery shallows out and has a nest in it. It is the only quiet corner
+    // of the zone, so it is where the hiding place belongs.
+    { kind: 'hide', id: 'locker_cistern', position: [-6.9, 0.16, 6.6], rotation: -Math.PI / 2 },
+  ];
+
+  // Draining. `world:drain` comes from the valve; the level animates down over
+  // half a minute, and the standing-water depth comes out of every floor record
+  // as it goes so that footsteps stop being loud at the same rate the water
+  // stops being visible.
+  let drainTarget = WATER;
+  let drainLevel = WATER;
+  const unsub = [
+    bus?.on('world:drain', (e) => {
+      if (e?.zone !== 'cistern') return;
+      // `open === false` is the valve reaching SHUT, which is what drains the floor.
+      drainTarget = e.open ? WATER : -0.60;
+    }),
+    bus?.on('world:flood', (e) => { if (e?.zone === 'cistern') drainTarget = WATER + 0.28; }),
+  ].filter(Boolean);
+
+  const applyLevel = (y) => {
+    water.setLevel(y);
+    for (const { floor, bedY } of drainedFloors) floor.water = Math.max(0, y - bedY);
+  };
+
+  // =========================================================================
   // finish
   // =========================================================================
   const root = new THREE.Group();
@@ -449,7 +515,7 @@ export function buildCistern(ctx, opts = {}) {
   for (const b of builders) { const g = b.finish(); chunks.push(g); root.add(g); }
 
   return {
-    root, chunks, builders, portals, interactables: [],
+    root, chunks, builders, portals, interactables,
     spawn: [-26.0, ARRIVE_Y, 0],
     spawnYaw: -Math.PI / 2,
     fogProfile: 'cistern',
@@ -458,9 +524,16 @@ export function buildCistern(ctx, opts = {}) {
     wetness: 0.9,
     ambient: { sky: 0x101a1c, ground: 0x243029, intensity: 0.30 },
     water,
-    update(dt, local, worldPos) { water.update(dt, worldPos); },
+    get waterLevel() { return drainLevel; },
+    update(dt, local, worldPos) {
+      if (Math.abs(drainTarget - drainLevel) > 0.001) {
+        drainLevel += Math.sign(drainTarget - drainLevel) * Math.min(Math.abs(drainTarget - drainLevel), dt * 0.035);
+        applyLevel(drainLevel);
+      }
+      water.update(dt, worldPos);
+    },
     updateIdle(dt) { water.update(dt * 0.25, null); },
-    dispose() { water.dispose(); },
+    dispose() { for (const u of unsub) u(); water.dispose(); },
     bounds: new THREE.Box3(
       new THREE.Vector3(-27, -1, -8), new THREE.Vector3(21, 5, 12)),
   };

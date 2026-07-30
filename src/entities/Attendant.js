@@ -85,6 +85,13 @@ export class Attendant {
    */
   register(entry) {
     if (!entry?.object) return null;
+    // Idempotent by id. `adopt()` is called once per zone as the world streams,
+    // and it walks the whole shared prop registry every time, so without this
+    // the first zone's lockers accumulate a duplicate entry per zone built.
+    if (entry.id) {
+      const existing = this.targets.find((t) => t.id === entry.id);
+      if (existing) return existing;
+    }
     const e = { used: false, data: {}, ...entry };
     this.targets.push(e);
     return e;

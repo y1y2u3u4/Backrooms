@@ -518,8 +518,20 @@ export function buildDuct(ctx, opts = {}) {
   const chunks = [];
   for (const b of builders) { const g = b.finish(); chunks.push(g); root.add(g); }
 
+  // The Ductwork is the shortcut, not a destination: it holds no core and no key,
+  // only the things a person leaves behind while hiding somewhere they cannot
+  // stand up. A crawl 800 mm square means everything has to be within arm's reach
+  // of the floor, on the axis.
+  const interactables = [
+    { kind: 'pickup', item: 'note', noteId: 'nb_1', position: [-11.6, FLOOR + 0.02, 0], rotation: 0.4 },
+    { kind: 'pickup', item: 'note', noteId: 'note_drawing', position: [J1[0], FLOOR + 0.02, 7.4], rotation: 1.2 },
+    { kind: 'pickup', item: 'battery_cell', position: [-3.2, FLOOR + 0.02, 0], rotation: 0.9 },
+    { kind: 'pickup', item: 'cassette', tapeId: 'tape_induction', position: [J1[0], FLOOR + 0.02, 10.2], rotation: -0.5 },
+    { kind: 'pickup', item: 'note', noteId: 'note_proc_7c_rev4', position: [7.2, FLOOR + 0.02, 0], rotation: 2.4 },
+  ];
+
   return {
-    root, chunks, builders, portals, interactables: [],
+    root, chunks, builders, portals, interactables,
     spawn: [-13.4, FLOOR, 0],
     spawnYaw: -Math.PI / 2,
     fogProfile: 'duct',

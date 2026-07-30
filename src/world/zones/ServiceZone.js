@@ -790,6 +790,68 @@ export function buildService(ctx, opts = {}) {
   }
 
   // =========================================================================
+  // 10. gameplay — Distribution Board C
+  //
+  // The board is the traversal puzzle of the whole game, and it goes in the
+  // switchroom on the wall in the corner that every chair in that room is turned
+  // to face. That was authored as an unexplained detail; this is what it was
+  // facing.
+  //
+  // Eight ways, four of which may be live at once. Five circuits exist in the
+  // building's zones and three of them start dead, so reaching the Stack or the
+  // Residence means deciding what to put out behind you. Way 8 feeds the goods
+  // lift and NOTHING else, so the Plant's high bays are on a way the player can
+  // switch and the lift is the one thing that lights up when it is earned.
+  // =========================================================================
+  interactables.push({
+    kind: 'breaker', id: 'board_c', position: [BREAKER[2] - 0.10, 1.16, -8.4],
+    rotation: -Math.PI / 2, maxOn: 4, title: 'DISTRIBUTION BOARD C',
+    ways: [
+      { name: 'intake', label: 'INTAKE CIRCULATION', amps: '32A', on: true },
+      { name: 'service', label: 'SPINE STRIP LIGHTING', amps: '16A', on: true },
+      { name: 'plant', label: 'PLANT HIGH BAY', amps: '63A', on: true },
+      { name: 'cistern', label: 'CISTERN BULKHEADS', amps: '16A', on: false },
+      { name: 'stack', label: 'STACK LIFT LOBBY', amps: '16A', on: false },
+      { name: 'residence', label: 'RESIDENCE LANDING', amps: '10A', on: false },
+      { name: 'duct', label: 'RISER + DUCT LAMPS', amps: '6A', on: false },
+      { name: 'plant_lift', label: 'GOODS LIFT No.2', amps: '63A', on: false, dead: true },
+    ],
+  });
+
+  // The schedule that explains the main's rating, on the desk under the board.
+  interactables.push(
+    { kind: 'pickup', item: 'note', noteId: 'note_board_c', position: [10.4, 0.76, -3.5], rotation: 0.3 },
+    { kind: 'pickup', item: 'note', noteId: 'note_proc_7c', position: [10.7, 0.76, -3.1], rotation: -0.4 },
+    { kind: 'pickup', item: 'note', noteId: 'note_tally', position: [15.6, 0.02, -7.4], rotation: 1.2 },
+    // The pry bar, in the store. Two doors in the building are jammed and this is
+    // the only thing that opens them.
+    { kind: 'pickup', item: 'pry_bar', position: [-11.7, 0.02, 4.3], rotation: 0.7 },
+    { kind: 'pickup', item: 'battery_cell', position: [-13.2, 1.02, 3.2], rotation: 1.5 },
+    { kind: 'pickup', item: 'note', noteId: 'note_lost_property', position: [-11.9, 0.02, 2.2], rotation: -0.8 },
+    { kind: 'pickup', item: 'note', noteId: 'note_12d_blank', position: [-11.2, 0.02, 2.6], rotation: 0.4 },
+    // A locker against the store's back wall — the safest place in the Spine that
+    // is not the Office of Record.
+    { kind: 'hide', id: 'locker_store', position: [-12.9, 0, STORE[3] - 0.26], rotation: Math.PI },
+    // The card reader on the Residence lobby door. The lock it represents is the
+    // portal gate; Progression opens both the moment the warden's card is in the
+    // player's pocket, so the reader is the diegetic version of a rule the game
+    // already enforces rather than a second, separate lock to hunt for.
+    {
+      kind: 'cardReader', id: 'reader_res', rotation: 0,
+      position: [(RESLOBBY[0] + RESLOBBY[2]) / 2 + 0.86, 1.28, RESLOBBY[1] + 0.10],
+      requires: 'card_warden', label: 'the second-landing reader',
+    },
+    { kind: 'pickup', item: 'note', noteId: 'note_keycard_memo', position: [(RESLOBBY[0] + RESLOBBY[2]) / 2 - 0.8, 0.02, RESLOBBY[1] + 0.5], rotation: 0.2 },
+  );
+
+  // The Spine is where the player will be when they need to stop being anywhere.
+  const attendantFloors = [
+    { id: 'spine_west', rect: [X0 + 2, -HW + 0.3, -14, HW - 0.3] },
+    { id: 'spine_east', rect: [16, -HW + 0.3, X1 - 2, HW - 0.3] },
+    { id: 'switchroom', rect: [BREAKER[0] + 0.6, BREAKER[1] + 0.6, BREAKER[2] - 0.6, BREAKER[3] - 0.6] },
+  ];
+
+  // =========================================================================
   // finish
   // =========================================================================
   const root = new THREE.Group();
@@ -798,7 +860,7 @@ export function buildService(ctx, opts = {}) {
   for (const b of builders) { const g = b.finish(); chunks.push(g); root.add(g); }
 
   return {
-    root, chunks, builders, portals, interactables,
+    root, chunks, builders, portals, interactables, attendantFloors,
     spawn: [X0 + 2.4, 0, 0],
     spawnYaw: -Math.PI / 2,
     // A 57 m corridor with a station every 2.1 m is the zone that most wants

@@ -402,8 +402,8 @@ export function breakerPanel(ctx, {
 
 export function valve(ctx, {
   id = 'penstock_1', position = [0, 1.1, 0], rotation = 0, turns = 5,
-  label = 'penstock 1', action = 'drain', requires = null, startOpen = false,
-  targetZone = 'cistern', parent = null, seized = false,
+  label = 'penstock 1', action = 'drain', requires = null, requiresMessage = null,
+  startOpen = false, targetZone = 'cistern', parent = null, seized = false,
 } = {}) {
   const { bus, interactor, collision, player } = ctx;
   const root = placed(position, rotation, `valve:${id}`);
@@ -489,6 +489,7 @@ export function valve(ctx, {
     range: 1.9,
     hold: holdSeconds,
     requires,
+    requiresMessage,
     refusal: () => {
       if (seized) return 'Seized solid. Something has been through the packing.';
       return null;
@@ -1678,10 +1679,25 @@ export function annexDoor(ctx, {
 
   // `Kit.doorway` wants a Builder-ish object; supply a shim when we are not
   // building inside a zone chunk.
+  // `Kit.doorway` bakes the static frame through `b.add(key, geo, factory)` and
+  // hangs only the leaf as an object. The shim used to implement `mat` and
+  // `addObject` but not `add`, so building a door outside a zone chunk threw on
+  // its own frame — which is why no `annexDoor` has ever appeared in the game.
   const host = builder || {
     mat: (key, factory) => (ctx.palette[key]?.() || factory?.()),
     materials: ctx.materials,
     addObject: (o) => { (parent || ctx.scene).add(o); return o; },
+    add(key, geo, factory) {
+      const list = Array.isArray(geo) ? geo : [geo];
+      const material = this.mat(key, factory);
+      for (const g of list) {
+        if (!g) continue;
+        const m = new THREE.Mesh(g, material);
+        m.castShadow = true; m.receiveShadow = true;
+        (parent || ctx.scene).add(m);
+      }
+      return this;
+    },
   };
   const grp = doorway(host, position[0], position[1], position[2], {
     rotation, width, height, hinge, open, seed: 7,
@@ -1776,6 +1792,24 @@ const PICKUP_BUILDERS = {
     g.add(meshOf(window, M(ctx, 'chrome'), { uv: 0.05 }));
     return g;
   },
+  cassette(ctx) {
+    // A compact cassette, lying label-up: shell, two spool windows, the pencil
+    // label. 100 x 64 x 12 mm, which is small enough that it needs the pickup's
+    // generous 2 m reach rather than pin-sharp aim.
+    const g = new THREE.Group();
+    const shell = box(0.100, 0.012, 0.064, 0.002, 1);
+    shell.translate(0, 0.006, 0);
+    g.add(meshOf(shell, M(ctx, 'plasticWhite'), { uv: 0.08, shade: () => 0.42 }));
+    for (const s of [-1, 1]) {
+      const spool = cyl(0.011, 0.011, 0.014, 10);
+      spool.translate(s * 0.021, 0.007, 0);
+      g.add(meshOf(spool, M(ctx, 'chrome'), { uv: 0.03 }));
+    }
+    const label = box(0.070, 0.002, 0.030, 0.001, 1);
+    label.translate(0, 0.0132, -0.012);
+    g.add(meshOf(label, M(ctx, 'paper'), { uv: 0.05, shade: () => 0.92 }));
+    return g;
+  },
   fuse_core(ctx) {
     const g = new THREE.Group();
     const body = cyl(0.062, 0.062, 0.185, 16);
@@ -1824,6 +1858,10 @@ const PICKUP_BUILDERS = {
 export function pickup(ctx, {
   id = null, item = 'battery_cell', position = [0, 0, 0], rotation = 0,
   noteId = null, tapeId = null, label = null, parent = null, count = 1,
+  // A paper you can go back to. Every ordinary pickup is consumed, but the
+  // docket has to survive being read so that reading it and then SIGNING it —
+  // once the set is running — are two separate acts.
+  once = true, verb = null,
 } = {}) {
   const { bus, interactor, inventory, notes, player } = ctx;
   const isNote = !!noteId;
@@ -1846,7 +1884,7 @@ export function pickup(ctx, {
 
   interactor?.add({
     id: handle.id, object: root, kind: 'pickup',
-    verb: isNote ? 'Read' : 'Take', label: displayLabel, range: 2.0, once: true,
+    verb: verb || (isNote ? 'Read' : 'Take'), label: displayLabel, range: 2.0, once,
     refusal: () => {
       if (isNote) return null;
       if (item === 'fuse_core' && inventory?.handsFull) return 'You are already carrying one.';
@@ -1855,12 +1893,17 @@ export function pickup(ctx, {
       return null;
     },
     onUse: () => {
-      handle.taken = true;
       if (isNote) {
         notes?.open(noteId);
-      } else {
+        if (!once) return;            // stays on the desk; nothing is consumed
+      }
+      handle.taken = true;
+      if (!isNote) {
         inventory?.add(item, count);
-        if (tapeId) notes?.collect(tapeId);
+        // `collect` files a tape without playing it, so the `story:tape` event —
+        // and with it the "tapes" discovery and the UI's transcript panel — never
+        // fired for any cassette in the game. Picking one up plays it.
+        if (tapeId) notes?.open(tapeId);
       }
       root.visible = false;
       player?.makeNoise?.(item === 'fuse_core' ? 6 : 2.2);

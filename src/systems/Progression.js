@@ -122,8 +122,10 @@ export class Progression {
     this.startTime = 0;
     this.time = 0;
 
-    /** @type {Map<string,{id:string, locked:boolean, reason:string}>} */
+    /** @type {Map<string,{id:string, locked:boolean, reason:string, group:string|null}>} */
     this.portals = new Map();
+    /** Gate state by group name, so late-built zones inherit it. */
+    this.groups = new Map();
     this._unsub = [];
     this._wire();
   }
@@ -185,28 +187,60 @@ export class Progression {
   /**
    * Register a portal so the critical path can gate it. `reason` is player-facing
    * text: it is what the door prompt says when it refuses.
+   *
+   * GROUPS. The critical path talks about "the way into the Residence", not
+   * about `to_residence` in the Service Spine and `to_residence` in the Stack —
+   * and there are two of those, authored independently in two zone files, which
+   * both have to be shut for the gate to mean anything. A portal therefore joins
+   * a named `group`, and gate() addresses either a single id or a whole group.
+   *
+   * The group's state is remembered, so a portal registered later — a zone the
+   * player has not reached yet, built on demand by the streamer — arrives already
+   * carrying whatever lock the group is under. Without that, walking away from a
+   * zone and back would silently unlock its doors.
    */
-  registerPortal(portal, { locked = false, reason = '' } = {}) {
-    const p = { id: portal.id, portal, locked, reason };
+  registerPortal(portal, { locked = false, reason = '', group = null } = {}) {
+    const g = group ? this.groups.get(group) : null;
+    const p = {
+      id: portal.id, portal, group,
+      locked: g ? g.locked : locked,
+      reason: g && g.reason ? g.reason : reason,
+    };
     this.portals.set(portal.id, p);
-    if (portal) portal.locked = locked;
+    if (group && !this.groups.has(group)) this.groups.set(group, { locked, reason });
+    if (portal) portal.locked = p.locked;
     return p;
   }
 
-  gate(id, locked, reason = '') {
-    const p = this.portals.get(id);
-    if (!p) return false;
-    p.locked = locked;
-    if (reason) p.reason = reason;
-    if (p.portal) p.portal.locked = locked;
-    // Keep any door interactable in step with the portal.
-    const latch = this.interactor?.door(id);
-    if (latch) { latch.locked = locked; latch.label = reason || latch.label; }
-    this.bus.emit('portal:gate', { id, locked, reason: p.reason });
+  /** @param {string} key a portal id, or a group name. */
+  gate(key, locked, reason = '') {
+    const targets = [];
+    const direct = this.portals.get(key);
+    if (direct) targets.push(direct);
+    if (this.groups.has(key) || !direct) {
+      const g = this.groups.get(key) || { locked, reason };
+      g.locked = locked;
+      if (reason) g.reason = reason;
+      this.groups.set(key, g);
+      for (const p of this.portals.values()) if (p.group === key) targets.push(p);
+    }
+    if (!targets.length) return false;
+    for (const p of targets) {
+      p.locked = locked;
+      if (reason) p.reason = reason;
+      if (p.portal) p.portal.locked = locked;
+      // Keep any door interactable in step with the portal.
+      const latch = this.interactor?.door(p.id);
+      if (latch) { latch.locked = locked; latch.label = reason || latch.label; }
+      this.bus.emit('portal:gate', { id: p.id, locked, reason: p.reason });
+    }
     return true;
   }
 
   isGated(id) { return !!this.portals.get(id)?.locked; }
+
+  /** Player-facing refusal text for a gated portal. */
+  gateReason(id) { return this.portals.get(id)?.reason || ''; }
 
   // -- wiring -------------------------------------------------------------------
 
@@ -230,7 +264,13 @@ export class Progression {
       const z = this.director?.zone;
       const map = { cistern: 'core_cistern', residence: 'core_residence', stack: 'core_stack' };
       const id = map[z];
-      if (id && this.objective(id)?.state === 'active') this.complete(id);
+      // Reveal before completing. The three core hunts are only revealed on first
+      // reaching the Plant, and nothing stops a player finding a core before then —
+      // the Cistern and the Stack are both open before the Plant is. Requiring the
+      // hunt to already be `active` meant a core found early was never credited to
+      // anything, and the objective it belonged to stayed on the list for the rest
+      // of the game with the core already in the player's hands.
+      if (id) { this.reveal(id); this.complete(id); }
       if (this.coresFound >= 3) this.reveal('fit_cores');
     });
 
@@ -365,18 +405,30 @@ export class Progression {
 
   // -- per frame -------------------------------------------------------------------
 
+  /**
+   * Is a gate still shut? Takes a group name or a portal id.
+   *
+   * The two callers below used to read `this.portals.get('portal_stack')`, which
+   * is a GROUP name and has never been a portal id — the zones call their doors
+   * `to_stack`, `to_residence` and so on. So the lookup returned undefined, both
+   * conditions were permanently false, and neither the Stack nor the Residence
+   * ever opened no matter what the player did.
+   */
+  locked(key) {
+    if (this.groups.has(key)) return !!this.groups.get(key).locked;
+    return !!this.portals.get(key)?.locked;
+  }
+
   update(dt) {
     this.time += dt;
     // The Stack gate opens itself when its circuit is live — no bookkeeping, it
     // simply reflects the state of the building.
-    const stack = this.portals.get('portal_stack');
-    if (stack?.locked && this.interactables) {
+    if (this.locked('portal_stack') && this.interactables) {
       const board = this.interactables.get('board_c');
       const live = board?.api?.state?.().find((w) => w.name === 'stack' && w.on);
       if (live) this.gate('portal_stack', false, '');
     }
-    const res = this.portals.get('portal_residence');
-    if (res?.locked && this.inventory?.has('card_warden')) {
+    if (this.locked('portal_residence') && this.inventory?.has('card_warden')) {
       this.gate('portal_residence', false, '');
     }
   }

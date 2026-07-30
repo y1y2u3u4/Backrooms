@@ -723,6 +723,27 @@ export function buildStack(ctx, opts = {}) {
   }
 
   // =========================================================================
+  // gameplay — the third core, and the warden
+  //
+  // The memo says the warden's card "is on the warden's belt and the warden is
+  // where he always is". Where he always is turns out to be the chair somebody
+  // pushed up to the missing bay of handrail, facing out over the drop. The card
+  // is on the deck beside it. Nothing else in the game explains that chair.
+  // =========================================================================
+  const interactables = [
+    { kind: 'pickup', item: 'card_warden', position: [2.35, 0.03, VOID + 1.45], rotation: 0.6 },
+    // The lift lobby's core, on the desk on the north face of this level.
+    { kind: 'pickup', item: 'fuse_core', position: [5.6, 0.79, -10.2], rotation: -0.2 },
+    { kind: 'pickup', item: 'note', noteId: 'note_stack_survey', position: [6.4, 0.76, -10.15], rotation: 0.35 },
+    { kind: 'pickup', item: 'note', noteId: 'note_floor_indicator', position: [-7.9, 1.24, -10.15], rotation: 0 },
+    { kind: 'pickup', item: 'note', noteId: 'nb_3', position: [2.9, 0.03, VOID + 0.75], rotation: 1.7 },
+    { kind: 'pickup', item: 'cassette', tapeId: 'tape_last', position: [-10.1, 0.62, 5.6], rotation: 1.2 },
+    { kind: 'pickup', item: 'battery_cell', position: [-10.0, 0.42, -4.0], rotation: 0.4 },
+    // Against the well wall on the west face, where the deck is widest.
+    { kind: 'hide', id: 'locker_stack', position: [-OUTER + 0.30, 0, 0.4], rotation: Math.PI / 2 },
+  ];
+
+  // =========================================================================
   // finish
   // =========================================================================
   const root = new THREE.Group();
@@ -731,7 +752,7 @@ export function buildStack(ctx, opts = {}) {
   for (const b of builders) { const g = b.finish(); chunks.push(g); root.add(g); }
 
   return {
-    root, chunks, builders, portals, interactables: [],
+    root, chunks, builders, portals, interactables,
     spawn: [-3.2, 0, -OUTER + 1.7],
     spawnYaw: Math.PI,
     lightBudget: 14,

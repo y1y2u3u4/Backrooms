@@ -215,6 +215,28 @@ export function buildSafeRoom(ctx, opts = {}) {
   Props.radio(V[5], deskX + 0.55, 0.735, deskZ + 0.10, { seed: 79, yaw: 1.1 });
 
   // =========================================================================
+  // gameplay
+  //
+  // The terminal is the only one in the game. Its authorisation code is the
+  // open-day date written as four figures and reversed — 3 December, 0312, 2130 —
+  // which is stated in Kearns' last notebook page and nowhere else, so the last
+  // page is on this desk. Solving it is a discovery, not a gate: nothing on the
+  // critical path needs it.
+  // =========================================================================
+  interactables.push(
+    {
+      kind: 'terminal', id: 'terminal_record', rotation: Math.PI,
+      position: [deskX + 0.42, 0.735, deskZ - 0.18], puzzleCode: '2130', hintNote: 'nb_5',
+    },
+    { kind: 'pickup', item: 'note', noteId: 'nb_5', position: [deskX - 0.30, 0.74, deskZ - 0.28], rotation: -0.25 },
+    { kind: 'pickup', item: 'note', noteId: 'note_office_of_record', position: [deskX + 0.05, 0.74, deskZ + 0.16], rotation: 0.3 },
+    { kind: 'pickup', item: 'note', noteId: 'note_daywork_1102', position: [X0 + 0.28, 1.04, 0.9], rotation: 0.1 },
+    { kind: 'pickup', item: 'note', noteId: 'note_12d_filled', position: [X0 + 0.28, 1.44, 0.9], rotation: -0.2 },
+    { kind: 'pickup', item: 'cassette', tapeId: 'tape_kearns_1', position: [X1 - 0.55, 0.74, -1.15], rotation: 0.7 },
+    { kind: 'pickup', item: 'battery_cell', position: [X1 - 0.55, 0.74, -1.7], rotation: 1.3 },
+  );
+
+  // =========================================================================
   // finish
   // =========================================================================
   const root = new THREE.Group();
@@ -243,6 +265,8 @@ export function buildSafeRoom(ctx, opts = {}) {
     root, chunks, builders, portals, interactables,
     spawn: [0.6, 0, Z0 + 1.3],
     spawnYaw: Math.PI,
+    // The Director's respawn point. Nothing has ever come in here.
+    safe: { id: 'office_of_record', position: [0.2, 0, 0.6], yaw: Math.PI },
     fogProfile: 'safe',
     reverb: 'safe',
     ambient: { sky: 0x2a2116, ground: 0x4a3a20, intensity: 0.46 },

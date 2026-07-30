@@ -183,16 +183,25 @@ export function buildResidence(ctx, opts = {}) {
   }
   cornice(bMid, [X0, -HW, X1, HW], CEIL);
 
+  // R-207 is the room the memo is about, so it has to be a room. Its index in the
+  // 3.6 m door rhythm is 6 (201 + 6 = 207), it is dressed below, and its leaf is
+  // NOT built here: it is declared as a card-locked `annexDoor` interactable at
+  // the end of this file, because a decorative leaf and a working one in the same
+  // opening would z-fight and only one of them would stop you.
+  const R207 = doors.find((d) => d.no === 207) || null;
+
   // Door leaves and their plates.
   for (const d of doors) {
     const b = byX(d.x);
     const zSide = d.north ? HW : -HW;
     const open = rng.chance(0.22) ? rng.range(0.25, 1.1) : 0;
-    doorway(b, d.x, 0, zSide, {
-      rotation: d.north ? 0 : Math.PI, width: 0.94, height: 2.00,
-      open, hinge: rng.chance(0.5) ? 1 : -1, seed: 400 + d.i,
-    });
-    d.open = open;
+    if (d !== R207) {
+      doorway(b, d.x, 0, zSide, {
+        rotation: d.north ? 0 : Math.PI, width: 0.94, height: 2.00,
+        open, hinge: rng.chance(0.5) ? 1 : -1, seed: 400 + d.i,
+      });
+    }
+    d.open = d === R207 ? 0 : open;
     if (D) {
       D.roomPlate(b, d.x + 0.62, 1.62, zSide + (d.north ? -0.10 : 0.10), d.north ? Math.PI : 0,
         roomNumber('R', d.no), null, { w: 0.20, h: 0.075 });
@@ -401,14 +410,19 @@ export function buildResidence(ctx, opts = {}) {
   const dressed = [
     { idx: 2, kind: 'bedroom' },
     { idx: 5, kind: 'nest' },
+    { idx: R207 ? R207.i : 6, kind: 'store' },     // R-207 — the fuse-core store
     { idx: 8, kind: 'corner' },
     { idx: 12, kind: 'stripped' },
     { idx: 15, kind: 'barricade' },
   ];
+  /** Filled by the 'store' dressing so the core can be placed on the shelf. */
+  let r207 = null;
   for (const spec of dressed) {
     const d = doors[spec.idx];
     if (!d) continue;
-    d.open = Math.max(d.open, 0.9);
+    // R-207's leaf is a real locked door; every other dressed room stands open so
+    // the corridor has light and depth spilling out of it.
+    if (d !== R207) d.open = Math.max(d.open, 0.9);
     const b = byX(d.x);
     const r = makeRoom(b, d, spec.kind === 'stripped' ? 'dark' : 'lit');
     const face = d.north ? 1 : -1;
@@ -461,6 +475,24 @@ export function buildResidence(ctx, opts = {}) {
           });
         }
         D.quad(b, { stamp: STAMP.crack, face: '+x', x: r.x0 + 0.04, y: 1.5, z: r.cz, w: 1.4, h: 2.2, strength: 0.8 });
+      }
+    } else if (spec.kind === 'store') {
+      // A bedroom that stopped being one. Racking down one side, a bench down the
+      // other, and a stores card on the bench. The core sits on the middle shelf
+      // of the racking, which is why the racking is at a known x.
+      Props.shelving(b, r.x0 + 0.40, 0, r.cz + face * 0.6, {
+        seed: S, yaw: Math.PI / 2, w: 2.0, h: 2.0, bays: 4, contents: 0.55, damage: 0.3,
+      });
+      Props.workbench(b, r.x1 - 0.36, 0, r.cz - face * 0.5, { seed: S + 1, yaw: -Math.PI / 2, w: 1.6 });
+      Props.boxStack(b, r.cx + 0.1, 0, r.zFar - face * 0.55, { seed: S + 2, count: 3, soakBase: 0.05 });
+      Props.cardboardBox(b, r.cx - 0.75, 0, r.zFar - face * 0.6, { seed: S + 3, yaw: 1.1, state: 'open' });
+      r207 = { x0: r.x0, x1: r.x1, cx: r.cx, cz: r.cz, zFar: r.zFar, face, zSide: d.north ? HW : -HW, north: d.north, doorX: d.x };
+      if (D) {
+        D.quad(b, { stamp: STAMP.dustEdge, face: 'up', x: r.cx, y: 0.004, z: r.cz, w: 2.4, h: 3.0, strength: 0.7 });
+        D.label(b, ['STORES', 'KEEP LOCKED'], {
+          face: d.north ? '-z' : '+z', x: r.cx, y: 1.72, z: r.zFar - face * 0.04,
+          w: 0.30, h: 0.20, style: 'warning', size: 26,
+        });
       }
     } else if (spec.kind === 'barricade') {
       Props.barricade(b, r.cx, 0, r.cz + face * 0.2, { seed: S, yaw: d.north ? 0 : Math.PI, width: 2.4 });
@@ -532,6 +564,63 @@ export function buildResidence(ctx, opts = {}) {
   Props.paperStack(bMid, -4.6, 0.014, 0.3, { seed: 809, spilled: true, sheets: 18 });
 
   // =========================================================================
+  // 7. gameplay — R-207 and the second core
+  // =========================================================================
+  const interactables = [];
+  if (r207) {
+    // The leaf. `requires: card_warden` is the memo's rule made literal: your own
+    // card was issued in March and will not open this.
+    interactables.push({
+      kind: 'door', id: 'door_r207',
+      position: [r207.doorX, 0, r207.zSide], rotation: r207.north ? 0 : Math.PI,
+      variant: 'locked', requires: 'card_warden', width: 0.94, height: 2.00,
+      hinge: 1, label: 'R-207', autoClose: 0,
+    });
+    // The reader, on the corridor side of the jamb.
+    interactables.push({
+      kind: 'cardReader', id: 'reader_r207',
+      position: [r207.doorX + 0.72, 1.28, r207.zSide + (r207.north ? -0.10 : 0.10)],
+      rotation: r207.north ? Math.PI : 0,
+      requires: 'card_warden', label: 'the R-207 reader', unlocks: 'door_r207',
+    });
+    // Second route in. The code is the open-day date reversed, which is stated on
+    // the last page of Kearns' notebook and nowhere else — so a player who never
+    // finds the warden can still finish, and a player who finds the warden never
+    // has to work it out.
+    interactables.push({
+      kind: 'keypad', id: 'keypad_r207',
+      position: [r207.doorX - 0.72, 1.28, r207.zSide + (r207.north ? -0.08 : 0.08)],
+      rotation: r207.north ? Math.PI : 0,
+      code: '2130', label: 'the R-207 keypad', hintNote: 'nb_5', unlocks: 'door_r207',
+    });
+    // The core, on the middle shelf of the racking inside.
+    interactables.push({
+      kind: 'pickup', item: 'fuse_core',
+      position: [r207.x0 + 0.40, 0.94, r207.cz + r207.face * 0.6], rotation: 0.15,
+    });
+    interactables.push(
+      { kind: 'pickup', item: 'note', noteId: 'note_residence_rooms', position: [r207.x1 - 0.40, 0.90, r207.cz - r207.face * 0.5], rotation: -0.3 },
+      { kind: 'pickup', item: 'battery_cell', position: [r207.x1 - 0.55, 0.90, r207.cz - r207.face * 0.9], rotation: 1.1 },
+    );
+  }
+  interactables.push(
+    { kind: 'pickup', item: 'note', noteId: 'note_letter', position: [-4.6, 0.10, 0.3], rotation: 0.3 },
+    { kind: 'pickup', item: 'note', noteId: 'note_open_day', position: [-16.0, 1.22, -HW + 0.14], rotation: 0 },
+    { kind: 'pickup', item: 'note', noteId: 'nb_2', position: [X0 - 2.2, 0.02, 2.4], rotation: 1.4 },
+    { kind: 'pickup', item: 'note', noteId: 'nb_4', position: [-13.4, 0.46, HW - 0.4], rotation: -0.6 },
+    { kind: 'pickup', item: 'cassette', tapeId: 'tape_residence', position: [X0 - 0.8, 0.02, 2.5], rotation: 0.8 },
+    // The wardrobe in the stripped room is the hiding place, and it is the wrong
+    // side of the corridor from everything else in the zone.
+    { kind: 'hide', id: 'locker_res', position: [X0 - 4.2, 0, 2.9], rotation: Math.PI / 2 },
+  );
+
+  const attendantFloors = [
+    { id: 'corridor_w', rect: [X0 + 1, -HW + 0.3, -8, HW - 0.3] },
+    { id: 'corridor_e', rect: [6, -HW + 0.3, X1 - 1, HW - 0.3] },
+    { id: 'hall', rect: [X0 - 4.2, -2.8, X0 - 0.4, 2.8] },
+  ];
+
+  // =========================================================================
   // finish
   // =========================================================================
   const root = new THREE.Group();
@@ -540,7 +629,7 @@ export function buildResidence(ctx, opts = {}) {
   for (const b of builders) { const g = b.finish(); chunks.push(g); root.add(g); }
 
   return {
-    root, chunks, builders, portals, interactables: [],
+    root, chunks, builders, portals, interactables, attendantFloors,
     spawn: [X0 - 3.4, 0, 0],
     spawnYaw: -Math.PI / 2,
     fogProfile: 'residence',

@@ -4,6 +4,7 @@ import { Flashlight } from '../player/Flashlight.js';
 import { Hands } from '../player/Hands.js';
 import { Interactor } from '../player/Interactor.js';
 import { Interactables } from './Interactables.js';
+import { ZoneGameplay } from './ZoneGameplay.js';
 import { Surveyor, STATE as SURVEYOR_STATE } from '../entities/Surveyor.js';
 import { Attendant } from '../entities/Attendant.js';
 import { Director } from './Director.js';
@@ -90,6 +91,7 @@ export async function installGameplay(game, {
   const gameplay = {
     notes, inventory, flashlight, hands, interactor, interactables,
     surveyor: entity, attendant, director, progression, ctx,
+    zoneGameplay: null,
 
     /** Build and register a prop. See `Interactables.FACTORIES` for kinds. */
     spawn(kind, opts) { return interactables.spawn(kind, opts); },
@@ -174,11 +176,26 @@ export async function installGameplay(game, {
     },
 
     dispose() {
+      gameplay.zoneGameplay?.dispose();
       director.dispose(); progression.dispose();
       entity?.dispose(); interactables.dispose();
       hands.dispose(); flashlight.dispose(); interactor.clear();
     },
   };
+
+  // The real world, if there is one. This is what makes the game a game: the
+  // zone builders' declared props, doors and portals only become interactive
+  // here. See ZoneGameplay.js for why it was previously dead code.
+  if (game.world) {
+    gameplay.zoneGameplay = new ZoneGameplay({ world: game.world, gameplay, ctx }).attach();
+    const s = gameplay.zoneGameplay.debugState();
+    console.info(`[gameplay] ${s.doors} doors, ${s.props} props across ${s.zones.length} zone(s)`);
+  }
+
+  // Gates, always. This used to live inside `seedIntakeDemo`, so with the world
+  // built the critical path had no locks on it at all — and, more to the point,
+  // no objective list was ever announced to the HUD.
+  progression.installDefaultGates();
 
   game.gameplay = gameplay;
   return gameplay;

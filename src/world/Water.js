@@ -262,6 +262,7 @@ export class WaterSurface {
     this.mesh.castShadow = false;
 
     this.level = level;
+    this._level0 = level;
     this.origin = origin;
     this.rect = rect;
     this._ripples = ripples;
@@ -304,6 +305,21 @@ export class WaterSurface {
       const p = toLocal ? toLocal(e.position || { x: 0, z: 0 }) : (e.position || { x: 0, z: 0 });
       this.splash(p.x ?? 0, p.z ?? 0, 1.4);
     });
+    return this;
+  }
+
+  /**
+   * Move the water. The shader takes the level as a uniform and computes depth
+   * against the baked bed height per vertex, so lowering it shallows the whole
+   * surface correctly — the tide-line decals stay where they were, which is
+   * exactly right: they are the OLD water line, and now there are two.
+   */
+  setLevel(y) {
+    this.level = y;
+    this.material.uniforms.uLevel.value = y;
+    // The plane's Y is baked into the geometry at construction, so the mesh has
+    // to carry the difference.
+    this.mesh.position.y = this.origin[1] + (y - this._level0);
     return this;
   }
 

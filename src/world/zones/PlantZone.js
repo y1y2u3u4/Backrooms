@@ -208,24 +208,29 @@ export function buildPlant(ctx, opts = {}) {
   // =========================================================================
   // Two generator sets on plinths, one of them stripped for parts.
   plinth(bWest, [-10.6, -6.4, -4.2, -2.0], FLOOR, 0.30);
-  const gen1 = Mech.generatorSet(bWest, -7.4, FLOOR + 0.30, -4.2, {
+  Mech.generatorSet(bWest, -7.4, FLOOR + 0.30, -4.2, {
     seed: 101, yaw: 0, len: 5.6, w: 1.9, stackTo: ROOF - FLOOR - 0.5,
   });
+  // SET No. 2 is not dressing. It is the machine the whole game is about, so it
+  // is declared as an interactable at the bottom of this file and built by the
+  // gameplay layer: three sockets, a fuel cock, a primer and a starter. Only its
+  // plinth belongs to the zone. Its own exhaust rises to 3.6 m above the plinth
+  // and the roof stack below picks it up from there.
   plinth(bEast, [-0.6, -6.4, 5.8, -2.0], FLOOR, 0.30);
-  const gen2 = Mech.generatorSet(bEast, 2.6, FLOOR + 0.30, -4.2, {
-    seed: 102, yaw: 0, len: 5.6, w: 1.9, stackTo: ROOF - FLOOR - 0.5,
-  });
   // Exhaust stacks continuing to the roof, with guy brackets on the frame.
-  for (const gx of [-8.0, 3.2]) {
+  // Set 1's stack lines up with its dressing; Set 2's lines up with the exhaust
+  // the interactable builds for itself, which leaves the skid at local
+  // (-1.1, +0.30) — i.e. world (1.5, -3.9).
+  for (const [gx, gz] of [[-8.0, -3.6], [1.5, -3.9]]) {
     const st = cyl(0.16, 0.16, 3.0, 14);
-    st.translate(gx, ROOF - 1.5, -3.6);
+    st.translate(gx, ROOF - 1.5, gz);
     const cowl = cyl(0.22, 0.16, 0.24, 14);
-    cowl.translate(gx, ROOF - 0.16, -3.6);
+    cowl.translate(gx, ROOF - 0.16, gz);
     const g = merge([st, cowl]); worldUV(g, 0.6); vertexShade(g, () => 0.62);
     bRoof.add('rust', g);
     for (const s of [-1, 1]) {
       const brk = box(0.05, 0.05, 1.2, 0.004, 1);
-      brk.translate(gx, ROOF - 2.0, -3.6 + s * 0.7);
+      brk.translate(gx, ROOF - 2.0, gz + s * 0.7);
       worldUV(brk, 0.4);
       bRoof.add('machinePaint', brk);
     }
@@ -277,11 +282,24 @@ export function buildPlant(ctx, opts = {}) {
   // =========================================================================
   {
     const b = bEast;
-    const lift = Mech.goodsLift(b, HX1 - 0.12, FLOOR, 0, {
-      seed: 121, yaw: -Math.PI / 2, w: 2.4, h: 2.8, open: 0, powered: false,
-    });
+    // The car itself is an INTERACTABLE, not dressing: it is the ending, so it
+    // has to travel, carry the player and report its arrival. It is declared at
+    // the bottom of this file and built by the gameplay layer, and it sits in the
+    // shaft behind the 2.60 x 2.90 opening cut in the east wall above — which is
+    // why the `Mech.goodsLift` surround that used to stand here is gone. That
+    // surround was a shut door with a collider across the opening, so it would
+    // have walled the exit off from the car.
     portals.push(portal('exit_lift', 'plant', [HX1 - 1.6, FLOOR, 0], -Math.PI / 2,
       { zone: null, portalId: null }, 'lift', { locked: true, isExit: true }));
+    // Shaft lamp, so the way out is the warmest thing in the hall and stays lit
+    // when the car has gone. It is inside the shaft, past the wall line.
+    // Way 8 — the lift supply — and nothing else in the building is on it. It is
+    // dead until the set runs, so the way out is the one thing that lights up
+    // when you have earned it, and the hall's high bays are free to be on a way
+    // the player can actually switch.
+    bulkhead(b, rigFor(b), HX1 + 1.85, FLOOR + 2.25, 0, {
+      yaw: Math.PI / 2, circuit: 'plant_lift', health: 'good', seed: 121,
+    });
     // Approach: a hazard-striped apron and a pair of bollards.
     if (D) {
       D.hazardRun(b, HX1 - 1.9, FLOOR + 0.002, 0, 3.4, { face: 'up', axis: 'z', h: 0.30, tile: 0.5, strength: 0.85 });
@@ -399,6 +417,65 @@ export function buildPlant(ctx, opts = {}) {
   Props.cardboardBox(bDeck, HX0 + 3.3, G1, -1.5, { seed: 332, yaw: 0.6, state: 'soaked', w: 0.5, d: 0.4, h: 0.34 });
   Props.wasteBin(bDeck, HX0 + 1.0, G1, 5.4, { seed: 333, kind: 'plastic', full: 0.5 });
   Props.filingCabinet(bDeck, 9.0, G1, 9.4, { seed: 334, yaw: Math.PI, drawers: 3, damage: 0.6 });
+
+  // =========================================================================
+  // 8. gameplay — the end of the critical path
+  //
+  // Declared, not built: ZoneGameplay hands these to `Interactables` with the
+  // zone origin applied, which is the only reason a socket bank, a fuel cock and
+  // a lift car can share one coordinate space with the plinth they stand on.
+  // =========================================================================
+  interactables.push(
+    // SET No. 2 on the east plinth, front (sockets and panel) facing +Z into
+    // the hall so the player works it from the open floor.
+    {
+      kind: 'generator', id: 'set_2', rotation: 0, coresRequired: 3,
+      position: [2.6, FLOOR + 0.30, -4.2],
+    },
+    // The car, in the shaft behind the opening in the east wall. Its mouth is
+    // flush with the wall line and the hazard apron runs up to it.
+    {
+      kind: 'lift', id: 'lift_2', rotation: -Math.PI / 2, powered: false,
+      position: [HX1 + 0.95, FLOOR, 0],
+      width: 2.2, depth: 2.0, height: 2.4,
+      floors: [
+        { name: 'PLANT', y: FLOOR },
+        // Up and out. `exit: true` is what Progression reads to end the game.
+        { name: 'SURFACE', y: FLOOR + 9.6, exit: true },
+      ],
+    },
+    // The procedure, on the panel end of the set — findable without a hunt,
+    // because the puzzle is doing it under pressure, not locating the card.
+    {
+      kind: 'pickup', item: 'note', noteId: 'note_generator_start',
+      position: [1.4, FLOOR + 0.32, -2.3], rotation: 0.4,
+    },
+    // The stock card that says where the three cores went. This is the only
+    // place in the game that names all three at once.
+    {
+      kind: 'pickup', item: 'note', noteId: 'note_fuse_room',
+      position: [-15.4, FLOOR + 0.78, -2.0], rotation: 1.1,
+    },
+    { kind: 'pickup', item: 'note', noteId: 'note_transformer', position: [-12.4, FLOOR + 0.02, 3.9], rotation: 2.2 },
+    { kind: 'pickup', item: 'note', noteId: 'note_lift_permit', position: [HX1 - 3.3, FLOOR + 0.32, -2.6], rotation: -0.5 },
+    { kind: 'pickup', item: 'cassette', tapeId: 'tape_plant', position: [-15.6, FLOOR + 0.78, -1.2], rotation: 0.2 },
+    // The core that was dropped on the Plant floor, per the stock card. Four
+    // cores exist in the building and the player needs three, which is the
+    // slack that keeps a missed one from being unwinnable.
+    { kind: 'pickup', item: 'fuse_core', position: [-3.4, FLOOR + 0.06, -7.9], rotation: 0.8 },
+    { kind: 'pickup', item: 'battery_cell', position: [-15.9, FLOOR + 0.78, -2.6], rotation: 1.9 },
+    // Under the west stair, next to somebody's camp. The Plant is enormous and
+    // loud once the set is running; there has to be somewhere to stop.
+    { kind: 'hide', id: 'locker_plant', position: [-16.5, FLOOR, -4.6], rotation: Math.PI / 2 },
+    // The docket. Reading it is what makes the hidden ending available; signing
+    // it is a separate act, and it is the same sheet of paper — which is why this
+    // one is `once: false` and stays on the desk in sight of the running set.
+    {
+      kind: 'pickup', id: 'docket_0000', item: 'note', noteId: 'note_ending_hint',
+      label: 'Docket 0000', verb: 'Sign', once: false,
+      position: [-15.6, FLOOR + 0.78, -2.4], rotation: 0.1,
+    },
+  );
 
   // =========================================================================
   // finish

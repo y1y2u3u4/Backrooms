@@ -58,6 +58,13 @@ export const ITEMS = {
     name: 'Dictaphone', kind: ITEM_KINDS.TOOL, hand: 'right',
     blurb: 'Pocket recorder. The play head is worn but it tracks.',
   },
+  cassette: {
+    // Six of these exist and finding all six is a discovery, so the stack has to
+    // hold the lot. Picking one up is what fires `story:tape`; the transcript
+    // itself lives in NotesLibrary.
+    name: 'Cassette', kind: ITEM_KINDS.TAPE, stack: 8, hand: 'none',
+    blurb: 'C60 ferric, hand-labelled in pencil, wound most of the way through.',
+  },
   fuse_core: {
     name: 'HRC supply core', kind: ITEM_KINDS.CORE, stack: 3, hand: 'both',
     blurb: '400 A ceramic core, sand-filled. Twenty-two kilograms and awkward with it.',
