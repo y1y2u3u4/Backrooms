@@ -1,0 +1,169 @@
+[
+  {
+    "name": "d0_baseline",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0); g.qaSteady(); console.info('PROBE '+JSON.stringify(g.lightProbe()))",
+    "file": "docs/captures/diag3/d0_baseline.png",
+    "stats": {
+      "ms": 1182.6055555554985,
+      "fps": 0.8455904805303199,
+      "p90": 13.899999999441206,
+      "calls": 353,
+      "tris": 766116,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 127,
+        "lit": 127,
+        "active": 12,
+        "shadows": 4
+      }
+    }
+  },
+  {
+    "name": "d1_no_gtao",
+    "settle": 2,
+    "setup": "g.engine.exposure.lock(); g.setGTAO(false)",
+    "file": "docs/captures/diag3/d1_no_gtao.png",
+    "stats": {
+      "ms": 4.599999999834432,
+      "fps": 217.39130435565068,
+      "p90": 10,
+      "calls": 190,
+      "tris": 387044,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 127,
+        "lit": 127,
+        "active": 12,
+        "shadows": 4
+      }
+    }
+  },
+  {
+    "name": "d2_no_shadows",
+    "settle": 6,
+    "setup": "g.setGTAO(true); g.setShadows(false)",
+    "file": "docs/captures/diag3/d2_no_shadows.png",
+    "stats": {
+      "ms": 1209.6700000001117,
+      "fps": 0.8266717369199101,
+      "p90": 12043.400000000373,
+      "calls": 351,
+      "tris": 766114,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 127,
+        "lit": 127,
+        "active": 12,
+        "shadows": 4
+      }
+    }
+  },
+  {
+    "name": "d3_no_detailnormal",
+    "settle": 2,
+    "setup": "g.setShadows(true); g.setDetailNormal(0)",
+    "file": "docs/captures/diag3/d3_no_detailnormal.png",
+    "stats": {
+      "ms": 10.220000000111758,
+      "fps": 97.84735812026074,
+      "p90": 18.600000000558794,
+      "calls": 351,
+      "tris": 766114,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 127,
+        "lit": 127,
+        "active": 12,
+        "shadows": 4
+      }
+    }
+  },
+  {
+    "name": "d4_no_ao_volume",
+    "settle": 2,
+    "setup": "g.setDetailNormal(0.85); g.setAO(0)",
+    "file": "docs/captures/diag3/d4_no_ao_volume.png",
+    "stats": {
+      "ms": 7.163636363619431,
+      "fps": 139.5939086297716,
+      "p90": 10,
+      "calls": 351,
+      "tris": 766114,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 127,
+        "lit": 127,
+        "active": 12,
+        "shadows": 4
+      }
+    }
+  },
+  {
+    "name": "d5_fill_quarter",
+    "settle": 2,
+    "setup": "g.setAO(0.9); g.engine.exposure.unlock(); g.setFill(0.25); console.info('PROBE-Q '+JSON.stringify(g.lightProbe()))",
+    "file": "docs/captures/diag3/d5_fill_quarter.png",
+    "stats": {
+      "ms": 8.150000000062088,
+      "fps": 122.69938650213275,
+      "p90": 12.900000000372529,
+      "calls": 353,
+      "tris": 766116,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 127,
+        "lit": 127,
+        "active": 12,
+        "shadows": 4
+      }
+    }
+  },
+  {
+    "name": "d6_fill_half",
+    "settle": 14,
+    "setup": "g.setFill(0.5)",
+    "file": "docs/captures/diag3/d6_fill_half.png",
+    "stats": {
+      "ms": 3.7499999997930393,
+      "fps": 266.66666668138384,
+      "p90": 4.7999999998137355,
+      "calls": 353,
+      "tris": 766116,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 127,
+        "lit": 127,
+        "active": 12,
+        "shadows": 4
+      }
+    }
+  },
+  {
+    "name": "d7_fill_full_aostrong",
+    "settle": 14,
+    "setup": "g.setFill(1.0); g.setAO(0.9)",
+    "file": "docs/captures/diag3/d7_fill_full_aostrong.png",
+    "stats": {
+      "ms": 3.277777777519077,
+      "fps": 305.08474578679085,
+      "p90": 4,
+      "calls": 353,
+      "tris": 766116,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 127,
+        "lit": 127,
+        "active": 12,
+        "shadows": 4
+      }
+    }
+  }
+]

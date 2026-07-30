@@ -107,6 +107,44 @@ now shut, your own name written on a form you have not filled in.
 - Use uniform grime. Dirt collects in cavities, at floor lines, and under leaks.
 - Ship a raw `BoxGeometry` with visible sharp edges.
 
+### Where the shape in a frame comes from
+
+The Annex is lit the way a real office plate is lit: a troffer every couple of
+metres, all pointing straight down, and 127 of them in the Intake alone. Measured
+at head height in a corridor that is about 19 units of direct light against 0.5 of
+bounce fill. It also means the *floors* get nearly all of the direct light and
+every vertical surface is at a grazing angle to every fixture, so walls are lit
+almost entirely by bounce — and bounce, in a renderer with no GI, is a hemisphere
+constant that reaches everywhere equally.
+
+That is why the walls used to be flat. Three systems now supply the shape a real
+room gets for free, and they are not interchangeable:
+
+| System | Scale it works at | What it is for |
+| --- | --- | --- |
+| `render/AOVolume.js` | metres | A room's own shape. Corners, reveals, the top and bottom of a wall, the base of a column. Baked per zone, sampled by world position, multiplies indirect only. |
+| GTAO (`core/Engine.js`) | centimetres | Contact shading. A skirting board's bevel, a prop where it meets the floor. |
+| Injected detail normal (`render/Materials.js`) | millimetres | Micro-relief when the player's face is against a wall. |
+
+Two rules about the volume, both learned the hard way:
+
+- It must not change a zone's average exposure, only the distribution. Occlusion
+  moves light, it does not delete it. `AOVolume.fillCompensation` scales the
+  bounce fill back up by the field's own mean so the zone stays at the exposure it
+  was authored at; without it the Intake sat about a stop and a half under.
+- It needs a floor clamp. With no GI there is no multi-bounce term for a crease
+  to fall back on, so an unclamped occlusion drives towards black rather than
+  towards dim — which crushed the shaded side of a light pool on the carpet.
+
+### Anti-aliasing
+
+MSAA lives on the composer's render target (`q.msaa`), not on the WebGL context.
+`antialias: true` on the context does nothing once the scene renders into a
+composer target instead of the default framebuffer. This is load-bearing rather
+than a nicety: the building is made almost entirely of thin high-contrast edges —
+tee flanges, conduit, skirting, handrails, door stops — and seen near edge-on
+those go sub-pixel and break into strings of isolated black dots.
+
 ## 5. Code contracts
 
 ### Build context

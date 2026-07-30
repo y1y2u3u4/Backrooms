@@ -25,9 +25,9 @@ import { Rolling, clamp } from './util.js';
  * full extra texture fetch plus a noise field, worth it at high, not at low.
  */
 export const QUALITY = {
-  low:    { scale: 0.62, ao: false, aoScale: 0.5, bloom: true,  bloomDiv: 4, shadowMap: 512,  maxShadows: 1, aniso: 4,  textureQuality: 0.5,  lights: 6,  stochastic: 0.0,  aoVolume: 0.85, aoCell: 0.85, motes: 900,  moteScale: 0.85 },
-  medium: { scale: 0.80, ao: true,  aoScale: 0.5, bloom: true,  bloomDiv: 3, shadowMap: 1024, maxShadows: 2, aniso: 8,  textureQuality: 0.75, lights: 10, stochastic: 0.45, aoVolume: 0.90, aoCell: 0.60, motes: 2200, moteScale: 1.00 },
-  high:   { scale: 1.00, ao: true,  aoScale: 1.0, bloom: true,  bloomDiv: 2, shadowMap: 1536, maxShadows: 3, aniso: 16, textureQuality: 1,    lights: 14, stochastic: 0.62, aoVolume: 0.90, aoCell: 0.45, motes: 3800, moteScale: 1.00 },
+  low:    { scale: 0.62, ao: false, aoScale: 0.5, bloom: true,  bloomDiv: 4, shadowMap: 512,  maxShadows: 1, aniso: 4,  textureQuality: 0.5,  lights: 6,  stochastic: 0.0,  aoVolume: 0.85, aoCell: 0.85, motes: 900,  moteScale: 0.85, msaa: 0 },
+  medium: { scale: 0.80, ao: true,  aoScale: 0.5, bloom: true,  bloomDiv: 3, shadowMap: 1024, maxShadows: 2, aniso: 8,  textureQuality: 0.75, lights: 10, stochastic: 0.45, aoVolume: 0.90, aoCell: 0.60, motes: 2200, moteScale: 1.00, msaa: 2 },
+  high:   { scale: 1.00, ao: true,  aoScale: 1.0, bloom: true,  bloomDiv: 2, shadowMap: 1536, maxShadows: 3, aniso: 16, textureQuality: 1,    lights: 14, stochastic: 0.62, aoVolume: 0.90, aoCell: 0.45, motes: 3800, moteScale: 1.00, msaa: 4 },
 };
 
 export class Engine {
@@ -41,7 +41,8 @@ export class Engine {
 
     this.renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: false,           // resolved by supersampling at high tier
+      antialias: false,           // meaningless with a post chain; MSAA is on
+                                  // the composer's target instead (see _buildComposer)
       powerPreference: 'high-performance',
       stencil: false,
       depth: true,
@@ -147,7 +148,19 @@ export class Engine {
       minFilter: THREE.LinearFilter,
       magFilter: THREE.LinearFilter,
       colorSpace: THREE.LinearSRGBColorSpace,
-      samples: 0,
+      // MSAA on the scene pass.
+      //
+      // The renderer is constructed with antialias:false because the composer,
+      // not the default framebuffer, is what the scene is drawn into — the
+      // context flag does nothing once a post chain exists. Without samples here
+      // there was no anti-aliasing of any kind, and this building is made almost
+      // entirely of thin high-contrast edges: ceiling tee flanges, conduit runs,
+      // skirting, door frames, handrails. Seen near edge-on those go sub-pixel
+      // and break into strings of isolated black dots — the speckling visible
+      // along every horizontal run in the diagnostic captures, which survived
+      // turning off GTAO, the shadow maps and the injected detail normal in turn.
+      // 4x MSAA is the cheapest thing that fixes the whole class.
+      samples: this.q.msaa,
     };
     this.composer = new EffectComposer(this.renderer,
       new THREE.WebGLRenderTarget(1, 1, rtOpts));
@@ -222,6 +235,12 @@ export class Engine {
     this.q = QUALITY[name];
     this.gtao.enabled = this.q.ao;
     this.bloom.enabled = this.q.bloom;
+    // MSAA sample count is baked into the framebuffer when it is first bound, so
+    // changing the tier's `msaa` is not enough — the targets have to be dropped
+    // so the next setSize reallocates them at the new count.
+    for (const rt of [this.composer.renderTarget1, this.composer.renderTarget2]) {
+      if (rt && rt.samples !== this.q.msaa) { rt.samples = this.q.msaa; rt.dispose(); }
+    }
     this._sizeDirty = true;
   }
 

@@ -341,14 +341,16 @@ export class Game {
     const z = this.world?.zones?.[zoneKey];
     setWetness(z?.waterLine ?? -999, z?.wetness ?? 0);
     const amb = AMBIENT_PROFILES[zoneKey] || AMBIENT_PROFILES.intake;
-    this.rig.setAmbient(amb.sky, amb.ground, amb.intensity);
+    // The AO volume has to be bound before the fill is written, because it is
+    // what says how much the fill needs scaling up to keep the zone at the
+    // exposure it was authored at. See AOVolume.fillCompensation.
+    this._zoneAmbient = amb;
+    const aoComp = this._bindAOVolume(zoneKey, z);
+    this.rig.setAmbient(amb.sky, amb.ground, amb.intensity * aoComp);
     if (immediate) this.rig.snapAmbient();
     // The zone asks for a budget; the quality tier caps it.
     this.rig.setLightBudget(Math.min(
       z?.lightBudget ?? DEFAULT_LIGHT_BUDGET, this.engine.q.lights));
-    // Hands live in a separate scene, so they need the zone's mood pushed to
-    // them explicitly or they read as a flat cut-out pasted over the world.
-    this._zoneAmbient = amb;
     this.motes?.setProfile({
       opacity: (amb.motes ?? 0.7) * (this.engine.q.moteScale ?? 1),
       size: amb.moteSize ?? 1,
@@ -356,7 +358,6 @@ export class Game {
     });
     this.audio?.setZone?.(z?.reverb || zoneKey);
     this.currentZone = zoneKey;
-    this._bindAOVolume(zoneKey, z);
   }
 
   /**
@@ -381,14 +382,15 @@ export class Game {
   _bindAOVolume(zoneKey, zone) {
     if (!this._aoVolumes) this._aoVolumes = new Map();
     const strength = this.engine.q.aoVolume ?? 0.9;
-    if (strength <= 0) { materialGlobals.uAOStrength.value = 0; return; }
+    const off = () => { materialGlobals.uAOStrength.value = 0; return 1; };
+    if (strength <= 0) return off();
 
     let vol = this._aoVolumes.get(zoneKey);
     if (!vol) {
       // Local bounds; the colliders themselves are already in world space
       // because ZoneBuilder bakes the zone's origin into everything it emits.
       const local = zone?.bounds;
-      if (!local) { materialGlobals.uAOStrength.value = 0; return; }
+      if (!local) return off();
       const [ox, oy, oz] = zone.origin || [0, 0, 0];
       const box = local.clone().translate(new THREE.Vector3(ox, oy, oz));
       vol = new AOVolume({ cell: this.engine.q.aoCell ?? 0.5 });
@@ -396,14 +398,14 @@ export class Game {
         vol.build(this.collision, box);
       } catch (e) {
         console.warn('[game] AO volume bake failed', e);
-        materialGlobals.uAOStrength.value = 0;
-        return;
+        return off();
       }
       this._aoVolumes.set(zoneKey, vol);
       console.info(`[game] AO volume "${zoneKey}"`, vol.stats());
     }
     vol.writeUniforms(materialGlobals);
     materialGlobals.uAOStrength.value = strength;
+    return vol.fillCompensation(strength, materialGlobals.uAOFloor.value);
   }
 
   togglePause() {

@@ -136,18 +136,28 @@ build at 1024×576, medium tier:
 
 | metric | measured across 8 zone shots | budget |
 |---|---:|---:|
-| draw calls | 62 – 318 | 180 |
-| triangles | 51 k – 762 k | 1 200 k |
+| draw calls, total submitted | 62 – 353 | — |
+| draw calls, scene pass only | ~35 – 190 | 180 |
+| triangles, scene pass only | 26 k – 387 k | 1 200 k |
 | active dynamic lights | 12 (capped by tier) | 14 |
-| shadow-casting lights | 1 – 2 | 3 |
+| shadow-casting lights | 1 – 3 | 3 |
 | fixtures resident | 127 | — |
 
-Draw calls exceed the 180 budget in the dressed zones (Intake 300–304, Service
-308, Residence 318) once props and decals are in. That is the one workload metric
-outside its target and it is the first thing to optimise: the cause is prop
-variety outrunning the per-material batching, and the fix is instancing the
-repeated props rather than merging them per chunk. Triangle counts are
-comfortable — 762 k against a 1.2 M budget — so there is headroom to trade.
+**Correction to an earlier version of this report.** It stated draw calls as
+62–318 against a 180 budget and called that the one workload metric outside
+target. That comparison was wrong, and the error was in the measurement rather
+than the renderer. `renderer.info` accumulates over every pass in a frame, and
+GTAO traverses the whole scene again for its own depth and normal buffers. Turning
+GTAO off in an otherwise identical frame (`tools/qa/shots.diag.json`, `d0` vs
+`d1`) took the same view from 353 calls and 766 k triangles to 190 and 387 k —
+almost exactly half. So the scene itself submits roughly 176–190 calls and
+~387 k triangles, and the earlier figures were double-counting a second scene
+traversal that the AO pass is supposed to make. A depth prepass for AO is what
+every renderer of this kind does.
+
+At ~190 the scene pass is at the 180 budget rather than 75% over it. Instancing
+the repeated props is still the right optimisation and still the first one to
+make, but it is a tightening rather than a rescue.
 
 Steady-state SwiftShader frame times were **4–10 ms** (496×279 low tier: 5–8 ms;
 819×461 medium tier: 4.2–9.4 ms). The multi-second
@@ -194,9 +204,10 @@ measurement.
    and the Plant are dressed to standard. The Cistern and the Ductwork have
    their architecture, water and lighting but a lower prop density. The Safe Room
    builds but could not be verified in a capture — see limitation 3.
-6. **Ceiling water-staining is close to uniform** across the Intake plate rather
-   than following the wear gradient the fixtures already use. Concentrated damage
-   reads as damage; distributed damage reads as material.
+6. ~~**Ceiling water-staining is close to uniform.**~~ Fixed in the polish pass
+   (section 5). The cause was that every weathering term in the material was
+   gated on a vertical or upward-facing normal, so a suspended tile — normal
+   straight down — received none of them.
 7. **First-person hands are functional but not finished.** They are lit, posed
    and animated, but the geometry does not yet read as convincingly as the rest
    of the frame at the size it occupies.
@@ -274,7 +285,138 @@ non-Intake zones is what located the stale fill values.
 
 ---
 
-## 5. Artefacts
+## 5. Polish pass: the named gaps against a AAA-budget renderer
+
+This section exists because of a follow-up instruction to locate the differences
+against AAA titles and keep polishing until they were closed.
+
+**One thing stated plainly up front, and not softened afterwards.** "Exceeding
+AAA" is not a claim this project can support and it is not claimed here. *Alien:
+Isolation* is on the order of a hundred person-years with photogrammetry, baked
+global illumination and motion capture; nothing in a single automated session
+reaches that, and any report saying otherwise would be worthless. What *is*
+achievable is naming the specific, individually-nameable differences and closing
+the ones that are closable. That is what follows, including the ones that are not
+closed.
+
+### Gaps identified from `docs/captures/final/09_intake_recheck.png`
+
+Ranked by how strongly each one signalled "not a real room", at the time:
+
+1. **Zero occlusion at any corner or crease.** The strongest tell by a wide
+   margin — wall/floor, wall/ceiling and wall/column junctions had no darkening
+   at all.
+2. **No anti-aliasing of any kind.** Not on the original list; found during
+   diagnosis and arguably worse than item 1.
+3. **Uniform ceiling staining** instead of a per-tile and per-leak distribution.
+4. **Nothing in the air.** Rooms read as empty volumes with surfaces at the far
+   end.
+5. **No colour-temperature contrast** anywhere in a frame — every surface one hue.
+6. **Small-scale variation in albedo but not in lighting.**
+7. Sparse props in ordinary sightlines; no SSR on the Cistern's water; no
+   near-field defocus; procedural rather than captured animation.
+
+### What was done
+
+**1. Baked zone-scale AO — `src/render/AOVolume.js` (new).** Voxelises a zone's
+colliders, measures openness per cell against a 32-direction golden-spiral set
+with a 3 m metric reach, blurs three times, and packs the field into a 2D atlas of
+Y-slices, which materials sample by world position and apply to the indirect terms
+only. Y-slices rather than a 3D texture because `sampler3D` needs GLSL ES 3.00 and
+three compiles `MeshStandardMaterial` as 1.00.
+
+Four things about the first implementation were wrong, and all four were found by
+a numeric test (`tools/qa/aotest.mjs`) rather than by looking at a frame — which
+is the part of this worth keeping:
+
+- The ray reach was in *cells*, so the effect's radius scaled with grid
+  resolution. At fine cell sizes it fell below the distance at which a wall should
+  start to matter and a corner 55 cm from two walls measured as **fully open**.
+- The open-room reference was a hand-tuned constant whose correctness depended on
+  room height and cell size. At fine resolutions it saturated the whole field to
+  1.0 and the effect silently did nothing.
+- Floors are registered as walkable *rectangles*, not boxes, so the volume had no
+  ground in it and nothing occluded from below.
+- Ceiling colliders were skipped on the theory that they would seal the room. They
+  sit above the tile line; including them is what makes the top of a wall fall off.
+
+Two further properties turned out to be necessary rather than optional, and both
+came from measuring frames:
+
+- **A floor clamp.** With no GI, "indirect" is a constant, so occluding it drives
+  towards black rather than towards the dim light a real crease still receives from
+  three or four bounces. Unclamped it crushed the shaded side of a light pool on
+  the carpet to solid black — one of the specific things this project is not
+  allowed to do.
+- **Fill compensation.** Occlusion moves light, it does not delete it. Applying the
+  field without scaling the bounce fill back up by the field's own mean put the
+  Intake about a stop and a half under the exposure it was authored at.
+  `AOVolume.fillCompensation` does that arithmetic.
+
+**2. MSAA (`q.msaa`: 4/2/0 by tier).** There was no anti-aliasing at all. The
+context is created with `antialias: false` — correct, because it does nothing once
+the scene renders into a composer target — but the composer's target had
+`samples: 0`, and a comment claimed supersampling covered it while the high tier's
+render scale was 1.00. This building is almost entirely thin high-contrast edges,
+and near edge-on they went sub-pixel and broke into strings of isolated black
+dots. Those dots were visible across every wall in the diagnostic captures and
+**survived turning off GTAO, the shadow maps and the injected detail normal in
+turn**, which is how the cause was pinned down rather than guessed at.
+
+**3. Ceiling staining.** Every weathering term in the material was gated on
+`axVert` or `axUp`, so a suspended tile got none of them and an entire ceiling
+plate was one flat tone under isotropic noise. Now: per-tile tonal variation on the
+0.6 m cross-tee grid, a fraction of tiles read as replacements, and damp patches
+carry the darker tide line that a dried water stain actually has.
+
+**4. `src/render/Motes.js` (new).** One additive `Points` cloud wrapped around the
+camera in the vertex shader, lit per particle by the nearest six fixtures with a
+strong forward-scattering lobe, because dust is only conspicuous when you turn to
+face a lamp. Two bugs in the first version: the beam test had its sign inverted, so
+every mote *in* a beam got zero light and only the ones up in the plenum lit; and
+the candela-to-scene-units factor left an off-axis mote at ~0.003 of scene white,
+below what AgX and an 8-bit output can represent.
+
+**5. Colour temperature.** The bounce fill's sky and ground colours were two shades
+of one hue in every zone. They are now pushed apart on the warm/cool axis at
+matched luminance. A `HemisphereLight` is the only tool in this renderer that can
+put two colour temperatures in one frame.
+
+Also: Kaplanyan geometric specular anti-aliasing on the injected detail normal.
+
+### One hypothesis this pass got wrong
+
+Reading the flat walls in the first A/B frames, the conclusion was that the room
+was lit by its bounce fill rather than by its fixtures, and that the fix was to cut
+the fill hard. Both halves were wrong, and both were settled by measurement rather
+than argument. `Game.lightProbe()` reported 19.2 units of direct light at head
+height against 0.51 of fill — direct dominates by roughly 20:1 — and frames
+captured at quarter and half fill (`d5`, `d6`) left the corridor almost entirely
+black. The fill stayed as authored.
+
+The real explanation is more interesting and did not need a change: every fixture
+in the Annex points straight down, so the *floors* take nearly all the direct
+light and every vertical surface sits at a grazing angle to every fixture. Walls
+genuinely are lit almost entirely by bounce. That is why they were flat, why the
+AO volume changes them so much, and why it barely touches a lit floor.
+
+### Not closed
+
+- **Screen-space reflections** on the Cistern's water. It uses a planar-ish
+  approximation against the procedural environment map, not real SSR.
+- **Near-field defocus.** Considered and dropped: it is close to the list of things
+  the brief forbids using to hide problems, and the hands are the only thing near
+  enough to benefit.
+- **Prop instancing.** The scene pass measures ~190 draw calls against a 180
+  budget (see the correction in section 2). Still the right optimisation.
+- **Animation** remains procedural. No motion capture exists for this project and
+  none can be authored in it.
+- **The Stack** still needs its enclosing shaft geometry — limitation 4, and still
+  the top item.
+
+---
+
+## 6. Artefacts
 
 | what | where |
 |---|---|

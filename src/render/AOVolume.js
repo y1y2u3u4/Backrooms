@@ -350,33 +350,60 @@ export class AOVolume {
     this.openRef = openRef;
 
     // ---- 5. pack into the atlas -------------------------------------------
+    const shape = (raw) => Math.pow(clamp01(raw / openRef), 0.75);
     this.data.fill(255);
-    let sum = 0, lo = 1;
+    let sum = 0, n = 0, lo = 1;
     for (let y = 0; y < ny; y++) {
       const tx = (y % this.tilesX) * nx;
       const ty = Math.floor(y / this.tilesX) * nz;
       for (let z = 0; z < nz; z++) {
         const row = ((ty + z) * this.width + tx) * 4;
         for (let x = 0; x < nx; x++) {
-          const v = clamp01(field[idx(x, y, z)] / openRef);
+          const i = idx(x, y, z);
           // Gamma < 1 lifts the mid-tones, so the darkening is concentrated in
           // the last few tens of centimetres of a crease rather than being a
-          // broad room-wide dimming that the auto-exposure would just undo.
-          const shaped = Math.pow(v, 0.75);
+          // broad room-wide dimming.
+          const shaped = shape(field[i]);
           const o = row + x * 4;
           const b = Math.round(shaped * 255);
           this.data[o] = b; this.data[o + 1] = b; this.data[o + 2] = b;
           this.data[o + 3] = 255;
-          sum += shaped; if (shaped < lo) lo = shaped;
+          // The mean is taken over INTERIOR, UNOCCUPIED cells only, because it is
+          // used to compensate the zone's bounce fill and only the cells a
+          // surface can actually sample should count. Cells buried inside a wall
+          // are zero and would drag it down for no reason.
+          if (!occ[i] && x >= px && x < nx - px && y >= py && y < ny - py
+              && z >= pz && z < nz - pz) {
+            sum += shaped; n++;
+            if (shaped < lo) lo = shaped;
+          }
         }
       }
     }
-    this.mean = sum / (nx * ny * nz);
+    this.mean = n ? sum / n : 1;
     this.floorValue = lo;
     this.texture.needsUpdate = true;
     this.built = true;
     this.lastBuildMs = performance.now() - t0;
     return this;
+  }
+
+  /**
+   * How much to scale a zone's bounce fill by to undo the average dimming this
+   * volume applies, for a given strength and floor clamp.
+   *
+   * Occlusion in a real room does not delete light, it moves it: the photons a
+   * crease does not receive went somewhere else, and the room's overall
+   * brightness is set by how much light the fixtures put out, not by its
+   * geometry. Applying an occlusion term to a flat hemisphere fill without this
+   * darkens the whole zone — measured at about a stop and a half in the Intake,
+   * which is a change to the exposure the zone was authored at rather than to
+   * the way its shape reads. Compensating keeps the mean where the art
+   * direction put it, so the volume only redistributes.
+   */
+  fillCompensation(strength, floor) {
+    const effective = 1 - strength * (1 - Math.max(this.mean ?? 1, floor));
+    return 1 / Math.max(0.25, effective);
   }
 
   /** Uniform values for the material injection. */
@@ -396,6 +423,7 @@ export class AOVolume {
       atlas: [this.width, this.height],
       openRef: +(this.openRef ?? 0).toFixed(3),
       mean: +(this.mean ?? 0).toFixed(3),
+      fillComp: +this.fillCompensation(0.9, 0.35).toFixed(3),
       min: +(this.floorValue ?? 0).toFixed(3),
       ms: Math.round(this.lastBuildMs),
     };

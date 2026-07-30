@@ -8,7 +8,7 @@
     "speckle": 0.0035,
     "emptiness": 0.72
   },
-  "hfMedian": 0.05674987144052088,
+  "hfMedian": 0.06614945045054421,
   "rows": [
     {
       "file": "01_intake_spine.png",
@@ -144,6 +144,21 @@
       "speckle": 0.0007402735537941024,
       "emptiness": 0.18120719859850296,
       "colourCast": 0.890261334101549
+    },
+    {
+      "file": "10_intake_ceiling_recheck.png",
+      "W": 819,
+      "H": 460,
+      "mean": 0.2210439626604052,
+      "contrast": 0.11174122910958995,
+      "dynamicRange": 0.6074298024177551,
+      "crushed": 0.026912459521155174,
+      "clipped": 0,
+      "banding": 0.000031852205765249246,
+      "highFreq": 0.08632657869167355,
+      "speckle": 0.0006200125071488511,
+      "emptiness": 0.11437065350108828,
+      "colourCast": 0.5817468401301871
     }
   ],
   "flagged": [
