@@ -186,12 +186,41 @@ measurement.
 2. **Fewer independent judge rounds than intended.** One round was commissioned;
    it was terminated part-way by a platform usage limit. Its findings are in §4.
    The two further rounds the brief allows for were not run.
-3. **The QA camera needs vertical clearance testing.** `lookOpen()` finds an open
-   horizontal sightline but does not yet reject positions with insufficient
-   headroom, so a capture aimed at a mezzanine zone can land the eye inside a
-   soffit (visible in `docs/captures/judge1/07_residence_corridor.png`). This is
-   a capture-tool limitation, not a game defect — the player controller has a
-   ceiling probe and cannot get there.
+3. **The QA camera needs vertical clearance testing.** `lookOpen()` now rejects a
+   position with no horizontal sightline and searches outward for one, but it
+   still does not test headroom, so a capture aimed at a mezzanine zone can land
+   the eye inside a soffit (visible in
+   `docs/captures/judge1/07_residence_corridor.png`). This is a capture-tool
+   limitation, not a game defect — the player controller has a ceiling probe and
+   cannot get there.
+3b. **The Intake's corridors contain no light fixtures.** Found in this pass and
+   not fixed. It is a violation of the project's own rule — "light from visible
+   sources only; if it glows, there is a fixture" — and it is why a ceiling-facing
+   capture of the Intake shows a lit ceiling with nothing in it
+   (`docs/captures/verify/02_intake_ceiling.png`).
+
+   The measurement, from `Game.fixtureReport()` with the camera standing in a
+   corridor at `[-22.4, 1.63, 23.35]`: the four nearest troffers are 6.31, 6.76,
+   6.79 and 7.33 m away, at z = 29.4 and z = 16.8 — the far sides of partition
+   walls. All four are healthy and correct in every respect the report checks
+   (level 0.97, light visible, tube mesh present, in the scene graph, visible,
+   emissive luminance 1.22), so this is not a rendering or rig bug.
+
+   What is *measured* is the effect: no fixture within 6 m of a camera standing in
+   an Intake corridor, and every fixture that does exist working correctly. The
+   mechanism is **inferred and not yet confirmed**: `IntakeZone` plans fixtures on
+   the 4.2 m room-cell grid and places one per cell centre, and the two cells whose
+   centres bracket this camera (`[-21, 21]` and `[-21, 25.2]`) both have none —
+   either because they are marked as wall cells or because both lost the 10 %
+   per-cell skip roll, which two adjacent cells doing is unlikely enough to be
+   worth checking. Confirming which requires dumping the zone's cell grid
+   alongside the fixture plan.
+
+   No fix is attempted here. The likely shape of one is to walk the corridor runs
+   after the cell pass and place fixtures along them at roughly 3 m centres, but
+   that is a change to zone authoring on top of an unconfirmed diagnosis, and it
+   could not be verified in the remaining budget — an unverified geometry change is
+   worse than a precisely documented defect. Joint top priority with limitation 4.
 4. **The Stack is the one zone that does not work.** It is a known, diagnosed
    defect, not an unknown. In `docs/captures/final/05_stack.png` the receding
    floors read as isolated lit rectangles suspended in black rather than as a
@@ -400,6 +429,29 @@ light and every vertical surface sits at a grazing angle to every fixture. Walls
 genuinely are lit almost entirely by bounce. That is why they were flat, why the
 AO volume changes them so much, and why it barely touches a lit floor.
 
+### Three measurement defects this pass found in its own tooling
+
+Worth listing separately, because each one had been silently producing a wrong
+judgement rather than an error, and two of them invalidated conclusions that had
+already been drawn.
+
+- **The AO statistics were measured over the wrong cells.** A zone's bounds are an
+  AABB, so a zone that does not fill its box is mostly void, and void reads fully
+  open by construction. Taking the normalisation percentile over every unoccupied
+  cell pinned it at 1.0 in five of six zones and reported the Ductwork — a
+  crawlspace, the most enclosed space in the game — at a mean openness of 0.957.
+  The statistic now covers only cells within two cells of geometry, which is where
+  the shader's probe actually lands.
+- **Captures settled 14 frames.** Adaptation into darkness has a 1.8 s time
+  constant, which is 109 frames, so a capture that jumps from a bright zone to a
+  dark one and settles 14 frames photographs the exposure of the zone it just
+  left. Every Cistern and Ductwork frame taken that way came out near-black. Some
+  of those frames had already been diagnosed as the zone being too dark, and the
+  fill values were raised on the strength of that reading. Default is now 150.
+- **`lookOpen` could frame a wall 40 cm from the lens.** It scored headings in
+  one-metre steps starting at one metre, so a wall at 0.4 m and a wall at 0.9 m
+  both scored zero and a position with no sightline won by default.
+
 ### Not closed
 
 - **Screen-space reflections** on the Cistern's water. It uses a planar-ish
@@ -411,8 +463,18 @@ AO volume changes them so much, and why it barely touches a lit floor.
   budget (see the correction in section 2). Still the right optimisation.
 - **Animation** remains procedural. No motion capture exists for this project and
   none can be authored in it.
-- **The Stack** still needs its enclosing shaft geometry — limitation 4, and still
-  the top item.
+- **The Stack** still needs its enclosing shaft geometry — limitation 4.
+- **The Intake's corridors have no fixtures in them** — limitation 3b. Found in
+  this pass, measured precisely, deliberately not fixed. Joint top item with the
+  Stack.
+- **Wallpaper pattern repetition in the Residence.** The anti-repetition machinery
+  works on luminance and hue, so a strongly *figurative* pattern — the Residence's
+  flower motif — still reads as a repeat down a corridor even though its tone
+  varies. A stochastic re-tile cannot fix a motif the eye recognises; that needs
+  either several authored variants or a much larger tile.
+- **The mote cloud is uniform density.** Real dust concentrates near disturbance
+  and settles in still air. Per-zone density and scattering are tuned, but within a
+  zone the field is homogeneous.
 
 ---
 
@@ -425,6 +487,11 @@ AO volume changes them so much, and why it barely touches a lit floor.
 | Zone-coverage captures | `docs/captures/judge1/` |
 | Ordinary-gameplay captures, chronological | `docs/captures/r0/` … `r8/` |
 | Artifact metrics | `docs/captures/*/_artifacts.json` |
+| Baked-AO A/B pairs (`ao_NN_off_*` vs `ao_NN_on_*`) | `docs/captures/ao/` |
+| Contributor-isolation diagnostics (GTAO / shadows / detail normal / fill off) | `docs/captures/diag3/` |
+| Post-polish zone captures | `docs/captures/verify/`, `docs/captures/final3/` |
+| Magnified crops used to identify sub-pixel defects | `docs/captures/crop/` |
+| Numeric AO bake check | `node tools/qa/aotest.mjs` |
 | UI screens, three aspect ratios | `docs/captures/ui/r9*/` |
 | Blender asset turntables | `docs/assets/` |
 | Asset manifest with sub-objects and material slots | `public/assets/models/manifest.json` |

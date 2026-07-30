@@ -9,8 +9,17 @@
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0 --port 4173",
     "capture": "node tools/qa/capture.mjs",
-    "perf": "node tools/qa/perf.mjs"
+    "perf": "node tools/qa/perf.mjs",
+    "aotest": "node tools/qa/aotest.mjs",
+    "artifacts": "node tools/qa/artifacts.mjs",
+    "playtest": "node tools/qa/playtest.mjs",
+    "crop": "node tools/qa/crop.mjs"
   },
-  "dependencies": { "three": "0.185.1" },
-  "devDependencies": { "@playwright/test": "^1.49.0", "vite": "^6.0.0" }
+  "dependencies": {
+    "three": "0.185.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "vite": "^6.0.0"
+  }
 }
