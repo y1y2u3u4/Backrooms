@@ -1,0 +1,65 @@
+[
+  {
+    "name": "01_probe_stack",
+    "settle": 40,
+    "setup": "const r=g.world.goto&&g.world.goto('stack'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0.06); console.info('PS '+JSON.stringify(g.lightProbe()))",
+    "file": "docs/captures/circ/01_probe_stack.png",
+    "stats": {
+      "ms": 73.16744186079433,
+      "fps": 13.667281164517998,
+      "p90": 24.300000000745058,
+      "calls": 132,
+      "tris": 423788,
+      "quality": "low",
+      "res": "298x167",
+      "lights": {
+        "fixtures": 342,
+        "lit": 270,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "02_probe_cistern",
+    "settle": 40,
+    "setup": "const r=g.world.goto&&g.world.goto('cistern'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,-0.08); console.info('PC '+JSON.stringify(g.lightProbe()))",
+    "file": "docs/captures/circ/02_probe_cistern.png",
+    "stats": {
+      "ms": 184.02790697690014,
+      "fps": 5.4339584491689275,
+      "p90": 13.800000000745058,
+      "calls": 152,
+      "tris": 114024,
+      "quality": "low",
+      "res": "298x167",
+      "lights": {
+        "fixtures": 158,
+        "lit": 144,
+        "active": 5,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "03_probe_intake",
+    "settle": 40,
+    "setup": "const r=g.world.goto&&g.world.goto('intake'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0); console.info('PI '+JSON.stringify(g.lightProbe()))",
+    "file": "docs/captures/circ/03_probe_intake.png",
+    "stats": {
+      "ms": 10.460465116383032,
+      "fps": 95.59804357397208,
+      "p90": 14.099999997764826,
+      "calls": 243,
+      "tris": 482284,
+      "quality": "low",
+      "res": "298x167",
+      "lights": {
+        "fixtures": 286,
+        "lit": 224,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  }
+]

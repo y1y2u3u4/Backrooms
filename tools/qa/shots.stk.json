@@ -1,0 +1,4 @@
+[
+  {"name":"01_stack","settle":130,"setup":"const r=g.world.goto&&g.world.goto('stack'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0.06)"},
+  {"name":"02_stack_up","settle":60,"setup":"const r=g.world.goto&&g.world.goto('stack'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0.55)"}
+]

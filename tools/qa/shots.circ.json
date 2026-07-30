@@ -1,0 +1,5 @@
+[
+  {"name":"01_probe_stack","settle":40,"setup":"const r=g.world.goto&&g.world.goto('stack'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0.06); console.info('PS '+JSON.stringify(g.lightProbe()))"},
+  {"name":"02_probe_cistern","settle":40,"setup":"const r=g.world.goto&&g.world.goto('cistern'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,-0.08); console.info('PC '+JSON.stringify(g.lightProbe()))"},
+  {"name":"03_probe_intake","settle":40,"setup":"const r=g.world.goto&&g.world.goto('intake'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0); console.info('PI '+JSON.stringify(g.lightProbe()))"}
+]

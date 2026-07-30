@@ -1,0 +1,61 @@
+{
+  "dir": "docs/captures/dark2",
+  "limits": {
+    "crushed": 0.16,
+    "clipped": 0.03,
+    "dynamicRange": 0.22,
+    "banding": 0.055,
+    "speckle": 0.0035,
+    "emptiness": 0.72
+  },
+  "hfMedian": 0.042120120017536594,
+  "rows": [
+    {
+      "file": "01_stack.png",
+      "W": 558,
+      "H": 313,
+      "mean": 0.023422657300362634,
+      "contrast": 0.10354721172854196,
+      "dynamicRange": 0.6942391991615295,
+      "crushed": 0.9148258843198552,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.042120120017536594,
+      "speckle": 0.000011566309653242037,
+      "emptiness": 0.9150949878044591,
+      "colourCast": 0.0896939437230791
+    },
+    {
+      "file": "02_cistern.png",
+      "W": 558,
+      "H": 313,
+      "mean": 0.010387441113494494,
+      "contrast": 0.04315087246932119,
+      "dynamicRange": 0.212178036570549,
+      "crushed": 0.9104916005359167,
+      "clipped": 0.0000057256060554009646,
+      "banding": 0,
+      "highFreq": 0.0280912359855049,
+      "speckle": 0,
+      "emptiness": 0.9118313923528806,
+      "colourCast": 0.5159936092559403
+    }
+  ],
+  "flagged": [
+    {
+      "file": "01_stack.png",
+      "flags": [
+        "CRUSHED",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "02_cistern.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    }
+  ]
+}

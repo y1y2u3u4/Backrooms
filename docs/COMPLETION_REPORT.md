@@ -652,16 +652,14 @@ Fixed. `lookOpen` now rejects any position with less than 1.75 m of headroom.
 
 ### Not fixed
 
-- **The Stack still does not read.** Its enclosure is now real and verified
-  numerically — 124 shaft-wall colliders across three radii, 411 k triangles, and
-  22 322 triangles facing *into* the shaft, correctly wound. So the remaining
-  darkness is lighting, not missing geometry, and its light reach is now the joint
-  best in the building. But the frame at the low tier is still 0.93 crushed and I
-  could not get a shipping-tier capture of it inside the remaining budget. Given
-  the Cistern measures 0.939 at low against 0.236 at medium, much of that number is
-  the tier artefact described in §5 — but "probably mostly a measurement artefact"
-  is not verification, and this stays open.
-- **The Cistern is still dark**, 9 % of its area beyond 5 m from a lamp.
+- **The Stack and the Cistern have had their fill raised on the strength of the
+  measurement above, and that change is not yet visually re-verified.** The
+  diagnosis is solid — 37:4.5:1 in direct light, 12:1 in fill — and the enclosure,
+  the light reach and the circuit state are all confirmed good. What is missing is a
+  capture after the change showing the frames read. Everything needed to check it is
+  in place (`node tools/qa/capture.mjs --shots circ2`); it did not fit in the
+  remaining budget.
+- **The Cistern still has 9 %** of its walkable area beyond 5 m from a lamp.
 - **Still never run on a GPU**, and no frame-rate verdict exists.
 - **The playthrough and audio-export harnesses are written but their runs are not
   in this report.** `tools/qa/playthrough.mjs` drives a continuous session with real
@@ -671,6 +669,63 @@ Fixed. `lookOpen` now rejects any position with less than 1.75 m of headroom.
   biggest holes in this project's verification — nobody has played it and nobody
   has heard it — therefore remain open, and the tooling to close them existing is
   not the same as them being closed.
+
+### The dark zones, resolved — and a fourth wrong diagnosis on the way there
+
+The Stack and the Cistern resisted five separate explanations. They are recorded
+because four of them were wrong and the pattern in *how* they were wrong is the
+useful part.
+
+| explanation | how it was tested | verdict |
+|---|---|---|
+| bounce fill too low | swept the Cistern's fill 1× → 4.5× and measured | **wrong** (0.937 → 0.935) |
+| enclosing geometry missing | walked the built scene graph, counted triangles by radius and winding | **wrong** — 22 322 triangles face into the shaft, 124 colliders |
+| fog swallowing the far wall | raised `colorFar` from 0x22242c to 0x3e4450 and re-measured | **wrong** (0.934 → 0.934) |
+| power circuits switched off | dumped `rig.circuits` | **wrong** — every circuit at level 1 |
+| the zones are simply lit far dimmer than the Intake | probed direct light and fill in each zone **after a settled frame** | **right** |
+
+The measurement, at last taken correctly:
+
+| zone | direct light at head height | bounce fill (up) | zone fixtures lit |
+|---|---:|---:|---:|
+| Intake | **37.0** | 0.56 | 142 / 201 |
+| Stack | **4.5** | 0.54 | 62 / 73 |
+| Cistern | **1.0** | **0.048** | 16 / 17 |
+
+Thirty-seven to one in direct light, and twelve to one in fill for the Cistern.
+That is not an atmospheric choice; it is two stops past "grim" into "unreadable",
+and no amount of occlusion, fog or material work could have recovered it. The
+Cistern's fill goes from 0.50 to 1.45 and the Stack's from 1.55 to 2.30, both with
+lightened colours.
+
+**Why the fill sweep in §5 said the opposite.** It reported that raising the fill
+changed nothing, and the conclusion drawn from it — "fill is not the lever" — was
+wrong. Reading its own probe output back afterwards, `fillUp` went 0.183 → 0.082 →
+0.123 → 0.184 across the four settings: the fill never actually rose, because
+`setFill` writes a *target* the rig damps towards over about a second and the shots
+settled 70 frames, and because a zone-profile reapplication reset it in between.
+The sweep measured almost the same fill four times and I read four identical
+results as evidence about fill.
+
+### The probe-timing artefact, which is the most useful thing in this section
+
+`lightProbe()` called from a capture's `setup` reports **every fixture in the
+building as unlit and every zone as receiving zero direct light**, including the
+Intake, which visibly has light pools on its floor in the same frame.
+
+The reason is that setup runs before any frame is stepped. Fixture output ramps
+from zero and circuit level ramps with it, so at setup time nothing has been
+updated yet. This produced a confident, precise, entirely wrong conclusion — that
+the zones' power circuits were switched off — supported by a table of zeroes.
+
+Probing has to happen in a second shot with `settle: 1`, the same pattern the AO
+A/B pairs already use. Corrected, the Intake reads 37.0 rather than 0.
+
+The general lesson is the one this project keeps relearning: **a measurement taken
+at the wrong moment is more dangerous than no measurement**, because it comes with
+the authority of a number. Four of the six wrong diagnoses in this report were of
+that kind — a 14-frame exposure settle, an AO statistic over void cells, a fill
+sweep that never changed the fill, and a probe read before the first frame.
 
 ### A diagnostic of mine that was wrong, recorded because it nearly misled me
 

@@ -1,0 +1,60 @@
+{
+  "dir": "docs/captures/stk",
+  "limits": {
+    "crushed": 0.16,
+    "clipped": 0.03,
+    "dynamicRange": 0.22,
+    "banding": 0.055,
+    "speckle": 0.0035,
+    "emptiness": 0.72
+  },
+  "hfMedian": 0.03947696822531205,
+  "rows": [
+    {
+      "file": "01_stack.png",
+      "W": 558,
+      "H": 313,
+      "mean": 0.018383081786908628,
+      "contrast": 0.09638111527909875,
+      "dynamicRange": 0.6953560709953308,
+      "crushed": 0.9344017314232711,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.03518963149435677,
+      "speckle": 0,
+      "emptiness": 0.9344933411201576,
+      "colourCast": 0.11970741523861805
+    },
+    {
+      "file": "02_stack_up.png",
+      "W": 558,
+      "H": 313,
+      "mean": 0.021330414438550493,
+      "contrast": 0.10596266334057808,
+      "dynamicRange": 0.7113097906112671,
+      "crushed": 0.9303480023360473,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.03947696822531205,
+      "speckle": 0.000023132619306484074,
+      "emptiness": 0.9304682400632107,
+      "colourCast": 0.11880373949443697
+    }
+  ],
+  "flagged": [
+    {
+      "file": "01_stack.png",
+      "flags": [
+        "CRUSHED",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "02_stack_up.png",
+      "flags": [
+        "CRUSHED",
+        "EMPTY"
+      ]
+    }
+  ]
+}

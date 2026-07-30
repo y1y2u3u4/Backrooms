@@ -159,7 +159,17 @@ export const FOG_PROFILES = {
   // The Stack's whole effect is floors receding into haze. Too thin, and the
   // far ones read as unlit fragments floating in a void rather than as a shaft
   // that goes on further than you can see.
-  stack:     { color: 0x0d0e12, colorFar: 0x22242c, density: 0.036, falloff: 0.010, baseY: -30.0, noise: 0.42 },
+  //
+  // colorFar raised from 0x22242c. The zone has an enclosing shaft wall now — 124
+  // colliders and 22 000 triangles of it facing into the well, verified — and it
+  // was still rendering black. The reason was here rather than in the geometry or
+  // the lighting: the wall across the void is about 18 m away, at density 0.036
+  // that is roughly half fog by the time it reaches the eye, and half of a
+  // near-black fog colour is a near-black pixel however well the surface behind it
+  // is lit. Haze in a lit shaft is LIT haze; a far colour this dark was quietly
+  // subtracting the enclosure the zone had just been given. This is the opposite
+  // of hiding a problem behind fog — it is stopping the fog from hiding the fix.
+  stack:     { color: 0x1a1c22, colorFar: 0x3e4450, density: 0.032, falloff: 0.010, baseY: -30.0, noise: 0.42 },
   safe:      { color: 0x14100a, colorFar: 0x241b0e, density: 0.020, falloff: 0.14,  baseY: -1.0, noise: 0.25 },
   void:      { color: 0x000000, colorFar: 0x000000, density: 0.20,  falloff: 0.01,  baseY: -1.0, noise: 0.10 },
 };

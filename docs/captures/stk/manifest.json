@@ -1,0 +1,44 @@
+[
+  {
+    "name": "01_stack",
+    "settle": 130,
+    "setup": "const r=g.world.goto&&g.world.goto('stack'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0.06)",
+    "file": "docs/captures/stk/01_stack.png",
+    "stats": {
+      "ms": 3.739166666629414,
+      "fps": 267.43926900199585,
+      "p90": 6.699999999254942,
+      "calls": 133,
+      "tris": 423820,
+      "quality": "low",
+      "res": "558x314",
+      "lights": {
+        "fixtures": 342,
+        "lit": 270,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "02_stack_up",
+    "settle": 60,
+    "setup": "const r=g.world.goto&&g.world.goto('stack'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0.55)",
+    "file": "docs/captures/stk/02_stack_up.png",
+    "stats": {
+      "ms": 151.79275362312362,
+      "fps": 6.587929766942862,
+      "p90": 18.399999998509884,
+      "calls": 127,
+      "tris": 423304,
+      "quality": "low",
+      "res": "558x314",
+      "lights": {
+        "fixtures": 342,
+        "lit": 270,
+        "active": 14,
+        "shadows": 1
+      }
+    }
+  }
+]

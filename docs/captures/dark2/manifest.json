@@ -1,0 +1,44 @@
+[
+  {
+    "name": "01_stack",
+    "settle": 170,
+    "setup": "g.setMSAA(0); const r=g.world.goto&&g.world.goto('stack'); const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,0.06); console.info('Q1 '+JSON.stringify(q)); console.info('P1 '+JSON.stringify(g.lightProbe()))",
+    "file": "docs/captures/dark2/01_stack.png",
+    "stats": {
+      "ms": 2873.218333333389,
+      "fps": 0.3480417719734655,
+      "p90": 172.89999999850988,
+      "calls": 133,
+      "tris": 423820,
+      "quality": "low",
+      "res": "558x314",
+      "lights": {
+        "fixtures": 342,
+        "lit": 269,
+        "active": 10,
+        "shadows": 2
+      }
+    }
+  },
+  {
+    "name": "02_cistern",
+    "settle": 170,
+    "setup": "const r=g.world.goto&&g.world.goto('cistern'); const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,-0.08); console.info('P2 '+JSON.stringify(g.lightProbe()))",
+    "file": "docs/captures/dark2/02_cistern.png",
+    "stats": {
+      "ms": 4.63166666670392,
+      "fps": 215.9050017974718,
+      "p90": 7.899999998509884,
+      "calls": 152,
+      "tris": 114024,
+      "quality": "low",
+      "res": "558x314",
+      "lights": {
+        "fixtures": 158,
+        "lit": 144,
+        "active": 5,
+        "shadows": 2
+      }
+    }
+  }
+]

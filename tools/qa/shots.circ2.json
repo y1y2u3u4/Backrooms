@@ -1,0 +1,8 @@
+[
+  {"name":"01_stack_settle","settle":140,"setup":"const r=g.world.goto&&g.world.goto('stack'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0.06)"},
+  {"name":"02_stack_probe","settle":1,"setup":"console.info('PS '+JSON.stringify(g.lightProbe()))"},
+  {"name":"03_cistern_settle","settle":140,"setup":"const r=g.world.goto&&g.world.goto('cistern'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,-0.08)"},
+  {"name":"04_cistern_probe","settle":1,"setup":"console.info('PC '+JSON.stringify(g.lightProbe()))"},
+  {"name":"05_intake_settle","settle":140,"setup":"const r=g.world.goto&&g.world.goto('intake'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0)"},
+  {"name":"06_intake_probe","settle":1,"setup":"console.info('PI '+JSON.stringify(g.lightProbe()))"}
+]

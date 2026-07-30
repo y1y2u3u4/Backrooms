@@ -670,6 +670,20 @@ export class Game {
       fillUp: +(skyL * this.rig.ambient.intensity).toFixed(3),
       fillDown: +(grL * this.rig.ambient.intensity).toFixed(3),
       fixtures: this.rig.stats,
+      // Circuit state, because "the zone is too dark" and "the zone's power is
+      // off" are indistinguishable in a screenshot and the game's whole premise
+      // is that the power is out until the player restores it. Without this the
+      // two get conflated and a lighting change gets made to fix a game state.
+      circuits: Object.fromEntries([...this.rig.circuits].map(
+        ([k, c]) => [k, +(c.level ?? 0).toFixed(2)])),
+      // Fixtures belonging to the CURRENT zone only. rig.stats counts every
+      // resident zone, and zones sit 400 m apart, so a dark zone next to a lit
+      // one reports over a hundred lit fixtures none of which it can see.
+      zoneFixtures: (() => {
+        const z = this.world?.zones?.[this.currentZone];
+        const list = z?._fixtures || [];
+        return { total: list.length, lit: list.filter((f) => f.level > 0.05).length };
+      })(),
       exposure: +this.engine.grade.uniforms.uExposure.value.toFixed(3),
     };
   }
@@ -901,13 +915,29 @@ export const AMBIENT_PROFILES = {
   // colour and the grey ceiling coming down — and its absence was why frames
   // read as monochrome washes of a single hue no matter how good the albedo was.
   // Sky and ground luminance are kept close so the exposure does not move.
+  //
+  // NOTE ON THE CISTERN AND THE STACK, which were the two zones that would not
+  // read. Measured with lightProbe() AFTER a settled frame — the timing matters,
+  // see below — direct light at head height came out at 37.0 units in the Intake,
+  // 4.5 in the Stack and 1.0 in the Cistern, and the Cistern's bounce fill was
+  // 0.048 against the Intake's 0.56. A twelve-to-one difference in fill and a
+  // thirty-seven-to-one difference in direct light is not an atmospheric choice,
+  // it is two stops past "grim" into "unreadable", and no amount of AO, fog or
+  // material work was ever going to recover it. Both are raised here.
+  //
+  // THE PROBE MUST BE TAKEN AFTER A SETTLED FRAME. Fixture output ramps from zero
+  // and circuits ramp with it, so a probe read in a capture's setup — before any
+  // frame has been stepped — reports every fixture in the building as unlit and
+  // every zone as receiving zero direct light. That artefact cost real time here:
+  // it produced a confident and completely wrong conclusion that the zones' power
+  // circuits were switched off. Probe in a second shot with settle: 1.
   intake:    { sky: 0x7f8a99, ground: 0xbfa87c, intensity: 2.05, motes: 0.55, moteSize: 0.85 },
   service:   { sky: 0x525f70, ground: 0x776d5e, intensity: 0.70, motes: 0.85, moteSize: 1.00 },
-  cistern:   { sky: 0x3d5460, ground: 0x585a48, intensity: 0.50, motes: 0.30, moteSize: 1.35 },
+  cistern:   { sky: 0x5c7885, ground: 0x7d8068, intensity: 1.45, motes: 0.30, moteSize: 1.35 },
   residence: { sky: 0x6e7480, ground: 0x9a8258, intensity: 1.05, motes: 0.75, moteSize: 0.95 },
   plant:     { sky: 0x4c5a6b, ground: 0x74684f, intensity: 0.75, motes: 0.62, moteSize: 1.10, moteExtent: 26 },
   duct:      { sky: 0x2e343c, ground: 0x443c2c, intensity: 0.30, motes: 1.45, moteSize: 1.15, moteExtent: 11 },
-  stack:     { sky: 0x808ea6, ground: 0xa2977f, intensity: 1.55, motes: 0.90, moteSize: 1.05, moteExtent: 24 },
+  stack:     { sky: 0x8e9cb4, ground: 0xb0a48b, intensity: 2.30, motes: 0.90, moteSize: 1.05, moteExtent: 24 },
   safe:      { sky: 0x7e8290, ground: 0xa88a55, intensity: 1.30, motes: 0.60, moteSize: 0.90, moteExtent: 12 },
   void:      { sky: 0x000000, ground: 0x000000, intensity: 0.0,  motes: 0.0,  moteSize: 1.00 },
 };
