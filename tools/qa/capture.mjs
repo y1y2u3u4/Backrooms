@@ -87,7 +87,13 @@ async function main() {
   page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}\n${e.stack || ''}`));
 
   console.log('→ loading', url);
-  await page.goto(`${url}?quality=${QUALITY}&qa=1`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  // `--prewarm 0` skips the per-zone shader pre-warm. It exists for the same
+  // reason perf.mjs has it: on this environment's CPU rasteriser the pre-warm
+  // costs about 190 seconds per zone, so a five-shot run across four zones does
+  // not finish. It changes nothing about what the shots LOOK like — only whether
+  // the first frame after a zone change stutters, which a still cannot show.
+  const q = `quality=${QUALITY}&qa=1${args.prewarm === '0' ? '&prewarm=0' : ''}`;
+  await page.goto(`${url}?${q}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
   try {
     await page.waitForFunction('window.ANNEX_READY === true || window.ANNEX_ERROR', { timeout: TIMEOUT });

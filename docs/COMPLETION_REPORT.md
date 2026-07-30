@@ -138,10 +138,17 @@ build at 1024×576, medium tier:
 |---|---:|---:|
 | draw calls, total submitted | 62 – 353 | — |
 | draw calls, scene pass only | ~35 – 190 | 180 |
+| ↳ superseded by fixture batching | 85 – 170 | 180 |
 | triangles, scene pass only | 26 k – 387 k | 1 200 k |
 | active dynamic lights | 12 (capped by tier) | 14 |
 | shadow-casting lights | 1 – 3 | 3 |
 | fixtures resident | 127 | — |
+
+The superseded row is measured differently — 640×360 at the low tier, four scripted
+scenarios rather than eight zone shots — so it is not a like-for-like replacement
+for the row above it, and both are kept. What it does establish is that the metric
+that used to exceed its budget no longer does, on the harness that asserts it.
+Section 8.1 has the scenario breakdown and what the batching cost in exchange.
 
 **Correction to an earlier version of this report.** It stated draw calls as
 62–318 against a 180 budget and called that the one workload metric outside
@@ -518,8 +525,13 @@ already been drawn.
 - **Near-field defocus.** Considered and dropped: it is close to the list of things
   the brief forbids using to hide problems, and the hands are the only thing near
   enough to benefit.
-- **Prop instancing.** The scene pass measures ~190 draw calls against a 180
-  budget (see the correction in section 2). Still the right optimisation.
+- **Prop instancing.** ~~The scene pass measures ~190 draw calls against a 180
+  budget (see the correction in section 2).~~ **Resolved for fixtures, still open
+  for props.** Batching the fixture emissive sources took the worst scenario from
+  221 draw calls to 170, under budget — see section 8.1. The remaining independent
+  objects are doors, machines and props, and instancing those is still the right
+  next optimisation; it is no longer the thing standing between the frame and its
+  budget.
 - **Animation** remains procedural. No motion capture exists for this project and
   none can be authored in it.
 - **The Stack** still needs its enclosing shaft geometry — limitation 4.
@@ -1403,6 +1415,54 @@ The single remaining failure is the CPU rasteriser's shader compile, which is wh
 the per-zone pre-warm exists to remove and which the harness disables by default
 (`?prewarm=0`) because on SwiftShader it costs 190 seconds a zone. p99 is 10 ms
 either side of it.
+
+### Submitted workload, `npm run perf` — every budget met
+
+Measured at the low tier, 640×360, shader pre-warm off (`prewarm=0`), which is what
+a four-scenario run can complete in a useful time on a CPU rasteriser. The numbers
+are the workload the frame submits, which is portable; the frame times printed
+alongside them are not, and the tool says so.
+
+| | before | after | budget |
+|---|---:|---:|---:|
+| draw calls, `many_lights` (worst) | 221 | **170** | 180 |
+| draw calls, `open_bay` | 185 | **154** | — |
+| draw calls, `corridor` / `long_view` | 90 / 84 | 91 / 85 | — |
+| triangles, worst | 477 802 | 485 642 | 1 200 000 |
+| emissive sources glowing | 48 – 139 | **149 in every scenario** | — |
+| active dynamic lights | 6 | 6 | 28 |
+| shadow-casting lights | 1 | 1 | 3 |
+| shader programs | 128 | 128 | 140 |
+| logic ms, p95 worst | 0.70 | 1.60 | 4.0 |
+
+This is the first run in which every budget passes. What changed was
+`render/EmissiveBatch.js`: each fixture's glowing part used to be its own mesh,
+which made 217 fixtures in the Intake 217 draw calls, and the batch makes them
+eight — one per fixture type per chunk, so each still frustum-culls with the chunk
+it belongs to. Per-zone triangle counts are identical to the byte.
+
+Three of those rows deserve the honest reading rather than the flattering one:
+
+- **`corridor` and `long_view` went UP by one call.** A batch spans a whole chunk,
+  so it is in frustum more often than a scattered handful of distant tubes would
+  be. The trade is one draw call in the cheap scenarios for fifty-one in the
+  expensive one.
+- **Triangles went up 7 840.** Hidden sources keep their place in the instance
+  buffer with a zeroed basis, so they still reach the vertex shader as degenerate
+  triangles. At 486 k of a 1.2 M budget that is the right side of the trade.
+- **Worst-case logic p95 went 0.70 ms to 1.60 ms**, all of it in `many_lights` —
+  the scenario that switches circuits, where every flip re-flags a whole instance
+  matrix buffer. Within budget with headroom, and not chased further, because a
+  buffer-upload cost measured on SwiftShader is not a cost I can confirm exists on
+  real silicon.
+
+An earlier version of this pass tried a 40 m distance cull on the emissive sources
+instead. It recovered five draw calls of 226, because the Intake is a dense
+63 × 63 m plate rather than a corridor and nearly everything lit is already inside
+40 m. It is reverted: with the sources batched, hiding the far ones buys nothing and
+can only break the rule that if the player can see light, they can see what is
+making it. That is why the "emissive sources glowing" row goes *up* while the draw
+calls go down.
 
 Pacing, for the record: 76.4 % zero-threat, one threat episode of 47 seconds
 ending in a capture, fear p90 0.269 and peak 0.513, longest stretch with nothing on

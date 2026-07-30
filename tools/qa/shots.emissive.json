@@ -1,0 +1,22 @@
+[
+  {
+    "name": "e1_intake_ceiling",
+    "setup": "g.setMSAA(0); const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,((r&&r.yaw)||0)+0.5,0.45); console.info('F1 '+JSON.stringify(g.fixtureReport(4)))"
+  },
+  {
+    "name": "e2_intake_spine",
+    "setup": "g.setMSAA(0); const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0)"
+  },
+  {
+    "name": "e3_safe_lamp",
+    "setup": "g.setMSAA(0); const r=g.world.goto?g.world.goto('safe'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0); console.info('F3 '+JSON.stringify(g.fixtureReport(5)))"
+  },
+  {
+    "name": "e4_plant_highbay",
+    "setup": "g.setMSAA(0); const r=g.world.goto?g.world.goto('plant'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,((r&&r.yaw)||0),0.35)"
+  },
+  {
+    "name": "e5_service_strip",
+    "setup": "g.setMSAA(0); const r=g.world.goto?g.world.goto('service'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0.15)"
+  }
+]
