@@ -1067,6 +1067,11 @@ export class Ambience {
     // the reverb duck a few lines below DID move the measurement, because
     // `setParam` goes through `glide(..., this.now, ...)` like everything else.
     bus.breath.gain.setTargetAtTime(target, this.engine.now, 0.09);
+    // The bus's send stage carries the same gesture, so the room's own tail ebbs
+    // with the sources feeding it instead of holding the level up underneath
+    // them. Before the sends were post-fader this had to be done by writing the
+    // global `wet` param, which took every other bus's reverb with it.
+    bus.sendBreath?.gain.setTargetAtTime(target, this.engine.now, 0.09);
 
     // TAKE THE REVERB TAIL WITH IT.
     //
@@ -1092,10 +1097,10 @@ export class Ambience {
     // arithmetic, so the game's most important audio gesture is quieter than its
     // numbers suggest. Recorded in the completion report as an open item.
     //
-    // Only while the Director is not driving, because it owns the same param.
-    if (!directed) {
-      this.engine.setParam('wet', lerp(0.12, 1, target), 0.12);
-    }
+    // No global `wet` write any more. It was the only lever that worked while
+    // the sends were pre-fader, and it was a blunt one: `wet` scales the single
+    // shared reverb return, so the ambience breathing dragged the entity's,
+    // the player's and the world's reverb down with it.
   }
 
   /** Stop everything with a fade. Used on death, endings and teardown. */

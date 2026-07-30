@@ -1491,3 +1491,113 @@ the bus but footsteps 546 s. That last number is the honest weakness — the Dir
 fires beats on a 95 s floor and a 150 s first beat, and a bot that walks in circles
 does not give it much to react to, but nine minutes of quiet is nine minutes of
 quiet.
+
+---
+
+## 9. Fourth pass: the audio was finally heard from
+
+The brief for this pass named the audio "the single largest unexamined part of
+the project": 75 sounds verified numerically, `tools/qa/audio-render.mjs` written
+and **never once run**. It has now been run. 84 WAV files live under
+`docs/verification/audio/` — every sound dry, eight 65-second zone beds, and the
+scripted scenes.
+
+One real bug fell out of the first run: the `breaker` scene had never rendered,
+because its beat dispatch called `beats[bi++]()` on a `[time, factory]` pair
+instead of `beats[bi++][1]()`.
+
+### The defect the existing checks could not see
+
+Every audio check this project had was true of a constant roar. No silence, no
+clipping, no DC offset, occlusion monotonic across three states, reverb T60s
+tracking target — a wall of noise passes all of them. `tools/qa/audiodyn.mjs`
+measures the thing itself, the distribution of loudness over time:
+
+| | measured | for reference |
+|---|---|---|
+| loudness range, 8 zone beds | **0.7 – 5.8 LU** | film 15–20, brickwalled pop 3–5 |
+| quiet fraction | **0.000, every zone** | any bed with events in it |
+| spectral centroid spread | **within 650 Hz across all 8 zones** | a cistern and an office should differ |
+
+The Service Spine measured 0.9 LU. The Plant varied by **half a decibel across
+sixty-five seconds**. Not one three-second window anywhere in this game's
+ambience ever dropped meaningfully below its own ceiling, in a project whose
+brief asks in as many words for "carefully controlled silence".
+
+`audiodyn` proves itself before it is believed (`--selftest`): synthetic constant
+noise must read near 0 LU, a synthetic 20 dB pulse train near 20. That self-test
+caught its own first version reporting **LRA 0.0 for a 3.5 s file with a 22.9 dB
+crest** — a 3 s window over a 3.5 s file has no spread to find. Its second
+version's `quiet` expectation was also wrong, and the fix was to derive the right
+answer, `(d − w) / 2d = 0.2`, rather than widen the band until it passed.
+
+### Six wrong hypotheses, and the one that was right
+
+The building now breathes — slow drift plus periodic lulls on a new per-bus
+`breath` stage (`Ambience._breathe`). Getting it to be *audible* took six
+attempts, each of which is recorded at the line that caused it:
+
+1. The bus lookup used `this.bus`, which on an `Ambience` is the game's **event**
+   bus. `engine.buses[eventBusObject]` is undefined, so the feature returned on
+   every tick and had never run at all.
+2. It sat before the bus compressor — a device for undoing exactly that gesture.
+3. The reverb return connects straight to the master, so ducking a bus ducked
+   only the dry path.
+4. The bed render walks a listener the whole time, so footsteps set the floor.
+5. Automation used `ctx.currentTime`, which on an `OfflineAudioContext` never
+   advances; every write landed at t = 0. The tell was that the one automation
+   going through `glide(..., engine.now, ...)` *did* move the measurement.
+6. **The real one.** Holding the ambience bus at −14 dB for an entire render left
+   the bed at −9.4 dBFS against −12.1 unpinned. The dry path is nearly inaudible:
+   this mix is its reverb return.
+
+The cause of (6) was architectural. Every reverb send in the game was tapped off
+the voice's filter **before** the panner and before the bus — a pre-fader send —
+so each bus's gain, compressor, duck and breath reached only a minority of its
+own signal. That has a consequence well past this feature: **`Silence`, the
+system the whole design leans on, was ducking a minority of the signal too.**
+Sends are now post-fader, per bus, and `setDuck` drives wet and dry together.
+
+### What that fixed, and what it did not
+
+| zone | quiet fraction before | after |
+|---|---:|---:|
+| residence | 0.000 | **0.069** |
+| safe | 0.000 | **0.045** |
+| cistern | 0.000 | **0.026** |
+| duct | 0.000 | 0.011 |
+| intake, service, stack, plant | 0.000 | **0.000** |
+
+Four of eight zones went from no dynamics at all to measurable quiet. The four
+that did not are exactly the four that sit on the master limiter continuously,
+and **their bus fader still does not control them**: cutting the ambience gain to
+0.075, and again to 0.085 with post-fader sends, moved the Intake's rendered RMS
+by nothing on either occasion. Something in those beds reaches the master without
+passing the fader and it has not been identified.
+
+That is left as a documented defect rather than a third guess at a number. Two
+changes were already made to that gain for an effect it does not have; a third
+would be the same mistake. The next diagnostic is named in the code: zero
+`buses.ambience.input` in the offline harness and see whether the bed goes
+silent. If it does not, those layers are not on that bus.
+
+### Also this pass
+
+`capture.mjs` now records each shot's live circuits and head illumination next to
+the pixels. Most of this building starts unpowered — `board_c` ships with the
+stack, cistern, residence and duct ways open — so a capture that teleports into
+one photographs a powered-down room. The first Stack frames of this pass measured
+**1.000 crushed, 0.000 dynamic range** and read as a catastrophic lighting
+failure. They were correct behaviour, and `lightProbe`'s own comment had warned
+about precisely this confusion. A dark frame with `stack: 0` is a game state; one
+with `stack: 1` is a defect, and the evidence now says which.
+
+### Still open from this pass
+
+- The four limiter-bound zone beds, above.
+- **Nobody has still actually listened.** The files exist and can be listened to,
+  which is further than this project has ever been, but every judgement in this
+  section is a measurement. Whether the Intake hum *sounds like* a fluorescent is
+  not a thing `audiodyn` can answer.
+- The Stack and the Cistern were not reached this pass; the capture evidence
+  gathered for them turned out to be measuring an unpowered building.

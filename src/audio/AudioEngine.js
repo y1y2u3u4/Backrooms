@@ -170,6 +170,23 @@ export const BUSES = ['ambience', 'world', 'entity', 'player', 'music', 'ui'];
  */
 const BUS_CONFIG = {
   // gain, compressor {threshold, knee, ratio, attack, release}
+  // STILL 0.20, and there is an open defect behind that.
+  //
+  // This number does not currently control the loud zone beds, and making the
+  // reverb sends post-fader did not give it control either. Three measurements,
+  // all on the Intake's 65 s bed: holding the bus's breath stage at 0.2 for the
+  // whole render left it at -9.4 dBFS against -12.1 unpinned; cutting this gain
+  // to 0.075 moved it by nothing; cutting it to 0.085 with post-fader sends
+  // moved it by nothing. Meanwhile the four zones that were never limiter-bound
+  // — residence, safe, cistern, duct — respond to the same gestures normally and
+  // went from a quiet fraction of exactly zero to 0.01-0.07.
+  //
+  // So something in the Intake/Service/Stack/Plant beds reaches the master
+  // without passing this fader, and it has not been identified. Two attempts to
+  // fix the level by changing this number would have been changing a number for
+  // an effect it does not have, so it is left where the mix was balanced.
+  // Next diagnostic: zero `buses.ambience.input` in the offline harness and see
+  // whether the bed goes silent. If it does not, the layers are not on this bus.
   ambience: { gain: 0.20, comp: { threshold: -22, knee: 10, ratio: 3.0, attack: 0.05, release: 0.5 } },
   world: { gain: 0.85, comp: { threshold: -16, knee: 8, ratio: 3.5, attack: 0.006, release: 0.22 } },
   entity: { gain: 1.05, comp: { threshold: -12, knee: 4, ratio: 2.2, attack: 0.004, release: 0.30 } },
@@ -239,7 +256,11 @@ class Voice {
     bag.add(send);
     this.send = send;
     lpf.connect(send);
-    send.connect(engine.reverbSend);
+    // Into the BUS's send stage, not straight to the global reverb send. The
+    // per-voice send amount is still per-voice; what changes is that the bus's
+    // fader, duck and breath now apply to this voice's wet signal as well as its
+    // dry one. See POST-FADER REVERB SEND in the bus construction.
+    send.connect(busNode.sendIn || engine.reverbSend);
 
     if (position && def.spatial !== false) {
       this.spatial = true;
@@ -457,6 +478,12 @@ export class AudioEngine {
     this.limiter.connect(this.safety);
     this.safety.connect(ctx.destination);
 
+    // The reverb send node is created BEFORE the buses, because each bus now
+    // owns a post-fader send stage that has to connect into it. See the note on
+    // POST-FADER REVERB SEND below.
+    this.reverbSend = ctx.createGain();
+    this.reverbSend.gain.value = 1;
+
     // Buses.
     for (const name of BUSES) {
       const cfg = BUS_CONFIG[name];
@@ -497,12 +524,39 @@ export class AudioEngine {
       // it, where a 14 dB gesture is 14 dB.
       input.connect(duck); duck.connect(gain); gain.connect(comp);
       comp.connect(breath); breath.connect(this.masterGain);
-      this.buses[name] = { name, input, breath, duck, gain, comp, base: cfg.gain, duckAmount: 0 };
+
+      // POST-FADER REVERB SEND.
+      //
+      // Voices used to tap their send straight to `engine.reverbSend`, before
+      // the panner and before this bus — a pre-fader send. Since the return
+      // connects directly to the master, that put the entire wet signal outside
+      // the reach of the bus's gain, compressor, duck and breath.
+      //
+      // It is not a subtle effect, because this mix is mostly wet. Two
+      // independent measurements: holding the ambience bus's breath at 0.2 for a
+      // whole render left the bed at -9.4 dBFS against -12.1 unpinned, and
+      // cutting the ambience bus gain by 8.5 dB moved the Intake's rendered RMS
+      // by nothing at all. A bus fader that does not change the level is not a
+      // fader. It also means `Silence`'s held breaths -- the gesture the whole
+      // design leans on -- were ducking a minority of the signal.
+      //
+      // So each bus now has its own send stage carrying the same gestures, and
+      // `setDuck` and the breath write to both. Level control and gestures apply
+      // to wet and dry alike, which is what a mix expects.
+      const sendIn = ctx.createGain(); sendIn.gain.value = 1;
+      const sendDuck = ctx.createGain(); sendDuck.gain.value = 1;
+      const sendBreath = ctx.createGain(); sendBreath.gain.value = 1;
+      sendIn.connect(sendDuck); sendDuck.connect(sendBreath);
+      sendBreath.connect(this.reverbSend);
+
+      this.buses[name] = {
+        name, input, breath, duck, gain, comp, base: cfg.gain, duckAmount: 0,
+        sendIn, sendDuck, sendBreath,
+      };
     }
 
-    // Reverb: one send, two convolver slots, one return.
-    this.reverbSend = ctx.createGain();
-    this.reverbSend.gain.value = 1;
+    // Reverb: two convolver slots and one return; the send itself was created
+    // above the bus loop so the per-bus post-fader send stages could reach it.
     // Pre-filter the send: nothing below 90 Hz should smear into the tail, and
     // ultrasonic content in a convolver is wasted CPU.
     this.sendHP = ctx.createBiquadFilter();
@@ -657,11 +711,17 @@ export class AudioEngine {
       const b = this.buses[n];
       if (!b) continue;
       b.duckAmount = amount;
-      try {
-        b.duck.gain.cancelScheduledValues(t);
-        b.duck.gain.setValueAtTime(Math.max(1e-4, b.duck.gain.value), t);
-        b.duck.gain.exponentialRampToValueAtTime(target, t + Math.max(0.05, seconds));
-      } catch { /* torn down */ }
+      // Both stages, wet and dry. A duck that only takes the dry path leaves the
+      // room ringing underneath it, which is the effect `Silence` spent a
+      // dedicated `wet` write working around.
+      for (const node of [b.duck, b.sendDuck]) {
+        if (!node) continue;
+        try {
+          node.gain.cancelScheduledValues(t);
+          node.gain.setValueAtTime(Math.max(1e-4, node.gain.value), t);
+          node.gain.exponentialRampToValueAtTime(target, t + Math.max(0.05, seconds));
+        } catch { /* torn down */ }
+      }
     }
   }
 
