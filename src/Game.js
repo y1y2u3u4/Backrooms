@@ -281,6 +281,13 @@ export class Game {
       // Checkpoint saves. The title screen has always had a Continue item and
       // nothing in the project ever wrote the key it reads, so it was permanently
       // greyed out and every session began at the arrival lift.
+      // Where a death goes before the Office of Record has ever been found. The
+      // Director owns respawning and has no business knowing about the streamer,
+      // so it asks.
+      if (this.director) {
+        this.director.fallbackSpawn = () => (this.world
+          ? { position: this.world.spawn, yaw: this.world.spawnYaw ?? 0 } : null);
+      }
       this._saveOff = SaveGame.installAutosave(this);
       this.subsystems.save = true;
       this.subsystems.gameplay = true;

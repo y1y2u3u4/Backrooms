@@ -342,9 +342,20 @@ export class Director {
    * itself, and something is different when you get back.
    */
   respawn() {
+    // A SAFE ROOM MIGHT NOT EXIST YET. It is registered by SafeRoom.js when the
+    // safe zone is BUILT, which is the first time the player walks into the Office
+    // of Record — and dying before that used to leave `room` undefined, skip the
+    // teleport, unfreeze the body exactly where it fell, and hand the player back
+    // to the thing standing over them. Every death in the opening half hour.
+    //
+    // The fallback is the current zone's own arrival point: not safe, but somewhere
+    // else, which is the minimum a respawn has to be.
     const room = this.lastSafe || this.safeRooms[0];
     if (room) {
       this.player.teleport(room.position[0], room.position[1], room.position[2], room.yaw ?? 0);
+    } else if (this.fallbackSpawn) {
+      const p = this.fallbackSpawn();
+      if (p) this.player.teleport(p.position[0], p.position[1], p.position[2], p.yaw ?? 0);
     }
     this.player.frozen = false;
     this.player.controlEnabled = true;
