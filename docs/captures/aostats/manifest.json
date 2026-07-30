@@ -1,0 +1,170 @@
+[
+  {
+    "name": "z1_intake",
+    "settle": 2,
+    "setup": "g.world.goto&&g.world.goto('intake')",
+    "file": "docs/captures/aostats/z1_intake.png",
+    "stats": {
+      "ms": 23506.999999999767,
+      "fps": 0.042540519845152926,
+      "p90": 94015.79999999981,
+      "calls": 167,
+      "tris": 384986,
+      "quality": "low",
+      "res": "260x149",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 12,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "z2_service",
+    "settle": 2,
+    "setup": "g.world.goto&&g.world.goto('service')",
+    "file": "docs/captures/aostats/z2_service.png",
+    "stats": {
+      "ms": 936.7000000001863,
+      "fps": 1.0675776662750092,
+      "p90": 3729,
+      "calls": 172,
+      "tris": 276158,
+      "quality": "low",
+      "res": "260x149",
+      "lights": {
+        "fixtures": 159,
+        "lit": 119,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "z3_cistern",
+    "settle": 2,
+    "setup": "g.world.goto&&g.world.goto('cistern')",
+    "file": "docs/captures/aostats/z3_cistern.png",
+    "stats": {
+      "ms": 1778.5999999998603,
+      "fps": 0.5622399640166864,
+      "p90": 7103.5999999996275,
+      "calls": 113,
+      "tris": 108680,
+      "quality": "low",
+      "res": "260x149",
+      "lights": {
+        "fixtures": 172,
+        "lit": 131,
+        "active": 3,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "z4_plant",
+    "settle": 2,
+    "setup": "g.world.goto&&g.world.goto('plant')",
+    "file": "docs/captures/aostats/z4_plant.png",
+    "stats": {
+      "ms": 178.5250000001397,
+      "fps": 5.601456378654068,
+      "p90": 702.8000000007451,
+      "calls": 115,
+      "tris": 281392,
+      "quality": "low",
+      "res": "260x149",
+      "lights": {
+        "fixtures": 64,
+        "lit": 60,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "z5_residence",
+    "settle": 2,
+    "setup": "g.world.goto&&g.world.goto('residence')",
+    "file": "docs/captures/aostats/z5_residence.png",
+    "stats": {
+      "ms": 2204.3499999998603,
+      "fps": 0.45364846780232876,
+      "p90": 8807.400000000373,
+      "calls": 176,
+      "tris": 148046,
+      "quality": "low",
+      "res": "260x149",
+      "lights": {
+        "fixtures": 51,
+        "lit": 47,
+        "active": 5,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "z6_duct",
+    "settle": 2,
+    "setup": "g.world.goto&&g.world.goto('duct')",
+    "file": "docs/captures/aostats/z6_duct.png",
+    "stats": {
+      "ms": 1071.5600000003353,
+      "fps": 0.9332188584864003,
+      "p90": 5348.700000000186,
+      "calls": 77,
+      "tris": 68062,
+      "quality": "low",
+      "res": "260x149",
+      "lights": {
+        "fixtures": 43,
+        "lit": 40,
+        "active": 4,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "z7_stack",
+    "settle": 2,
+    "setup": "g.world.goto&&g.world.goto('stack')",
+    "file": "docs/captures/aostats/z7_stack.png",
+    "stats": {
+      "ms": 11.11999999973923,
+      "fps": 89.9280575560657,
+      "p90": 43.09999999962747,
+      "calls": 87,
+      "tris": 319740,
+      "quality": "low",
+      "res": "260x149",
+      "lights": {
+        "fixtures": 61,
+        "lit": 54,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "z8_safe",
+    "settle": 2,
+    "setup": "g.world.goto&&g.world.goto('safe')",
+    "file": "docs/captures/aostats/z8_safe.png",
+    "stats": {
+      "ms": 422.72500000009313,
+      "fps": 2.365604116150641,
+      "p90": 1683.7999999998137,
+      "calls": 57,
+      "tris": 34112,
+      "quality": "low",
+      "res": "260x149",
+      "lights": {
+        "fixtures": 45,
+        "lit": 40,
+        "active": 3,
+        "shadows": 1
+      }
+    }
+  }
+]

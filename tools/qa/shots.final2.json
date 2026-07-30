@@ -1,0 +1,26 @@
+[
+  {
+    "name": "01_intake_spine",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,0); console.info('SHOT01 '+JSON.stringify(q)); console.info('FIX01 '+JSON.stringify(g.fixtureReport(4)))"
+  },
+  {
+    "name": "02_intake_ceiling",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,((r&&r.yaw)||0)+0.5,0.58); console.info('SHOT02 '+JSON.stringify(q))"
+  },
+  {
+    "name": "03_cistern",
+    "setup": "const r=g.world.goto?g.world.goto('cistern'):null; const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,-0.10); console.info('SHOT03 '+JSON.stringify(q))"
+  },
+  {
+    "name": "04_residence",
+    "setup": "const r=g.world.goto?g.world.goto('residence'):null; const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,0); console.info('SHOT04 '+JSON.stringify(q))"
+  },
+  {
+    "name": "05_plant",
+    "setup": "const r=g.world.goto?g.world.goto('plant'):null; const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,-0.05); console.info('SHOT05 '+JSON.stringify(q))"
+  },
+  {
+    "name": "06_service",
+    "setup": "const r=g.world.goto?g.world.goto('service'):null; const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,0); console.info('SHOT06 '+JSON.stringify(q))"
+  }
+]

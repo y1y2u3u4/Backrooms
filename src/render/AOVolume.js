@@ -69,6 +69,56 @@ const DIRS = (() => {
 const REACH = 3.0;
 const STEPS = 8;
 
+/**
+ * Separable Chebyshev dilation of an occupancy grid by `r` cells.
+ *
+ * Three linear passes rather than marking an (2r+1)^3 neighbourhood per solid
+ * cell — at r=2 that is 125 writes per cell and the Intake has well over a
+ * hundred thousand solid ones.
+ */
+function dilate(occ, nx, ny, nz, r) {
+  let a = Uint8Array.from(occ);
+  let b = new Uint8Array(occ.length);
+  const idx = (x, y, z) => (y * nz + z) * nx + x;
+  // X
+  for (let y = 0; y < ny; y++) for (let z = 0; z < nz; z++) {
+    const base = (y * nz + z) * nx;
+    for (let x = 0; x < nx; x++) {
+      let v = 0;
+      for (let d = -r; d <= r && !v; d++) {
+        const s = x + d;
+        if (s >= 0 && s < nx && a[base + s]) v = 1;
+      }
+      b[base + x] = v;
+    }
+  }
+  [a, b] = [b, a];
+  // Z
+  for (let y = 0; y < ny; y++) for (let x = 0; x < nx; x++) {
+    for (let z = 0; z < nz; z++) {
+      let v = 0;
+      for (let d = -r; d <= r && !v; d++) {
+        const s = z + d;
+        if (s >= 0 && s < nz && a[idx(x, y, s)]) v = 1;
+      }
+      b[idx(x, y, z)] = v;
+    }
+  }
+  [a, b] = [b, a];
+  // Y
+  for (let z = 0; z < nz; z++) for (let x = 0; x < nx; x++) {
+    for (let y = 0; y < ny; y++) {
+      let v = 0;
+      for (let d = -r; d <= r && !v; d++) {
+        const s = y + d;
+        if (s >= 0 && s < ny && a[idx(x, s, z)]) v = 1;
+      }
+      b[idx(x, y, z)] = v;
+    }
+  }
+  return b;
+}
+
 export class AOVolume {
   /**
    * @param {object} [opts]
@@ -315,25 +365,34 @@ export class AOVolume {
     // it cannot be a constant — an earlier hand-tuned 0.52 divisor saturated the
     // entire field to 1.0 at fine cell sizes and the effect vanished.
     //
-    // Instead, take a high percentile of the unoccupied cells as "open" and
-    // spend the range below it. A percentile rather than the maximum, because
-    // the maximum is always some cell out in the padding with nothing around it.
-    // The percentile is taken only over cells inside the UNPADDED bounds. The
-    // padding shell is open on the outside by construction and reads near 1.0,
-    // so including it pulls the reference above anything the room itself
-    // contains and dims every surface in the zone by a flat 25%.
-    const px = Math.round(pad / cw), py = Math.round(pad / ch), pz = Math.round(pad / cd);
+    // Instead, take a high percentile of the field as "open" and spend the range
+    // below it. A percentile rather than the maximum, because the maximum is
+    // always some cell in a void with nothing around it.
+    //
+    // WHICH CELLS COUNT. Only the cells a surface can actually sample: unoccupied
+    // and within a couple of cells of some geometry, which is where the shader's
+    // 0.55 m normal-offset probe lands. Every other unoccupied cell is either
+    // padding or empty space outside the building, and both read fully open by
+    // construction.
+    //
+    // This is not a refinement, it is the difference between the effect working
+    // and not working. Taking the statistic over every unoccupied cell in the
+    // bounding box works acceptably for a zone that fills its box — the Intake
+    // office plate — and fails completely for one that does not. A zone's bounds
+    // are an AABB, so the Ductwork's crawlspaces occupy a small fraction of a
+    // 31 x 6 x 25 m box and the rest is void; measured that way the Duct's p85
+    // pinned at 1.0 and its mean came out at 0.957, i.e. a crawlspace with
+    // essentially no occlusion anywhere in it. Five of the six zones captured
+    // were in that state.
+    const shell = dilate(occ, nx, ny, nz, 2);
     const hist = new Uint32Array(256);
     let counted = 0;
-    for (let y = py; y < ny - py; y++) {
-      for (let z = pz; z < nz - pz; z++) {
-        const base = (y * nz + z) * nx;
-        for (let x = px; x < nx - px; x++) {
-          if (occ[base + x]) continue;
-          hist[Math.min(255, (field[base + x] * 255) | 0)]++;
-          counted++;
-        }
-      }
+    const sampled = new Uint8Array(occ.length);
+    for (let i = 0; i < occ.length; i++) {
+      if (occ[i] || !shell[i]) continue;
+      sampled[i] = 1;
+      hist[Math.min(255, (field[i] * 255) | 0)]++;
+      counted++;
     }
     let acc = 0, p90 = 128;
     // p85, not the maximum: the maximum in any zone is whatever cell happens to
@@ -368,12 +427,11 @@ export class AOVolume {
           const b = Math.round(shaped * 255);
           this.data[o] = b; this.data[o + 1] = b; this.data[o + 2] = b;
           this.data[o + 3] = 255;
-          // The mean is taken over INTERIOR, UNOCCUPIED cells only, because it is
-          // used to compensate the zone's bounce fill and only the cells a
-          // surface can actually sample should count. Cells buried inside a wall
-          // are zero and would drag it down for no reason.
-          if (!occ[i] && x >= px && x < nx - px && y >= py && y < ny - py
-              && z >= pz && z < nz - pz) {
+          // Same population as the percentile above: the cells a surface can
+          // actually sample. The mean feeds the fill compensation, so counting
+          // void cells would report a zone as barely occluded and under-
+          // compensate it.
+          if (sampled[i]) {
             sum += shaped; n++;
             if (shaped < lo) lo = shaped;
           }
@@ -403,7 +461,12 @@ export class AOVolume {
    */
   fillCompensation(strength, floor) {
     const effective = 1 - strength * (1 - Math.max(this.mean ?? 1, floor));
-    return 1 / Math.max(0.25, effective);
+    // Capped at 1.6. A tight space like the Ductwork measures a low enough mean
+    // to ask for nearly 2x, and at that point the compensation would be doing
+    // more to the zone's exposure than the art direction is — the honest reading
+    // of a request that large is that the zone's authored fill wants revisiting,
+    // not that it should be doubled behind the artist's back.
+    return Math.min(1.6, 1 / Math.max(0.25, effective));
   }
 
   /** Uniform values for the material injection. */

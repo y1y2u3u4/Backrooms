@@ -96,7 +96,10 @@ const VERT = /* glsl */ `
       // as seen from the eye. This is the whole effect — a dust cloud you only
       // notice when you turn to face the lamp.
       float fwd = clamp(dot(-L, toEye), 0.0, 1.0);
-      float phase = 0.35 + 2.4 * pow(fwd, 7.0);
+      // Weighted harder toward the forward lobe than a textbook Mie phase
+      // function: in the Plant, motes lit off-axis sit against an unlit roof void
+      // with nothing behind them and read as a starfield rather than as dust.
+      float phase = 0.22 + 2.9 * pow(fwd, 6.0);
 
       lit += uLightCol[i] * (atten * inBeam * phase);
     }

@@ -1,0 +1,162 @@
+[
+  {
+    "name": "01_intake_spine",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0)",
+    "file": "docs/captures/verify/01_intake_spine.png",
+    "stats": {
+      "ms": 918.7722222220877,
+      "fps": 1.088409048307381,
+      "p90": 21,
+      "calls": 305,
+      "tris": 762276,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 12,
+        "shadows": 4
+      }
+    }
+  },
+  {
+    "name": "02_intake_ceiling",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,((r&&r.yaw)||0)+0.5,0.58)",
+    "file": "docs/captures/verify/02_intake_ceiling.png",
+    "stats": {
+      "ms": 5.452380952247906,
+      "fps": 183.4061135415933,
+      "p90": 7.5,
+      "calls": 277,
+      "tris": 755644,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 12,
+        "shadows": 4
+      }
+    }
+  },
+  {
+    "name": "03_intake_beam",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,((r&&r.yaw)||0)+1.1,0.30); console.info('PROBE '+JSON.stringify(g.lightProbe()))",
+    "file": "docs/captures/verify/03_intake_beam.png",
+    "stats": {
+      "ms": 3.8157894736842106,
+      "fps": 262.0689655172414,
+      "p90": 7.2000000001862645,
+      "calls": 305,
+      "tris": 762276,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 12,
+        "shadows": 4
+      }
+    }
+  },
+  {
+    "name": "04_service",
+    "setup": "const r=g.world.goto?g.world.goto('service'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0)",
+    "file": "docs/captures/verify/04_service.png",
+    "stats": {
+      "ms": 885.8235294117648,
+      "fps": 1.1288930207849126,
+      "p90": 22.40000000037253,
+      "calls": 311,
+      "tris": 544252,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 159,
+        "lit": 119,
+        "active": 10,
+        "shadows": 3
+      }
+    }
+  },
+  {
+    "name": "05_cistern",
+    "setup": "const r=g.world.goto?g.world.goto('cistern'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,-0.10)",
+    "file": "docs/captures/verify/05_cistern.png",
+    "stats": {
+      "ms": 451.3444444444548,
+      "fps": 2.215602767041627,
+      "p90": 14,
+      "calls": 195,
+      "tris": 209384,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 172,
+        "lit": 131,
+        "active": 3,
+        "shadows": 3
+      }
+    }
+  },
+  {
+    "name": "06_plant_hall",
+    "setup": "const r=g.world.goto?g.world.goto('plant'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,-0.05)",
+    "file": "docs/captures/verify/06_plant_hall.png",
+    "stats": {
+      "ms": 648.6380952380243,
+      "fps": 1.5416917497468905,
+      "p90": 9,
+      "calls": 189,
+      "tris": 553068,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 64,
+        "lit": 60,
+        "active": 13,
+        "shadows": 3
+      }
+    }
+  },
+  {
+    "name": "07_residence",
+    "setup": "const r=g.world.goto?g.world.goto('residence'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0)",
+    "file": "docs/captures/verify/07_residence.png",
+    "stats": {
+      "ms": 672.9411764705335,
+      "fps": 1.4860139860141068,
+      "p90": 15.299999999813735,
+      "calls": 319,
+      "tris": 287900,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 51,
+        "lit": 47,
+        "active": 6,
+        "shadows": 3
+      }
+    }
+  },
+  {
+    "name": "08_duct",
+    "setup": "const r=g.world.goto?g.world.goto('duct'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0.05)",
+    "file": "docs/captures/verify/08_duct.png",
+    "stats": {
+      "ms": 371.1777777775812,
+      "fps": 2.6941268035696484,
+      "p90": 7.5,
+      "calls": 123,
+      "tris": 128148,
+      "quality": "high",
+      "res": "1100x620",
+      "lights": {
+        "fixtures": 43,
+        "lit": 40,
+        "active": 4,
+        "shadows": 3
+      }
+    }
+  }
+]

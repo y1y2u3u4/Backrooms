@@ -1,0 +1,122 @@
+[
+  {
+    "name": "01_intake_spine",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,0); console.info('SHOT01 '+JSON.stringify(q)); console.info('FIX01 '+JSON.stringify(g.fixtureReport(4)))",
+    "file": "docs/captures/final2/01_intake_spine.png",
+    "stats": {
+      "ms": 882.3166666666771,
+      "fps": 1.1333799278414645,
+      "p90": 8.900000000372529,
+      "calls": 305,
+      "tris": 762276,
+      "quality": "medium",
+      "res": "880x496",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 12,
+        "shadows": 3
+      }
+    }
+  },
+  {
+    "name": "02_intake_ceiling",
+    "setup": "const r=g.world.goto?g.world.goto('intake'):null; const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,((r&&r.yaw)||0)+0.5,0.58); console.info('SHOT02 '+JSON.stringify(q))",
+    "file": "docs/captures/final2/02_intake_ceiling.png",
+    "stats": {
+      "ms": 6.6789473685877105,
+      "fps": 149.72419227364773,
+      "p90": 9.299999999813735,
+      "calls": 277,
+      "tris": 755644,
+      "quality": "medium",
+      "res": "880x496",
+      "lights": {
+        "fixtures": 127,
+        "lit": 89,
+        "active": 12,
+        "shadows": 3
+      }
+    }
+  },
+  {
+    "name": "03_cistern",
+    "setup": "const r=g.world.goto?g.world.goto('cistern'):null; const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,-0.10); console.info('SHOT03 '+JSON.stringify(q))",
+    "file": "docs/captures/final2/03_cistern.png",
+    "stats": {
+      "ms": 432.2333333333954,
+      "fps": 2.313565203979,
+      "p90": 30.5,
+      "calls": 189,
+      "tris": 205984,
+      "quality": "medium",
+      "res": "880x496",
+      "lights": {
+        "fixtures": 140,
+        "lit": 101,
+        "active": 4,
+        "shadows": 2
+      }
+    }
+  },
+  {
+    "name": "04_residence",
+    "setup": "const r=g.world.goto?g.world.goto('residence'):null; const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,0); console.info('SHOT04 '+JSON.stringify(q))",
+    "file": "docs/captures/final2/04_residence.png",
+    "stats": {
+      "ms": 612.9500000001281,
+      "fps": 1.6314544416343766,
+      "p90": 10.200000000186265,
+      "calls": 319,
+      "tris": 287900,
+      "quality": "medium",
+      "res": "880x496",
+      "lights": {
+        "fixtures": 159,
+        "lit": 118,
+        "active": 6,
+        "shadows": 2
+      }
+    }
+  },
+  {
+    "name": "05_plant",
+    "setup": "const r=g.world.goto?g.world.goto('plant'):null; const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,-0.05); console.info('SHOT05 '+JSON.stringify(q))",
+    "file": "docs/captures/final2/05_plant.png",
+    "stats": {
+      "ms": 240.3722222221291,
+      "fps": 4.1602144821704705,
+      "p90": 16.300000000745058,
+      "calls": 189,
+      "tris": 553068,
+      "quality": "medium",
+      "res": "880x496",
+      "lights": {
+        "fixtures": 51,
+        "lit": 47,
+        "active": 10,
+        "shadows": 2
+      }
+    }
+  },
+  {
+    "name": "06_service",
+    "setup": "const r=g.world.goto?g.world.goto('service'):null; const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,0); console.info('SHOT06 '+JSON.stringify(q))",
+    "file": "docs/captures/final2/06_service.png",
+    "stats": {
+      "ms": 65.81578947363519,
+      "fps": 15.193922431038905,
+      "p90": 261.79999999981374,
+      "calls": 309,
+      "tris": 541228,
+      "quality": "medium",
+      "res": "880x496",
+      "lights": {
+        "fixtures": 70,
+        "lit": 65,
+        "active": 10,
+        "shadows": 2
+      }
+    }
+  }
+]

@@ -1,0 +1,10 @@
+[
+  {"name":"z1_intake","settle":2,"setup":"g.world.goto&&g.world.goto('intake')"},
+  {"name":"z2_service","settle":2,"setup":"g.world.goto&&g.world.goto('service')"},
+  {"name":"z3_cistern","settle":2,"setup":"g.world.goto&&g.world.goto('cistern')"},
+  {"name":"z4_plant","settle":2,"setup":"g.world.goto&&g.world.goto('plant')"},
+  {"name":"z5_residence","settle":2,"setup":"g.world.goto&&g.world.goto('residence')"},
+  {"name":"z6_duct","settle":2,"setup":"g.world.goto&&g.world.goto('duct')"},
+  {"name":"z7_stack","settle":2,"setup":"g.world.goto&&g.world.goto('stack')"},
+  {"name":"z8_safe","settle":2,"setup":"g.world.goto&&g.world.goto('safe')"}
+]

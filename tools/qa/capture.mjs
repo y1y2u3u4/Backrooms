@@ -28,7 +28,17 @@ const PORT = parseInt(args.port || '4173', 10);
 const SHOTS = (args.shots || 'default');
 const QUALITY = args.quality || 'high';
 const TIMEOUT = parseInt(args.timeout || '180000', 10);
-const SETTLE = parseInt(args.settle || '14', 10);
+// 150 frames, not 14.
+//
+// The eye adaptation deliberately falls slowly into darkness — a 1.8 s time
+// constant, which is 109 frames — because that is what an eye does. A capture
+// that settles 14 frames after jumping from a bright zone to a dark one
+// photographs the exposure of the zone it just left, and every Cistern and
+// Ductwork frame taken that way read as 95% black and was wrongly diagnosed as
+// the zone being too dark. Frames are cheap here (single-digit milliseconds in
+// steady state); it is the first-frame shader compile that costs, and that is
+// paid once per shot either way.
+const SETTLE = parseInt(args.settle || '150', 10);
 
 async function waitForServer(url, ms = 60000) {
   const t0 = Date.now();

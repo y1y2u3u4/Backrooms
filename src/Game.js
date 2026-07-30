@@ -597,6 +597,47 @@ export class Game {
     this.rig.snapAmbient();
     return amb.intensity * scale;
   }
+  /**
+   * QA: the nearest fixtures and whether their visible parts are actually there.
+   *
+   * The project's own rule is that light comes from visible sources only, and
+   * ceiling-facing captures of the Intake showed a lit ceiling with no fixture in
+   * it. Four things have to be true for a troffer to read, and this reports all
+   * four rather than leaving it to inference: the rig has the fixture, its tube
+   * mesh exists, the mesh is in the scene graph and visible, and its emissive
+   * colour is not black.
+   */
+  fixtureReport(n = 6) {
+    const cam = this.engine.camera.position;
+    const list = this.rig.fixtures
+      .map((f) => {
+        const p = f.group.position;
+        return { f, d: Math.hypot(p.x - cam.x, p.y - cam.y, p.z - cam.z) };
+      })
+      .sort((a, b) => a.d - b.d)
+      .slice(0, n)
+      .map(({ f, d }) => {
+        const t = f.tube;
+        let inScene = false;
+        for (let o = t; o; o = o.parent) if (o === this.engine.scene) { inScene = true; break; }
+        let visibleChain = !!t;
+        for (let o = t; o; o = o.parent) if (!o.visible) { visibleChain = false; break; }
+        const c = t?.material?.color;
+        return {
+          type: f.type,
+          d: +d.toFixed(2),
+          at: [+f.group.position.x.toFixed(2), +f.group.position.y.toFixed(2), +f.group.position.z.toFixed(2)],
+          level: +f.level.toFixed(2),
+          lightVisible: f.light.visible,
+          tube: !!t,
+          tubeInScene: inScene,
+          tubeVisible: visibleChain,
+          tubeLum: c ? +(0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b).toFixed(3) : null,
+        };
+      });
+    return { camera: [+cam.x.toFixed(2), +cam.y.toFixed(2), +cam.z.toFixed(2)], nearest: list };
+  }
+
   /** QA: what is actually lighting the point in front of the camera. */
   lightProbe() {
     const p = this.player.position;
@@ -673,30 +714,67 @@ export class Game {
    * @param {number[]} pos [x, y, z] starting point (usually a portal arrival)
    * @param {number} prefer preferred yaw in radians
    */
-  lookOpen(pos, prefer = 0, pitch = 0, { samples = 16, advance = 1.6, maxRange = 24 } = {}) {
+  lookOpen(pos, prefer = 0, pitch = 0, {
+    samples = 16, advance = 1.6, maxRange = 24, minClear = 3.0,
+  } = {}) {
     const [x0, y0, z0] = pos;
-    const res = this.collision.resolveCapsule(
-      x0, y0, z0, this.player.radius + 0.08, this.player.height);
-    const floor = this.collision.sampleFloor(res.x, res.z, y0 + 1.2, 2.5);
-    const y = floor ? floor.y : y0;
-    const eye = y + 1.6;
 
-    let bestYaw = prefer, bestScore = -1;
-    for (let i = 0; i < samples; i++) {
-      const yaw = (i / samples) * Math.PI * 2;
-      const fx = -Math.sin(yaw), fz = -Math.cos(yaw);
-      let clear = 0;
-      for (let d = 1; d <= maxRange; d += 1) {
-        if (this.collision.segmentBlocked(res.x, eye, res.z,
-          res.x + fx * d, eye, res.z + fz * d, 'ceiling')) break;
-        clear = d;
+    /**
+     * Best heading from a candidate standing position, and how far it sees.
+     * Returns null if the candidate has no floor under it — a camera in a void
+     * is worse than a camera against a wall.
+     */
+    const evaluate = (px, pz) => {
+      const r = this.collision.resolveCapsule(
+        px, y0, pz, this.player.radius + 0.08, this.player.height);
+      const fl = this.collision.sampleFloor(r.x, r.z, y0 + 1.2, 2.5);
+      if (!fl) return null;
+      const ey = fl.y + 1.6;
+      let yaw = prefer, score = -1, clearAt = 0;
+      for (let i = 0; i < samples; i++) {
+        const a = (i / samples) * Math.PI * 2;
+        const ax = -Math.sin(a), az = -Math.cos(a);
+        let clear = 0;
+        // Half-metre steps, not one-metre. At a one-metre stride a wall 0.4 m
+        // away and a wall 0.9 m away both score zero, which is what let a
+        // candidate with its nose against a wall win by default.
+        for (let d = 0.5; d <= maxRange; d += 0.5) {
+          if (this.collision.segmentBlocked(r.x, ey, r.z,
+            r.x + ax * d, ey, r.z + az * d, 'ceiling')) break;
+          clear = d;
+        }
+        // A shot pointing the way the designer meant is worth a few metres of
+        // depth, so the authored heading gets a bonus rather than a veto.
+        const delta = Math.abs(((a - prefer + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+        const s = clear + Math.max(0, 1 - delta / Math.PI) * 6;
+        if (s > score) { score = s; yaw = a; clearAt = clear; }
       }
-      // A shot pointing the way the designer meant is worth a few metres of
-      // depth, so the authored heading gets a bonus rather than a veto.
-      const delta = Math.abs(((yaw - prefer + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
-      const score = clear + Math.max(0, 1 - delta / Math.PI) * 6;
-      if (score > bestScore) { bestScore = score; bestYaw = yaw; }
+      return { x: r.x, z: r.z, y: fl.y, yaw, score, clear: clearAt };
+    };
+
+    let best = evaluate(x0, z0);
+
+    // If the authored point has no open sightline, go and find one. Without this
+    // the camera stays wherever resolveCapsule left it, which in the Cistern put
+    // a wet wall 40 cm from the lens across the whole frame — a shot that says
+    // nothing about the zone and blows the auto-exposure while it does so.
+    if (!best || best.clear < minClear) {
+      for (const radius of [1.5, 3, 5, 7.5, 10, 14]) {
+        for (let i = 0; i < 12; i++) {
+          const a = (i / 12) * Math.PI * 2;
+          const cand = evaluate(x0 + Math.cos(a) * radius, z0 + Math.sin(a) * radius);
+          if (cand && (!best || cand.score > best.score)) best = cand;
+        }
+        if (best && best.clear >= minClear) break;
+      }
     }
+    if (!best) best = { x: x0, z: z0, y: y0, yaw: prefer, score: 0, clear: 0 };
+
+    const res = { x: best.x, z: best.z };
+    const y = best.y;
+    const eye = y + 1.6;
+    const bestYaw = best.yaw;
+    const bestScore = best.score;
 
     const fx = -Math.sin(bestYaw), fz = -Math.cos(bestYaw);
     let step = 0;
@@ -725,7 +803,14 @@ export class Game {
     cx += rx * shift; cz += rz * shift;
 
     this.look(cx, y, cz, bestYaw, pitch);
-    return { position: [cx, y, cz], yaw: bestYaw, clearance: bestScore };
+    // `degenerate` is reported so a capture manifest records that a frame was
+    // shot from a position with no open sightline rather than silently
+    // presenting it as a view of the zone.
+    return {
+      position: [cx, y, cz], yaw: bestYaw, clearance: bestScore,
+      clear: +best.clear.toFixed(1), degenerate: best.clear < 1.5,
+      moved: +Math.hypot(cx - pos[0], cz - pos[2]).toFixed(1),
+    };
   }
 
   walkTo(x, z, seconds = 1) {
@@ -794,7 +879,7 @@ export const AMBIENT_PROFILES = {
   service:   { sky: 0x525f70, ground: 0x776d5e, intensity: 0.70, motes: 0.85, moteSize: 1.00 },
   cistern:   { sky: 0x3d5460, ground: 0x585a48, intensity: 0.50, motes: 0.30, moteSize: 1.35 },
   residence: { sky: 0x6e7480, ground: 0x9a8258, intensity: 1.05, motes: 0.75, moteSize: 0.95 },
-  plant:     { sky: 0x4c5a6b, ground: 0x74684f, intensity: 0.75, motes: 1.15, moteSize: 1.10, moteExtent: 26 },
+  plant:     { sky: 0x4c5a6b, ground: 0x74684f, intensity: 0.75, motes: 0.62, moteSize: 1.10, moteExtent: 26 },
   duct:      { sky: 0x2e343c, ground: 0x443c2c, intensity: 0.30, motes: 1.45, moteSize: 1.15, moteExtent: 11 },
   stack:     { sky: 0x808ea6, ground: 0xa2977f, intensity: 1.55, motes: 0.90, moteSize: 1.05, moteExtent: 24 },
   safe:      { sky: 0x7e8290, ground: 0xa88a55, intensity: 1.30, motes: 0.60, moteSize: 0.90, moteExtent: 12 },
