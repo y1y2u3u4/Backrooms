@@ -227,6 +227,10 @@ export class Game {
       this.entities = this.gameplay.surveyor ? { surveyor: this.gameplay.surveyor } : null;
       this.director = this.gameplay.director;
       this.progression = this.gameplay.progression;
+      // World.update() asks Progression whether a door is gated before firing it.
+      // The world is built before gameplay exists, so the reference is handed
+      // over here rather than passed in at construction.
+      this.ctx.progression = this.progression;
       this.subsystems.gameplay = true;
     } catch (e) {
       console.error('[game] gameplay failed to install', e);
@@ -262,6 +266,14 @@ export class Game {
     // stay on whatever the boot zone set, so walking into the Cistern keeps
     // Intake's bright office fill and walking into Intake from the Cistern
     // keeps its dark one.
+    // Falling out of the world is now possible, because the player controller no
+    // longer pretends there is a floor under every ledge. This is the net, and it
+    // belongs here rather than in the controller: only the game knows where the
+    // last safe point was.
+    this.bus.on('player:fell', (e) => {
+      console.warn(`[game] player left the world (${(e?.drop ?? 0).toFixed(1)} m); respawning`);
+      this.respawn();
+    });
     this.bus.on('zone:enter', (e) => {
       const key = e?.zone || e?.id;
       if (key) this.applyZoneProfile(key, { immediate: !!e?.immediate });

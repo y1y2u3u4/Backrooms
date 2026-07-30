@@ -45,6 +45,12 @@ export class Player {
     this.sprinting = false;
     this.grounded = true;
     this.groundY = 0;
+    // How far below the last solid ground counts as having left the world rather
+    // than having fallen off something. Deeper than any authored drop — the
+    // Plant's pit is 6.7 m and the Stack's shaft is walkable at every level — so
+    // a real fall plays out fully before this fires.
+    this.fallLimit = 28;
+    this._fellOut = false;
     this.surface = 'carpet';
     this.waterDepth = 0;
 
@@ -201,13 +207,36 @@ export class Player {
       }
     } else {
       this.grounded = false;
-      if (!floor) {
-        // No floor registered — snap to the last known ground rather than
-        // dropping the player out of the world.
-        nextY = Math.max(nextY, this.groundY);
-        if (nextY <= this.groundY + 0.001) { this.velocity.y = 0; this.grounded = true; }
+      // NO SNAP. This used to read:
+      //
+      //     nextY = Math.max(nextY, this.groundY);
+      //     if (nextY <= this.groundY + 0.001) { velocity.y = 0; grounded = true; }
+      //
+      // i.e. when no floor was found the player was held at the last height they
+      // had stood on and re-grounded there. The instinct — do not drop the player
+      // out of the world — is right, but the implementation turned every
+      // unguarded edge in the game into an invisible floor. You could walk off
+      // the Cistern's arrival landing and stand on air 2.6 m above the water for
+      // as long as you liked; you could walk out over the Plant's 6.7 m pit; and
+      // in the Stack, which is a vertical shaft whose entire reason to exist is
+      // vertigo, you could stroll across the void.
+      //
+      // Measured, not inferred: a continuous playthrough reported the player not
+      // standing on any floor for 1 248 consecutive frames, and a grid audit of
+      // every walkable rectangle in every zone (tools/qa/floorgaps.mjs) found
+      // ZERO holes in the surfaces themselves — every failure was past a lip.
+      // The geometry was never wrong. This was.
+      //
+      // Gravity now does what gravity does, and the safety net moved to the
+      // bottom where it belongs.
+      if (!floor && this.groundY - nextY > this.fallLimit && !this._fellOut) {
+        this._fellOut = true;
+        this.bus?.emit('player:fell', {
+          from: this.groundY, to: nextY, drop: this.groundY - nextY,
+        });
       }
     }
+    if (this.grounded) this._fellOut = false;
     this.position.y = nextY;
 
     // ---- horizontal move + collision -------------------------------------

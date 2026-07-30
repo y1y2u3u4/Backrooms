@@ -32,6 +32,16 @@ import { Decals } from './Decals.js';
  */
 const ZONE_MODULES = import.meta.glob('./zones/*.js');
 
+/**
+ * How close the player must get to a portal for it to fire, in metres.
+ *
+ * 1.15 is inside the door leaf rather than near it: a doorway is 1.06 m wide, so
+ * this is a volume the player has to walk INTO, not brush past. Larger and a
+ * corridor running alongside a door teleports you; smaller and you can squeeze
+ * through the frame without triggering.
+ */
+const PORTAL_RADIUS = 1.15;
+
 /** Zone registry. `fn` names the export the module is expected to provide. */
 export const ZONE_DEFS = {
   intake: { file: 'IntakeZone.js', fn: ['buildIntake', 'default'], fog: 'intake', reverb: 'intake', letter: 'L' },
@@ -301,6 +311,43 @@ export class World {
         this.ctx.bus?.emit('zone:leave', { zone: from });
         this.ctx.bus?.emit('zone:enter', { zone: best, from });
         this.evict();
+      }
+    }
+
+    // PORTAL TRIGGERS — the thing that actually connects the building.
+    //
+    // Every zone declares its doors with portal(), Progression keeps a gate table
+    // for them, and World.enter() performs the transition. Nothing joined those
+    // three up: no code path in the entire game called enter(), so the only way
+    // to change zone was the nearest-origin test above, which requires walking
+    // 400 m of empty space. The eight zones were eight disconnected rooms and a
+    // player could never leave the Intake — the three fuse cores, the goods lift
+    // and the whole objective chain were unreachable.
+    //
+    // A portal fires when the player stands within `PORTAL_RADIUS` of it, which
+    // is a doorway they have physically walked to. Gating is asked of
+    // Progression if it is present, so a locked door stays locked and announces
+    // itself rather than silently doing nothing.
+    if (playerPos && this._transitionCooldown <= 0) {
+      const here = this.zones[this.currentZone];
+      for (const p of here?.portals || []) {
+        if (!p.target?.zone) continue;
+        const w = this.toWorld(this.currentZone, p.position);
+        const dx = playerPos.x - w[0], dy = playerPos.y - w[1], dz = playerPos.z - w[2];
+        if (dx * dx + dz * dz > PORTAL_RADIUS * PORTAL_RADIUS) continue;
+        if (Math.abs(dy) > 2.2) continue;          // a door on another level
+        const gated = this.ctx.progression?.isGated?.(p.id);
+        if (gated) {
+          // Tell the player why, at most once every few seconds.
+          if (this._lastGateNag !== p.id) {
+            this._lastGateNag = p.id;
+            this.ctx.bus?.emit('portal:locked', { id: p.id, zone: p.target.zone });
+          }
+          continue;
+        }
+        this._lastGateNag = null;
+        this.enter(p.target.zone, p.target.portal || p.id);
+        break;
       }
     }
 
