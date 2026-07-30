@@ -303,7 +303,20 @@ const ZONE_EMITTERS = {
  * @param {number} seconds length of the excerpt
  * @param {function} script optional (t, api) hook for scripted beats
  */
-async function renderBed(zone, seconds, script = null, seed = 20250729) {
+async function renderBed(zone, seconds, script = null, seed = 20250729, opts = {}) {
+  // `walk: false` renders the bed with the listener standing still for its whole
+  // length. It exists because the ambience is unjudgeable underneath a footstep
+  // every 0.68 s: a bed whose macro-dynamics were verified running, moved behind
+  // the bus compressor and given the reverb tail still measured a quiet fraction
+  // of zero, because in any three-second window the loudest thing present was a
+  // boot. Walking is the right default -- it is what a player does -- but the
+  // BED is what this file is for.
+  const WALK = opts.walk !== false;
+  // `pinBreath: x` holds the ambience bus's breath stage at a constant x for the
+  // whole render. It is a GRAPH test, not a feature: if pinning it at 0.2 does
+  // not drop the rendered bed by about 14 dB then that node is not in the
+  // signal path, and no amount of automation on it will ever be audible.
+  const PIN_BREATH = typeof opts.pinBreath === 'number' ? opts.pinBreath : null;
   const OC = window.OfflineAudioContext;
   const ctx = new OC(2, Math.round(seconds * SR), SR);
   const bus = new Bus();
@@ -343,6 +356,10 @@ async function renderBed(zone, seconds, script = null, seed = 20250729) {
   if (!ok) throw new Error(`engine.init failed for ${zone}`);
   engine.setListener(camera);
   audio.ambience.init();
+  if (PIN_BREATH != null) {
+    engine.buses.ambience.breath.gain.value = PIN_BREATH;
+    audio.ambience._breathe = () => {};      // stop the feature fighting the pin
+  }
   audio.setZone(zone, 0.05);
   for (const [kind, pos, o] of ZONE_EMITTERS[zone] || []) audio.addEmitter(kind, pos, o);
   if (zone === 'plant') audio.setMachineProximity(0.95);
@@ -380,7 +397,7 @@ async function renderBed(zone, seconds, script = null, seed = 20250729) {
       if (m) marks.push({ t: +t.toFixed(2), what: m });
     }
 
-    const walking = t > 8 && t < seconds - 8;
+    const walking = WALK && t > 8 && t < seconds - 8;
     if (walking) {
       z += dir * SPEED * dt;
       if (z > 18) { z = 18; dir = -1; }
@@ -409,7 +426,8 @@ async function renderBed(zone, seconds, script = null, seed = 20250729) {
   // Let the tails ring out rather than being cut off at the file end.
   vt = seconds;
   const buf = await ctx.startRendering();
-  return { buf, marks, stats: { spawned, denied: engine.stats.denied, hums: audio.ambience.humVoices.length } };
+  return { buf, marks, stats: { spawned, denied: engine.stats.denied, hums: audio.ambience.humVoices.length,
+    breath: audio.ambience._breathStats || null } };
 }
 
 // ---------------------------------------------------------------------------
@@ -456,7 +474,10 @@ function breakerScript() {
   let bi = 0;
   return (t, api) => {
     if (bi < beats.length && t >= beats[bi][0]) {
-      const b = beats[bi++]();
+      // `beats[bi++][1]()`, not `beats[bi++]()`. Each beat is a [time, factory]
+      // pair, so the second form calls the ARRAY and throws — which is why the
+      // breaker scene was the one scene that had never rendered.
+      const b = beats[bi++][1]();
       if (b.k === 'light:circuit') api.setFixtures(b.p.powered ? 1 : 0);
       api.emit(b.k, b.p);
       return `${b.k} — ${b.why}`;
@@ -496,8 +517,8 @@ window.AUDIO_RENDER = {
   },
 
   /** Render a continuous zone bed; hold the WAV for slicing. */
-  async bed(zone, seconds) {
-    const { buf, marks, stats: s } = await renderBed(zone, seconds);
+  async bed(zone, seconds, opts = {}) {
+      const { buf, marks, stats: s } = await renderBed(zone, seconds, null, 20250729, opts);
     const stats = measure(buf);
     held = toBase64(encodeWav(buf));
     return {

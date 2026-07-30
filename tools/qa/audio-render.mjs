@@ -57,7 +57,8 @@ const ONLY = args.only ? String(args.only).split(',') : ['sounds', 'beds', 'scen
 const TIMEOUT = parseInt(args.timeout || '600000', 10);
 const CHUNK = 4 * 1024 * 1024;      // base64 characters per round-trip
 
-const ZONES = ['intake', 'service', 'cistern', 'residence', 'plant', 'duct', 'stack', 'safe'];
+const ALL_ZONES = ['intake', 'service', 'cistern', 'residence', 'plant', 'duct', 'stack', 'safe'];
+const ZONES = args.zones ? String(args.zones).split(',') : ALL_ZONES;
 const SCENES = [
   { name: 'surveyor', zone: 'service', seconds: 75 },
   { name: 'breaker', zone: 'intake', seconds: 60 },
@@ -132,7 +133,7 @@ async function up(url, ms) {
 
 async function main() {
   await mkdir(OUT, { recursive: true });
-  for (const d of ['sounds', 'beds', 'scenes']) await mkdir(path.join(OUT, d), { recursive: true });
+  for (const d of ['sounds', 'beds', 'beds-still', 'scenes']) await mkdir(path.join(OUT, d), { recursive: true });
 
   const base = `http://127.0.0.1:${PORT}`;
   let server = null;
@@ -240,13 +241,13 @@ async function main() {
     for (const zone of ZONES) {
       let info;
       try {
-        info = await page.evaluate(({ z, s }) => window.AUDIO_RENDER.bed(z, s), { z: zone, s: BED_SECONDS });
+        info = await page.evaluate(({ z, s, w, p }) => window.AUDIO_RENDER.bed(z, s, { walk: w, pinBreath: p }), { z: zone, s: BED_SECONDS, w: !args.still, p: args.pinbreath ? Number(args.pinbreath) : null });
       } catch (e) {
         fail(`bed ${zone}: render threw — ${String(e.message).split('\n')[0]}`);
         console.log(`${pad(zone, 12)}  RENDER ERROR: ${String(e.message).split('\n')[0]}`);
         continue;
       }
-      const file = `beds/${zone}.wav`;
+      const file = `${args.still ? 'beds-still' : 'beds'}/${zone}.wav`;
       const bytes = await drain(path.join(OUT, file));
       const s = info.stats;
       // A bed is the thing the player hears continuously. If its RMS is below
@@ -256,6 +257,14 @@ async function main() {
       console.log([pad(zone, 12), pad(info.reverb, 10), pad(s.duration.toFixed(1), 8, true),
         pad(dB(s.peak), 11, true), pad(dB(s.rms), 10, true), pad(s.crest.toFixed(1), 8, true),
         pad(info.voices.spawned, 8, true), pad((bytes / 1048576).toFixed(1), 7, true),
+        // Did the ambience bed's macro-dynamics actually run? A range of exactly
+        // [1.00,1.00] means the code executed and changed nothing; a `breath -`
+        // means it never ran at all. Two attempts at that feature produced a mix
+        // identical to a tenth of a decibel and both times the answer was the
+        // latter, so it is reported rather than assumed.
+        ' ' + (info.voices.breath
+          ? `breath ${info.voices.breath.min.toFixed(2)}-${info.voices.breath.max.toFixed(2)} x${info.voices.breath.lulls}`
+          : 'breath -'),
         ' ' + flags.join(',')].join(''));
     }
   }

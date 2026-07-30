@@ -1,0 +1,127 @@
+{
+  "dir": "docs/captures/zonecheck",
+  "limits": {
+    "crushed": 0.16,
+    "clipped": 0.03,
+    "dynamicRange": 0.22,
+    "banding": 0.055,
+    "speckle": 0.0035,
+    "emptiness": 0.72
+  },
+  "hfMedian": 0.023717503068733627,
+  "rows": [
+    {
+      "file": "01_stack_across.png",
+      "W": 819,
+      "H": 460,
+      "mean": 0,
+      "contrast": 0,
+      "dynamicRange": 0,
+      "crushed": 1,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0,
+      "speckle": 0,
+      "emptiness": 1,
+      "colourCast": 1
+    },
+    {
+      "file": "02_stack_up.png",
+      "W": 819,
+      "H": 460,
+      "mean": 0.0017040872891874268,
+      "contrast": 0.006116763950761207,
+      "dynamicRange": 0.003921568859368563,
+      "crushed": 0.9939374635026809,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.009003869610473045,
+      "speckle": 0,
+      "emptiness": 0.994125922386792,
+      "colourCast": 0.0751711080202346
+    },
+    {
+      "file": "03_stack_down.png",
+      "W": 819,
+      "H": 460,
+      "mean": 0.07597157995695197,
+      "contrast": 0.1744602913889722,
+      "dynamicRange": 0.5410776734352112,
+      "crushed": 0.8186521208260339,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.023717503068733627,
+      "speckle": 0,
+      "emptiness": 0.8257604714126453,
+      "colourCast": 0.10454222117417014
+    },
+    {
+      "file": "04_cistern.png",
+      "W": 819,
+      "H": 460,
+      "mean": 0.15957646417769225,
+      "contrast": 0.2892617281514551,
+      "dynamicRange": 0.7244744896888733,
+      "crushed": 0.7377660986356639,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.025974708119057815,
+      "speckle": 0,
+      "emptiness": 0.737930668365451,
+      "colourCast": 0.11771814909453426
+    },
+    {
+      "file": "05_cistern_chamber.png",
+      "W": 819,
+      "H": 460,
+      "mean": 0.37609680055890715,
+      "contrast": 0.33249386485214616,
+      "dynamicRange": 0.7939615845680237,
+      "crushed": 0.36113765461591546,
+      "clipped": 0.000002654350480437437,
+      "banding": 0,
+      "highFreq": 0.048564173940042754,
+      "speckle": 0.00005879428947101174,
+      "emptiness": 0.3640946010511228,
+      "colourCast": 0.134211396175767
+    }
+  ],
+  "flagged": [
+    {
+      "file": "01_stack_across.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "02_stack_up.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "03_stack_down.png",
+      "flags": [
+        "CRUSHED",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "04_cistern.png",
+      "flags": [
+        "CRUSHED",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "05_cistern_chamber.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    }
+  ]
+}

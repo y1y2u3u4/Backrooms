@@ -26,7 +26,7 @@
  * tap instead of a metronome.
  */
 
-import { clamp, clamp01, damp, lerp, makeRng, hash2 } from '../core/util.js';
+import { clamp, clamp01, damp, lerp, makeRng, hash2, smoothstep } from '../core/util.js';
 import {
   noiseSource, biquad, gainNode, hit, ar, env, expTo, glide, poissonGap,
   mainsWave, transformerWave, machineWave, modalRing, noiseBurst, varied,
@@ -938,6 +938,7 @@ export class Ambience {
     }
     if (!this.ready) return;
 
+    this._breathe(dt);
     this._updateHum(dt);
     this._updateEmitters();
 
@@ -945,6 +946,156 @@ export class Ambience {
     this.beds.machine?.setParam('proximity', this.machineProximity * this.intensity);
 
     if (this.enabled) for (const k in this.events) this.events[k].update(dt);
+  }
+
+  /**
+   * THE BUILDING BREATHES.
+   *
+   * Every continuous ambience layer in this file is `loop: true, dur: Infinity`
+   * at a fixed gain. That is a mathematically constant floor, and the first
+   * offline render of the zone beds measured exactly that: loudness range 0.6 to
+   * 5.1 LU across the eight zones — the Plant varied by half a decibel over 65
+   * seconds — and a quiet fraction of **zero** everywhere. Not one three-second
+   * window in the entire game's ambience ever dropped meaningfully below its own
+   * ceiling. None of the existing checks could fail on it: no silence, no
+   * clipping, no DC offset, occlusion monotonic and reverb T60 on target are all
+   * true of a constant roar. `tools/qa/audiodyn.mjs` measures the thing itself.
+   *
+   * Two layers, multiplied, both on the bus `breath` node:
+   *
+   * DRIFT — three irrational-period sines, so the sum never repeats. About
+   * +/-2.5 dB. This is plant load wandering: fans loading up, a pump somewhere
+   * cycling. On its own it does not create silence and is not meant to; it
+   * removes the dead-constant quality that makes a bed read as a texture asset
+   * rather than as a room.
+   *
+   * LULLS — the one that matters. Every 40-75 s the building drops: the bed ebbs
+   * away over a couple of seconds, sits down for three or four, and comes back.
+   * This is the "carefully controlled silence" the brief asks for, and it is a
+   * design feature before it is a mix fix. A player who has stopped hearing the
+   * hum notices it stop, and in the hole it leaves they can suddenly hear things
+   * that were always there and always masked. It is also the cheapest honest
+   * scare in the building: nothing is added, something is taken away.
+   *
+   * Deliberately NOT synchronised to anything. A lull that only ever happens
+   * before a beat becomes a tell, and the player learns it in twenty minutes.
+   */
+  _breathe(dt) {
+    // 'ambience', literally — NOT `this.bus`. `this.bus` on an Ambience is the
+    // game's EVENT bus, which is what `createAudio` passes every audio module,
+    // and indexing `engine.buses` with it silently yields undefined. The first
+    // version of this method did exactly that and returned on every single tick;
+    // it looked like the feature had no effect on the mix, when in fact it had
+    // never run once. Every ambience layer in this file declares
+    // `bus: 'ambience'`, so that is the bus this belongs on.
+    const bus = this.engine.buses?.ambience;
+    if (!bus?.breath) return;
+
+    this._breathT = (this._breathT || 0) + dt;
+    const t = this._breathT;
+
+    if (this._lullT == null) {
+      // First lull comes early enough to land inside a 65 s capture, so the
+      // measurement sees the behaviour rather than the gap between behaviours.
+      this._lullT = 14 + this.rng() * 22;
+      this._lullFor = 0;
+    }
+
+    // YIELD TO THE DIRECTOR.
+    //
+    // `Silence` already owns the dramatic version of this and drives the same
+    // bus's `duck` node, so the two stages multiply. A `dread` beat ducks to
+    // 0.05; landing a lull on top of it would reach 0.01 and read as the audio
+    // having failed rather than as tension. The Director's silence is always the
+    // more important of the two, so when it is working, the building's own
+    // breathing gets out of the way.
+    const directed = bus.duckAmount > 0.05;
+
+    let lull = 1;
+    this._lullT -= dt;
+    if (this._lullFor > 0) {
+      this._lullFor -= dt;
+      if (this._lullFor <= 0) { this._lullT = 45 + this.rng() * 40; this._lullHold = 0; }
+    } else if (this._lullT <= 0 && !directed) {
+      // Long enough that the flat bottom outlasts a 3 s analysis window — a dip
+      // shorter than the window never fully registers as quiet, in the measure
+      // or in the ear.
+      this._lullFor = 6.0 + this.rng() * 3.0;
+      this._lullHold = this._lullFor;
+      this._lullDepth = 0.18 + this.rng() * 0.12;   // to -15..-10.5 dB
+    }
+    if (this._lullFor > 0 && !directed) {
+      // Ease in and out rather than stepping: a gate is a mix error, an ebb is
+      // a building. The plateau is the middle 60 %.
+      const total = this._lullHold || this._lullFor;
+      const u = clamp01(1 - this._lullFor / total);
+      const env = u < 0.2 ? u / 0.2 : u > 0.8 ? (1 - u) / 0.2 : 1;
+      lull = 1 - (1 - this._lullDepth) * smoothstep(0, 1, clamp01(env));
+    }
+
+    const drift = 1
+      + 0.16 * Math.sin(t * 0.0731)
+      + 0.09 * Math.sin(t * 0.1277 + 1.7)
+      + 0.05 * Math.sin(t * 0.2113 + 3.1);
+
+    const target = clamp01(drift * lull);
+    // Self-report, so "did this feature run at all" is a fact rather than an
+    // inference. The first two attempts at this method produced a mix identical
+    // to 0.1 dB and both times the reason was that the code never executed —
+    // once because the bus lookup used the event bus, once because the change
+    // had not reached the page. A range of exactly [1, 1] here means it ran and
+    // did nothing; a missing object means it never ran.
+    const st = this._breathStats || (this._breathStats = { min: 2, max: 0, lulls: 0, ticks: 0 });
+    st.ticks++;
+    if (target < st.min) st.min = target;
+    if (target > st.max) st.max = target;
+    if (this._lullFor > 0 && !this._lullCounted) { st.lulls++; this._lullCounted = true; }
+    if (this._lullFor <= 0) this._lullCounted = false;
+    // Retarget rather than assign: a per-frame `.value` write on a gain node is
+    // a zipper. 90 ms is fast enough for the lull edges and slow enough that the
+    // frame rate is not audible in the mix.
+    // `engine.now`, NEVER `ctx.currentTime`.
+    //
+    // This is the single rule the whole audio layer is built on and it is not
+    // decoration: the offline render harness shadows `engine.now` with a virtual
+    // clock so a 65-second bed can be scheduled into one OfflineAudioContext. An
+    // OfflineAudioContext's own `currentTime` does not advance until
+    // `startRendering()`, so automation written against it lands at t = 0 —
+    // every call, the entire render, collapsing to whichever value was written
+    // last. The lull was verified as computing 0.20 for four seconds and the
+    // rendered bed was constant, and this line was why. The giveaway was that
+    // the reverb duck a few lines below DID move the measurement, because
+    // `setParam` goes through `glide(..., this.now, ...)` like everything else.
+    bus.breath.gain.setTargetAtTime(target, this.engine.now, 0.09);
+
+    // TAKE THE REVERB TAIL WITH IT.
+    //
+    // `reverbReturn` connects straight to the master and bypasses every bus, so
+    // a gain change on the ambience bus does not touch the room's own tail. That
+    // is the whole reason the first three attempts at this failed: the lull was
+    // verified running, was moved to sit after the bus compressor, and the
+    // rendered loudness range still would not move, because the ambience was
+    // ducking into its own reverb and the reverb was holding the level up.
+    // `Silence._applyLevel` already knew this — "the reverb tail is part of the
+    // room; take it too, or the duck sounds fake" — and this is the same fact
+    // arrived at the expensive way.
+    //
+    // The wet duck is DEEPER than the bus duck, and that asymmetry is measured
+    // rather than tasteful. Holding the ambience bus at 0.2 for a whole render
+    // left the bed at -9.4 dBFS against -12.1 unpinned: a 14 dB cut on the dry
+    // path is inaudible, because the bed is overwhelmingly reverb return and the
+    // return connects straight to the master, bypassing every bus. The wet path
+    // is the one that carries this mix, so it is the one a gesture has to move.
+    //
+    // Worth stating plainly because it has a consequence beyond this method:
+    // `Silence`'s held breaths duck the same buses and are subject to the same
+    // arithmetic, so the game's most important audio gesture is quieter than its
+    // numbers suggest. Recorded in the completion report as an open item.
+    //
+    // Only while the Director is not driving, because it owns the same param.
+    if (!directed) {
+      this.engine.setParam('wet', lerp(0.12, 1, target), 0.12);
+    }
   }
 
   /** Stop everything with a fade. Used on death, endings and teardown. */

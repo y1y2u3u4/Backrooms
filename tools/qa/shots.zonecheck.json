@@ -1,0 +1,8 @@
+[
+  {"name":"01_stack_off_across","settle":150,"setup":"g.setMSAA(0); const r=g.world.goto&&g.world.goto('stack'); const p=(r&&r.position)||g.world.spawn; window.__P=p; window.__Y=(r&&r.yaw)||0; g.lookOpen(p,window.__Y,0.06)"},
+  {"name":"02_stack_on_across","settle":90,"setup":"g.setMSAA(0); g.gameplay.qa.circuits(true); g.lookOpen(window.__P,window.__Y,0.06); console.info('PS '+JSON.stringify(g.lightProbe()))"},
+  {"name":"03_stack_on_up","settle":70,"setup":"g.setMSAA(0); g.lookOpen(window.__P,window.__Y,0.50)"},
+  {"name":"04_stack_on_down","settle":70,"setup":"g.setMSAA(0); g.lookOpen(window.__P,window.__Y,-0.45)"},
+  {"name":"05_cistern_on","settle":150,"setup":"g.setMSAA(0); const r=g.world.goto&&g.world.goto('cistern'); const p=(r&&r.position)||g.world.spawn; window.__P=p; window.__Y=(r&&r.yaw)||0; g.gameplay.qa.circuits(true); g.lookOpen(p,window.__Y,0.0); console.info('PC '+JSON.stringify(g.lightProbe()))"},
+  {"name":"06_cistern_on_chamber","settle":70,"setup":"g.setMSAA(0); g.lookOpen(window.__P,window.__Y+2.0,0.05)"}
+]

@@ -139,11 +139,27 @@ async function main() {
     await grabCanvas(page, file);
     const stats = await page.evaluate(() => {
       const g = window.ANNEX;
-      return { ...g.engine.stats, lights: g.rig?.stats };
+      return { ...g.engine.stats, lights: g.rig?.stats, probe: g.lightProbe?.() ?? null };
     });
     const wall = ((Date.now() - t0) / 1000).toFixed(1);
     manifest.push({ ...shot, file, stats });
-    console.log(`  ✓ ${shot.name}  ${stats.res} ${stats.calls} calls ${(stats.tris / 1000).toFixed(0)}k tris  ${stats.ms.toFixed(1)}ms/f  (${wall}s)`);
+    // WHICH CIRCUITS WERE LIVE IS PART OF THE EVIDENCE.
+    //
+    // Most of this building starts with its power off — that is the premise of
+    // the game, and `board_c` ships with the stack, cistern, residence and duct
+    // ways open. A capture that teleports into one of those zones photographs a
+    // powered-down room, and a frame measuring 1.000 crushed then reads as a
+    // catastrophic lighting defect when it is in fact correct behaviour. That
+    // very nearly caused a lighting change to be made to fix a game state.
+    //
+    // So every shot now records the zone's live circuits and its direct
+    // illumination at head height alongside the pixels. A dark frame with
+    // `stack: 0` is a game state; a dark frame with `stack: 1` is a defect.
+    const p = stats.probe;
+    const live = p ? Object.entries(p.circuits).filter(([, v]) => v > 0.02).map(([k]) => k) : [];
+    const power = p ? `  [${p.zone} lit ${p.zoneFixtures.lit}/${p.zoneFixtures.total}`
+      + ` head ${p.directAtHead} exp ${p.exposure} live:${live.join(',') || 'none'}]` : '';
+    console.log(`  ✓ ${shot.name}  ${stats.res} ${stats.calls} calls ${(stats.tris / 1000).toFixed(0)}k tris  ${stats.ms.toFixed(1)}ms/f  (${wall}s)${power}`);
   }
 
   await writeFile(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2));

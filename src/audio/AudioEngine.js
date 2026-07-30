@@ -461,6 +461,20 @@ export class AudioEngine {
     for (const name of BUSES) {
       const cfg = BUS_CONFIG[name];
       const input = ctx.createGain(); input.gain.value = 1;
+      // BREATH — slow macro-dynamics, owned by whoever drives the bus.
+      //
+      // Separate from `duck` on purpose: `duck` is the fast, event-driven gain
+      // (getting into a locker, a cinematic taking the floor) and something has
+      // to be able to move a bus slowly WITHOUT fighting it. Ambience uses this
+      // for the building's drift and its lulls; see Ambience._breathe.
+      //
+      // Why it exists at all: the first render of the zone beds measured a
+      // loudness range of 0.6 to 5.1 LU with a quiet fraction of exactly zero in
+      // all eight zones — the Plant varied by half a decibel across 65 seconds.
+      // Every ambience layer is `loop: true, dur: Infinity` at a fixed gain, so
+      // the floor was mathematically a constant and no amount of event density
+      // on top of it could make the mix breathe.
+      const breath = ctx.createGain(); breath.gain.value = 1;
       const duck = ctx.createGain(); duck.gain.value = 1;
       const gain = ctx.createGain(); gain.gain.value = cfg.gain;
       const comp = ctx.createDynamicsCompressor();
@@ -469,8 +483,21 @@ export class AudioEngine {
       comp.ratio.value = cfg.comp.ratio;
       comp.attack.value = cfg.comp.attack;
       comp.release.value = cfg.comp.release;
-      input.connect(duck); duck.connect(gain); gain.connect(comp); comp.connect(this.masterGain);
-      this.buses[name] = { name, input, duck, gain, comp, base: cfg.gain, duckAmount: 0 };
+      // BREATH SITS AFTER THE COMPRESSOR, and that placement is the whole point.
+      //
+      // Placed before it, the macro-dynamics measurably did not survive: with the
+      // lull verified as running and pulling the bus to -14 dB for four seconds
+      // out of every sixty-five, the rendered beds' loudness range moved from
+      // 1.9 LU to 1.5 and the tenth percentile by four tenths of a decibel. A
+      // compressor releasing into a gain dip is not a side effect, it is the
+      // device doing exactly what it is for: 3:1 above -22 dBFS gives back about
+      // two thirds of anything taken away in front of it.
+      //
+      // Level control belongs in front of the compressor. Gestures belong behind
+      // it, where a 14 dB gesture is 14 dB.
+      input.connect(duck); duck.connect(gain); gain.connect(comp);
+      comp.connect(breath); breath.connect(this.masterGain);
+      this.buses[name] = { name, input, breath, duck, gain, comp, base: cfg.gain, duckAmount: 0 };
     }
 
     // Reverb: one send, two convolver slots, one return.

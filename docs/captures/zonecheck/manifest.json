@@ -1,0 +1,112 @@
+[
+  {
+    "name": "01_stack_across",
+    "settle": 140,
+    "setup": "g.setMSAA(0); const r=g.world.goto&&g.world.goto('stack'); const p=(r&&r.position)||g.world.spawn; window.__P=p; window.__Y=(r&&r.yaw)||0; g.lookOpen(p,window.__Y,0.06)",
+    "file": "docs/captures/zonecheck/01_stack_across.png",
+    "stats": {
+      "ms": 15.200833333310827,
+      "fps": 65.78586700300295,
+      "p90": 12.399999999906868,
+      "calls": 197,
+      "tris": 867896,
+      "quality": "medium",
+      "res": "819x461",
+      "lights": {
+        "fixtures": 360,
+        "lit": 288,
+        "active": 10,
+        "tubes": 288,
+        "shadows": 3
+      }
+    }
+  },
+  {
+    "name": "02_stack_up",
+    "settle": 60,
+    "setup": "g.setMSAA(0); g.lookOpen(window.__P,window.__Y,0.50)",
+    "file": "docs/captures/zonecheck/02_stack_up.png",
+    "stats": {
+      "ms": 107.79193548387623,
+      "fps": 9.277131869940144,
+      "p90": 4.2000000001862645,
+      "calls": 209,
+      "tris": 869576,
+      "quality": "medium",
+      "res": "819x461",
+      "lights": {
+        "fixtures": 360,
+        "lit": 225,
+        "active": 10,
+        "tubes": 225,
+        "shadows": 3
+      }
+    }
+  },
+  {
+    "name": "03_stack_down",
+    "settle": 60,
+    "setup": "g.setMSAA(0); g.lookOpen(window.__P,window.__Y,-0.45)",
+    "file": "docs/captures/zonecheck/03_stack_down.png",
+    "stats": {
+      "ms": 4.117460317421882,
+      "fps": 242.86815728831183,
+      "p90": 5.100000000093132,
+      "calls": 209,
+      "tris": 871864,
+      "quality": "medium",
+      "res": "819x461",
+      "lights": {
+        "fixtures": 360,
+        "lit": 225,
+        "active": 10,
+        "tubes": 225,
+        "shadows": 3
+      }
+    }
+  },
+  {
+    "name": "04_cistern",
+    "settle": 140,
+    "setup": "g.setMSAA(0); const r=g.world.goto&&g.world.goto('cistern'); const p=(r&&r.position)||g.world.spawn; window.__P=p; window.__Y=(r&&r.yaw)||0; g.lookOpen(p,window.__Y,0.0)",
+    "file": "docs/captures/zonecheck/04_cistern.png",
+    "stats": {
+      "ms": 3.7975000000131938,
+      "fps": 263.3311389062609,
+      "p90": 7.100000000093132,
+      "calls": 201,
+      "tris": 870744,
+      "quality": "medium",
+      "res": "819x461",
+      "lights": {
+        "fixtures": 172,
+        "lit": 80,
+        "active": 1,
+        "tubes": 80,
+        "shadows": 2
+      }
+    }
+  },
+  {
+    "name": "05_cistern_chamber",
+    "settle": 60,
+    "setup": "g.setMSAA(0); g.lookOpen(window.__P,window.__Y+2.0,0.05)",
+    "file": "docs/captures/zonecheck/05_cistern_chamber.png",
+    "stats": {
+      "ms": 7.275000000001455,
+      "fps": 137.45704467351203,
+      "p90": 9.100000000093132,
+      "calls": 207,
+      "tris": 871584,
+      "quality": "medium",
+      "res": "819x461",
+      "lights": {
+        "fixtures": 172,
+        "lit": 80,
+        "active": 10,
+        "tubes": 80,
+        "shadows": 3
+      }
+    }
+  }
+]
