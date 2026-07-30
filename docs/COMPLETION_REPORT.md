@@ -836,7 +836,65 @@ were the symptom. That is exactly the kind of mistake that only playing it can
 catch: every screenshot in this project was of a building that was, unknowingly,
 empty.
 
-### Two more bugs the long session found, not fixed
+### 6.7 Six more structural bugs, found by playing and fixed
+
+Once the session could run at full length and repeatedly, it stopped being a
+pacing instrument and became a bug-finder. Each of these was invisible to every
+other tool in the project, and each is measured before and after.
+
+**The player could walk on air.** `Player.update`, on finding no floor beneath,
+held the player at the last height they had stood on and re-grounded them there.
+The instinct is right — do not drop the player out of the world — but it turned
+every unguarded edge in the game into an invisible floor: off the Cistern's
+landing, out over the Plant's 6.7 m pit, and across the Stack's shaft, a zone
+whose entire reason to exist is vertigo. `tools/qa/floorgaps.mjs` was written to
+find holes in the geometry and found the opposite, which is what located it: a
+dense grid over every walkable rectangle in all eight zones reports **zero** holes.
+Every failure was past a lip. Gravity now does what gravity does and the net moved
+to the bottom as a `player:fell` event. **2 612 bad frames → 0 of 26 850.**
+
+**The eight zones were eight disconnected rooms.** Every zone declares its doors,
+Progression keeps a gate table, `World.enter()` performs the transition — and
+nothing called `enter()`. The only zone change available required walking 400 m of
+empty space between world patches. A player could never leave the Intake; the fuse
+cores, the goods lift and the whole objective chain were unreachable. Screenshots
+are per-zone and the playthrough changed zones through a QA hook, so nothing had
+ever touched a door. `tools/qa/portalgraph.mjs`: **all 8 zones reachable on foot
+across 19 doors.**
+
+**Portals ping-ponged.** Arriving through a door puts the player at its arrive
+point, which is a step inside the destination — and inside the *return* portal's
+radius, so it fired immediately and sent them back. A cooldown cannot fix it; the
+player is still standing in the trigger when it expires. A portal is now spent
+until it is walked out of.
+
+**A zone could arrive unlit.** The active-light cull tests `distToCam`, which was
+only written on the throttled re-sort. Zones sit 400 m apart, so the frame after a
+transition every fixture in the destination still carried its distance from the
+zone just left and was culled. **23 continuous seconds of the Service Spine with
+286 fixtures resident and zero active.** Distance is now recomputed per frame;
+only the sort stays throttled.
+
+**Respawn could switch off the room you woke up in.** `Director.respawn` flips one
+circuit — a good beat, correctly sized — but picked uniformly over every circuit
+in the building, including the one lighting the zone the player respawns into.
+Measured: captured at 2:48, and the Intake's 208 lit fixtures went out and stayed
+out for the remaining 145 seconds. A horror game may take the lights away; doing it
+to the room you are standing in at the instant you regain control reads as a bug,
+because it was one. **291 dark samples → 1.**
+
+**The Surveyor never entered the game** (§6.6).
+
+Across the six runs, the same 7.5-minute script now produces:
+
+| | run 1 (100 s) | run 3 | run 6 |
+|---|---|---|---|
+| entity transitions | 0 | 0 | **12, a full hunt** |
+| frames not on a floor | — | 2 612 | **0** |
+| samples with no active light | — | 46 | **2** |
+| zero-threat | 100 % | 96.5 % | **84.5 %** |
+
+### Two bugs the long session found, not fixed
 
 - **The player spends time not standing on any floor** — 1 969 of 26 850 frames,
   worst consecutive run 1 248 frames (about 21 seconds), with y ranging 0.00–2.60.

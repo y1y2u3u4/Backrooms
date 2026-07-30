@@ -358,7 +358,23 @@ export class Director {
     // The world changes: one circuit is different, and the Attendant has been
     // busy while you were not here.
     if (this.rig) {
-      const all = [...this.rig.circuits.keys()].filter((c) => c !== 'emergency');
+      // Never the circuit lighting the zone the player is about to wake up in.
+      //
+      // The intent — "the world has changed while you were gone" — is good, and
+      // one circuit being different is exactly the right size of change. But the
+      // pick was uniform over every circuit in the building, so it could and did
+      // choose the one carrying the zone the player respawns into. Measured in a
+      // live session: the player was captured at 2:48, respawned, and the Intake's
+      // 208 lit fixtures went out and stayed out for the remaining 145 seconds of
+      // play, leaving the entrance zone lit by bounce fill alone with no way back
+      // short of finding that breaker.
+      //
+      // A horror game may absolutely take the lights away. It should not do it to
+      // the room you are standing in at the instant you regain control, because
+      // that reads as a bug rather than as a threat — and this one was one.
+      const here = this.zone;
+      const all = [...this.rig.circuits.keys()]
+        .filter((c) => c !== 'emergency' && c !== here && c !== 'main');
       if (all.length) {
         const c = this.rng.pick(all);
         this.rig.setCircuit(c, !this.rig.isPowered(c));
