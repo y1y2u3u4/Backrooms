@@ -786,11 +786,66 @@ you a radio, a body, a door that will not open. The distinction is between delay
 the monster and delaying every beat, and this build currently does the second. That
 is now measured rather than suspected, which is the whole point of having run it.
 
-**No fix is attempted here.** Retuning a horror game's opening pacing is a design
-decision, it cannot be validated by another automated run in this environment, and
-guessing at the numbers would be worse than reporting the measurement. What the
-project has now that it did not have before is the instrument: one command, and a
-timeline a human can read.
+### 6.6 Playing it for longer found the actual bug, and fixing it changed the game
+
+The 100-second session above was truncated — the script is 7.5 minutes and covers
+four zones. It could not be run in full because the harness rendered every frame,
+and on a CPU rasteriser 100 seconds of that cost 89 minutes of wall clock.
+
+`step()` is the game; `render()` is the picture. Nothing in the Director, the
+entities, the audio or the physics reads back from the framebuffer, so for a pacing
+run the frames in between are pure cost. With `--renderEvery 45` the full script
+runs in **568 s** and the frame timing finally measures the game rather than the
+rasteriser: **p50 0.20 ms, warm p99 5.5 ms**.
+
+Run in full, it found the real defect — and it was not pacing:
+
+**`spawnAt` had exactly two callers, and neither could ever fire.**
+`seedIntakeDemo`, which `Game.js` gates behind `seedDemo: !this.subsystems.world`
+and which therefore only runs when the world module is *absent*; and
+`Director.respawn`, which cannot fire because nothing had killed the player. **The
+monster in the horror game never entered it.** Every zone, every session, from the
+beginning.
+
+`Director._ensureSpawned` now places it dormant 26 m away after 22 seconds — the
+same state and distance the demo seeding used. Re-running the identical script:
+
+| | before | after |
+|---|---|---|
+| entity state transitions | **0** | **16** |
+| threat episodes | 0 | **1** |
+| zero-threat time | 95.7 % | **81.4 %** |
+| fear, p90 / peak | 0.068 / 0.295 | **0.152 / 0.565** |
+
+The transitions are the design document's five behavioural rules executing, in
+order, unprompted:
+
+```
+DORMANT->ROUSED@54.6s   ROUSED->SEEKING@58.1s    SEEKING->MEASURING@68.5s
+MEASURING->SEEKING@73s  ... RETREATING->ROUSED@93.8s  SEEKING->APPROACHING@97.3s
+APPROACHING->CAPTURING@115.3s    CAPTURING->DORMANT@120.9s
+```
+
+It heard the player, held still for 3.5 seconds announcing itself, hunted, lost the
+trail and stopped to measure a wall, picked the trail up again, closed, and caught
+them — 66 seconds of pursuit. The `ROUSED` window is the 3–4 second warning the
+design specifies. None of this had ever happened before.
+
+**Pacing was never the problem. An absent monster was**, and the pacing figures
+were the symptom. That is exactly the kind of mistake that only playing it can
+catch: every screenshot in this project was of a building that was, unknowingly,
+empty.
+
+### Two more bugs the long session found, not fixed
+
+- **The player spends time not standing on any floor** — 1 969 of 26 850 frames,
+  worst consecutive run 1 248 frames (about 21 seconds), with y ranging 0.00–2.60.
+  The collision world has no walkable rectangle under the player there. It does not
+  produce a fall, so it is not visible in play, but it means floor-dependent systems
+  (footstep surface, the entity's noise model) are guessing for 21 seconds.
+- **The Office of Record reports zero active lights.** The safe room — the one
+  place in the game that is supposed to be safe — has 3 fixtures and at times none
+  of them are live.
 
 ### A diagnostic of mine that was wrong, recorded because it nearly misled me
 
