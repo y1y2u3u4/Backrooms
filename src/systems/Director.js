@@ -77,6 +77,10 @@ export class Director {
 
     // ---- runtime ----
     this.time = 0;
+    // Seconds before the Surveyor is first placed in the world. See _ensureSpawned.
+    this.firstSpawnAt = 22;
+    this.firstSpawnRange = 26;
+    this._spawnedOnce = false;
     this.sinceBeat = 40;          // start part-way in so the opening is not dead
     this.nextBeatAt = 150;
     this.graceUntil = 0;
@@ -379,9 +383,44 @@ export class Director {
 
   // -- per frame ----------------------------------------------------------------------
 
+  /**
+   * Put the Surveyor into the world the first time.
+   *
+   * THE DEFECT THIS FIXES: it was never there at all. `spawnAt` had exactly two
+   * callers — `seedIntakeDemo`, which `Game.js` gates behind
+   * `seedDemo: !this.subsystems.world` and therefore only runs when the world
+   * module is ABSENT, and this class's own post-death respawn, which cannot fire
+   * because nothing had killed the player. In the shipped build the monster in
+   * the horror game never entered it. A continuous playthrough measured the
+   * consequence directly: 100 % zero-threat time, zero entity state transitions,
+   * fear peaking at 0.027 out of 1.
+   *
+   * It is placed DORMANT and far away, which is the state the demo seeding used:
+   * nothing is emitted, nothing is audible, and the player has no way to know it
+   * is there. What it does is make the zone one that CONTAINS something, so the
+   * rest of the design — that it moves only in light, that it hunts by sound,
+   * that the player's own lamp is what lets it advance — has something to act on.
+   *
+   * The delay exists so the first seconds of a session are still the player's own.
+   */
+  _ensureSpawned() {
+    if (this._spawnedOnce || !this.surveyor) return;
+    if (this.time < this.firstSpawnAt) return;
+    this._spawnedOnce = true;
+    if (this.surveyor.active) return;      // a zone or a script placed it already
+    const a = this.rng() * Math.PI * 2;
+    const d = this.firstSpawnRange;
+    const p = this.player?.position;
+    if (!p) return;
+    this.surveyor.spawnAt(
+      p.x + Math.sin(a) * d, p.y, p.z + Math.cos(a) * d, a + Math.PI);
+    this.bus?.emit('director:entity-placed', { at: +this.time.toFixed(1), range: d });
+  }
+
   update(dt) {
     this.time += dt;
     this._computeFear(dt);
+    this._ensureSpawned();
 
     if (this.dying > 0) {
       this.dying -= dt;

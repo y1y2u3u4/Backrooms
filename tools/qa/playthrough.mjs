@@ -72,6 +72,9 @@ const SECONDS = parseInt(args.seconds || '9999', 10);
 const FILM = parseFloat(args.film || '15');
 /** Seconds between recorded state samples. */
 const SAMPLE = parseFloat(args.sample || '0.5');
+// Render one frame in N. 1 renders everything (a true frame-time measurement, and
+// unusably slow here); higher values measure the GAME rather than the renderer.
+const RENDER_EVERY = Math.max(1, parseInt(args.renderEvery || '1', 10));
 const LIVE_AUDIO = !args['no-audio'];
 const BOOT_TIMEOUT = parseInt(args.timeout || '420000', 10);
 
@@ -141,8 +144,9 @@ async function up(url, ms) {
 // The in-page driver. Installed once; called once per chunk of frames.
 // ---------------------------------------------------------------------------
 /* eslint-disable */
-function installDriver() {
+function installDriver(cfg) {
   const g = window.ANNEX;
+  const RENDER_EVERY = Math.max(1, (cfg && cfg.renderEvery) || 1);
   // Take the frame loop away from requestAnimationFrame. Two things step the
   // world otherwise — rAF with a wall-clock dt and this driver with a fixed one
   // — and the session would advance at a rate nobody chose.
@@ -309,9 +313,19 @@ function installDriver() {
       }
 
       // ---- the frame: exactly Game._frame() with a fixed dt ----------------
+      // RENDER SKIPPING. `step` is the game; `render` is the picture, and on a
+      // CPU rasteriser the picture costs about a thousand times more — a 100 s
+      // session rendering every frame took 89 minutes of wall clock, which made
+      // the full 7-minute script unrunnable and is why the first session ever run
+      // was truncated to its opening walk and concluded that nothing happens.
+      // Nothing in the Director, the entities, the audio or the physics reads back
+      // from the framebuffer, so for a pacing run the frames in between are pure
+      // cost. Frames are still rendered on a cadence so the filmstrip is real and
+      // so shader compilation still happens where it would.
       const t0 = performance.now();
       g.step(1 / 60);
-      g.engine.render(1 / 60);
+      const wantRender = (PT.frame % RENDER_EVERY) === 0;
+      if (wantRender) g.engine.render(1 / 60);
       g.input.endFrame();
       const ms = performance.now() - t0;
 
@@ -413,7 +427,7 @@ async function main() {
   const bootMs = Date.now() - bootT0;
   console.log(`  booted in ${(bootMs / 1000).toFixed(1)}s`);
 
-  const install = await page.evaluate(installDriver);
+  const install = await page.evaluate(installDriver, { renderEvery: RENDER_EVERY });
   console.log(`  driver installed; zone=${install.zone} spawn=[${install.spawn.map((v) => v.toFixed(1)).join(', ')}]`);
 
   let audioInit = { ok: false, why: 'skipped (--no-audio)' };
