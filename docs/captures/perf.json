@@ -1,0 +1,124 @@
+{
+  "quality": "low",
+  "width": 640,
+  "height": 360,
+  "budgets": {
+    "drawCalls": 180,
+    "triangles": 1200000,
+    "activeLights": 28,
+    "shadowLights": 3,
+    "programs": 90,
+    "logicMs": 4
+  },
+  "worst": {
+    "drawCalls": 226,
+    "triangles": 478202,
+    "activeLights": 149,
+    "shadowLights": 1,
+    "programs": 128,
+    "logicMs": 2.2000000029802322
+  },
+  "pass": false,
+  "results": [
+    {
+      "name": "corridor",
+      "frameMs": {
+        "mean": 2.1733333334326743,
+        "p50": 1.9000000059604645,
+        "p95": 3.1999999955296516
+      },
+      "logicMs": {
+        "mean": 0.1733333334326744,
+        "p95": 0.5
+      },
+      "drawCalls": 90,
+      "triangles": 187854,
+      "programs": 99,
+      "geometries": 264,
+      "textures": 54,
+      "lights": {
+        "fixtures": 208,
+        "lit": 149,
+        "active": 6,
+        "shadows": 1
+      },
+      "res": "397x223",
+      "quality": "low"
+    },
+    {
+      "name": "open_bay",
+      "frameMs": {
+        "mean": 4.093333333399561,
+        "p50": 2.7000000029802322,
+        "p95": 9.899999998509884
+      },
+      "logicMs": {
+        "mean": 0.32333333330849806,
+        "p95": 2.2000000029802322
+      },
+      "drawCalls": 194,
+      "triangles": 441796,
+      "programs": 127,
+      "geometries": 322,
+      "textures": 56,
+      "lights": {
+        "fixtures": 208,
+        "lit": 148,
+        "active": 6,
+        "shadows": 1
+      },
+      "res": "397x223",
+      "quality": "low"
+    },
+    {
+      "name": "long_view",
+      "frameMs": {
+        "mean": 1.6533333333002196,
+        "p50": 1.6000000014901161,
+        "p95": 2.2999999970197678
+      },
+      "logicMs": {
+        "mean": 0.1,
+        "p95": 0.20000000298023224
+      },
+      "drawCalls": 84,
+      "triangles": 156942,
+      "programs": 127,
+      "geometries": 322,
+      "textures": 58,
+      "lights": {
+        "fixtures": 208,
+        "lit": 149,
+        "active": 6,
+        "shadows": 1
+      },
+      "res": "397x223",
+      "quality": "low"
+    },
+    {
+      "name": "many_lights",
+      "frameMs": {
+        "mean": 4.428888888822661,
+        "p50": 3.399999998509884,
+        "p95": 7.699999995529652
+      },
+      "logicMs": {
+        "mean": 0.11333333340783915,
+        "p95": 0.30000000447034836
+      },
+      "drawCalls": 226,
+      "triangles": 478202,
+      "programs": 128,
+      "geometries": 337,
+      "textures": 60,
+      "lights": {
+        "fixtures": 208,
+        "lit": 149,
+        "active": 6,
+        "shadows": 1
+      },
+      "res": "397x223",
+      "quality": "low"
+    }
+  ]
+}
