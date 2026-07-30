@@ -225,7 +225,15 @@ export function createUI({
 
   let hasSave = readHasSave();
   function readHasSave() {
-    try { return !!localStorage.getItem('annex.save'); } catch { return false; }
+    // Version-checked rather than "the key exists": a save from an older format
+    // is worse than no save, because Continue would light up and then strand the
+    // player. See systems/SaveGame.js.
+    try {
+      const raw = localStorage.getItem('annex.save');
+      if (!raw) return false;
+      const d = JSON.parse(raw);
+      return !!d && typeof d.version === 'number' && !!d.where;
+    } catch { return false; }
   }
 
   // ---- sequencer ---------------------------------------------------------
@@ -389,6 +397,11 @@ export function createUI({
     bus?.on('portal:locked', (e) => {
       const why = game?.progression?.gateReason?.(e?.id);
       subs.say({ text: why || 'It will not open.', sound: false, hint: '', duration: 3.0 });
+    }),
+    bus?.on('save:written', () => {
+      hasSave = readHasSave();
+      menu.refreshEnabled?.();
+      subs.say({ text: 'checkpoint', sound: false, hint: 'filed', duration: 1.8 });
     }),
     bus?.on('item:pickup', (e) => {
       const name = game?.inventory?.def?.(e?.id)?.name || e?.id;

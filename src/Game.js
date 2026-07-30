@@ -13,6 +13,7 @@ import { CollisionWorld } from './player/Physics.js';
 import { Player } from './player/Player.js';
 import { buildPalette } from './world/Palette.js';
 import { buildIntake } from './world/zones/IntakeZone.js';
+import * as SaveGame from './systems/SaveGame.js';
 
 /**
  * Game — the integrator.
@@ -261,6 +262,11 @@ export class Game {
       // The world is built before gameplay exists, so the reference is handed
       // over here rather than passed in at construction.
       this.ctx.progression = this.progression;
+      // Checkpoint saves. The title screen has always had a Continue item and
+      // nothing in the project ever wrote the key it reads, so it was permanently
+      // greyed out and every session began at the arrival lift.
+      this._saveOff = SaveGame.installAutosave(this);
+      this.subsystems.save = true;
       this.subsystems.gameplay = true;
     } catch (e) {
       console.error('[game] gameplay failed to install', e);
@@ -348,7 +354,18 @@ export class Game {
   startRun({ fresh = true } = {}) {
     // Put the body back where the menu camera drifted away from.
     const spawn = this.world?.spawn || [0, 0, 0];
-    if (fresh) this.player.teleport(spawn[0], spawn[1], spawn[2], this.world?.spawnYaw || 0);
+    if (fresh) {
+      SaveGame.clearSave();
+      this.player.teleport(spawn[0], spawn[1], spawn[2], this.world?.spawnYaw || 0);
+    } else {
+      const r = SaveGame.restore(this);
+      if (!r.ok) {
+        // Continue with nothing to continue. Start instead of stranding them.
+        this.player.teleport(spawn[0], spawn[1], spawn[2], this.world?.spawnYaw || 0);
+      } else if (r.missing.length) {
+        console.warn('[save] restored with gaps:', r.missing.join(', '));
+      }
+    }
     this.state = 'play';
     this.paused = false;
     this.ui?.show?.(null);

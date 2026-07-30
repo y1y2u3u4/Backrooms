@@ -69,6 +69,19 @@ const { Interactables } = await import('../../src/systems/Interactables.js');
 const { NotesLibrary } = await import('../../src/systems/Notes.js');
 const { Progression, ENDINGS } = await import('../../src/systems/Progression.js');
 const { ZoneGameplay } = await import('../../src/systems/ZoneGameplay.js');
+const SaveGame = await import('../../src/systems/SaveGame.js');
+
+// A localStorage stand-in, so the save format can be round-tripped without a
+// browser. It is the only global the save layer touches.
+{
+  const store = new Map();
+  globalThis.localStorage = {
+    getItem: (k) => (store.has(k) ? store.get(k) : null),
+    setItem: (k, v) => store.set(k, String(v)),
+    removeItem: (k) => store.delete(k),
+    clear: () => store.clear(),
+  };
+}
 
 const VERBOSE = process.argv.includes('--verbose');
 
@@ -422,6 +435,96 @@ check('the starting objective is now revealed',
   const docket = interactor.get('docket_0000');
   check('Docket 0000 is on the desk', !!docket);
   check('the docket is not consumed by reading it', docket?.once === false);
+}
+
+// -- reading ---------------------------------------------------------------
+// Papers are the whole story layer and the discoveries are counted off them, so
+// read some before capturing a save: `notes.read` is what a save has to carry.
+{
+  const papers = interactor.items.filter((i) => i.kind === 'pickup' && i.verb === 'Read').slice(0, 6);
+  let opened = 0;
+  for (const p of papers) if (use(p.id) === null) opened++;
+  check('documents can be read', opened >= 4, `${opened} of ${papers.length} opened`);
+  check('reading files them in the library', notes.read.size >= 4, `${notes.read.size} read`);
+}
+
+// -- the save format ------------------------------------------------------
+// The title screen has always had a Continue item and nothing ever wrote the key
+// it reads. What matters about a save is not that it writes: it is that what comes
+// back is the same run. This captures at the end of a completed playthrough — the
+// hardest state to reproduce — writes it, mutates everything, restores, and
+// compares field by field.
+{
+  const fakeGame = {
+    bus,
+    time: 1234.5,
+    player: {
+      position: new THREE.Vector3(...zonesWorld('plant', [2.6, -6.0, -2.0])),
+      yaw: 1.25,
+      teleport(x, y, z, yaw) { this.position.set(x, y, z); this.yaw = yaw; },
+    },
+    world: {
+      currentZone: 'plant',
+      zones,
+      toLocal: (id, p) => { const o = ZONE_ORIGIN[id]; return [p[0] - o[0], p[1] - o[1], p[2] - o[2]]; },
+      toWorld: (id, p) => { const o = ZONE_ORIGIN[id]; return [p[0] + o[0], p[1] + o[1], p[2] + o[2]]; },
+      enter: (id) => { fakeGame.world.currentZone = id; return { zone: id }; },
+    },
+    gameplay: { interactables, notes },
+    inventory, progression, director,
+  };
+  function zonesWorld(id, p) { const o = ZONE_ORIGIN[id]; return [p[0] + o[0], p[1] + o[1], p[2] + o[2]]; }
+
+  const before = SaveGame.capture(fakeGame);
+  check('a checkpoint can be written', SaveGame.write(fakeGame) === true);
+  check('the written save reads back', !!SaveGame.readSave());
+  check('the save records where you are', before.where.zone === 'plant'
+    && Math.abs(before.where.position[0] - 2.6) < 1e-6,
+    JSON.stringify(before.where));
+  check('the save records the objective states',
+    before.progress.objectives.length === progression.objectives.length
+    && before.progress.objectives.every(([, st]) => typeof st === 'string'));
+  check('the save records the cores', before.progress.coresFitted === 3,
+    `fitted ${before.progress.coresFitted}`);
+  check('the save records the ending', before.progress.ended === ENDINGS.LEFT);
+  check('the save records the board', (before.switched?.ways || []).length === 8);
+  check('the save records the sockets',
+    (before.fitted?.sockets || []).filter(Boolean).length === 3);
+  check('the save records what has been read',
+    (before.read?.read || []).length > 0, `${(before.read?.read || []).length} documents`);
+
+  // Now break everything and put it back.
+  const board = interactables.get('board_c');
+  board.api.setWay('service', false);
+  board.api.setWay('intake', false);
+  progression.coresFitted = 0;
+  progression.ended = null;
+  for (const o of progression.objectives) o.state = 'hidden';
+  inventory.slots.clear();
+  fakeGame.player.teleport(0, 0, 0, 0);
+  fakeGame.world.currentZone = 'intake';
+
+  const r = SaveGame.restore(fakeGame, before);
+  check('restore reports success', r.ok, `missing: ${r.missing.join(', ') || 'nothing'}`);
+  check('restore puts you back in the right zone', fakeGame.world.currentZone === 'plant');
+  check('restore puts you back in the right place',
+    Math.abs(fakeGame.player.position.x - zonesWorld('plant', [2.6, 0, 0])[0]) < 1e-3,
+    `x=${fakeGame.player.position.x}`);
+  check('restore puts the objectives back',
+    progression.objective('ride_out') && progression.objectives.every(
+      (o, i) => o.state === before.progress.objectives[i][1]));
+  check('restore puts the cores back', progression.coresFitted === 3);
+  check('restore puts the ending back', progression.ended === ENDINGS.LEFT);
+  check('restore puts the board back',
+    board.api.state().every((w, i) => w.on === before.switched.ways[i][1]),
+    board.api.state().map((w) => `${w.name}:${w.on ? 1 : 0}`).join(' '));
+  const after = SaveGame.capture(fakeGame);
+  check('a captured state survives a round trip unchanged',
+    JSON.stringify({ ...after, at: 0, clock: 0 }) === JSON.stringify({ ...before, at: 0, clock: 0 }),
+    'capture -> write -> mutate -> restore -> capture');
+
+  SaveGame.clearSave();
+  check('a cleared save is gone', SaveGame.readSave() === null);
 }
 
 // -- doors ----------------------------------------------------------------
