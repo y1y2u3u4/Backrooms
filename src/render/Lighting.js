@@ -498,6 +498,21 @@ export class LightRig {
     for (const f of this.fixtures) {
       const power = this.circuitLevel(f.circuit);
       const lit = f.update(t, dt, power > 0.02 ? power : 0);
+      // Distance is recomputed EVERY frame, not only on the throttled re-sort.
+      //
+      // The cull below is `distToCam > def.distance * 1.5`, and distToCam used to
+      // be written only when the set was re-ranked, a few times a second. That is
+      // fine while walking and catastrophic on a teleport: zones sit 400 m apart,
+      // so the frame after a portal transition every fixture in the destination
+      // still carries its distance from the zone the player just left, reads as
+      // unreachably far, and is culled. Measured in a live session as 23 seconds
+      // of the Service Spine with 286 fixtures resident and ZERO active — the
+      // zone rendered by bounce fill alone.
+      //
+      // A hypot per fixture per frame is nothing next to what an active light
+      // costs the fragment shader; only the SORT needs throttling.
+      const fp = f.group.position;
+      f.distToCam = Math.hypot(fp.x - camPos.x, fp.y - camPos.y, fp.z - camPos.z);
       // Cull distant lights entirely. three compiles the light count into every
       // material's shader and evaluates every visible light for every fragment,
       // so the *count* dominates the cost far more than each light's range —

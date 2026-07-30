@@ -232,6 +232,7 @@ export class World {
    */
   enter(zoneId, portalId = null) {
     const from = this.currentZone;
+    this.currentZoneBefore = from;
     const z = this.build(zoneId);
     if (!z) return null;
 
@@ -328,14 +329,32 @@ export class World {
     // is a doorway they have physically walked to. Gating is asked of
     // Progression if it is present, so a locked door stays locked and announces
     // itself rather than silently doing nothing.
-    if (playerPos && this._transitionCooldown <= 0) {
+    if (playerPos) {
       const here = this.zones[this.currentZone];
       for (const p of here?.portals || []) {
         if (!p.target?.zone) continue;
         const w = this.toWorld(this.currentZone, p.position);
         const dx = playerPos.x - w[0], dy = playerPos.y - w[1], dz = playerPos.z - w[2];
-        if (dx * dx + dz * dz > PORTAL_RADIUS * PORTAL_RADIUS) continue;
-        if (Math.abs(dy) > 2.2) continue;          // a door on another level
+        const near = (dx * dx + dz * dz) <= PORTAL_RADIUS * PORTAL_RADIUS
+          && Math.abs(dy) <= 2.2;
+
+        // A portal has to be LEFT before it can fire again.
+        //
+        // Without this the graph ping-pongs. Arriving through a door puts the
+        // player at that door's arrive point, which is by construction a step
+        // inside the destination — and a step inside the destination is within
+        // the return portal's own trigger radius, so it fires immediately and
+        // sends them straight back. A cooldown does not fix it either: the
+        // player is still standing in the trigger when the cooldown expires, so
+        // it fires the moment it can. Observed in a live session as the zone
+        // reading `service` for the entire stretch scripted as `cistern`.
+        //
+        // Arming on exit is the correct shape: a door you are standing in is
+        // spent until you walk out of it.
+        if (!near) { this._spentPortals?.delete(p.id); continue; }
+        if (!this._spentPortals) this._spentPortals = new Set();
+        if (this._spentPortals.has(p.id)) continue;
+        if (this._transitionCooldown > 0) continue;
         const gated = this.ctx.progression?.isGated?.(p.id);
         if (gated) {
           // Tell the player why, at most once every few seconds.
@@ -346,7 +365,16 @@ export class World {
           continue;
         }
         this._lastGateNag = null;
+        this._spentPortals.add(p.id);
         this.enter(p.target.zone, p.target.portal || p.id);
+        // The door on the far side is spent too, or it fires on the next frame
+        // and sends the player back where they came from.
+        const dest = this.zones[p.target.zone];
+        for (const q of dest?.portals || []) {
+          if (q.target?.zone === this.currentZoneBefore || q.id === (p.target.portal || p.id)) {
+            this._spentPortals.add(q.id);
+          }
+        }
         break;
       }
     }
