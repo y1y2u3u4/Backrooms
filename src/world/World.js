@@ -388,9 +388,18 @@ export class World {
         // 1.15 m, so a player pressed against a shut door — stopped 400 mm short
         // of it by the leaf's collider — is well inside the trigger and used to
         // teleport straight through a door they had never opened. Now anything
-        // solid between eye height and the trigger point holds the portal.
+        // solid between the player and the trigger point holds the portal.
+        //
+        // The probe is 500 mm up, not at eye height. Eye height is above the
+        // Ductwork's 800 mm soffit, so a ray cast from there starts INSIDE the
+        // crawl's own ceiling collider and reads as blocked — which would have
+        // sealed both of the Duct's hatches the moment this check existed. Half a
+        // metre is under every soffit in the building and still inside the box a
+        // shut door's collider occupies, which is the only thing this is for.
+        const PROBE_Y = 0.5;
         if (this.ctx.collision?.segmentBlocked(
-          playerPos.x, playerPos.y + 1.2, playerPos.z, w[0], w[1] + 1.2, w[2], 'ceiling')) continue;
+          playerPos.x, playerPos.y + PROBE_Y, playerPos.z,
+          w[0], w[1] + PROBE_Y, w[2], 'ceiling')) continue;
         const gated = this.ctx.progression?.isGated?.(p.id);
         if (gated) {
           // Tell the player why, at most once every few seconds.

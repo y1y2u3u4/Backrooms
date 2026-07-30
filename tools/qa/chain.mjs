@@ -527,6 +527,42 @@ check('the starting objective is now revealed',
   check('a cleared save is gone', SaveGame.readSave() === null);
 }
 
+// -- portals ---------------------------------------------------------------
+// `World.update` will not fire a portal it cannot see past — the fix for
+// teleporting through shut doors — so every portal has to be approachable along
+// an unobstructed line at the probe height the world actually uses. This is the
+// check that catches the crawlspace case: an eye-height probe starts inside the
+// Ductwork's 800 mm soffit and would seal both of its hatches.
+{
+  const PROBE_Y = 0.5;
+  const unreachable = [];
+  for (const [zid, zone] of Object.entries(zones)) {
+    const o = ZONE_ORIGIN[zid];
+    for (const p of zone.portals || []) {
+      if (!p.target?.zone) continue;                 // an endpoint, by design
+      // A portal a zone file declares `locked: true` is scenery — the bolted pipe
+      // hatch out of the Spine, the sluice hatch out of the Cistern chamber. They
+      // are behind walls on purpose and no gate ever opens them.
+      if (p.locked) continue;
+      const w = [p.position[0] + o[0], p.position[1] + o[1], p.position[2] + o[2]];
+      // Approach from the arrive point, which is where the far side puts you and
+      // therefore a place a player provably stands.
+      const a = p.arrive || p.position;
+      const aw = [a[0] + o[0], a[1] + o[1], a[2] + o[2]];
+      const blocked = collision.segmentBlocked(
+        aw[0], aw[1] + PROBE_Y, aw[2], w[0], w[1] + PROBE_Y, w[2], 'ceiling');
+      const floor = collision.sampleFloor(aw[0], aw[2], aw[1] + 1.2, 3.0);
+      if (blocked || !floor) {
+        unreachable.push(`${zid}/${p.id}${blocked ? ' (line of sight blocked)' : ' (no floor at the arrive point)'}`);
+      }
+    }
+  }
+  check('every portal can be walked into from its own arrive point',
+    unreachable.length === 0, unreachable.join(', ') || `${
+      Object.values(zones).reduce((n, z) => n + (z.portals || []).filter((p) => p.target?.zone && !p.locked).length, 0)
+    } live portals checked`);
+}
+
 // -- doors ----------------------------------------------------------------
 // The reason every door in the building is now a `DoorLatch` is not that doors
 // are fun: it is that `Kit.doorway` leaves the wall opening walkable on purpose
