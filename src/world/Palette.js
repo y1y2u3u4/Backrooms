@@ -54,7 +54,11 @@ export function buildPalette(materials) {
       // darkening of the whole band.
       dirtBase: 0.02, dirtAmount: 0.42,
       detailTile: 7.5, detailStrength: 0.52, normalScale: 1.30, envMapIntensity: 0.18,
-      color: 0xa8b69a, tint: 0x93a2ad, tintAmount: 0.14,
+      // acousticPanel's weave is right for a hessian dado but its albedo is
+      // #5c5b52, about 0.11 linear. A hex `color` can only darken, so the gain
+      // does the lifting: 0.11 x 2.9 lands near 0.30, which is what a real
+      // hessian panel reflects and roughly half the wallpaper above it.
+      color: 0xd6e0c8, colorGain: 2.9, tint: 0x93a2ad, tintAmount: 0.14,
     }),
     carpet: M('carpet', {
       repeat: [1.7, 1.7], roughness: 1, metalness: 0, dirtAmount: 0.25, dirtBase: -2,

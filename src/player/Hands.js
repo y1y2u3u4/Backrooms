@@ -295,12 +295,19 @@ export class Hands {
   /**
    * Replace the procedural hands with `hands_lowpoly.glb` if it exists.
    *
-   * The Blender export is a single skin per side with no finger nodes, so this
-   * is a straight swap: the sculpted mesh in, the procedural phalanges out. The
-   * *pose* springs are untouched — position, rotation, sway, inertia, reach and
-   * recoil all still drive, because those live on the hand root, not the
-   * knuckles. Only the finger curl is lost, and a curl on a hand that has no
-   * separable fingers would be a lie anyway.
+   * The export carries a real joint hierarchy — four fingers of three phalanges
+   * each plus a two-phalanx thumb, per side, pivoted at the anatomical joint
+   * positions — so the sculpted mesh replaces the procedural geometry and the
+   * curl driver is re-pointed at the imported joints rather than thrown away.
+   *
+   * An earlier export was a single skin per side with no finger nodes, and this
+   * method's job then was to accept losing the curl. It is worth being explicit
+   * that that is no longer the trade: the silhouette of a hand is mostly its
+   * fingers, and static fingers on a viewmodel that is on screen continuously is
+   * exactly what made the old asset read as a pale blob.
+   *
+   * The pose springs are untouched either way — position, rotation, sway,
+   * inertia, reach and recoil live on the hand root, not the knuckles.
    */
   async loadModel(assets) {
     if (!assets) return false;
@@ -346,7 +353,47 @@ export class Hands {
     };
     swap(R, this.right);
     swap(L, this.left);
+    this._bindGlbFingers(this.right, 'R');
+    this._bindGlbFingers(this.left, 'L');
     this.usingGlbHands = true;
+    return true;
+  }
+
+  /**
+   * Re-point the curl driver at an imported joint hierarchy.
+   *
+   * The driver wants `{prox, dist}` per finger. The asset has three phalanges,
+   * so `dist` is bound to the MIDDLE joint and the tip is carried as a third
+   * segment: rotating only two of three joints leaves the fingertip sticking out
+   * straight from a closed fist, which reads worse than no articulation at all.
+   *
+   * Finger order matters — the pose table's `curl` arrays are authored
+   * index-to-little, and binding them in the asset's alphabetical node order
+   * would silently apply the index finger's curl to the little finger.
+   */
+  _bindGlbFingers(hand, sfx) {
+    const root = hand.glb;
+    if (!root) return false;
+    const node = (n) => root.getObjectByName(`${n}_${sfx}`);
+    const order = ['index', 'middle', 'ring', 'little'];
+    const fingers = [];
+    for (const f of order) {
+      const prox = node(`${f}_prox`), mid = node(`${f}_mid`), tip = node(`${f}_dist`);
+      if (!prox || !mid) continue;
+      fingers.push({ prox, dist: mid, tip, curl: 0, curlTarget: 0, vel: 0 });
+    }
+    const tProx = node('thumb_prox'), tDist = node('thumb_dist');
+    if (fingers.length !== 4 || !tProx || !tDist) {
+      // Partial bind is worse than none: the driver would move some joints and
+      // leave others, which reads as a broken hand rather than a stiff one.
+      console.warn(`[hands] GLB finger bind incomplete for ${sfx}; leaving static`);
+      return false;
+    }
+    hand.fingers = fingers;
+    hand.thumb = {
+      prox: tProx, dist: tDist, curl: 0, curlTarget: 0, vel: 0,
+      base: tProx.rotation.clone(),
+    };
     return true;
   }
 
@@ -561,9 +608,11 @@ export class Hands {
       const k = 190, c = 2 * Math.sqrt(190) * 0.9;
       fg.vel += ((fg.curlTarget - fg.curl) * k - fg.vel * c) * dt;
       fg.curl = clamp01(fg.curl + fg.vel * dt);
-      // 55% of the curl at the knuckle, 45% at the middle joint.
+      // Distributed across the joints the way a finger actually closes: most at
+      // the knuckle, less at the middle, least at the tip.
       fg.prox.rotation.x = fg.curl * 1.45;
       fg.dist.rotation.x = fg.curl * 1.25;
+      if (fg.tip) fg.tip.rotation.x = fg.curl * 0.85;
       // Fingers converge slightly as they close — a real fist is not a comb.
       fg.prox.rotation.y = hand.side * fg.curl * (i - 1.5) * 0.035;
     }

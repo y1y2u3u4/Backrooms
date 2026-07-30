@@ -1,0 +1,97 @@
+{
+  "dir": "docs/captures/chk",
+  "limits": {
+    "crushed": 0.16,
+    "clipped": 0.03,
+    "dynamicRange": 0.22,
+    "banding": 0.055,
+    "speckle": 0.0035,
+    "emptiness": 0.72
+  },
+  "hfMedian": 0.06539953721786021,
+  "rows": [
+    {
+      "file": "01_intake_dado.png",
+      "W": 558,
+      "H": 313,
+      "mean": 0.16881303758009875,
+      "contrast": 0.1311516795298027,
+      "dynamicRange": 0.47276628017425537,
+      "crushed": 0.21401170313877724,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.06539953721786021,
+      "speckle": 0.0004048208378634713,
+      "emptiness": 0.21583817147045015,
+      "colourCast": 0.7904320695670612
+    },
+    {
+      "file": "02_stack.png",
+      "W": 558,
+      "H": 313,
+      "mean": 0.02273304578032088,
+      "contrast": 0.11096677064292218,
+      "dynamicRange": 0.7166313529014587,
+      "crushed": 0.928859344761643,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.0378984587399465,
+      "speckle": 0.0000057831548266210185,
+      "emptiness": 0.9288650703676984,
+      "colourCast": 0.11955685211081352
+    },
+    {
+      "file": "03_cistern.png",
+      "W": 558,
+      "H": 313,
+      "mean": 0.009965901501879098,
+      "contrast": 0.04044936785175533,
+      "dynamicRange": 0.20607921481132507,
+      "crushed": 0.9115222096258889,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.027248086944934122,
+      "speckle": 0.0000057831548266210185,
+      "emptiness": 0.9128734526549636,
+      "colourCast": 0.5354921012164211
+    },
+    {
+      "file": "04_service.png",
+      "W": 558,
+      "H": 313,
+      "mean": 0.25628426260261333,
+      "contrast": 0.1687639924146255,
+      "dynamicRange": 0.5966337323188782,
+      "crushed": 0.0647394276684187,
+      "clipped": 0,
+      "banding": 0.00006870727266481156,
+      "highFreq": 0.11450501812457944,
+      "speckle": 0.0013879571583890445,
+      "emptiness": 0.07257778235826262,
+      "colourCast": 0.009019987703743914
+    }
+  ],
+  "flagged": [
+    {
+      "file": "01_intake_dado.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    },
+    {
+      "file": "02_stack.png",
+      "flags": [
+        "CRUSHED",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "03_cistern.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    }
+  ]
+}

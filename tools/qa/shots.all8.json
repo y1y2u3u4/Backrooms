@@ -1,0 +1,12 @@
+[
+  {"name":"01_intake_spine","setup":"g.setMSAA(0); const r=g.world.goto&&g.world.goto('intake'); const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,0); console.info('Q01 '+JSON.stringify(q))"},
+  {"name":"02_intake_dado","setup":"const r=g.world.goto&&g.world.goto('intake'); const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,((r&&r.yaw)||0)+2.2,-0.12); console.info('Q02 '+JSON.stringify(q))"},
+  {"name":"03_intake_ceiling","setup":"const r=g.world.goto&&g.world.goto('intake'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,((r&&r.yaw)||0)+0.5,0.42)"},
+  {"name":"04_service","setup":"const r=g.world.goto&&g.world.goto('service'); const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,0); console.info('Q04 '+JSON.stringify(q))"},
+  {"name":"05_cistern","setup":"const r=g.world.goto&&g.world.goto('cistern'); const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,-0.08); console.info('Q05 '+JSON.stringify(q))"},
+  {"name":"06_plant","setup":"const r=g.world.goto&&g.world.goto('plant'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,-0.05)"},
+  {"name":"07_residence","setup":"const r=g.world.goto&&g.world.goto('residence'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0)"},
+  {"name":"08_duct","setup":"const r=g.world.goto&&g.world.goto('duct'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0.05)"},
+  {"name":"09_stack","setup":"const r=g.world.goto&&g.world.goto('stack'); const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,0.10); console.info('Q09 '+JSON.stringify(q))"},
+  {"name":"10_safe","setup":"const r=g.world.goto&&g.world.goto('safe'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0)"}
+]

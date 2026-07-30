@@ -1,0 +1,91 @@
+{
+  "dir": "docs/captures/chk2",
+  "limits": {
+    "crushed": 0.16,
+    "clipped": 0.03,
+    "dynamicRange": 0.22,
+    "banding": 0.055,
+    "speckle": 0.0035,
+    "emptiness": 0.72
+  },
+  "hfMedian": 0.07285127340820854,
+  "rows": [
+    {
+      "file": "01_intake_dado.png",
+      "W": 558,
+      "H": 313,
+      "mean": 0.19987806989495038,
+      "contrast": 0.10817020570213327,
+      "dynamicRange": 0.4730494022369385,
+      "crushed": 0.03415324012046675,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.07285127340820854,
+      "speckle": 0.0004048208378634713,
+      "emptiness": 0.12651299140013972,
+      "colourCast": 0.803071036949293
+    },
+    {
+      "file": "02_stack.png",
+      "W": 558,
+      "H": 313,
+      "mean": 0.019655856332887522,
+      "contrast": 0.10097886489035443,
+      "dynamicRange": 0.7115929126739502,
+      "crushed": 0.9329760555154764,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.036350656602044056,
+      "speckle": 0.0000057831548266210185,
+      "emptiness": 0.9330104091518088,
+      "colourCast": 0.12015302429083558
+    },
+    {
+      "file": "03_cistern.png",
+      "W": 558,
+      "H": 313,
+      "mean": 0.010167154958265145,
+      "contrast": 0.04176832550240048,
+      "dynamicRange": 0.20916706323623657,
+      "crushed": 0.9112359293231188,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.028218201531838072,
+      "speckle": 0.000011566309653242037,
+      "emptiness": 0.9124783858371409,
+      "colourCast": 0.5259401402002104
+    },
+    {
+      "file": "04_service.png",
+      "W": 558,
+      "H": 313,
+      "mean": 0.2567895341591005,
+      "contrast": 0.16613244449017492,
+      "dynamicRange": 0.5817811489105225,
+      "crushed": 0.05919131540073517,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.11407275355876381,
+      "speckle": 0.001573018112840917,
+      "emptiness": 0.06679492024230765,
+      "colourCast": 0.01054026777445983
+    }
+  ],
+  "flagged": [
+    {
+      "file": "02_stack.png",
+      "flags": [
+        "CRUSHED",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "03_cistern.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    }
+  ]
+}

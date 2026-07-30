@@ -1,0 +1,4 @@
+[
+  {"name":"01_stack","settle":170,"setup":"g.setMSAA(0); const r=g.world.goto&&g.world.goto('stack'); const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,0.06); console.info('Q1 '+JSON.stringify(q)); console.info('P1 '+JSON.stringify(g.lightProbe()))"},
+  {"name":"02_cistern","settle":170,"setup":"const r=g.world.goto&&g.world.goto('cistern'); const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,-0.08); console.info('P2 '+JSON.stringify(g.lightProbe()))"}
+]

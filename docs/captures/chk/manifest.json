@@ -1,0 +1,86 @@
+[
+  {
+    "name": "01_intake_dado",
+    "settle": 80,
+    "setup": "const r=g.world.goto&&g.world.goto('intake'); const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,-0.06); console.info('Q1 '+JSON.stringify(q))",
+    "file": "docs/captures/chk/01_intake_dado.png",
+    "stats": {
+      "ms": 193.74698795176235,
+      "fps": 5.161370561533438,
+      "p90": 8.100000001490116,
+      "calls": 243,
+      "tris": 482284,
+      "quality": "low",
+      "res": "558x314",
+      "lights": {
+        "fixtures": 201,
+        "lit": 142,
+        "active": 12,
+        "shadows": 2
+      }
+    }
+  },
+  {
+    "name": "02_stack",
+    "settle": 110,
+    "setup": "const r=g.world.goto&&g.world.goto('stack'); const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,0.10); console.info('Q2 '+JSON.stringify(q))",
+    "file": "docs/captures/chk/02_stack.png",
+    "stats": {
+      "ms": 14.577876106201284,
+      "fps": 68.59709828200624,
+      "p90": 6.100000001490116,
+      "calls": 134,
+      "tris": 423852,
+      "quality": "low",
+      "res": "558x314",
+      "lights": {
+        "fixtures": 342,
+        "lit": 270,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "03_cistern",
+    "settle": 110,
+    "setup": "const r=g.world.goto&&g.world.goto('cistern'); const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,-0.08); console.info('Q3 '+JSON.stringify(q))",
+    "file": "docs/captures/chk/03_cistern.png",
+    "stats": {
+      "ms": 65.63392857162815,
+      "fps": 15.236022309843483,
+      "p90": 6.399999998509884,
+      "calls": 152,
+      "tris": 114024,
+      "quality": "low",
+      "res": "558x314",
+      "lights": {
+        "fixtures": 158,
+        "lit": 143,
+        "active": 5,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "04_service",
+    "settle": 110,
+    "setup": "const r=g.world.goto&&g.world.goto('service'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0)",
+    "file": "docs/captures/chk/04_service.png",
+    "stats": {
+      "ms": 30.815044247833765,
+      "fps": 32.45168145654368,
+      "p90": 6.300000000745058,
+      "calls": 243,
+      "tris": 301622,
+      "quality": "low",
+      "res": "558x314",
+      "lights": {
+        "fixtures": 158,
+        "lit": 144,
+        "active": 6,
+        "shadows": 1
+      }
+    }
+  }
+]

@@ -322,6 +322,17 @@ const FRAG_DETAIL_NORMAL = /* glsl */ `
 const DEFAULTS = {
   repeat: [1, 1],
   color: 0xffffff,
+  // Linear multiplier applied ON TOP of `color`, allowed to exceed 1.
+  //
+  // `color` comes from a hex literal and therefore cannot express a gain — its
+  // channels are capped at 1.0, so a hex can only ever darken a texture. Some
+  // recipes are authored much darker than a given material needs: acousticPanel
+  // is #5c5b52 cloth, about 0.11 linear reflectance, and using it as the Annex's
+  // dado lining (which wants roughly 0.30, the value of a real hessian panel)
+  // needs a multiplier close to 3. MeshStandardMaterial.color is a plain linear
+  // factor in the shader, so values above 1 are meaningful and correct here; the
+  // alternative was picking a surface for its brightness rather than its weave.
+  colorGain: 1,
   roughness: 1,
   metalness: 1,
   normalScale: 1,
@@ -390,7 +401,7 @@ export class MaterialLibrary {
       metalnessMap: orm,
       aoMap: orm,
       aoMapIntensity: o.aoIntensity,
-      color: o.color,
+      color: new THREE.Color(o.color).multiplyScalar(o.colorGain),
       roughness: o.roughness,
       metalness: o.metalness,
       envMap: this.envMap,

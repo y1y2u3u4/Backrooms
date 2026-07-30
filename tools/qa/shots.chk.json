@@ -1,0 +1,6 @@
+[
+  {"name":"01_intake_dado","settle":80,"setup":"const r=g.world.goto&&g.world.goto('intake'); const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,-0.06); console.info('Q1 '+JSON.stringify(q))"},
+  {"name":"02_stack","settle":110,"setup":"const r=g.world.goto&&g.world.goto('stack'); const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,0.10); console.info('Q2 '+JSON.stringify(q))"},
+  {"name":"03_cistern","settle":110,"setup":"const r=g.world.goto&&g.world.goto('cistern'); const p=(r&&r.position)||g.world.spawn; const q=g.lookOpen(p,(r&&r.yaw)||0,-0.08); console.info('Q3 '+JSON.stringify(q))"},
+  {"name":"04_service","settle":110,"setup":"const r=g.world.goto&&g.world.goto('service'); const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,0)"}
+]
