@@ -894,16 +894,31 @@ Across the six runs, the same 7.5-minute script now produces:
 | samples with no active light | — | 46 | **2** |
 | zero-threat | 100 % | 96.5 % | **84.5 %** |
 
-### Two bugs the long session found, not fixed
+### Two bugs the long session found — BOTH FIXED IN SECTION 8, see 8.1
+
+Left open at the end of this pass, and resolved in the next one. Recorded here
+rather than deleted because the shape of each is worth keeping.
 
 - **The player spends time not standing on any floor** — 1 969 of 26 850 frames,
   worst consecutive run 1 248 frames (about 21 seconds), with y ranging 0.00–2.60.
   The collision world has no walkable rectangle under the player there. It does not
   produce a fall, so it is not visible in play, but it means floor-dependent systems
   (footstep surface, the entity's noise model) are guessing for 21 seconds.
+  → **Fixed.** It was not a hole in the world at all: `tools/qa/floorgaps.mjs`
+  found no walkable rectangle that fails the stand test, which relocated the bug to
+  the player controller, and from there to `Player._fellOut` — a one-shot latch
+  nothing ever cleared, so the safety net that catches a player leaving the world
+  worked exactly once per session. Now **0 of 32 760 frames**.
 - **The Office of Record reports zero active lights.** The safe room — the one
   place in the game that is supposed to be safe — has 3 fixtures and at times none
   of them are live.
+  → **Fixed twice over.** Three pendants plus the desk lamp plus an emergency light
+  on the always-powered circuit, and then the light budget was re-ranked by
+  importance rather than distance so a dim lamp standing next to the player can no
+  longer displace the room's key light. The zone reports 0 % of its walkable area
+  beyond 5 m from a live fixture, and the continuous session's minimum active-light
+  count across every zone visited is now **1** rather than 0 — including in a zone
+  the player had deliberately switched off at the board.
 
 ### A diagnostic of mine that was wrong, recorded because it nearly misled me
 
@@ -920,7 +935,10 @@ dangerous than no tool.
 
 ---
 
-## 6.8 Final verification state
+## 6.8 Verification state at the end of the second pass
+
+**Superseded by section 8.1.** Kept as the record of where the second pass left
+things; the numbers below are not current.
 
 Four audits, all of which run in seconds without a browser, and one continuous
 session. Every one of these can be re-run by anyone reading this.
@@ -951,6 +969,11 @@ large hall respectively. The two playthrough assertions still failing are the
 CPU-rasteriser frame stall (p50 is 0.20 ms; the outliers are shader compiles) and
 two single frames at a zone boundary reporting no active light, which is the
 one-frame transient the light re-rank is allowed.
+
+*(Both of those, and the fixture counts in the table above, changed in section 8:
+about twenty-five emergency fixtures were added to the escape routes after the
+blackout case was measured for the first time, and the light budget was re-ranked.
+See 8.1 for the current numbers.)*
 
 ## 7. Artefacts
 
