@@ -1456,6 +1456,27 @@ Three of those rows deserve the honest reading rather than the flattering one:
   buffer-upload cost measured on SwiftShader is not a cost I can confirm exists on
   real silicon.
 
+**The batch was checked in pixels, not only in counters**, because "217 sources
+became 8 draw calls" is exactly the kind of claim that can be true while the
+sources have quietly stopped rendering. `docs/captures/emissive-verify/` holds the
+evidence: the Service Spine with the near strip's tube blown out inside its
+housing, a second mid-corridor and a receding row beyond it, all one instanced
+mesh; and the safe room lit warm by its own pendants. Alongside them,
+`fixtureReport` for all five fixture types — troffer, strip, bulkhead, high bay,
+pendant, plus emergency — every one reporting its slot in the scene, visible, and
+at the right luminance, and the one unpowered troffer in frame correctly reporting
+`visible: false, lum: 0`.
+
+Two traps on the way to those shots, recorded because both would have produced a
+confident wrong answer:
+
+- The first report said every fixture in the safe room was at level 0 — a dark
+  safe room, which would be a real defect. It was the harness: a shot's `setup`
+  runs *before* its settle frames, so the report was taken on the frame the zone
+  was built. Split into a goto shot and a report shot, all five read ~0.98.
+- `capture.mjs` had no way to skip the shader pre-warm, so a five-shot run over
+  four zones could not finish here at all. That is why it now takes `--prewarm 0`.
+
 An earlier version of this pass tried a 40 m distance cull on the emissive sources
 instead. It recovered five draw calls of 226, because the Intake is a dense
 63 × 63 m plate rather than a corridor and nearly everything lit is already inside
