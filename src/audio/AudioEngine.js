@@ -144,9 +144,33 @@ export const ZONE_REVERB = {
 
 export const BUSES = ['ambience', 'world', 'entity', 'player', 'music', 'ui'];
 
+/**
+ * Bus gains and compression.
+ *
+ * NOTE ON THE AMBIENCE GAIN, which was 0.62 and is now 0.20.
+ *
+ * Every individual sound in this game measures correctly in isolation — the
+ * offline probe puts all 75 of them between -6 and -23 dBFS peak with no
+ * clipping, no DC offset and no silence. What that could never show is what
+ * happens when two hundred of them play at once, continuously, which is exactly
+ * what a zone's ambience bed IS. Rendering the beds to .wav for the first time
+ * measured it: the Service Spine bed peaked at 0.0 dBFS and the Cistern at +0.2,
+ * i.e. clipping, with a crest factor of 2.3-3.6.
+ *
+ * A crest factor that low on an ambient bed means it is pinned against the master
+ * limiter the whole time. The limiter then has nothing left to give when
+ * something loud actually happens, so a door slam, a light failing, or the
+ * Surveyor's transformer whine arrives at the same loudness as the room tone —
+ * and the dynamic range between "nothing is happening" and "something is behind
+ * you" is the entire mechanism a horror mix runs on. Losing it is worse than any
+ * individual sound being wrong.
+ *
+ * At 0.20 the bed sits about 10 dB down, which leaves the headroom the events
+ * and the entity need, and leaves the limiter doing what a limiter is for.
+ */
 const BUS_CONFIG = {
   // gain, compressor {threshold, knee, ratio, attack, release}
-  ambience: { gain: 0.62, comp: { threshold: -22, knee: 10, ratio: 3.0, attack: 0.05, release: 0.5 } },
+  ambience: { gain: 0.20, comp: { threshold: -22, knee: 10, ratio: 3.0, attack: 0.05, release: 0.5 } },
   world: { gain: 0.85, comp: { threshold: -16, knee: 8, ratio: 3.5, attack: 0.006, release: 0.22 } },
   entity: { gain: 1.05, comp: { threshold: -12, knee: 4, ratio: 2.2, attack: 0.004, release: 0.30 } },
   player: { gain: 0.80, comp: { threshold: -14, knee: 6, ratio: 3.0, attack: 0.003, release: 0.16 } },

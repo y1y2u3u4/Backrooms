@@ -178,8 +178,23 @@ export function buildCistern(ctx, opts = {}) {
   // =========================================================================
   {
     const b = bStair;
-    // Landing at the door, dry, 2.6 m above the water.
-    const lx0 = -27.0, lx1 = -24.6;
+    // Landing at the door, dry, 2.6 m above the water, CONTINUING as a gallery
+    // to the head of the stair.
+    //
+    // It used to stop at x = -24.6 while the stair down into the water started at
+    // x = -22.6, z = -2.2 — two metres further east and half a metre outside the
+    // landing's z range. So a player walking straight out of the door reached the
+    // edge after 1.4 m and stepped into a 2.6 m drop with nothing under them. A
+    // continuous playthrough caught the consequence without ever seeing it: the
+    // player spent 1 248 consecutive frames (about 21 seconds) with no walkable
+    // surface beneath them, standing in mid-air over the water for the whole
+    // visit, because the controller holds y at the last floor it knew about.
+    //
+    // The fix is the thing the architecture needed anyway: an arrival gallery.
+    // You come through a door onto a raised walkway above the flood, follow it,
+    // and take the stair down into the water — which is a far better first thirty
+    // seconds of this zone than being deposited on a 2.4 m square.
+    const lx0 = -27.0, lx1 = -22.2;
     floorSlab(b, [lx0, -1.7, lx1, 1.7], ARRIVE_Y, {
       key: 'concreteFloor', surface: 'concrete', subdiv: 1.6, edgeShade: 0.3,
     });
@@ -193,13 +208,26 @@ export function buildCistern(ctx, opts = {}) {
       { arrive: [lx0 + 1.6, ARRIVE_Y, 0], arriveYaw: -Math.PI / 2 }));
 
     // The stair goes down into the water and keeps going.
-    stairFlight(b, -22.6, 0, -2.2, {
+    // Head aligned to the gallery's z band so the route is continuous. It used to
+    // sit at z = -2.2, outside the landing entirely, which is why nothing joined.
+    stairFlight(b, -22.6, 0, -1.15, {
       yaw: Math.PI, steps: 14, rise: 0.1857, going: 0.28, width: 1.45,
       treadKey: 'tread', stringKey: 'rust', rails: true, railKey: 'rust',
       landing: 1.2, open: false, seed: 33,
     });
-    handrail(b, [[-24.6, -1.7], [-24.6, 1.7]], ARRIVE_Y, { key: 'rust', spacing: 1.2, toe: true });
-    b.addColliderAt(-24.6, ARRIVE_Y + 0.55, 0, 0.1, 1.1, 3.4, { tag: 'rail' });
+    // Rail the OPEN edges — the two long sides of the gallery and its far end —
+    // rather than the middle of the route. The old rail sat across x = -24.6,
+    // which is where the walkway now runs, and would have fenced the player in.
+    handrail(b, [[-24.6, -1.7], [lx1, -1.7]], ARRIVE_Y, { key: 'rust', spacing: 1.2, toe: true });
+    handrail(b, [[-24.6, 1.7], [lx1, 1.7]], ARRIVE_Y, { key: 'rust', spacing: 1.2, toe: true });
+    handrail(b, [[lx1, -1.7], [lx1, 1.7]], ARRIVE_Y, { key: 'rust', spacing: 1.2, toe: true });
+    for (const [cx, cz, dx, dz] of [
+      [(-24.6 + lx1) / 2, -1.7, Math.abs(lx1 + 24.6), 0.1],
+      [(-24.6 + lx1) / 2, 1.7, Math.abs(lx1 + 24.6), 0.1],
+      [lx1, 0, 0.1, 3.4],
+    ]) {
+      b.addColliderAt(cx, ARRIVE_Y + 0.55, cz, dx, 1.1, dz, { tag: 'rail' });
+    }
 
     bulkhead(b, rigFor(b), lx0 + 0.14, ARRIVE_Y + 1.9, 0, { yaw: -Math.PI / 2, circuit: 'cistern', health: 'good', seed: 34 });
     emergencyLight(b, rigFor(b), lx0 + 0.14, ARRIVE_Y + 2.3, 1.4, { yaw: -Math.PI / 2, seed: 35 });

@@ -622,7 +622,7 @@ export function bulkhead(b, rig, x, y, z, { yaw = 0, circuit = 'service', health
 }
 
 /** High-bay sodium lamp on a drop rod — the Plant's ceiling. */
-export function highbay(b, rig, x, y, z, { circuit = 'plant', health = 'good', seed = 1, drop = 0.7, cone = true } = {}) {
+export function highbay(b, rig, x, y, z, { circuit = 'plant', health = 'good', seed = 1, drop = 0.7, cone = true, intensityScale = 1 } = {}) {
   const g = new THREE.Group();
   g.position.set(x, y, z);
   const mat = b.mat('highbayBody', () => b.materials.get('steelPainted', {
@@ -657,7 +657,7 @@ export function highbay(b, rig, x, y, z, { circuit = 'plant', health = 'good', s
   const bulb = new THREE.Mesh(lamp, lampMat);
   g.add(bulb);
 
-  const f = rig.add({ type: 'highbay', position: [x, y - 0.2, z], circuit, health, seed });
+  const f = rig.add({ type: 'highbay', position: [x, y - 0.2, z], circuit, health, seed, intensityScale });
   f.tube = bulb;
   b.addObject(g);
   if (cone) {
@@ -669,7 +669,7 @@ export function highbay(b, rig, x, y, z, { circuit = 'plant', health = 'good', s
 }
 
 /** Domestic pendant with a shade — the Residence and the Office of Record. */
-export function pendant(b, rig, x, y, z, { circuit = 'residence', health = 'good', seed = 1, drop = 0.42, shade = 'cone', cone = true } = {}) {
+export function pendant(b, rig, x, y, z, { circuit = 'residence', health = 'good', seed = 1, drop = 0.42, shade = 'cone', cone = true, intensityScale = 1 } = {}) {
   const g = new THREE.Group();
   g.position.set(x, y, z);
   const mat = b.mat('pendantBody', () => b.materials.get('doorPaint', {
@@ -703,7 +703,7 @@ export function pendant(b, rig, x, y, z, { circuit = 'residence', health = 'good
   const bulb = new THREE.Mesh(bulbG, bm);
   g.add(bulb);
 
-  const f = rig.add({ type: 'pendant', position: [x, y - drop - 0.08, z], circuit, health, seed });
+  const f = rig.add({ type: 'pendant', position: [x, y - drop - 0.08, z], circuit, health, seed, intensityScale });
   f.tube = bulb;
   b.addObject(g);
   if (cone) {

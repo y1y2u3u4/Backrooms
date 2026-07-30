@@ -118,14 +118,33 @@ export function buildSafeRoom(ctx, opts = {}) {
   outlet(b, X1 - 0.10, 0.26, -1.9, { rotation: -Math.PI / 2 });
   smokeDetector(b, 0.4, CEIL - 0.014, 0.2, 'plasticWhite');
 
-  // Light: one pendant, dim, plus the desk lamp doing the real work.
-  pendant(b, rigFor(b), 0.2, CEIL - 0.02, -0.2, { circuit: 'safe', health: 'good', seed: 51, drop: 0.30, shade: 'globe' });
+  // LIGHT.
+  //
+  // This room used to have one pendant and a desk lamp for 5.4 x 4.8 m, and a
+  // continuous playthrough caught it reporting ZERO active lights at points —
+  // the one room in the game whose entire purpose is to be the place that is
+  // safe. A safe room that goes dark is not atmospheric, it is the promise the
+  // whole design makes to the player being broken.
+  //
+  // Three pendants on the 'safe' circuit, plus the desk lamp, plus an emergency
+  // light on the always-powered 'emergency' circuit so that even a total loss of
+  // the room's own supply leaves something burning. intensityScale is up because
+  // a 17 cd domestic pendant is sized for a bedroom, and this is a room the
+  // player arrives at needing to read documents in.
+  for (const [px, pz, sd] of [[0.2, -0.2, 51], [-1.75, 1.35, 151], [1.9, 1.5, 152]]) {
+    pendant(b, rigFor(b), px, CEIL - 0.02, pz, {
+      circuit: 'safe', health: 'good', seed: sd, drop: 0.30, shade: 'globe',
+      intensityScale: 1.9,
+    });
+  }
   const lampFix = rigFor(b).add({
     type: 'pendant', position: [lamp.bulb[0], lamp.bulb[1], lamp.bulb[2]],
     circuit: 'safe', health: 'good', seed: 52, intensityScale: 0.85,
   });
   lampFix.target.position.set(0.4, -1.2, -0.6);
-  emergencyLight(b, rigFor(b), X0 + 0.12, 2.20, Z0 + 1.0, { yaw: Math.PI / 2, seed: 53 });
+  // Explicitly on 'emergency', which LightRig registers powered at construction
+  // and no breaker in the game can switch off.
+  emergencyLight(b, rigFor(b), X0 + 0.12, 2.20, Z0 + 1.0, { yaw: Math.PI / 2, seed: 53, circuit: 'emergency' });
 
   if (D) {
     D.roomPlate(b, 0.6, 2.24, Z0 + 0.10, 0, roomNumber('O', 1), 'OFFICE OF RECORD');

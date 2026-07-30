@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { KIT, floorSlab, wallRun, doorway } from '../Kit.js';
 import {
-  makeBuilders, rigProxy, portal, bulkhead, stripLight, emergencyLight,
+  makeBuilders, rigProxy, portal, bulkhead, stripLight, highbay, emergencyLight,
   handrail, gantry, steelColumn, iBeam, channel, cagedLadder, stairFlight,
 } from '../ZoneKit.js';
 import { STAMP, roomNumber } from '../Decals.js';
@@ -578,18 +578,37 @@ export function buildStack(ctx, opts = {}) {
         [-RING, -RING, Math.PI / 4], [RING, -RING, -Math.PI / 4],
         [-RING, RING, -Math.PI / 4], [RING, RING, Math.PI / 4],
       ];
-      for (const [lx, lz, rot] of positions) {
+      for (let pi = 0; pi < positions.length; pi++) {
+        const [lx, lz, rot] = positions[pi];
         const health = hash2(i * 7 + lx, lz) < 0.18 ? 'dead' : hash2(i * 3, lz) < 0.32 ? 'buzz' : 'good';
-        stripLight(b, rigFor(b), lx, y + LEVEL - 0.10, lz, {
-          rotation: rot, circuit: 'stack', health, seed: 100 + i * 5 + lx,
-          cage: false, cone: dist <= 1,
-          // Scaled for the volume, not for the fitting. A 3.4 m gallery soffit
-          // over an 18 m wide well loses most of a strip light's output into the
-          // void instead of bouncing it back, and measured direct light on the
-          // gantry was 4.5 units against the Intake corridor's 37 from a fitting
-          // of the same rating.
-          intensityScale: 3.4,
-        });
+        const isCorner = pi >= 4;
+        if (isCorner) {
+          // HIGH-BAY AT THE CORNERS, not another strip.
+          //
+          // A strip fitting is a 28 cd corridor light and this is an 18 m well.
+          // Tripling its output was tried and measured: the frame moved from
+          // 0.934 crushed to 0.925 and stopped, because the problem is not the
+          // rating, it is that almost everything a soffit-mounted strip emits
+          // goes into the void and — with no global illumination — nothing brings
+          // it back. Only a fitting whose throw actually crosses the well can
+          // light the wall opposite, which is what makes a shaft read as a shaft
+          // rather than as floors floating in black. A high-bay is also what a
+          // real services well of this size is lit with.
+          //
+          // Scaled to 0.45 (~150 cd): full output at 340 cd from eight fittings a
+          // level would turn the zone into a stadium.
+          highbay(b, rigFor(b), lx, y + LEVEL - 0.16, lz, {
+            circuit: 'stack', health, seed: 400 + i * 9 + pi, drop: 0.34,
+            cone: dist <= 2, intensityScale: 0.45,
+          });
+        } else {
+          // The mid-side strips stay: they are the rhythm that makes the shaft
+          // read as endless, and they light the gantry underfoot.
+          stripLight(b, rigFor(b), lx, y + LEVEL - 0.10, lz, {
+            rotation: rot, circuit: 'stack', health, seed: 100 + i * 5 + lx,
+            cage: false, cone: dist <= 1, intensityScale: 2.2,
+          });
+        }
       }
     }
   }
