@@ -256,7 +256,30 @@ export class World {
     this.spawnYaw = yaw;
 
     if (this.player) this.player.teleport(world[0], world[1], world[2], yaw);
-    this.ctx.bus?.emit('world:teleport', { position: world, yaw, zone: zoneId });
+
+    // ARRIVING IN A ZONE SPENDS EVERY DOOR IN IT.
+    //
+    // Arming only the matching pair was not enough. `enter(zone)` with no portal
+    // id — a scripted transition, a respawn, a debug jump — uses the zone's own
+    // spawn, and the Cistern's spawn is 300 mm from its own exit door: the door
+    // fired on the next frame and sent the player straight back to the Service
+    // Spine. A continuous session showed it as the zone reading `service` for a
+    // whole stretch scripted as `cistern` — the same symptom as the original
+    // ping-pong and a completely different cause.
+    //
+    // A radius test around the arrival point looked like the fix and was not: the
+    // Plant's Service door is 1.7 m from its spawn, outside any radius worth
+    // choosing, and the player still ended up back in the Spine. Every door in
+    // the destination is spent instead, and each one re-arms by itself the first
+    // frame the player is not standing in it (see `update`). Nothing is lost:
+    // walking out of a doorway and back into it is exactly the gesture that
+    // should re-arm it.
+    if (!this._spentPortals) this._spentPortals = new Set();
+    for (const q of z.portals || []) this._spentPortals.add(q.id);
+    this.ctx.bus?.emit('world:teleport', {
+      position: world, yaw, zone: zoneId,
+      kind: portalId ? ((z.portals || []).find((q) => q.id === portalId)?.kind || 'door') : null,
+    });
     if (from !== zoneId) this.ctx.bus?.emit('zone:enter', { zone: zoneId, from });
     this._transitionCooldown = 0.75;
     this.evict();

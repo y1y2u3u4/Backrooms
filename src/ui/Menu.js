@@ -21,7 +21,7 @@ const ITEMS = [
   { id: 'credits',  label: 'Credits',  note: 'Staffing schedule and site record.' },
 ];
 
-export function createMenu({ onSelect, hasSave = () => false }) {
+export function createMenu({ onSelect, hasSave = () => false, onHover = null }) {
   let sel = 0;
   let view = 'root';   // root | credits
 
@@ -61,6 +61,7 @@ export function createMenu({ onSelect, hasSave = () => false }) {
       if (!buttons[i].disabled) break;
     }
     select(i);
+    onHover?.(sel);
   }
 
   function activate() {

@@ -255,6 +255,12 @@ export function buildSafeRoom(ctx, opts = {}) {
     const i = visits % variants.length;
     variants.forEach((g, k) => { g.visible = k === i; });
     visits++;
+    // Variant 4 is the one where the kettle has boiled and been moved. Somebody
+    // filled it. Saying so out loud is the whole beat, so it gets a sound.
+    if (i === 4) {
+      const [ox, oy, oz] = b.origin;
+      bus?.emit('kettle:on', { position: { x: X1 - 0.55 + ox, y: 0.9 + oy, z: -1.35 + oz } });
+    }
     return i;
   };
   pick();

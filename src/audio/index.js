@@ -155,6 +155,160 @@ export function createAudio({ bus = null, collision = null, camera = null, rig =
     subs.push(bus.on('cine:begin', () => { if (engine.available) engine.setDuck(0.45, 1.2, ['ambience', 'world']); }));
     subs.push(bus.on('cine:end', () => { if (engine.available) engine.setDuck(0, 1.6, ['ambience', 'world']); }));
 
+    // -----------------------------------------------------------------------
+    // MECHANISMS
+    //
+    // `Library.js` registers door.open / door.close / door.locked / door.latch /
+    // valve.turn / hatch.open / lift.call / lift.arrive / relay.click /
+    // switch.click / locker.click / breaker.throw / metal.clang / pipe.knock —
+    // and not one of them had a caller. Every door, breaker, valve, keypad,
+    // socket, lift and locker in the building was silent, which for a game whose
+    // entity hunts by sound is not a polish gap: the player could not hear the
+    // thing they had just done, and the Surveyor could.
+    // -----------------------------------------------------------------------
+    const at = (e) => e?.position || listenerPos;
+
+    subs.push(bus.on('door:state', (e) => {
+      if (!engine.available) return;
+      const p = at(e);
+      if (e?.state === 'opening') engine.playAt('door.open', p, { gain: 0.9 });
+      else if (e?.state === 'closing') engine.playAt('door.close', p, { gain: 0.85 });
+      else if (e?.state === 'closed') engine.playAt('door.latch', p, { gain: 0.7 });
+    }));
+    subs.push(bus.on('door:refused', (e) => {
+      if (!engine.available) return;
+      engine.playAt('door.locked', at(e), { gain: 0.95 });
+    }));
+    subs.push(bus.on('door:pried', (e) => {
+      if (!engine.available) return;
+      // A pry bar in a steel frame. The loudest single act in the game.
+      engine.playAt('metal.clang', at(e), { gain: 1.0 });
+      engine.playAt('door.heavy', at(e), { gain: 0.9, delay: 0.18 });
+    }));
+    subs.push(bus.on('door:slam', (e) => {
+      if (!engine.available) return;
+      engine.playAt('door.heavy', at(e), { gain: 1.0 });
+    }));
+
+    subs.push(bus.on('sfx:breaker', (e) => {
+      if (!engine.available) return;
+      // `light:circuit` already plays the throw; this is the dolly itself, and
+      // `heavy` is the main dropping a way out under load.
+      engine.playAt(e?.heavy ? 'metal.clang' : 'switch.click', at(e), { gain: e?.heavy ? 0.85 : 0.7 });
+    }));
+    subs.push(bus.on('light:overload', () => {
+      if (!engine.available) return;
+      engine.play('relay.click', { gain: 0.9 });
+    }));
+
+    subs.push(bus.on('sfx:valve', (e) => {
+      if (!engine.available) return;
+      engine.playAt('valve.turn', at(e), { gain: 0.55 });
+    }));
+    subs.push(bus.on('valve:complete', (e) => {
+      if (!engine.available) return;
+      // A gate valve reaching the end of its travel bangs the whole run.
+      engine.playAt('pipe.knock', at(e), { gain: 1.0 });
+      engine.playAt('metal.clang', at(e), { gain: 0.6, delay: 0.22 });
+    }));
+
+    subs.push(bus.on('sfx:detent', () => { if (engine.available) engine.play('ui.click', { gain: 0.6 }); }));
+    subs.push(bus.on('sfx:keypad', () => { if (engine.available) engine.play('ui.click', { gain: 0.7 }); }));
+    subs.push(bus.on('keypad:reject', () => { if (engine.available) engine.play('ui.deny', { gain: 0.8 }); }));
+    subs.push(bus.on('keypad:unlock', () => { if (engine.available) engine.play('relay.click', { gain: 0.85 }); }));
+    subs.push(bus.on('reader:unlock', () => { if (engine.available) engine.play('relay.click', { gain: 0.85 }); }));
+    subs.push(bus.on('terminal:reject', () => { if (engine.available) engine.play('ui.deny', { gain: 0.7 }); }));
+    subs.push(bus.on('terminal:solved', () => { if (engine.available) engine.play('relay.click', { gain: 0.9 }); }));
+
+    // The lamp. The most-used key in the game, and it had no sound at all — which
+    // matters beyond polish, because the Surveyor hears clicks and the whole point
+    // of the cover key (hold V) is that covering the lamp is SILENT and switching
+    // it is not. Without the click there was no difference to hear.
+    subs.push(bus.on('lamp:toggle', (e) => {
+      if (!engine.available) return;
+      engine.play('flashlight.click', { gain: 0.8 });
+    }));
+    subs.push(bus.on('lamp:swap', () => {
+      if (!engine.available) return;
+      engine.play('flashlight.rattle', { gain: 0.75 });
+    }));
+
+    subs.push(bus.on('lift:call', (e) => { if (engine.available) engine.playAt('lift.call', at(e), { gain: 0.9 }); }));
+    subs.push(bus.on('lift:travel', (e) => {
+      if (!engine.available) return;
+      // 750 kg of car on a worn guide. It is the loudest thing in the building
+      // apart from the set, and it is what the permit warns about.
+      engine.playAt('lift.call', at(e), { gain: 0.7 });
+      engine.playAt('metal.clang', at(e), { gain: 0.5, delay: 0.4 });
+    }));
+    subs.push(bus.on('lift:arrive', (e) => { if (engine.available) engine.playAt('lift.arrive', at(e), { gain: 0.95 }); }));
+    subs.push(bus.on('lift:power', (e) => {
+      if (!engine.available) return;
+      engine.play('relay.click', { gain: e?.on ? 0.9 : 0.6 });
+    }));
+
+    subs.push(bus.on('gen:core', (e) => {
+      if (!engine.available) return;
+      // Two spring clips closing on a 22 kg ceramic core.
+      engine.play('metal.clang', { gain: 0.75 });
+      engine.play('relay.click', { gain: 0.5, delay: 0.13 });
+    }));
+    subs.push(bus.on('gen:fuel', () => { if (engine.available) engine.play('valve.turn', { gain: 0.5 }); }));
+    subs.push(bus.on('gen:prime', (e) => {
+      if (!engine.available) return;
+      engine.play('pipe.knock', { gain: e?.firm ? 0.9 : 0.45 });
+    }));
+    subs.push(bus.on('gen:fail', () => { if (engine.available) engine.play('ui.deny', { gain: 0.8 }); }));
+
+    subs.push(bus.on('hide:enter', (e) => {
+      if (!engine.available) return;
+      engine.playAt('locker.click', at(e), { gain: 0.85 });
+      // Inside a steel box your own breathing is the loudest thing in the mix.
+      engine.duck(0.55, 0.5, ['ambience', 'world']);
+    }));
+    subs.push(bus.on('hide:exit', () => {
+      if (!engine.available) return;
+      engine.play('locker.click', { gain: 0.8 });
+      engine.duck(0, 0.7, ['ambience', 'world']);
+    }));
+
+    // The Attendant. It only ever acts on something the player has looked away
+    // from, so the sound is the whole event: you hear the chair and you turn round.
+    subs.push(bus.on('attendant:act', (e) => {
+      if (!engine.available) return;
+      const p = at(e);
+      switch (e?.kind) {
+        case 'chair': engine.playAt('chair.scrape', p, { gain: 0.8 }); break;
+        case 'locker': engine.playAt('locker.click', p, { gain: 0.7 }); break;
+        case 'door': engine.playAt('door.handle', p, { gain: 0.7 }); break;
+        case 'kettle': engine.playAt('kettle.click', p, { gain: 0.7 }); break;
+        default: engine.playAt('paper.rustle', p, { gain: 0.55 }); break;
+      }
+    }));
+    // A hatch is not a door: the Ductwork and the pipe route are panels, and they
+    // are the two places in the building where the player has to commit to a hole.
+    subs.push(bus.on('world:teleport', (e) => {
+      if (!engine.available) return;
+      const kind = e?.kind || null;
+      if (kind === 'hatch') engine.play('hatch.open', { gain: 0.85 });
+    }));
+
+    // The shell. Small, dry, and deliberately not part of the world mix — the
+    // menu and the journal are the only two places the player is not in the
+    // building, and they should not sound like they are.
+    subs.push(bus.on('ui:screen', (e) => {
+      if (!engine.available) return;
+      if (e?.screen === 'journal') engine.play('ui.journal', { gain: 0.7 });
+    }));
+    subs.push(bus.on('ui:hover', () => { if (engine.available) engine.play('ui.hover', { gain: 0.45 }); }));
+    // The kettle in the Office of Record. It is the one thing in the building
+    // that is working, and the note on the desk is about that.
+    subs.push(bus.on('kettle:on', (e) => {
+      if (!engine.available) return;
+      engine.playAt('kettle.click', at(e), { gain: 0.7 });
+      engine.playAt('kettle.boil', at(e), { gain: 0.55, delay: 1.2 });
+    }));
+
     // Escape hatches.
     subs.push(bus.on('audio:play', (e) => {
       if (!engine.available || !e?.name) return;

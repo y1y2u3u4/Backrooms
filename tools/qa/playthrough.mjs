@@ -125,6 +125,10 @@ const SCRIPT = [
   { name: 'INTERACT: reset way 5 — the Stack lift lobby', seconds: 24, mode: 'seek', target: 'board_c_way5' },
   { name: 'INTERACT: trip way 2 — put the Spine out behind you', seconds: 20, mode: 'seek', target: 'board_c_way2' },
   { name: 'stand in the switchroom and look at what changed', seconds: 14, mode: 'pan', keys: [] },
+  // Put the Spine back on. Leaving it out is a legitimate thing for a player to
+  // do and an illegitimate thing for a MEASUREMENT to do: every light reading for
+  // the rest of the session would be of a zone the bot had deliberately darkened.
+  { name: 'INTERACT: reset way 2 — the Spine comes back', seconds: 20, mode: 'seek', target: 'board_c_way2' },
 
   // ---- the Cistern: a valve you have to hold -------------------------------
   { name: 'SCRIPTED ZONE CHANGE -> cistern', seconds: 0, mode: 'enter', zone: 'cistern' },
@@ -337,7 +341,17 @@ function installDriver(cfg) {
     const p = w ? w.toWorld(zone, [lx, 0, lz]) : [lx, 0, lz];
     const fl = g.collision.sampleFloor(p[0], p[2], 40, 60)
       || g.collision.sampleFloor(p[0], p[2], 4, 8);
-    const y = fl ? fl.y : 0;
+    if (!fl) {
+      // Refuse rather than drop the player into the void. A reposition onto no
+      // floor at all is how a 64-second fall got into a session and poisoned
+      // every measurement after it.
+      PT.events.push({
+        t: +PT.t.toFixed(3), frame: PT.frame, key: 'qa:reposition-refused',
+        data: { want: [lx, lz], zone }, phase: PT.phase,
+      });
+      return { at: null, zone, refused: true };
+    }
+    const y = fl.y;
     g.player.teleport(p[0], y, p[2], yaw ?? g.player.yaw);
     PT.desiredYaw = g.player.yaw;
     PT.events.push({
@@ -686,7 +700,8 @@ async function main() {
     if (phase.mode === 'place') {
       await setKeys([]);
       const r = await page.evaluate(([x, z]) => window.__PT.placeAt(x, z), phase.at);
-      console.log(`  ${fmt(simT)}  ${phase.name}  -> ${r.zone} ${r.at.map((v) => v.toFixed(1)).join(', ')}`);
+      console.log(`  ${fmt(simT)}  ${phase.name}  -> ${r.zone} `
+        + (r.at ? r.at.map((v) => v.toFixed(1)).join(', ') : 'REFUSED — no floor there'));
       // Two seconds so the collision resolve settles and the exposure catches up.
       await page.evaluate(() => { window.__PT.setPhase('reposition settle', 'still'); window.__PT.run(120); });
       simT += 120 * DT;

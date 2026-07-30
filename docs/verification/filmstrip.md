@@ -1,136 +1,84 @@
 # Playthrough filmstrip
 
-33 frames from one continuous 447 s session, in order.
+20 frames from one continuous 623 s session, in order.
 Read it as a sequence: what changes between two frames 15 s apart is the pacing.
 
 ### 0:00.5 — arrival — standing still, taking the room in
 
 ![arrival — standing still, taking the room in](filmstrip/000_1s_arrival-standing-still-taking-the-.png)
 
-### 0:15.5 — first walk, no lamp
+### 0:40.5 — INTERACT: take the nearest thing off the floor
 
-![first walk, no lamp](filmstrip/001_16s_first-walk-no-lamp.png)
+![INTERACT: take the nearest thing off the floor](filmstrip/001_41s_INTERACT-take-the-nearest-thing-of.png)
 
-### 0:30.5 — first walk, no lamp
+### 1:20.5 — stop and listen (lamp on)
 
-![first walk, no lamp](filmstrip/002_31s_first-walk-no-lamp.png)
+![stop and listen (lamp on)](filmstrip/002_81s_stop-and-listen-lamp-on-.png)
 
-### 0:45.5 — lamp on
+### 2:00.5 — INTERACT: get into the locker by the lift
 
-![lamp on](filmstrip/003_46s_lamp-on.png)
+![INTERACT: get into the locker by the lift](filmstrip/003_121s_INTERACT-get-into-the-locker-by-th.png)
 
-### 1:00.5 — lamp on
+### 2:40.5 — sprint — deliberately loud
 
-![lamp on](filmstrip/004_61s_lamp-on.png)
+![sprint — deliberately loud](filmstrip/004_161s_sprint-deliberately-loud.png)
 
-### 1:15.5 — stop and listen (lamp on)
+### 3:20.5 — stand in the dark and wait
 
-![stop and listen (lamp on)](filmstrip/005_76s_stop-and-listen-lamp-on-.png)
-
-### 1:30.5 — crouch-walk — nearly silent
-
-![crouch-walk — nearly silent](filmstrip/006_91s_crouch-walk-nearly-silent.png)
-
-### 1:45.5 — crouch-walk — nearly silent
-
-![crouch-walk — nearly silent](filmstrip/007_106s_crouch-walk-nearly-silent.png)
-
-### 2:00.5 — sprint — deliberately loud
-
-![sprint — deliberately loud](filmstrip/008_121s_sprint-deliberately-loud.png)
-
-### 2:15.5 — walk on, lamp off (the entity only moves in light)
-
-![walk on, lamp off (the entity only moves in light)](filmstrip/009_136s_walk-on-lamp-off-the-entity-only-m.png)
-
-### 2:30.5 — walk on, lamp off (the entity only moves in light)
-
-![walk on, lamp off (the entity only moves in light)](filmstrip/010_151s_walk-on-lamp-off-the-entity-only-m.png)
-
-### 2:45.5 — stand in the dark and wait
-
-![stand in the dark and wait](filmstrip/011_166s_stand-in-the-dark-and-wait.png)
-
-### 3:00.5 — stand in the dark and wait
-
-![stand in the dark and wait](filmstrip/012_181s_stand-in-the-dark-and-wait.png)
-
-### 3:15.5 — sprint past it — loud enough to be heard
-
-![sprint past it — loud enough to be heard](filmstrip/013_196s_sprint-past-it-loud-enough-to-be-h.png)
-
-### 3:30.5 — sprint past it — loud enough to be heard
-
-![sprint past it — loud enough to be heard](filmstrip/014_211s_sprint-past-it-loud-enough-to-be-h.png)
-
-### 3:45.5 — lamp on and keep moving (it only advances in light)
-
-![lamp on and keep moving (it only advances in light)](filmstrip/015_226s_lamp-on-and-keep-moving-it-only-ad.png)
+![stand in the dark and wait](filmstrip/005_201s_stand-in-the-dark-and-wait.png)
 
 ### 4:00.5 — lamp on and keep moving (it only advances in light)
 
-![lamp on and keep moving (it only advances in light)](filmstrip/016_241s_lamp-on-and-keep-moving-it-only-ad.png)
+![lamp on and keep moving (it only advances in light)](filmstrip/006_241s_lamp-on-and-keep-moving-it-only-ad.png)
 
-### 4:15.5 — stop, lamp off, stay still — does it lose you?
+### 4:40.5 — stop, lamp off, stay still — does it lose you?
 
-![stop, lamp off, stay still — does it lose you?](filmstrip/017_256s_stop-lamp-off-stay-still-does-it-l.png)
+![stop, lamp off, stay still — does it lose you?](filmstrip/007_281s_stop-lamp-off-stay-still-does-it-l.png)
 
-### 4:30.5 — stop, lamp off, stay still — does it lose you?
+### 5:01.5 — enter service
 
-![stop, lamp off, stay still — does it lose you?](filmstrip/018_271s_stop-lamp-off-stay-still-does-it-l.png)
+![enter service](filmstrip/008_302s_enter-service.png)
 
-### 4:45.5 — stop, lamp off, stay still — does it lose you?
+### 5:20.5 — service spine — first walk
 
-![stop, lamp off, stay still — does it lose you?](filmstrip/019_286s_stop-lamp-off-stay-still-does-it-l.png)
+![service spine — first walk](filmstrip/009_321s_service-spine-first-walk.png)
 
-### 5:00.5 — walk to the service door
+### 6:00.5 — INTERACT: read the board schedule off the floor
 
-![walk to the service door](filmstrip/020_301s_walk-to-the-service-door.png)
+![INTERACT: read the board schedule off the floor](filmstrip/010_361s_INTERACT-read-the-board-schedule-o.png)
 
-### 5:14.5 — enter service
+### 6:22.0 — enter cistern
 
-![enter service](filmstrip/021_315s_enter-service.png)
+![enter cistern](filmstrip/011_382s_enter-cistern.png)
 
-### 5:15.5 — service spine — first walk
+### 6:40.5 — cistern — wading
 
-![service spine — first walk](filmstrip/022_316s_service-spine-first-walk.png)
+![cistern — wading](filmstrip/012_401s_cistern-wading.png)
 
-### 5:30.5 — service spine — first walk
+### 7:20.5 — INTERACT: try penstock 2 — it is padlocked
 
-![service spine — first walk](filmstrip/023_331s_service-spine-first-walk.png)
+![INTERACT: try penstock 2 — it is padlocked](filmstrip/013_441s_INTERACT-try-penstock-2-it-is-padl.png)
 
-### 5:45.5 — service spine — first walk
+### 7:53.5 — enter plant
 
-![service spine — first walk](filmstrip/024_346s_service-spine-first-walk.png)
+![enter plant](filmstrip/014_474s_enter-plant.png)
 
-### 6:00.5 — service spine — sprint
+### 8:00.5 — the generator hall — the landmark frame
 
-![service spine — sprint](filmstrip/025_361s_service-spine-sprint.png)
+![the generator hall — the landmark frame](filmstrip/015_481s_the-generator-hall-the-landmark-fr.png)
 
-### 6:06.0 — enter cistern
+### 8:40.5 — INTERACT: try a socket with nothing in your hands
 
-![enter cistern](filmstrip/026_366s_enter-cistern.png)
+![INTERACT: try a socket with nothing in your hands](filmstrip/016_521s_INTERACT-try-a-socket-with-nothing.png)
 
-### 6:15.5 — cistern — wading
+### 9:20.5 — INTERACT: call the goods lift — it has no supply
 
-![cistern — wading](filmstrip/027_376s_cistern-wading.png)
+![INTERACT: call the goods lift — it has no supply](filmstrip/017_561s_INTERACT-call-the-goods-lift-it-ha.png)
 
-### 6:30.5 — cistern — wading
+### 9:23.0 — enter safe
 
-![cistern — wading](filmstrip/028_391s_cistern-wading.png)
+![enter safe](filmstrip/018_563s_enter-safe.png)
 
-### 6:45.5 — cistern — stand still in the water
+### 10:00.5 — INTERACT: the terminal
 
-![cistern — stand still in the water](filmstrip/029_406s_cistern-stand-still-in-the-water.png)
-
-### 7:00.5 — cistern — stand still in the water
-
-![cistern — stand still in the water](filmstrip/030_421s_cistern-stand-still-in-the-water.png)
-
-### 7:02.5 — enter safe
-
-![enter safe](filmstrip/031_423s_enter-safe.png)
-
-### 7:15.5 — the safe room
-
-![the safe room](filmstrip/032_436s_the-safe-room.png)
+![INTERACT: the terminal](filmstrip/019_601s_INTERACT-the-terminal.png)

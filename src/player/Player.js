@@ -115,6 +115,13 @@ export class Player {
     this.neckVel.set(0, 0, 0);
     this.groundY = y;
     this.grounded = true;
+    // ARM THE NET AGAIN. `_fellOut` exists so one fall emits one `player:fell`
+    // rather than one per frame — but nothing ever cleared it, so the safety net
+    // that catches a player leaving the world worked exactly ONCE per session.
+    // A continuous run showed the second fall going to -31 m and staying there
+    // for 64 seconds with the game still running. Being put anywhere is the end
+    // of a fall by definition, so this is where it belongs.
+    this._fellOut = false;
   }
 
   get eyePosition() {

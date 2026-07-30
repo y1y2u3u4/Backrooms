@@ -180,6 +180,9 @@ export function createUI({
   } });
   const menu = createMenu({
     hasSave: () => hasSave,
+    // The only sound the shell makes while you move through it. `ui.hover` was in
+    // the library with nothing to trigger it.
+    onHover: () => bus?.emit('ui:hover', {}),
     onSelect: (id) => {
       if (id === 'settings') show('settings', { from: 'title' });
       else if (id === 'credits') { menu.showCredits(); current = 'credits'; }
@@ -239,9 +242,15 @@ export function createUI({
       case 'title': menu.open(); break;
       case 'credits': menu.showCredits(); break;
       case 'pause': pause.open({
-        task: objective.text,
-        cores: data?.cores ?? '0 of 3',
-        zone: data?.zone ?? '',
+        // Read the live progression rather than a placeholder. `'0 of 3'` was
+        // hard-coded, so the pause screen told every player they had fitted
+        // nothing right up to the ending.
+        task: game?.progression?.current?.title || objective.text,
+        cores: (() => {
+          const p = game?.progression;
+          return p ? `${p.coresFitted} of 3 fitted` : (data?.cores ?? '0 of 3');
+        })(),
+        zone: data?.zone ?? game?.world?.currentZone ?? '',
         elapsed: data?.elapsed ?? (game?.time ?? 0),
         ...data,
       }); break;
@@ -348,6 +357,43 @@ export function createUI({
     bus?.on('story:note', (n) => { if (journal.addNote(n)) subs.say({ text: 'sheet filed', sound: true, hint: '', duration: 2.2 }); }),
     bus?.on('story:tape', (t) => journal.addTape(t)),
     bus?.on('zone:enter', ({ zone }) => { if (zone) journal.mapHere?.(player?.position.x ?? 0, player?.position.z ?? 0); }),
+
+    // ---- the gameplay layer ------------------------------------------------
+    // None of this was connected. `Progression` announced every objective change
+    // on the bus and nothing listened, so the objective banner — the only place
+    // the game ever states what the player is trying to do — was fed by
+    // cinematics alone and was blank for the whole of play. The same for the
+    // refusal line: `Interactor` emitted `ui:refuse` with the reason a door would
+    // not open, and it went nowhere.
+    bus?.on('progress:objective', (e) => {
+      if (e?.title) objective.set(e.title, e.detail || '');
+    }),
+    bus?.on('progress:complete', (e) => {
+      if (e?.title) subs.say({ text: e.title.toLowerCase(), sound: false, hint: 'done', duration: 3.0 });
+    }),
+    bus?.on('progress:core', (e) => {
+      objective.set(objective.text || 'Three supply cores',
+        `${e?.fitted ?? 0} of 3 fitted · ${e?.found ?? 0} found`);
+    }),
+    bus?.on('progress:hint', (e) => {
+      if (e?.text) subs.say({ text: e.text, sound: true, hint: '', duration: 3.4 });
+    }),
+    bus?.on('progress:discovery', (e) => {
+      if (e?.title) subs.say({ text: e.title.toLowerCase(), sound: false, hint: 'found', duration: 3.4 });
+    }),
+    // A door that will not open, a card that is out of date, a starter that is
+    // still hot. The refusal reason is already written by whoever refused.
+    bus?.on('ui:refuse', (e) => {
+      if (e?.reason) subs.say({ text: e.reason, sound: false, hint: '', duration: 2.6 });
+    }),
+    bus?.on('portal:locked', (e) => {
+      const why = game?.progression?.gateReason?.(e?.id);
+      subs.say({ text: why || 'It will not open.', sound: false, hint: '', duration: 3.0 });
+    }),
+    bus?.on('item:pickup', (e) => {
+      const name = game?.inventory?.def?.(e?.id)?.name || e?.id;
+      if (name) subs.say({ text: String(name).toLowerCase(), sound: false, hint: 'taken', duration: 2.2 });
+    }),
   ].filter(Boolean);
 
   // ---- cinematic hooks (called by the Sequencer) -------------------------
@@ -369,8 +415,34 @@ export function createUI({
   skipHint._t = -1;
 
   // ---- frame -------------------------------------------------------------
+  /**
+   * The interaction prompt, driven straight off the interactor's focus.
+   *
+   * `Interactor` maintains a stable `focus` object precisely so the UI can read
+   * it every frame — and nothing did. `ui.setPrompt` existed, was documented, and
+   * had exactly one caller in the whole project: the cinematics, clearing it. So
+   * every door, breaker, valve, socket and pickup in the building was silent: no
+   * key badge, no verb, no reason when it refused, and no hold ring on the four
+   * actions that need one.
+   */
+  function syncPrompt() {
+    const it = game?.interactor || game?.gameplay?.interactor;
+    const f = it?.focus;
+    if (!f?.target || hudHidden || isModalNow()) { prompts.set(null); return; }
+    prompts.set({
+      key: 'E',
+      verb: f.blocked ? (f.target.verb || 'Use') : (f.verb || 'Use'),
+      subject: f.label || '',
+      hold: f.hold > 0,
+      requires: f.blocked ? (f.reason || '') : '',
+    });
+    if (f.hold > 0) prompts.hold(f.progress || 0);
+  }
+  const isModalNow = () => !!current && MODAL.has(current);
+
   function update(dt) {
     cine.update(dt);
+    if (!cine.active) syncPrompt();
     vitals.update(dt);
     objective.update(dt);
     journal.update(dt);
