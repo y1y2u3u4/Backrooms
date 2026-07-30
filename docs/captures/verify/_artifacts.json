@@ -1,0 +1,168 @@
+{
+  "dir": "docs/captures/verify",
+  "limits": {
+    "crushed": 0.16,
+    "clipped": 0.03,
+    "dynamicRange": 0.22,
+    "banding": 0.055,
+    "speckle": 0.0035,
+    "emptiness": 0.72
+  },
+  "hfMedian": 0.057808736112801073,
+  "rows": [
+    {
+      "file": "01_intake_spine.png",
+      "W": 1100,
+      "H": 620,
+      "mean": 0.10951911041884634,
+      "contrast": 0.07458444067459849,
+      "dynamicRange": 0.27662980556488037,
+      "crushed": 0.07440762463343109,
+      "clipped": 0,
+      "banding": 0.000017595307917888564,
+      "highFreq": 0.057808736112801073,
+      "speckle": 0,
+      "emptiness": 0.14050733137829913,
+      "colourCast": 1.1412311927792476
+    },
+    {
+      "file": "02_intake_ceiling.png",
+      "W": 1100,
+      "H": 620,
+      "mean": 0.16461941227076207,
+      "contrast": 0.14457296633812383,
+      "dynamicRange": 0.6390697956085205,
+      "crushed": 0.06534310850439883,
+      "clipped": 0,
+      "banding": 0.000017595307917888564,
+      "highFreq": 0.08090609035174877,
+      "speckle": 0.0001827388426146981,
+      "emptiness": 0.10056011730205279,
+      "colourCast": 0.6922848859245075
+    },
+    {
+      "file": "03_intake_beam.png",
+      "W": 1100,
+      "H": 620,
+      "mean": 0.14170295272650343,
+      "contrast": 0.11406726058681478,
+      "dynamicRange": 0.5390439033508301,
+      "crushed": 0.07533284457478005,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.06532178185007324,
+      "speckle": 0.000038316208935339926,
+      "emptiness": 0.10270527859237537,
+      "colourCast": 0.8562882362663071
+    },
+    {
+      "file": "04_service.png",
+      "W": 1100,
+      "H": 620,
+      "mean": 0.038980778507472245,
+      "contrast": 0.08661653063279641,
+      "dynamicRange": 0.38823530077934265,
+      "crushed": 0.7722859237536657,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.03799528003345004,
+      "speckle": 0.00002063180481133688,
+      "emptiness": 0.7752609970674487,
+      "colourCast": 0.0701366889582431
+    },
+    {
+      "file": "05_cistern.png",
+      "W": 1100,
+      "H": 620,
+      "mean": 0.24759142543724014,
+      "contrast": 0.2550826955733448,
+      "dynamicRange": 0.9250925779342651,
+      "crushed": 0.23608211143695015,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.041128171053989145,
+      "speckle": 0,
+      "emptiness": 0.24512463343108504,
+      "colourCast": 0.30042948198552316
+    },
+    {
+      "file": "06_plant_hall.png",
+      "W": 1100,
+      "H": 620,
+      "mean": 0.11596083848977265,
+      "contrast": 0.16588301008837303,
+      "dynamicRange": 0.6404831409454346,
+      "crushed": 0.4494780058651026,
+      "clipped": 0,
+      "banding": 0.00003519061583577713,
+      "highFreq": 0.05903859856658771,
+      "speckle": 0,
+      "emptiness": 0.4545674486803519,
+      "colourCast": 0.7745413698875024
+    },
+    {
+      "file": "07_residence.png",
+      "W": 1100,
+      "H": 620,
+      "mean": 0.05557119033690743,
+      "contrast": 0.10206321624610937,
+      "dynamicRange": 0.3998156785964966,
+      "crushed": 0.613841642228739,
+      "clipped": 0,
+      "banding": 0.00003519061583577713,
+      "highFreq": 0.0328402642942695,
+      "speckle": 0.0000044211010310007606,
+      "emptiness": 0.6240234604105572,
+      "colourCast": 0.995776818206677
+    },
+    {
+      "file": "08_duct.png",
+      "W": 1100,
+      "H": 620,
+      "mean": 0.04672247404552524,
+      "contrast": 0.1246175356398716,
+      "dynamicRange": 0.626853346824646,
+      "crushed": 0.7901451612903225,
+      "clipped": 0.0001378299120234604,
+      "banding": 0.000020527859237536656,
+      "highFreq": 0.03924140502264203,
+      "speckle": 0,
+      "emptiness": 0.7931598240469209,
+      "colourCast": 0.2577318978347656
+    }
+  ],
+  "flagged": [
+    {
+      "file": "04_service.png",
+      "flags": [
+        "CRUSHED",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "05_cistern.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    },
+    {
+      "file": "06_plant_hall.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    },
+    {
+      "file": "07_residence.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    },
+    {
+      "file": "08_duct.png",
+      "flags": [
+        "CRUSHED",
+        "EMPTY"
+      ]
+    }
+  ]
+}

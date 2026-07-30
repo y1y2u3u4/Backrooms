@@ -1,0 +1,108 @@
+{
+  "dir": "docs/captures/cistern",
+  "limits": {
+    "crushed": 0.16,
+    "clipped": 0.03,
+    "dynamicRange": 0.22,
+    "banding": 0.055,
+    "speckle": 0.0035,
+    "emptiness": 0.72
+  },
+  "hfMedian": 0.026513319364671096,
+  "rows": [
+    {
+      "file": "c1_fill_x1.png",
+      "W": 558,
+      "H": 313,
+      "mean": 0.006715919631404054,
+      "contrast": 0.030865740536212712,
+      "dynamicRange": 0.10863450914621353,
+      "crushed": 0.9373046136933595,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.026360795096897833,
+      "speckle": 0,
+      "emptiness": 0.9380317656623953,
+      "colourCast": 0.2988164217549272
+    },
+    {
+      "file": "c2_fill_x2.png",
+      "W": 558,
+      "H": 313,
+      "mean": 0.006734501390357505,
+      "contrast": 0.030698832573360643,
+      "dynamicRange": 0.11019293963909149,
+      "crushed": 0.9367206018757085,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.026304252700689052,
+      "speckle": 0,
+      "emptiness": 0.9374363026326337,
+      "colourCast": 0.30827914419457647
+    },
+    {
+      "file": "c3_fill_x3.png",
+      "W": 558,
+      "H": 313,
+      "mean": 0.006796910083320875,
+      "contrast": 0.031432723211192885,
+      "dynamicRange": 0.11196941137313843,
+      "crushed": 0.9370355102087556,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.026513319364671096,
+      "speckle": 0,
+      "emptiness": 0.9376939549051267,
+      "colourCast": 0.29815269100842606
+    },
+    {
+      "file": "c4_fill_x45.png",
+      "W": 558,
+      "H": 313,
+      "mean": 0.007088214779973876,
+      "contrast": 0.03167246155813492,
+      "dynamicRange": 0.14269176125526428,
+      "crushed": 0.9349227615743126,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.026707195612899935,
+      "speckle": 0,
+      "emptiness": 0.9356499135433486,
+      "colourCast": 0.31346008555300026
+    }
+  ],
+  "flagged": [
+    {
+      "file": "c1_fill_x1.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "c2_fill_x2.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "c3_fill_x3.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "c4_fill_x45.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    }
+  ]
+}

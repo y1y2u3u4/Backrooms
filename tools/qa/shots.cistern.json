@@ -1,0 +1,10 @@
+[
+  {
+    "name": "c1_fill_x1",
+    "settle": 200,
+    "setup": "const r=g.world.goto?g.world.goto('cistern'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,-0.10); console.info('C1 '+JSON.stringify(g.lightProbe()))"
+  },
+  {"name":"c2_fill_x2","settle":70,"setup":"g.setFill(2.0); console.info('C2 '+JSON.stringify(g.lightProbe()))"},
+  {"name":"c3_fill_x3","settle":70,"setup":"g.setFill(3.0); console.info('C3 '+JSON.stringify(g.lightProbe()))"},
+  {"name":"c4_fill_x45","settle":70,"setup":"g.setFill(4.5); console.info('C4 '+JSON.stringify(g.lightProbe()))"}
+]

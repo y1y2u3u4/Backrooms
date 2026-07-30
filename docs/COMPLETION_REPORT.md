@@ -173,6 +173,20 @@ faces, which are most of the screen area in a building made of corridors; one
 lattice walk now feeds both the albedo and the roughness injections instead of
 two; and the active-light count, stochastic re-tile and AO are tiered.
 
+**On the cost of MSAA, which is the one change in the polish pass with a real
+performance price.** It could not be measured here in any useful way, and the
+attempt is worth recording because of how badly the software rasteriser distorts
+it: capturing six frames at 880×496 with 2× MSAA and a 150-frame settle burned
+**80 minutes of CPU across 24 minutes of wall clock** in the GPU process without
+finishing a single frame, against roughly four minutes for the same set without
+it. That is a property of resolving a multisampled half-float target on a CPU
+rasteriser and says nothing about hardware, where MSAA resolve is fixed-function
+and the scene is 190 draw calls and ~390 k triangles. But it does mean the tier
+values (4× / 2× / off) are a judgement, not a measurement, and the auto-quality
+downgrade at a p90 of 26 ms is what has to catch a machine that cannot afford
+them. Capture runs use the low tier, where MSAA is off, when the thing being
+verified is content rather than edge quality.
+
 **Honest exception:** a genuine 60 fps verdict on the target laptop could not be
 produced in this environment. The workload numbers sit inside budgets chosen for
 comfortable 60 fps on integrated graphics, but that is an inference, not a
@@ -429,6 +443,51 @@ light and every vertical surface sits at a grazing angle to every fixture. Walls
 genuinely are lit almost entirely by bounce. That is why they were flat, why the
 AO volume changes them so much, and why it barely touches a lit floor.
 
+### The dark zones, and a second wrong hypothesis about them
+
+The artifact analyser reports the Intake at 2.5–3.2 % crushed pixels — well
+exposed, detailed, nothing hidden — and every other zone between 24 % and 94 %.
+That is the largest remaining defect and it is the specific thing the brief
+forbids, so it was chased rather than noted.
+
+The hypothesis was again that the bounce fill was too low in those zones, since
+the Intake's is 2.05 and the Cistern's is 0.50 with much darker colours. It was
+tested by sweeping the Cistern's fill (`tools/qa/shots.cistern.json`) and
+measuring. **Raising it moved the crushed fraction from 0.937 to 0.935.** Fill is
+not the lever.
+
+`lightProbe()` says what is: `directAtHead: 0` — *zero* direct light where the
+camera stands, with 89 of the zone's 140 fixtures wanting to be lit and `active: 6`.
+Six is the low quality tier's cap on simultaneous dynamic lights (`q.lights` is
+6 / 10 / 14), and in a zone the size of the Cistern the six nearest can all be far
+away.
+
+Which means the capture method, not the zone, produced most of that number. These
+runs were made at the low tier because MSAA is unaffordable on a CPU rasteriser
+(above), so they were shot with fewer than half the lights the shipped high tier
+uses. The same frames at the medium tier measure very differently:
+
+| zone | crushed, low tier (6 lights) | crushed, medium tier (10 lights) |
+|---|---:|---:|
+| Intake spine | 0.032 | 0.028 |
+| Cistern | 0.939 | 0.236 |
+| Plant | 0.771 | 0.449 |
+| Residence | 0.587 | 0.614 |
+| Service | 0.732 | 0.772 |
+| Ductwork | — | 0.790 |
+
+So: the Cistern and the Plant were largely a measurement artefact and are
+acceptable at shipping quality. The **Service Spine, the Residence and the
+Ductwork are genuinely dark** at 61–79 % crushed and remain a real defect. What
+they need is more *fixtures reaching the player*, not more fill — the same finding
+as limitation 3b, in three more zones. Not fixed here: a clean sweep would have to
+run at the high tier, which this environment cannot capture at a workable rate.
+
+**Numbers that did improve and are not tier-dependent:** isolated speckle, the
+metric that tracks the thin-geometry aliasing MSAA was added for, fell from a mean
+of 0.00028 (max 0.00078) before to 0.00003 (max 0.00018) after — 9× lower. Banding
+is 0.000 and clipping is 0.000 in every frame of every set.
+
 ### Three measurement defects this pass found in its own tooling
 
 Worth listing separately, because each one had been silently producing a wrong
@@ -466,7 +525,9 @@ already been drawn.
 - **The Stack** still needs its enclosing shaft geometry — limitation 4.
 - **The Intake's corridors have no fixtures in them** — limitation 3b. Found in
   this pass, measured precisely, deliberately not fixed. Joint top item with the
-  Stack.
+  Stack. The Service Spine, Residence and Ductwork have the same problem at zone
+  scale: 61-79 % of their pixels are crushed at shipping quality, and the fill
+  sweep proves fill is not the lever.
 - **Wallpaper pattern repetition in the Residence.** The anti-repetition machinery
   works on luminance and hue, so a strongly *figurative* pattern — the Residence's
   flower motif — still reads as a repeat down a corridor even though its tone

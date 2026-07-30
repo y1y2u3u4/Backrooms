@@ -1,0 +1,86 @@
+[
+  {
+    "name": "c1_fill_x1",
+    "settle": 200,
+    "setup": "const r=g.world.goto?g.world.goto('cistern'):null; const p=(r&&r.position)||g.world.spawn; g.lookOpen(p,(r&&r.yaw)||0,-0.10); console.info('C1 '+JSON.stringify(g.lightProbe()))",
+    "file": "docs/captures/cistern/c1_fill_x1.png",
+    "stats": {
+      "ms": 3.4933333333116026,
+      "fps": 286.25954198651357,
+      "p90": 6.5,
+      "calls": 110,
+      "tris": 106980,
+      "quality": "low",
+      "res": "558x314",
+      "lights": {
+        "fixtures": 172,
+        "lit": 131,
+        "active": 4,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "c2_fill_x2",
+    "settle": 70,
+    "setup": "g.setFill(2.0); console.info('C2 '+JSON.stringify(g.lightProbe()))",
+    "file": "docs/captures/cistern/c2_fill_x2.png",
+    "stats": {
+      "ms": 4.644444444553098,
+      "fps": 215.31100477965194,
+      "p90": 6.400000000372529,
+      "calls": 110,
+      "tris": 106980,
+      "quality": "low",
+      "res": "558x314",
+      "lights": {
+        "fixtures": 172,
+        "lit": 131,
+        "active": 4,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "c3_fill_x3",
+    "settle": 70,
+    "setup": "g.setFill(3.0); console.info('C3 '+JSON.stringify(g.lightProbe()))",
+    "file": "docs/captures/cistern/c3_fill_x3.png",
+    "stats": {
+      "ms": 2.0493150683349532,
+      "fps": 487.9679144761715,
+      "p90": 2.699999999254942,
+      "calls": 110,
+      "tris": 106980,
+      "quality": "low",
+      "res": "558x314",
+      "lights": {
+        "fixtures": 172,
+        "lit": 131,
+        "active": 4,
+        "shadows": 1
+      }
+    }
+  },
+  {
+    "name": "c4_fill_x45",
+    "settle": 70,
+    "setup": "g.setFill(4.5); console.info('C4 '+JSON.stringify(g.lightProbe()))",
+    "file": "docs/captures/cistern/c4_fill_x45.png",
+    "stats": {
+      "ms": 3.3753424657074964,
+      "fps": 296.26623377026505,
+      "p90": 6.400000000372529,
+      "calls": 110,
+      "tris": 106980,
+      "quality": "low",
+      "res": "558x314",
+      "lights": {
+        "fixtures": 172,
+        "lit": 131,
+        "active": 4,
+        "shadows": 1
+      }
+    }
+  }
+]

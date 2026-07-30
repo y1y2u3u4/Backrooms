@@ -1,0 +1,134 @@
+{
+  "dir": "docs/captures/final3",
+  "limits": {
+    "crushed": 0.16,
+    "clipped": 0.03,
+    "dynamicRange": 0.22,
+    "banding": 0.055,
+    "speckle": 0.0035,
+    "emptiness": 0.72
+  },
+  "hfMedian": 0.04815655788435652,
+  "rows": [
+    {
+      "file": "01_intake_spine.png",
+      "W": 558,
+      "H": 313,
+      "mean": 0.1496167611527996,
+      "contrast": 0.06482981515967214,
+      "dynamicRange": 0.2880956828594208,
+      "crushed": 0.03184009527408476,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.07035914862356715,
+      "speckle": 0.00012144625135904139,
+      "emptiness": 0.17117844423832262,
+      "colourCast": 0.9968440143315499
+    },
+    {
+      "file": "02_intake_ceiling.png",
+      "W": 558,
+      "H": 313,
+      "mean": 0.20736824938599413,
+      "contrast": 0.1477400184232452,
+      "dynamicRange": 0.6917176246643066,
+      "crushed": 0.024803325431996977,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.09896159142414666,
+      "speckle": 0.00039903768303685026,
+      "emptiness": 0.11380214595714956,
+      "colourCast": 0.6303336790703162
+    },
+    {
+      "file": "03_cistern.png",
+      "W": 558,
+      "H": 313,
+      "mean": 0.006496844955274423,
+      "contrast": 0.03070318835851598,
+      "dynamicRange": 0.07858431339263916,
+      "crushed": 0.9389822162675919,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.025831720558575702,
+      "speckle": 0,
+      "emptiness": 0.939612032933686,
+      "colourCast": 0.28311014610202967
+    },
+    {
+      "file": "04_residence.png",
+      "W": 558,
+      "H": 313,
+      "mean": 0.06003661198853212,
+      "contrast": 0.10651939410606837,
+      "dynamicRange": 0.4090431332588196,
+      "crushed": 0.587447181284139,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.038890893422733,
+      "speckle": 0.00007518101274607324,
+      "emptiness": 0.5963905779426752,
+      "colourCast": 0.9841194440488025
+    },
+    {
+      "file": "05_plant.png",
+      "W": 558,
+      "H": 313,
+      "mean": 0.020892410867266675,
+      "contrast": 0.055703595540883784,
+      "dynamicRange": 0.2880188226699829,
+      "crushed": 0.7712792149048977,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.027979148124795423,
+      "speckle": 0.000011566309653242037,
+      "emptiness": 0.7780125276260492,
+      "colourCast": 1.1412064740129513
+    },
+    {
+      "file": "06_service.png",
+      "W": 558,
+      "H": 313,
+      "mean": 0.06031596464705345,
+      "contrast": 0.12120151398851628,
+      "dynamicRange": 0.4930007755756378,
+      "crushed": 0.7322477584252293,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.04815655788435652,
+      "speckle": 0.00023132619306484074,
+      "emptiness": 0.7349387932712678,
+      "colourCast": 0.029625612468414757
+    }
+  ],
+  "flagged": [
+    {
+      "file": "03_cistern.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "04_residence.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    },
+    {
+      "file": "05_plant.png",
+      "flags": [
+        "CRUSHED",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "06_service.png",
+      "flags": [
+        "CRUSHED",
+        "EMPTY"
+      ]
+    }
+  ]
+}
