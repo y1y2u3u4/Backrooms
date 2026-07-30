@@ -359,6 +359,15 @@ export class World {
         if (!this._spentPortals) this._spentPortals = new Set();
         if (this._spentPortals.has(p.id)) continue;
         if (this._transitionCooldown > 0) continue;
+
+        // You have to be able to REACH the doorway, not merely stand near it.
+        // The trigger point sits 200 mm inside the opening and the radius is
+        // 1.15 m, so a player pressed against a shut door — stopped 400 mm short
+        // of it by the leaf's collider — is well inside the trigger and used to
+        // teleport straight through a door they had never opened. Now anything
+        // solid between eye height and the trigger point holds the portal.
+        if (this.ctx.collision?.segmentBlocked(
+          playerPos.x, playerPos.y + 1.2, playerPos.z, w[0], w[1] + 1.2, w[2], 'ceiling')) continue;
         const gated = this.ctx.progression?.isGated?.(p.id);
         if (gated) {
           // Tell the player why, at most once every few seconds.

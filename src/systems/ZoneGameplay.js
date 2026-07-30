@@ -100,7 +100,7 @@ export class ZoneGameplay {
     if (!zone) return false;
     this.done.add(zoneId);
     const origin = this.world.origin(zoneId);
-    try { this._doors(zone, zoneId); } catch (e) { console.error(`[zonegameplay:${zoneId}] doors`, e); }
+    try { this._doors(zone, zoneId, origin); } catch (e) { console.error(`[zonegameplay:${zoneId}] doors`, e); }
     try { this._props(zone, zoneId, origin); } catch (e) { console.error(`[zonegameplay:${zoneId}] props`, e); }
     try { this._portals(zone); } catch (e) { console.error(`[zonegameplay:${zoneId}] portals`, e); }
     try { this._markers(zone, zoneId, origin); } catch (e) { console.error(`[zonegameplay:${zoneId}] markers`, e); }
@@ -119,9 +119,23 @@ export class ZoneGameplay {
    * opening a door into a room that was never built and falling 28 m into the
    * respawn net. A door onto nothing keeps its collider forever.
    */
-  _doors(zone, zoneId) {
+  _doors(zone, zoneId, origin) {
     const { interactor, collision, bus, rig } = this.ctx;
     if (!interactor) return;
+
+    // A PORTAL DOOR IS ALWAYS PASSABLE. The floor-on-both-sides test cannot see
+    // through one: the far side of the Plant's Service door is the Service Spine,
+    // which lives in a world patch 400 m away, so the sample finds nothing and the
+    // door reads as a dead end. That locked the only way into the Cistern, the
+    // Plant, the Stack and the Office of Record — every zone whose sole doorway is
+    // a portal — and `World.update` now refuses to fire a portal it cannot see
+    // past, so the building would have sealed itself shut.
+    const [ox, oy, oz] = origin || [0, 0, 0];
+    const portalPts = (zone.portals || []).map((p) => [
+      p.position[0] + ox, p.position[1] + oy, p.position[2] + oz]);
+    const nearPortal = (x, y, z) => portalPts.some(
+      (q) => Math.hypot(q[0] - x, q[2] - z) < 1.6 && Math.abs(q[1] - y) < 2.2);
+
     let n = 0;
     for (const b of zone.builders || []) {
       for (const obj of b.objects || []) {
@@ -136,23 +150,39 @@ export class ZoneGameplay {
         const rot = obj.rotation.y;
         const nx = Math.sin(rot), nz = Math.cos(rot);
         const REACH = 0.85;                 // clear of the leaf and its frame
+        // The threshold's own level. A door on a walkway can overhang the floor
+        // below it — the Plant's Service doors sit at 0.74 m with the hall slab
+        // 6.7 m under them — so a floor sample that lands a long way down is the
+        // wrong storey and the leaf's own Y is the truth.
         const here = collision?.sampleFloor(_p.x, _p.z, _p.y + 1.2, 3.0);
-        const base = here ? here.y : _p.y;
+        const base = here && Math.abs(here.y - _p.y) < 1.2 ? here.y : _p.y;
         const sides = [1, -1].map((s) => collision?.sampleFloor(
           _p.x + nx * REACH * s, _p.z + nz * REACH * s, base + 1.2, 2.0));
-        const passable = sides.every((f) => f && Math.abs(f.y - base) < 0.45);
+        const isPortal = nearPortal(_p.x, base, _p.z);
+        const passable = isPortal
+          || sides.every((f) => f && Math.abs(f.y - base) < 0.45);
+
+        if (!passable) {
+          // A door standing ajar onto a room that was never built is a hole with
+          // a leaf next to it: `DoorLatch` disables its collider whenever the leaf
+          // is more than 0.25 rad open, so an ajar impassable door would be walked
+          // straight through into the respawn net. Shut it BEFORE the latch is
+          // constructed, because the latch reads `door.open` for its initial angle
+          // and decides the collider's enabled state from that.
+          d.open = 0;
+          d.target = 0;
+          d.pivot.rotation.y = 0;
+        }
 
         const latch = new DoorLatch(obj, {
           id, bus, rig, collision,
           locked: !passable,
-          label: passable ? 'the door' : 'the door',
+          label: 'the door',
           maxAngle: 1.62,
           weight: 1,
         });
-        if (!passable) {
-          // Nothing behind it. Say so honestly rather than inventing a key.
-          latch.requires = null;
-        }
+        // `requires` stays null either way: a door with nothing behind it refuses
+        // with "Locked. No keyway on this side.", which is the truth.
         obj.userData._latch = latch;
         interactor.addDoor(latch);
         interactor.add({

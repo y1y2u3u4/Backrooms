@@ -89,37 +89,65 @@ const CHUNK = Math.max(1, Math.round(SAMPLE / DT));   // frames per round-trip
 // silent — and both lamp states, because the lamp is what lets the Surveyor
 // move.
 //
-// `mode`:  still | pan | wander | goto
+// `mode`:  still | pan | wander | goto | seek | enter | place | spawn
 // `keys`:  held for the whole phase (real DOM keydown/keyup)
 // `tap`:   pressed once at the start of the phase
+// `target` (seek): an interactable id, an id prefix, or a kind
+// `at`     (place): [x, z] in the CURRENT zone's local coordinates — scripted
 // ---------------------------------------------------------------------------
 const SCRIPT = [
   { name: 'arrival — standing still, taking the room in', seconds: 8, mode: 'pan', keys: [] },
-  { name: 'first walk, no lamp', seconds: 30, mode: 'wander', keys: ['w'] },
-  { name: 'lamp on', seconds: 25, mode: 'wander', keys: ['w'], tap: ['f'] },
-  { name: 'stop and listen (lamp on)', seconds: 20, mode: 'pan', keys: [] },
-  { name: 'crouch-walk — nearly silent', seconds: 25, mode: 'wander', keys: ['w', 'Control'] },
-  { name: 'sprint — deliberately loud', seconds: 20, mode: 'wander', keys: ['w', 'Shift'] },
-  { name: 'walk on, lamp off (the entity only moves in light)', seconds: 30, mode: 'wander', keys: ['w'], tap: ['f'] },
-  { name: 'stand in the dark and wait', seconds: 30, mode: 'still', keys: [] },
-  // The integrated build never spawns the Surveyor (see the report): the only
-  // caller of spawnAt is seedIntakeDemo, which only runs when src/world/World.js
-  // is ABSENT. Without this the session has literally no threat in it and there
-  // is nothing to measure. Spawned 26 m away and dormant, exactly as the demo
-  // seeding does it, and logged as scripted.
+  { name: 'first walk, no lamp', seconds: 24, mode: 'wander', keys: ['w'] },
+  // ---- the tutorial beat: pick something up -------------------------------
+  { name: 'INTERACT: take the nearest thing off the floor', seconds: 26, mode: 'seek', target: 'pickup' },
+  { name: 'lamp on', seconds: 22, mode: 'wander', keys: ['w'], tap: ['f'] },
+  { name: 'stop and listen (lamp on)', seconds: 18, mode: 'pan', keys: [] },
+  { name: 'INTERACT: get into the locker by the lift', seconds: 24, mode: 'seek', target: 'locker_intake_enter' },
+  { name: 'crouch-walk — nearly silent', seconds: 22, mode: 'wander', keys: ['w', 'Control'] },
+  { name: 'sprint — deliberately loud', seconds: 18, mode: 'wander', keys: ['w', 'Shift'] },
+  { name: 'walk on, lamp off (the entity only moves in light)', seconds: 26, mode: 'wander', keys: ['w'], tap: ['f'] },
+  { name: 'stand in the dark and wait', seconds: 26, mode: 'still', keys: [] },
+  // The Director now spawns the Surveyor itself (`_ensureSpawned`), but a run
+  // that depends on its random timing cannot assert anything, so the threat is
+  // still placed deliberately and logged as scripted.
   { name: 'SCRIPTED: spawn the Surveyor 26 m away, dormant', seconds: 0, mode: 'spawn' },
-  { name: 'sprint past it — loud enough to be heard', seconds: 25, mode: 'wander', keys: ['w', 'Shift'] },
-  { name: 'lamp on and keep moving (it only advances in light)', seconds: 35, mode: 'wander', keys: ['w'], tap: ['f'] },
-  { name: 'stop, lamp off, stay still — does it lose you?', seconds: 40, mode: 'still', keys: [], tap: ['f'] },
-  { name: 'walk to the service door', seconds: 25, mode: 'wander', keys: ['w'] },
+  { name: 'sprint past it — loud enough to be heard', seconds: 22, mode: 'wander', keys: ['w', 'Shift'] },
+  { name: 'lamp on and keep moving (it only advances in light)', seconds: 30, mode: 'wander', keys: ['w'], tap: ['f'] },
+  { name: 'stop, lamp off, stay still — does it lose you?', seconds: 34, mode: 'still', keys: [], tap: ['f'] },
+
+  // ---- the Service Spine and the board ------------------------------------
   { name: 'SCRIPTED ZONE CHANGE -> service', seconds: 0, mode: 'enter', zone: 'service' },
-  { name: 'service spine — first walk', seconds: 35, mode: 'wander', keys: ['w'] },
-  { name: 'service spine — sprint', seconds: 15, mode: 'wander', keys: ['w', 'Shift'] },
+  { name: 'service spine — first walk', seconds: 28, mode: 'wander', keys: ['w'] },
+  { name: 'SCRIPTED: reposition to the switchroom door', seconds: 0, mode: 'place', at: [12.6, -2.2] },
+  { name: 'walk into the switchroom', seconds: 12, mode: 'wander', keys: ['w'] },
+  { name: 'INTERACT: read the board schedule off the floor', seconds: 20, mode: 'seek', target: 'pickup' },
+  { name: 'SCRIPTED: reposition in front of Distribution Board C', seconds: 0, mode: 'place', at: [14.6, -8.4] },
+  { name: 'INTERACT: reset way 5 — the Stack lift lobby', seconds: 24, mode: 'seek', target: 'board_c_way5' },
+  { name: 'INTERACT: trip way 2 — put the Spine out behind you', seconds: 20, mode: 'seek', target: 'board_c_way2' },
+  { name: 'stand in the switchroom and look at what changed', seconds: 14, mode: 'pan', keys: [] },
+
+  // ---- the Cistern: a valve you have to hold -------------------------------
   { name: 'SCRIPTED ZONE CHANGE -> cistern', seconds: 0, mode: 'enter', zone: 'cistern' },
-  { name: 'cistern — wading', seconds: 35, mode: 'wander', keys: ['w'], tap: ['f'] },
-  { name: 'cistern — stand still in the water', seconds: 20, mode: 'pan', keys: [] },
+  { name: 'cistern — wading', seconds: 26, mode: 'wander', keys: ['w'], tap: ['f'] },
+  { name: 'SCRIPTED: reposition onto the chamber walkway', seconds: 0, mode: 'place', at: [15.4, 3.2] },
+  { name: 'INTERACT: turn penstock 1 (a 1.35 s hold)', seconds: 26, mode: 'seek', target: 'penstock_1' },
+  { name: 'INTERACT: try penstock 2 — it is padlocked', seconds: 20, mode: 'seek', target: 'penstock_2' },
+  { name: 'cistern — stand still in the water', seconds: 16, mode: 'pan', keys: [] },
+
+  // ---- the Plant: the machine the game is about ---------------------------
+  { name: 'SCRIPTED ZONE CHANGE -> plant', seconds: 0, mode: 'enter', zone: 'plant' },
+  { name: 'the generator hall — the landmark frame', seconds: 20, mode: 'pan', keys: [] },
+  { name: 'SCRIPTED: reposition on the hall floor by Set No. 2', seconds: 0, mode: 'place', at: [2.6, -2.0] },
+  { name: 'INTERACT: try the fuel valve with no cores fitted', seconds: 22, mode: 'seek', target: 'set_2_fuel' },
+  { name: 'INTERACT: try a socket with nothing in your hands', seconds: 20, mode: 'seek', target: 'set_2_socket0' },
+  { name: 'SCRIPTED: reposition by the lift apron', seconds: 0, mode: 'place', at: [14.0, 0.0] },
+  { name: 'INTERACT: call the goods lift — it has no supply', seconds: 22, mode: 'seek', target: 'lift_2_call' },
+
+  // ---- the Office of Record ------------------------------------------------
   { name: 'SCRIPTED ZONE CHANGE -> safe (the Office of Record)', seconds: 0, mode: 'enter', zone: 'safe' },
-  { name: 'the safe room', seconds: 25, mode: 'wander', keys: ['w'] },
+  { name: 'the safe room', seconds: 18, mode: 'wander', keys: ['w'] },
+  { name: 'INTERACT: the terminal', seconds: 22, mode: 'seek', target: 'terminal_record_dial' },
+  { name: 'INTERACT: read what is on the desk', seconds: 20, mode: 'seek', target: 'pickup' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -220,6 +248,14 @@ function installDriver(cfg) {
   PT.setPhase = (name, mode, target) => {
     PT.phase = name; PT.mode = mode || 'still'; PT.target = target || null;
     PT.panT = 0;
+    PT.seekId = null; PT.seekDone = false; PT.seekTries = 0; PT.seekCool = 0;
+    PT.seekHeld = false;
+    PT.hold('KeyW', false);
+    PT.hold('KeyE', false);
+    if (mode === 'seek') {
+      // `target` may be an exact id or an id prefix / kind to resolve now.
+      PT.seekId = (g.interactor?.get(target) && target) || PT.nearest(target) || null;
+    }
     PT.desiredYaw = g.player.yaw;
     PT.events.push({ t: +PT.t.toFixed(3), frame: PT.frame, key: 'qa:phase', data: { name, mode }, phase: name });
   };
@@ -232,6 +268,156 @@ function installDriver(cfg) {
     PT.events.push({ t: +PT.t.toFixed(3), frame: PT.frame, key: 'qa:scripted-zone-change', data: { zone }, phase: PT.phase });
     PT.desiredYaw = g.player.yaw;
     return r;
+  };
+
+  // -------------------------------------------------------------------------
+  // INTERACTION
+  //
+  // Until this existed the bot could walk, run, crouch and flick the lamp, and
+  // that was all: not one interactable had ever been pressed in this project, so
+  // the breakers, the valves, the keypads, the readers, the sockets, the starter
+  // and the lift were verified only by reading the code that built them.
+  //
+  // The interact key is dispatched as a real KeyboardEvent, in-page rather than
+  // from the driver process, for one reason: it has to land on a chosen FRAME.
+  // `Interactor` reads `input.pressed('interact')`, which is true for exactly one
+  // frame, and a round trip to Node between frames cannot hit a specific one. The
+  // event still travels the whole path — window keydown -> Input.keys ->
+  // Input.pressed -> Interactor.update — so what is being tested is the real
+  // input chain, not a poke at an internal method.
+  //
+  // Steering is the honest weak point: there is no navmesh, so `seek` walks
+  // toward a target and steps around what it bumps into. Where that is not enough
+  // the phase declares `at`, which repositions the player and is logged as
+  // SCRIPTED, exactly as the zone changes are.
+  // -------------------------------------------------------------------------
+  const key = (code, downUp) => {
+    window.dispatchEvent(new KeyboardEvent(downUp ? 'keydown' : 'keyup', { code, bubbles: true }));
+  };
+  PT.held = new Set();
+  PT.hold = (code, want) => {
+    if (want && !PT.held.has(code)) { PT.held.add(code); key(code, true); }
+    else if (!want && PT.held.has(code)) { PT.held.delete(code); key(code, false); }
+  };
+  PT.interactions = [];
+
+  /** World position of an interactable's hit object. */
+  const itemPos = (item) => {
+    if (!item?.object) return null;
+    item.object.updateMatrixWorld(true);
+    const m = item.object.matrixWorld.elements;
+    return { x: m[12], y: m[13], z: m[14] };
+  };
+
+  /** Every registered interactable, with distance — what the bot can see to do. */
+  PT.targets = (filter) => {
+    const p = g.player.position;
+    const out = [];
+    for (const it of g.interactor?.items || []) {
+      if (!it.object?.visible) continue;
+      const q = itemPos(it);
+      if (!q) continue;
+      const d = Math.hypot(q.x - p.x, q.y - p.y, q.z - p.z);
+      if (filter && !(it.id?.startsWith(filter) || it.kind === filter)) continue;
+      out.push({ id: it.id, kind: it.kind, verb: it.verb, label: it.label, range: it.range, d: +d.toFixed(2) });
+    }
+    return out.sort((a, b) => a.d - b.d);
+  };
+
+  /** Nearest interactable matching an id prefix or a kind. */
+  PT.nearest = (filter, maxD = 60) => {
+    const list = PT.targets(filter);
+    return list.length && list[0].d <= maxD ? list[0].id : null;
+  };
+
+  /** Reposition. Scripted, and recorded as such. */
+  PT.placeAt = (lx, lz, yaw) => {
+    const w = g.world;
+    const zone = w?.currentZone;
+    const p = w ? w.toWorld(zone, [lx, 0, lz]) : [lx, 0, lz];
+    const fl = g.collision.sampleFloor(p[0], p[2], 40, 60)
+      || g.collision.sampleFloor(p[0], p[2], 4, 8);
+    const y = fl ? fl.y : 0;
+    g.player.teleport(p[0], y, p[2], yaw ?? g.player.yaw);
+    PT.desiredYaw = g.player.yaw;
+    PT.events.push({
+      t: +PT.t.toFixed(3), frame: PT.frame, key: 'qa:scripted-reposition',
+      data: { at: [+p[0].toFixed(1), +y.toFixed(1), +p[2].toFixed(1)], zone }, phase: PT.phase,
+    });
+    return { at: [p[0], y, p[2]], zone };
+  };
+
+  /**
+   * One frame of "walk over there and press E".
+   *
+   * Aims yaw AND pitch at the target through `Input.mouse`, holds forward until
+   * inside the item's own range, and taps the interact key on the frame the
+   * interactor's own reticle reports the item as focused. Waiting for focus is
+   * the point: it means the raycast, the distance pre-filter, the range test and
+   * the prompt all agree before anything is pressed, so a pass here is evidence
+   * the player could do it, not that a function exists.
+   */
+  PT.seekStep = () => {
+    if (PT.seekCool > 0) PT.seekCool -= 1 / 60;
+    const item = PT.seekId ? g.interactor?.get(PT.seekId) : null;
+    if (!item || PT.seekDone) { PT.hold('KeyW', false); return; }
+    const q = itemPos(item);
+    if (!q) { PT.hold('KeyW', false); return; }
+
+    const p = g.player.position;
+    const eye = p.y + (g.player.eyeHeight || 1.63);
+    const dx = q.x - p.x, dz = q.z - p.z;
+    const flat = Math.hypot(dx, dz);
+    const range = item.range ?? 2.2;
+
+    // Aim.
+    const wantYaw = Math.atan2(-dx, -dz);
+    const wantPitch = Math.atan2(q.y - eye, Math.max(0.25, flat));
+    const sens = g.input.sensitivity || 0.0021;
+    const dyaw = Math.max(-3.0 / 60, Math.min(3.0 / 60, wrap(wantYaw - g.player.yaw)));
+    const dpit = Math.max(-2.4 / 60, Math.min(2.4 / 60, wantPitch - g.player.pitch));
+    g.input.mouse.dx += -dyaw / sens;
+    g.input.mouse.dy += -dpit / sens;
+
+    // Walk. Stop just inside reach; if something is in the way, sidestep by
+    // steering off-axis rather than grinding into it.
+    const close = flat < range * 0.62 + 0.25;
+    PT.hold('KeyW', !close);
+    if (!close && clearAhead(g.player.yaw, 2.0) < 1.2) {
+      const alt = bestHeading(wantYaw + (PT.frame % 240 < 120 ? 0.9 : -0.9));
+      g.input.mouse.dx += -Math.max(-3.0 / 60, Math.min(3.0 / 60, wrap(alt - g.player.yaw))) / sens;
+    }
+
+    // Press, when the game itself says the thing is under the reticle.
+    const focus = g.interactor?.focus;
+    if (focus?.id === PT.seekId && PT.seekCool <= 0) {
+      const blocked = focus.blocked;
+      const holdSecs = focus.hold || 0;
+      if (holdSecs > 0) {
+        // A hold action: keep E down until the interactor's own progress completes.
+        PT.hold('KeyE', true);
+        if (focus.progress <= 0.001 && PT.seekHeld) {
+          PT.seekHeld = false;
+          PT.hold('KeyE', false);
+          PT.seekCool = 0.5;
+          PT.interactions.push({
+            t: +PT.t.toFixed(2), id: PT.seekId, verb: item.verb, label: item.label,
+            hold: holdSecs, blocked, phase: PT.phase, result: 'completed a hold',
+          });
+          PT.seekDone = true;
+        } else if (focus.progress > 0.001) PT.seekHeld = true;
+      } else {
+        key('KeyE', true);
+        key('KeyE', false);
+        PT.seekCool = 0.35;
+        PT.interactions.push({
+          t: +PT.t.toFixed(2), id: PT.seekId, verb: item.verb, label: item.label,
+          blocked, reason: focus.reason || null, phase: PT.phase,
+          result: blocked ? `refused: ${focus.reason}` : 'pressed',
+        });
+        if (!blocked || ++PT.seekTries >= 3) PT.seekDone = true;
+      }
+    }
   };
 
   PT.audioInit = async () => {
@@ -305,8 +491,10 @@ function installDriver(cfg) {
       } else if (PT.mode === 'pan') {
         PT.panT += 1 / 60;
         PT.desiredYaw = yaw + Math.sin(PT.panT * 0.55) * 0.02;
+      } else if (PT.mode === 'seek') {
+        PT.seekStep();
       }
-      if (PT.mode !== 'still') {
+      if (PT.mode !== 'still' && PT.mode !== 'seek') {
         // 2.4 rad/s is a brisk but human head turn.
         const d = Math.max(-2.4 / 60, Math.min(2.4 / 60, wrap(PT.desiredYaw - yaw)));
         g.input.mouse.dx += -d / (g.input.sensitivity || 0.0021);
@@ -361,6 +549,11 @@ function installDriver(cfg) {
 
   PT.harvest = () => ({
     samples: PT.samples, events: PT.events, entityStates: PT.entityStates,
+    interactions: PT.interactions,
+    progression: g.gameplay?.progression?.debugState?.() || null,
+    inventory: g.gameplay?.inventory?.snapshot?.() || null,
+    interactorItems: (g.interactor?.items || []).length,
+    doors: (g.interactor?.doors || []).length,
     frameMs: PT.frameMs,
     nanFrames: PT.nanFrames, noFloorFrames: PT.noFloorFrames,
     worstNoFloorRun: PT.worstNoFloorRun,
@@ -490,11 +683,27 @@ async function main() {
       await grabFilm(simT, `enter ${phase.zone}`);
       continue;
     }
+    if (phase.mode === 'place') {
+      await setKeys([]);
+      const r = await page.evaluate(([x, z]) => window.__PT.placeAt(x, z), phase.at);
+      console.log(`  ${fmt(simT)}  ${phase.name}  -> ${r.zone} ${r.at.map((v) => v.toFixed(1)).join(', ')}`);
+      // Two seconds so the collision resolve settles and the exposure catches up.
+      await page.evaluate(() => { window.__PT.setPhase('reposition settle', 'still'); window.__PT.run(120); });
+      simT += 120 * DT;
+      continue;
+    }
     await setKeys(phase.keys || []);
     for (const k of phase.tap || []) { await page.keyboard.press(k); }
-    await page.evaluate(({ n, m, t }) => window.__PT.setPhase(n, m, t),
-      { n: phase.name, m: phase.mode, t: phase.target || null });
-    console.log(`  ${fmt(simT)}  ${phase.name}  [keys: ${(phase.keys || []).join('+') || 'none'}]`);
+    const resolved = await page.evaluate(({ n, m, t }) => {
+      window.__PT.setPhase(n, m, t);
+      return m === 'seek' ? { id: window.__PT.seekId, near: window.__PT.targets(t).slice(0, 3) } : null;
+    }, { n: phase.name, m: phase.mode, t: phase.target || null });
+    if (phase.mode === 'seek') {
+      console.log(`  ${fmt(simT)}  ${phase.name}  -> ${resolved?.id || 'NO TARGET IN RANGE'}`
+        + (resolved?.near?.length ? `  (nearest: ${resolved.near.map((x) => `${x.id}@${x.d}m`).join(', ')})` : ''));
+    } else {
+      console.log(`  ${fmt(simT)}  ${phase.name}  [keys: ${(phase.keys || []).join('+') || 'none'}]`);
+    }
 
     const endT = Math.min(SECONDS, simT + phase.seconds);
     let nextProgress = simT + 10;
@@ -513,6 +722,14 @@ async function main() {
       if (simT >= nextFilm) { await grabFilm(simT, phase.name); nextFilm = simT + FILM; }
       if (s.entity?.active && s.entity.state !== 'DORMANT') {
         process.stdout.write(`      ${fmt(simT)} entity ${s.entity.state} @ ${s.entity.dist}m  fear ${s.fear}\n`);
+      }
+      if (phase.mode === 'seek') {
+        const done = await page.evaluate(() => (window.__PT.seekDone
+          ? window.__PT.interactions[window.__PT.interactions.length - 1] || true : null));
+        if (done) {
+          if (done !== true) process.stdout.write(`      ${fmt(simT)} INTERACT ${done.id}: ${done.result}\n`);
+          break;
+        }
       }
     }
   }

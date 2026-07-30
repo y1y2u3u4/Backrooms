@@ -424,6 +424,38 @@ check('the starting objective is now revealed',
   check('the docket is not consumed by reading it', docket?.once === false);
 }
 
+// -- doors ----------------------------------------------------------------
+// The reason every door in the building is now a `DoorLatch` is not that doors
+// are fun: it is that `Kit.doorway` leaves the wall opening walkable on purpose
+// and hangs a leaf in it with no collider, so an unadopted door is a hole. These
+// three checks are the ones that would have caught that.
+{
+  const doors = interactor.doors;
+  const shut = doors.filter((d) => Math.abs(d.angle) < 0.25);
+  const noCollider = doors.filter((d) => !d._collider);
+  check('every door has a collider', noCollider.length === 0, `${noCollider.length} without`);
+  check('every shut door blocks', shut.every((d) => d._collider?.enabled),
+    `${shut.filter((d) => !d._collider?.enabled).length} shut doors are walk-through`);
+  // A door with no floor on one side is locked, and a locked door must be shut,
+  // or the leaf is out of the way and the hole is open again.
+  const dead = doors.filter((d) => d.locked && !d.requires);
+  check('doors onto nothing are locked AND shut',
+    dead.every((d) => Math.abs(d.angle) < 0.25 && d._collider?.enabled),
+    `${dead.length} dead-end doors, ${dead.filter((d) => Math.abs(d.angle) >= 0.25).length} of them ajar`);
+  check('some doors are passable', doors.filter((d) => !d.locked).length >= 6,
+    `${doors.filter((d) => !d.locked).length} of ${doors.length} lead somewhere`);
+  if (VERBOSE) {
+    const byZone = {};
+    for (const d of doors) {
+      const z = d.id.split('_door')[0];
+      byZone[z] = byZone[z] || { open: 0, dead: 0 };
+      if (d.locked && !d.requires) byZone[z].dead++; else byZone[z].open++;
+    }
+    console.log(`       doors by zone: ${Object.entries(byZone)
+      .map(([z, v]) => `${z} ${v.open}/${v.open + v.dead}`).join(', ')}`);
+  }
+}
+
 // -- discoveries ----------------------------------------------------------
 {
   const allNotes = interactor.items.filter((i) => i.kind === 'pickup' && i.verb === 'Read');
