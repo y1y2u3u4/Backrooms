@@ -1287,3 +1287,103 @@ restores, and compares field by field.
 - **The bot is not a player.** It presses the right things because it is told which
   ones. It will not find a secret, misread a note, or get lost — and getting lost is
   most of what this game is.
+
+### The two ends of the game were not connected either
+
+`Surveyor` emits `game:death` when a capture completes; `Progression` emits
+`game:ending` when the lift reaches the surface. The Director listened for the
+first, to freeze the body and run the death cinematic. Nothing at the level that
+owns the screens listened for either. So being caught froze the player in place
+with no screen and no way back, and finishing the game — three cores, a generator
+started by hand, a lift ridden out — showed nothing at all. Both screens exist in
+`src/ui/EndScreens.js`, fully designed, with option lists; the UI harness was the
+only thing that had ever opened them. The death screen's second option, "Abandon
+shift", had no handler, and its first did not put the state machine back to `play`
+or re-take the pointer.
+
+And `Director.respawn()` teleported to `lastSafe || safeRooms[0]` — both undefined
+until the player has walked into the Office of Record, i.e. for the whole opening
+half hour. Every death before that skipped the teleport, unfroze the body exactly
+where it fell, and handed the player back to the thing standing over them.
+
+### The journal's plan tab was a blank sheet
+
+`Journal` has `mapAdd`, `mapLink` and `mapHere`, and nothing had ever added a node.
+The one call that existed fed `mapHere` the player's world position, which for
+zones authored 400 m apart in disjoint streaming patches is a number with no
+relation to a floor plan. It draws a zone map now — eight nodes on the graph the
+building actually has, each appearing the first time the player stands in it, edges
+between the ones they have walked between. Hand-laid out rather than derived from
+`ZONE_ORIGIN`, because those are streaming patches and say nothing about how the
+place connects.
+
+## 8.1 Verification state after this pass
+
+Browser-free, `npm run audit`, about six seconds total:
+
+```
+aotest         PASS   8 checks on the baked AO field
+props          PASS   70 declared props on a floor, out of the walls, reachable
+chain          95/95  the critical path played through Interactor's refusal gate,
+                      plus a save capture/restore round trip
+audiowiring    5/5    sounds reachable, player-facing events heard
+floorgaps      PASS   no walkable rectangle fails the stand test
+portalgraph    PASS   8 zones reachable on foot across 19 doors
+lightreach     —      worst-case metres to the nearest live lamp
+```
+
+One browser check that takes 40 seconds, `npm run bootcheck`:
+
+```
+9/9   ready, no console errors, world + gameplay + UI + audio + saves up,
+      10 interactor items and 4 doors live in the start zone, objective active
+```
+
+And one continuous session, 11.5 minutes of simulated play with real DOM input,
+`npm run playthrough` — **12 of 13**:
+
+| | check | result |
+|---|---|---|
+| PASS | no console errors | — |
+| PASS | position never NaN | 0 frames |
+| PASS | never falls through the floor | **0 of 32 760 frames** (was 2 612) |
+| FAIL | no frame > 5 s | max 11 606 ms, p99 **10 ms**, p50 0.30 ms |
+| PASS | post-warmup p99 < 250 ms | warm p50 0.30, p90 0.60, p99 9.6 ms |
+| PASS | simulated time continuous | 32 760 frames |
+| PASS | an entity state transition occurred | DORMANT→ROUSED→SEEKING→MEASURING→SEEKING→APPROACHING→**CAPTURING**→DORMANT |
+| PASS | audio constructed | ctx running |
+| PASS | footsteps fired | 419 |
+| PASS | every zone reported lit fixtures | min active **1** (was 0) |
+| PASS | not stuck in a hiding place | 25 of 1 069 samples hidden |
+| PASS | an interactable was operated | **13 operations** |
+| PASS | player could move | 97 % of samples |
+
+The thirteen operations, which is the part that did not exist before this pass:
+
+```
+locker_intake_enter  pressed          (in)
+locker_intake_enter  pressed          (out)
+note_4107_-31        pressed          (read)
+board_c_way5         pressed          (Stack lift lobby, live)
+board_c_way2         pressed          (Spine, out)
+board_c_way2         pressed          (Spine, back)
+penstock_1           completed a hold (1.35 s, real key held)
+set_2_socket0        refused: You are not carrying a core.       x3
+lift_2_call          refused: Dead. Three-phase is out.          x3
+```
+
+Instant presses, a completed hold action, and two distinct refusals with the
+correct reasons — each fired on the frame the interactor's own reticle reported the
+item as focused, so the raycast, the range test and the prompt all agreed first.
+
+The single remaining failure is the CPU rasteriser's shader compile, which is what
+the per-zone pre-warm exists to remove and which the harness disables by default
+(`?prewarm=0`) because on SwiftShader it costs 190 seconds a zone. p99 is 10 ms
+either side of it.
+
+Pacing, for the record: 76.4 % zero-threat, one threat episode of 47 seconds
+ending in a capture, fear p90 0.269 and peak 0.513, longest stretch with nothing on
+the bus but footsteps 546 s. That last number is the honest weakness — the Director
+fires beats on a 95 s floor and a 150 s first beat, and a bot that walks in circles
+does not give it much to react to, but nine minutes of quiet is nine minutes of
+quiet.

@@ -1,6 +1,6 @@
 # Playthrough filmstrip
 
-19 frames from one continuous 595 s session, in order.
+18 frames from one continuous 546 s session, in order.
 Read it as a sequence: what changes between two frames 15 s apart is the pacing.
 
 ### 0:00.5 — arrival — standing still, taking the room in
@@ -15,13 +15,13 @@ Read it as a sequence: what changes between two frames 15 s apart is the pacing.
 
 ![stop and listen (lamp on)](filmstrip/002_81s_stop-and-listen-lamp-on-.png)
 
-### 2:00.5 — crouch-walk — nearly silent
+### 2:00.5 — inside the locker — two louvre slots and your own breathing
 
-![crouch-walk — nearly silent](filmstrip/003_121s_crouch-walk-nearly-silent.png)
+![inside the locker — two louvre slots and your own breathing](filmstrip/003_121s_inside-the-locker-two-louvre-slots.png)
 
-### 2:40.5 — walk on, lamp off (the entity only moves in light)
+### 2:40.5 — sprint — deliberately loud
 
-![walk on, lamp off (the entity only moves in light)](filmstrip/004_161s_walk-on-lamp-off-the-entity-only-m.png)
+![sprint — deliberately loud](filmstrip/004_161s_sprint-deliberately-loud.png)
 
 ### 3:20.5 — stand in the dark and wait
 
@@ -35,9 +35,9 @@ Read it as a sequence: what changes between two frames 15 s apart is the pacing.
 
 ![stop, lamp off, stay still — does it lose you?](filmstrip/007_281s_stop-lamp-off-stay-still-does-it-l.png)
 
-### 4:52.5 — enter service
+### 5:04.5 — enter service
 
-![enter service](filmstrip/008_293s_enter-service.png)
+![enter service](filmstrip/008_305s_enter-service.png)
 
 ### 5:20.5 — service spine — first walk
 
@@ -47,34 +47,30 @@ Read it as a sequence: what changes between two frames 15 s apart is the pacing.
 
 ![stand in the switchroom and look at what changed](filmstrip/010_361s_stand-in-the-switchroom-and-look-a.png)
 
-### 6:13.5 — enter cistern
+### 6:07.5 — enter cistern
 
-![enter cistern](filmstrip/011_374s_enter-cistern.png)
+![enter cistern](filmstrip/011_368s_enter-cistern.png)
 
-### 6:42.0 — INTERACT: turn penstock 1 (a 1.35 s hold)
+### 6:40.5 — INTERACT: try penstock 2 — it is padlocked
 
-![INTERACT: turn penstock 1 (a 1.35 s hold)](filmstrip/012_402s_INTERACT-turn-penstock-1-a-1-35-s-.png)
+![INTERACT: try penstock 2 — it is padlocked](filmstrip/012_401s_INTERACT-try-penstock-2-it-is-padl.png)
 
-### 7:22.0 — INTERACT: try penstock 2 — it is padlocked
+### 7:15.5 — enter plant
 
-![INTERACT: try penstock 2 — it is padlocked](filmstrip/013_442s_INTERACT-try-penstock-2-it-is-padl.png)
+![enter plant](filmstrip/013_436s_enter-plant.png)
 
-### 7:45.0 — enter plant
+### 7:20.5 — the generator hall — the landmark frame
 
-![enter plant](filmstrip/014_465s_enter-plant.png)
+![the generator hall — the landmark frame](filmstrip/014_441s_the-generator-hall-the-landmark-fr.png)
 
-### 8:02.0 — the generator hall — the landmark frame
+### 8:00.5 — INTERACT: try a socket with nothing in your hands
 
-![the generator hall — the landmark frame](filmstrip/015_482s_the-generator-hall-the-landmark-fr.png)
+![INTERACT: try a socket with nothing in your hands](filmstrip/015_481s_INTERACT-try-a-socket-with-nothing.png)
 
-### 8:42.0 — INTERACT: try a socket with nothing in your hands
+### 8:06.0 — enter safe
 
-![INTERACT: try a socket with nothing in your hands](filmstrip/016_522s_INTERACT-try-a-socket-with-nothing.png)
+![enter safe](filmstrip/016_486s_enter-safe.png)
 
-### 9:14.5 — enter safe
+### 8:40.5 — INTERACT: the terminal
 
-![enter safe](filmstrip/017_555s_enter-safe.png)
-
-### 9:22.0 — the safe room
-
-![the safe room](filmstrip/018_562s_the-safe-room.png)
+![INTERACT: the terminal](filmstrip/017_521s_INTERACT-the-terminal.png)

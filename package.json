@@ -11,6 +11,7 @@
     "audiowiring": "node tools/qa/audiowiring.mjs",
     "audit": "node tools/qa/aotest.mjs && node tools/qa/props.mjs && node tools/qa/chain.mjs && node tools/qa/audiowiring.mjs && node tools/qa/floorgaps.mjs && node tools/qa/portalgraph.mjs && node tools/qa/lightreach.mjs",
     "blackout": "node tools/qa/lightreach.mjs --blackout",
+    "bootcheck": "node tools/qa/bootcheck.mjs",
     "build": "vite build",
     "capture": "node tools/qa/capture.mjs",
     "chain": "node tools/qa/chain.mjs",
