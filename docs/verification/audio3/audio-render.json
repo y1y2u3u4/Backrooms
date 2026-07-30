@@ -1,0 +1,479 @@
+{
+  "generated": "2026-07-30T07:46:53.479Z",
+  "sounds": [],
+  "beds": [
+    {
+      "zone": "intake",
+      "file": "beds/intake.wav",
+      "bytes": 5760044,
+      "flags": [],
+      "stats": {
+        "peak": 0.972725510597229,
+        "rms": 0.4812208047967203,
+        "dc": 0.0005381792244367836,
+        "clipped": 0,
+        "duration": 30,
+        "sampleRate": 48000,
+        "channels": 2,
+        "centroid": 133.4765165999637,
+        "crest": 2.564605214402959,
+        "per": [
+          {
+            "peak": 0.9455740451812744,
+            "rms": 0.39456137902444016,
+            "dc": -0.0003736284122117836,
+            "clipped": 0
+          },
+          {
+            "peak": 0.972725510597229,
+            "rms": 0.5544981912691315,
+            "dc": 0.0014499868610853507,
+            "clipped": 0
+          }
+        ]
+      },
+      "reverb": "corridor",
+      "voices": {
+        "spawned": 92,
+        "denied": 0,
+        "hums": 8
+      },
+      "profile": {
+        "hum": 1,
+        "humRange": 20,
+        "vent": 0.34,
+        "ventTone": 620,
+        "ventSweep": 0.5,
+        "machine": 0.045,
+        "electrical": 0.18,
+        "structure": 0.35,
+        "water": 0,
+        "dripEvery": 34,
+        "knockEvery": 95,
+        "creakEvery": 46,
+        "tickEvery": 22,
+        "arcEvery": 220,
+        "impactEvery": 260,
+        "airDamp": 0.55,
+        "roomTone": 0.3,
+        "roomToneF": 210
+      }
+    },
+    {
+      "zone": "service",
+      "file": "beds/service.wav",
+      "bytes": 5760044,
+      "flags": [
+        "CLIP"
+      ],
+      "stats": {
+        "peak": 1.0005850791931152,
+        "rms": 0.4749469414459514,
+        "dc": 0.00020839190243916017,
+        "clipped": 1,
+        "duration": 30,
+        "sampleRate": 48000,
+        "channels": 2,
+        "centroid": 150.9064816118234,
+        "crest": 2.357806327950052,
+        "per": [
+          {
+            "peak": 1.0005850791931152,
+            "rms": 0.47710322122754634,
+            "dc": -0.00012309764855635623,
+            "clipped": 1
+          },
+          {
+            "peak": 0.9831857681274414,
+            "rms": 0.4727808273101046,
+            "dc": 0.0005398814534346766,
+            "clipped": 0
+          }
+        ]
+      },
+      "reverb": "service",
+      "voices": {
+        "spawned": 94,
+        "denied": 0,
+        "hums": 8
+      },
+      "profile": {
+        "hum": 0.8,
+        "humRange": 24,
+        "vent": 0.55,
+        "ventTone": 480,
+        "ventSweep": 0.8,
+        "machine": 0.16,
+        "electrical": 0.35,
+        "structure": 0.45,
+        "water": 0.08,
+        "dripEvery": 17,
+        "knockEvery": 40,
+        "creakEvery": 55,
+        "tickEvery": 26,
+        "arcEvery": 130,
+        "impactEvery": 190,
+        "airDamp": 0.4,
+        "roomTone": 0.26,
+        "roomToneF": 148
+      }
+    },
+    {
+      "zone": "cistern",
+      "file": "beds/cistern.wav",
+      "bytes": 5760044,
+      "flags": [
+        "CLIP"
+      ],
+      "stats": {
+        "peak": 1.009333610534668,
+        "rms": 0.3402603793261477,
+        "dc": -0.000010807997380552402,
+        "clipped": 19,
+        "duration": 30,
+        "sampleRate": 48000,
+        "channels": 2,
+        "centroid": 249.28374529487343,
+        "crest": 3.753347846172632,
+        "per": [
+          {
+            "peak": 1.005582332611084,
+            "rms": 0.35211980363423384,
+            "dc": -0.00008552637515088985,
+            "clipped": 7
+          },
+          {
+            "peak": 1.009333610534668,
+            "rms": 0.3279724003127954,
+            "dc": 0.00006391038038978505,
+            "clipped": 12
+          }
+        ]
+      },
+      "reverb": "cistern",
+      "voices": {
+        "spawned": 75,
+        "denied": 0,
+        "hums": 8
+      },
+      "profile": {
+        "hum": 0.34,
+        "humRange": 26,
+        "vent": 0.3,
+        "ventTone": 300,
+        "ventSweep": 1.2,
+        "machine": 0.24,
+        "electrical": 0.1,
+        "structure": 0.55,
+        "water": 1,
+        "dripEvery": 4,
+        "knockEvery": 22,
+        "creakEvery": 70,
+        "tickEvery": 40,
+        "arcEvery": 400,
+        "impactEvery": 140,
+        "airDamp": 0.3,
+        "roomTone": 0.34,
+        "roomToneF": 74
+      }
+    },
+    {
+      "zone": "residence",
+      "file": "beds/residence.wav",
+      "bytes": 5760044,
+      "flags": [],
+      "stats": {
+        "peak": 0.7717451453208923,
+        "rms": 0.09888240471583626,
+        "dc": -0.00031072980882446307,
+        "clipped": 0,
+        "duration": 30,
+        "sampleRate": 48000,
+        "channels": 2,
+        "centroid": 143.6744264978338,
+        "crest": 8.07534645632546,
+        "per": [
+          {
+            "peak": 0.7717451453208923,
+            "rms": 0.11733528963306124,
+            "dc": -0.0003340122425040537,
+            "clipped": 0
+          },
+          {
+            "peak": 0.6644564270973206,
+            "rms": 0.07607818170473389,
+            "dc": -0.0002874473751448724,
+            "clipped": 0
+          }
+        ]
+      },
+      "reverb": "dead",
+      "voices": {
+        "spawned": 102,
+        "denied": 0,
+        "hums": 8
+      },
+      "profile": {
+        "hum": 0.12,
+        "humRange": 14,
+        "vent": 0.2,
+        "ventTone": 380,
+        "ventSweep": 0.35,
+        "machine": 0.03,
+        "electrical": 0.06,
+        "structure": 0.6,
+        "water": 0.02,
+        "dripEvery": 46,
+        "knockEvery": 55,
+        "creakEvery": 26,
+        "tickEvery": 14,
+        "arcEvery": 600,
+        "impactEvery": 220,
+        "airDamp": 0.75,
+        "roomTone": 0.22,
+        "roomToneF": 120
+      }
+    },
+    {
+      "zone": "plant",
+      "file": "beds/plant.wav",
+      "bytes": 5760044,
+      "flags": [
+        "CLIP"
+      ],
+      "stats": {
+        "peak": 1.0007301568984985,
+        "rms": 0.44413681025607327,
+        "dc": 0.000536783571621055,
+        "clipped": 250,
+        "duration": 30,
+        "sampleRate": 48000,
+        "channels": 2,
+        "centroid": 150.08767970584367,
+        "crest": 2.863630702336146,
+        "per": [
+          {
+            "peak": 1.0007301568984985,
+            "rms": 0.4211715560270385,
+            "dc": -0.00021848538549928354,
+            "clipped": 66
+          },
+          {
+            "peak": 1.0005732774734497,
+            "rms": 0.465971600897138,
+            "dc": 0.0012920525287413935,
+            "clipped": 184
+          }
+        ]
+      },
+      "reverb": "hall",
+      "voices": {
+        "spawned": 93,
+        "denied": 0,
+        "hums": 8
+      },
+      "profile": {
+        "hum": 0.45,
+        "humRange": 34,
+        "vent": 0.7,
+        "ventTone": 260,
+        "ventSweep": 1.6,
+        "machine": 1,
+        "electrical": 0.75,
+        "structure": 0.4,
+        "water": 0.05,
+        "dripEvery": 26,
+        "knockEvery": 30,
+        "creakEvery": 60,
+        "tickEvery": 30,
+        "arcEvery": 45,
+        "impactEvery": 150,
+        "airDamp": 0.35,
+        "roomTone": 0.4,
+        "roomToneF": 58
+      }
+    },
+    {
+      "zone": "duct",
+      "file": "beds/duct.wav",
+      "bytes": 5760044,
+      "flags": [],
+      "stats": {
+        "peak": 0.9124171733856201,
+        "rms": 0.13784747809838552,
+        "dc": -0.00015833427244159594,
+        "clipped": 0,
+        "duration": 30,
+        "sampleRate": 48000,
+        "channels": 2,
+        "centroid": 154.89883907166677,
+        "crest": 6.669996848514426,
+        "per": [
+          {
+            "peak": 0.8913995623588562,
+            "rms": 0.1397597653182896,
+            "dc": -0.00018181668829630478,
+            "clipped": 0
+          },
+          {
+            "peak": 0.9124171733856201,
+            "rms": 0.13590828684942788,
+            "dc": -0.0001348518565868871,
+            "clipped": 0
+          }
+        ]
+      },
+      "reverb": "duct",
+      "voices": {
+        "spawned": 79,
+        "denied": 0,
+        "hums": 7
+      },
+      "profile": {
+        "hum": 0.1,
+        "humRange": 8,
+        "vent": 1,
+        "ventTone": 900,
+        "ventSweep": 0.4,
+        "machine": 0.3,
+        "electrical": 0.08,
+        "structure": 0.7,
+        "water": 0.03,
+        "dripEvery": 30,
+        "knockEvery": 18,
+        "creakEvery": 20,
+        "tickEvery": 9,
+        "arcEvery": 500,
+        "impactEvery": 190,
+        "airDamp": 0.5,
+        "roomTone": 0.45,
+        "roomToneF": 214
+      }
+    },
+    {
+      "zone": "stack",
+      "file": "beds/stack.wav",
+      "bytes": 5760044,
+      "flags": [
+        "hot"
+      ],
+      "stats": {
+        "peak": 0.9837177991867065,
+        "rms": 0.4839128284471723,
+        "dc": 0.00007565756430076093,
+        "clipped": 0,
+        "duration": 30,
+        "sampleRate": 48000,
+        "channels": 2,
+        "centroid": 171.91024389296567,
+        "crest": 2.555258816939245,
+        "per": [
+          {
+            "peak": 0.9837177991867065,
+            "rms": 0.4683971450999695,
+            "dc": 0.0006181023591542812,
+            "clipped": 0
+          },
+          {
+            "peak": 0.9788855910301208,
+            "rms": 0.49894625515548563,
+            "dc": -0.00046678723055275937,
+            "clipped": 0
+          }
+        ]
+      },
+      "reverb": "stack",
+      "voices": {
+        "spawned": 91,
+        "denied": 0,
+        "hums": 8
+      },
+      "profile": {
+        "hum": 0.7,
+        "humRange": 30,
+        "vent": 0.28,
+        "ventTone": 540,
+        "ventSweep": 0.9,
+        "machine": 0.06,
+        "electrical": 0.14,
+        "structure": 0.3,
+        "water": 0,
+        "dripEvery": 55,
+        "knockEvery": 120,
+        "creakEvery": 80,
+        "tickEvery": 34,
+        "arcEvery": 300,
+        "impactEvery": 110,
+        "airDamp": 0.5,
+        "roomTone": 0.26,
+        "roomToneF": 96
+      }
+    },
+    {
+      "zone": "safe",
+      "file": "beds/safe.wav",
+      "bytes": 5760044,
+      "flags": [],
+      "stats": {
+        "peak": 0.7426588535308838,
+        "rms": 0.10346528429749424,
+        "dc": -0.0003290489441295394,
+        "clipped": 0,
+        "duration": 30,
+        "sampleRate": 48000,
+        "channels": 2,
+        "centroid": 160.47763822494923,
+        "crest": 6.416062081938544,
+        "per": [
+          {
+            "peak": 0.7426588535308838,
+            "rms": 0.11662243727084178,
+            "dc": -0.00033943145802877724,
+            "clipped": 0
+          },
+          {
+            "peak": 0.4776971936225891,
+            "rms": 0.08837045453391756,
+            "dc": -0.0003186664302303016,
+            "clipped": 0
+          }
+        ]
+      },
+      "reverb": "safe",
+      "voices": {
+        "spawned": 112,
+        "denied": 0,
+        "hums": 8
+      },
+      "profile": {
+        "hum": 0.22,
+        "humRange": 10,
+        "vent": 0.14,
+        "ventTone": 420,
+        "ventSweep": 0.25,
+        "machine": 0.02,
+        "electrical": 0.05,
+        "structure": 0.25,
+        "water": 0,
+        "dripEvery": 90,
+        "knockEvery": 140,
+        "creakEvery": 90,
+        "tickEvery": 40,
+        "arcEvery": 900,
+        "impactEvery": 400,
+        "airDamp": 0.8,
+        "roomTone": 0.18,
+        "roomToneF": 165
+      }
+    }
+  ],
+  "scenes": [],
+  "failures": [
+    "bed service: 1 clipped samples (peak 1.001)",
+    "bed cistern: 19 clipped samples (peak 1.009)",
+    "bed plant: 250 clipped samples (peak 1.001)"
+  ],
+  "warnings": [
+    "bed stack: peak -0.1 dBFS — within 0.2 dB of full scale"
+  ]
+}

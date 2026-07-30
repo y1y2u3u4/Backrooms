@@ -352,7 +352,22 @@ export class AudioEngine {
     this.available = false;
     this.started = false;
     this._muted = false;
-    this._masterVol = 1;
+    // 0.60, not 1.0 — about 4.5 dB of headroom.
+    //
+    // Rendering the zone beds to .wav for the first time measured the Service
+    // Spine at 0.0 dBFS peak and the Cistern at +0.2, i.e. clipping, with crest
+    // factors of 2.3-3.6. Lowering the ambience bus alone did not move it, which
+    // located the problem: the bed is not one loud bus, it is every bus summing
+    // — fixture hum on `world`, one-shots on `ambience`, the player's own steps —
+    // and the mix as a whole had no headroom left before the limiter.
+    //
+    // A limiter working continuously is not a safety net, it is a compressor
+    // nobody asked for: it has nothing left to give when something loud actually
+    // happens, so a door slam arrives at the same loudness as room tone. The
+    // dynamic range between "nothing is happening" and "something is behind you"
+    // is the entire mechanism a horror mix runs on, and this is what buys it back.
+    // Scaling the master preserves every relative balance in the mix.
+    this._masterVol = 0.60;
     this.buses = {};
     this.zone = null;
     this.zoneProfile = null;
@@ -415,11 +430,25 @@ export class AudioEngine {
     this.limiter.attack.value = 0.0028;
     this.limiter.release.value = 0.22;
 
+    // Safety saturator: transparent for quiet material, asymptotic at the top.
+    //
+    // This used to be tanh(x * 1.35) / tanh(1.35), and that curve is not a safety
+    // net — it is a normaliser. Its slope at zero is 1.35 / tanh(1.35) = 1.55, so
+    // it applied +3.8 dB to everything quiet while squashing the top towards 1.0,
+    // which means the output sits near full scale no matter what happens upstream.
+    // That is why every zone bed measured between -0.2 and +0.2 dBFS, and why
+    // lowering the ambience bus and then the master gain moved the Residence (an
+    // ambience-dominated bed) but left the Intake, Service, Cistern and Plant
+    // pinned at 0.0 exactly as before. Two upstream fixes appeared to do nothing
+    // because this was quietly undoing them.
+    //
+    // Plain tanh has slope 1 at the origin, so a quiet room tone passes through
+    // untouched, and tanh(1) = 0.76, so nothing can ever reach full scale.
     this.safety = ctx.createWaveShaper();
     const n = 1024, curve = new Float32Array(n);
     for (let i = 0; i < n; i++) {
       const x = (i / (n - 1)) * 2 - 1;
-      curve[i] = Math.tanh(x * 1.35) / Math.tanh(1.35);
+      curve[i] = Math.tanh(x);
     }
     this.safety.curve = curve;
     this.safety.oversample = '2x';
