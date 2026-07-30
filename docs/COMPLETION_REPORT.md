@@ -539,7 +539,155 @@ already been drawn.
 
 ---
 
-## 6. Artefacts
+## 6. Second pass: fixing what the self-assessment named
+
+An honest self-assessment of the build listed its own defects. This section reports
+what happened to each. It is written from measurements, and where something was not
+fixed it says so rather than reframing it.
+
+### The measurement that unlocked most of this: `tools/qa/lightreach.mjs`
+
+Every previous attempt to answer "is this zone too dark?" was made from
+screenshots, and screenshots kept answering a different question — three
+consecutive wrong diagnoses, all recorded in §5. Meanwhile an Intake corridor with
+no lamp above it was invisible to every metric the project had.
+
+This measures the thing itself: for every walkable point in a zone, the horizontal
+distance to the nearest fixture that is not dead. No browser, no GPU, no exposure
+pipeline. It runs in about ten seconds for all eight zones.
+
+| zone | fixtures | worst reach before | after | walkable area over 5 m from a lamp |
+|---|---:|---:|---:|---:|
+| Intake | 127 → 210 | nearest lamp 6.3 m from a corridor | 9.86 m | 9 % |
+| Service Spine | 68 | — | 2.79 m | **0 %** |
+| Cistern | 13 → 17 | 8.67 m | 7.96 m | 19 % → 9 % |
+| Residence | 33 | — | 2.40 m | **0 %** |
+| Plant | 19 | — | 6.71 m | 10 % |
+| Ductwork | 25 | — | 1.53 m | **0 %** |
+| Stack | 37 → 73 | 10.66 m | **4.99 m** | 39 % → **0 %** |
+| Office of Record | 3 | — | 2.63 m | **0 %** |
+
+The Intake's remaining 9.86 m worst case is the ruined far corner where the wear
+gradient kills the lamps deliberately, and is intended. The Stack was the worst in
+the building for a structural reason worth recording: its walkable surface is a
+perimeter gantry **ring**, and four fittings at the mid-point of each side light the
+sides and leave the four corners as far from a lamp as it is possible to get.
+
+### Defect: the Intake's corridors had no light fixtures
+
+Fixed. A WALL cell is a 4.2 m cell containing a 160 mm partition through its
+centre — 96 % of it is open floor — and the fixture planner skipped the whole cell
+because a fixture at the cell centre would be buried in the wall. Fixtures now step
+1.26 m off the partition onto whichever sides are circulation.
+
+### Defect: three zones measurably too dark
+
+Substantially fixed, by fixture coverage rather than by fill — which the fill sweep
+in §5 had already proved was not the lever. The Service Spine went from **0.772
+crushed pixels to 0.059**, measured at the *low* tier where the light budget is
+tightest. Residence and Ductwork have full coverage by the reach metric.
+
+### Defect: the headline zone's visual identity was not original
+
+Fixed, and this was the most interesting problem in the pass. An unbroken field of
+pale yellow wallpaper under a fluorescent-lit suspended ceiling is the most
+reproduced image in this genre; however well the material is synthesised it is
+still that image. The fiction, zone structure, creature rules and interface were
+original — the first thing the player sees was not.
+
+`wallRun` grows an optional dado: an applied lower wall lining on a moulded PVC
+capping bead at 1.06 m, which the Intake now uses on every wall. It fixes the
+problem at the level of the wall's construction rather than by recolouring, and it
+does three things at once — breaks the flat field, gives perspective a strong
+horizontal to converge along, and because the lining is a cool desaturated olive
+under warm yellow, it supplies the within-frame colour-temperature contrast the
+zone did not previously have anywhere.
+
+It took three passes to calibrate and the reason is worth writing down. Five
+multipliers land on that surface (texture albedo, colour tint, the grime gradient,
+wallRun's vertex shade, the baked AO) and it is lit almost entirely by bounce
+because every fixture points straight down onto a wall at a grazing angle. Choosing
+each multiplier to look suitably grubby in isolation multiplied out to 0.13 of the
+upper wall — a solid black band across the zone. Two further passes of "make the
+hex brighter" did nothing, because `MeshStandardMaterial.color` was being set from a
+hex literal whose channels cap at 1.0, so a hex can only ever *darken* a texture,
+and acousticPanel's albedo is #5c5b52 — about 0.11 linear against the 0.30 a real
+hessian panel reflects. The fix was a `colorGain` factor that is allowed to exceed
+1, which is meaningful because that field is a plain linear multiplier in the
+shader. Result: the Intake spine measures **0.034 crushed** with the dado present,
+against 0.032 before the dado existed — a second material, a horizontal and a cool
+mass in frame at no cost in shadow detail.
+
+### Defect: first-person hands read as a pale blob
+
+Improved. The asset was rebuilt to 13 192 triangles with a real joint hierarchy —
+four fingers of three phalanges plus a two-phalanx thumb per side, pivoted at
+anatomical joint positions, verified by walking the GLB node tree.
+
+`Hands.js` was still doing the straight swap it was written for when the export was
+a single skin with no finger nodes, so all 30 joints arrived and were immediately
+discarded. The curl driver is now bound to them, with the tip carried as a third
+segment (rotating two of three joints leaves the fingertip poking out of a closed
+fist) and the fingers bound index-to-little to match the pose table rather than the
+asset's alphabetical node order, which would have silently applied the index
+finger's curl to the little finger.
+
+### Defect: figurative wallpaper repeated visibly in the Residence
+
+Addressed in code, not yet confirmed in a frame. The stochastic re-tile defeats
+repetition in luminance, which is enough for a noise-like surface and useless
+against a motif the eye recognises as a shape. Real paper is hung in 530 mm drops
+each cut from the roll at a different point, so registration differs between
+neighbours and there is a seam where two butt; modelling that is both correct and
+the thing that actually breaks the repeat.
+
+### Defect: uniform mote density
+
+Addressed in code, not yet confirmed in a frame. A world-space clump field replaces
+the even distribution, so a beam shows drifting patches rather than an even fog.
+
+### Defect: the QA camera could frame the inside of a soffit
+
+Fixed. `lookOpen` now rejects any position with less than 1.75 m of headroom.
+
+### Not fixed
+
+- **The Stack still does not read.** Its enclosure is now real and verified
+  numerically — 124 shaft-wall colliders across three radii, 411 k triangles, and
+  22 322 triangles facing *into* the shaft, correctly wound. So the remaining
+  darkness is lighting, not missing geometry, and its light reach is now the joint
+  best in the building. But the frame at the low tier is still 0.93 crushed and I
+  could not get a shipping-tier capture of it inside the remaining budget. Given
+  the Cistern measures 0.939 at low against 0.236 at medium, much of that number is
+  the tier artefact described in §5 — but "probably mostly a measurement artefact"
+  is not verification, and this stays open.
+- **The Cistern is still dark**, 9 % of its area beyond 5 m from a lamp.
+- **Still never run on a GPU**, and no frame-rate verdict exists.
+- **The playthrough and audio-export harnesses are written but their runs are not
+  in this report.** `tools/qa/playthrough.mjs` drives a continuous session with real
+  synthetic keyboard input through the real update path, and
+  `tools/qa/audio-render.mjs` renders the synthesised audio to .wav files a human
+  can listen to. Both landed; neither has produced a finished artefact yet. The two
+  biggest holes in this project's verification — nobody has played it and nobody
+  has heard it — therefore remain open, and the tooling to close them existing is
+  not the same as them being closed.
+
+### A diagnostic of mine that was wrong, recorded because it nearly misled me
+
+To test whether the Stack's new shaft wall faced outward, I measured triangle
+normals against the shaft axis. The first run reported **zero** shaft-wall
+triangles anywhere, which would have meant the enclosure was never built.
+
+The test was wrong, not the zone. `makeBuilders()` looks `ZONE_ORIGIN` up by zone
+id and bakes it into every emitted vertex regardless of the origin passed to the
+builder, so the Stack's geometry sits at z = 800 and measuring radius from the
+world origin found nothing at all. Corrected, it found 22 322 inward-facing
+triangles. A verification tool that is wrong in the confident direction is more
+dangerous than no tool.
+
+---
+
+## 7. Artefacts
 
 | what | where |
 |---|---|
@@ -552,7 +700,12 @@ already been drawn.
 | Contributor-isolation diagnostics (GTAO / shadows / detail normal / fill off) | `docs/captures/diag3/` |
 | Post-polish zone captures | `docs/captures/verify/`, `docs/captures/final3/` |
 | Magnified crops used to identify sub-pixel defects | `docs/captures/crop/` |
-| Numeric AO bake check | `node tools/qa/aotest.mjs` |
+| Numeric AO bake check | `npm run aotest` |
+| Light-reach audit, all zones | `node tools/qa/lightreach.mjs` |
+| Post-dado Intake and zone checks | `docs/captures/chk2/`, `docs/captures/intake/` |
+| Continuous playthrough harness (written, run pending) | `tools/qa/playthrough.mjs` |
+| Audio-to-wav export harness (written, run pending) | `tools/qa/audio-render.mjs` |
+| Hand asset renders | `docs/assets/hands_firstperson*.png`, `hands_silhouette.png` |
 | UI screens, three aspect ratios | `docs/captures/ui/r9*/` |
 | Blender asset turntables | `docs/assets/` |
 | Asset manifest with sub-objects and material slots | `public/assets/models/manifest.json` |
