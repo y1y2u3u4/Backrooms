@@ -975,3 +975,315 @@ one-frame transient the light re-rank is allowed.
 | Blender asset turntables | `docs/assets/` |
 | Asset manifest with sub-objects and material slots | `public/assets/models/manifest.json` |
 | Cross-subsystem integration contracts and responses | `docs/INTEGRATION_REQUESTS*.md` |
+
+---
+
+## 8. Third pass: making it a game
+
+The two passes above are about how the building looks and how it is measured.
+This one is about a defect that neither of them could have found, because both
+were looking at pictures of rooms:
+
+**The shipped build had no interactables in it at all.**
+
+Every one of the eight zone builders ends with
+
+```js
+return { root, chunks, builders, portals, interactables, ... };
+```
+
+and every one of them returned `interactables: []`. `Builder` carried an
+`interactables` array of its own that nothing ever pushed to. And
+`installGameplay` only populated the world when `seedDemo` was true — which is
+`!subsystems.world`, i.e. the bare Intake fallback used when `src/world/World.js`
+is absent. So with all eight zones built, which is every real build, the
+interactor's registry was **empty**:
+
+- no breaker, valve, keypad, card reader, terminal, generator or goods lift
+- no pickups, so no supply cores, no warden's card, no pry bar, no notes, no tapes
+- no hiding places
+- **no working doors, and therefore no door colliders.** `Kit.doorway` leaves the
+  wall opening walkable on purpose, because the collider belongs to `DoorLatch`;
+  nothing constructed those latches, so every shut door in the building was a hole
+  you walked through — including the ~20 Residence doors whose rooms are never
+  built, where walking through meant falling out of the world.
+
+The three-supply-core objective chain and both endings were unreachable, and
+`Progression` sat for the whole session with its first objective active and no way
+to advance it. Nothing in the project had ever pressed the interact key.
+
+This is the clearest example in the whole build of the lesson section 6.5 already
+wrote down and did not finish applying: **a screenshot cannot tell you whether a
+game is a game.** Sixty capture shots, four numeric audits and two continuous
+sessions all passed while the thing they were measuring could not be played.
+
+### What was built
+
+`src/systems/ZoneGameplay.js` — the join. Once per zone, on first build:
+
+1. **Adopts every door.** A `DoorLatch` per `Kit.doorway()` group, locked when
+   there is no walkable floor on both sides — which is simultaneously the diegetic
+   reason most Residence doors do not open ("Locked. No keyway on this side.") and
+   the fix for the void-entry bug. 41 latches, 30 passable; the 11 that are not are
+   exactly the corridor doors whose rooms do not exist.
+2. **Spawns the zone's declared props**, offsetting local coordinates into the
+   zone's world patch.
+3. **Registers portals with `Progression` under gate GROUPS**, so the critical path
+   can lock "the way into the Stack" once instead of hunting for two
+   independently-authored door ids, and a zone built later inherits the lock.
+4. **Hands the Director its safe room** and the Attendant its candidate floors.
+
+Props are never despawned. Zones sit 400 m apart past the far plane, so a resident
+prop from an unloaded zone is invisible, culled, and in collision hash cells no
+query touches — whereas a thrown breaker, a turned valve and three fitted cores
+are the player's progress, and serialising that is a much larger and more fragile
+thing than the memory it would save.
+
+### The content, and where the design came from
+
+Almost none of it was invented here. `src/systems/Notes.js` already contained
+thirty documents that describe the whole game in detail, and they were treated as
+the specification:
+
+| note | what it dictated |
+|---|---|
+| `note_fuse_room` (stock card) | one core in the Cistern penstock room, one in Residence R-207, one in the Stack lift lobby, one dropped on the Plant floor |
+| `note_keycard_memo` | R-207 is card-access, cards issued before October do not open it, the warden's card is on the warden's belt |
+| `note_cistern_isolation` | penstock 1 open and must stay open, penstock 2 padlocked, "no configuration in which neither of them matter" |
+| `nb_5` (last notebook page) | the terminal code is the open-day date reversed — 3 December → 0312 → **2130** |
+| `note_generator_start` | fuel valve, twelve primer strokes, starter, fifteen seconds maximum |
+| `note_lift_permit` | the car travels with three cores and only three, exactly once |
+| `note_board_c` | eight ways, the main is under-rated |
+
+Two pieces of existing set dressing turned out to be the answers to their own
+questions:
+
+- The Service switchroom is described as "the room where every chair faces one
+  corner", and the chairs' yaw is computed toward that corner. **Distribution
+  Board C now stands in it.** That is what they were facing.
+- The Stack has "a chair pushed up to the missing bay of handrail, facing out over
+  the drop". **The warden's card is on the deck beside it.** Nothing else in the
+  game explained that chair.
+
+R-207 had to be built: index 6 in the Residence's 3.6 m door rhythm (201 + 6),
+which was an undressed shut door in front of a room that did not exist. It is now
+dressed as the stores the memo says it is, with a card-locked leaf, the reader,
+**and** a keypad whose code is the notebook's — so a player who never finds the
+warden can still finish, and a player who finds the warden never has to work it
+out.
+
+The Plant's Set No. 2 is a real machine now rather than dressing, and the goods
+lift is a real car in the shaft behind the wall opening. The `Mech.goodsLift`
+surround that used to stand there was a shut door with a collider across the
+opening: it would have walled the exit off from the car.
+
+Draining the Cistern works. Shutting penstock 1 lowers the water over half a
+minute **and takes the standing-water depth out of every floor record as it goes**,
+so footsteps stop being loud at the same rate the water stops being visible. That
+is the choice the isolation notice sets up: make one loud noise, or wade.
+
+### Six bugs that made something unplayable, each found a different way
+
+- **The Ductwork was physically impossible to enter.** Its internal clear is
+  800 mm and a crouched capsule is 1.02 m, so its ceiling colliders overlapped the
+  body all along the crawl and `resolveCapsule` shoved the player sideways out of
+  it at every step. The zone, its two portals and everything in it were
+  unreachable. Fixed with a third posture — standing → crouched → hands and knees —
+  with its own eye height, speed and footstep loudness. Found by a placement audit
+  reporting every prop in the zone as unreachable and being asked why.
+- **Portal arrivals went to the wrong place.** `portal()` stores the far-side door
+  as `target.portalId`; the trigger read `target.portal`, found `undefined` every
+  time, and fell back to the id of the door being *left* — which no destination
+  zone has — so every transition dropped the player at the destination's default
+  spawn instead of the door they walked into.
+- **Two self-opening gates never opened.** `Progression.update` read
+  `this.portals.get('portal_stack')`, and `portal_stack` is a *group* name that has
+  never been a portal id — the zones call their doors `to_stack`, `to_residence`.
+  The lookup returned `undefined`, both conditions were permanently false, and
+  neither the Stack nor the Residence ever opened whatever the player did.
+- **A core found early was credited to nothing.** The three core hunts are only
+  revealed on first reaching the Plant, and the Cistern and the Stack are both open
+  before it. Requiring the hunt to be `active` meant an early core vanished into
+  the count and its objective stayed on the list with the core already in hand.
+- **`annexDoor` had never worked.** Its builder shim implemented `mat` and
+  `addObject` but not `add`, and `Kit.doorway` bakes the static frame through
+  `add`. Any door built outside a zone chunk threw on its own frame.
+- **No cassette had ever played.** The pickup called `notes.collect`, which files a
+  tape without opening it, so `story:tape` never fired for any of the six — no
+  transcript panel, and the "tapes" discovery was unreachable.
+
+### The HUD was never connected to the game
+
+`ui.setPrompt` is documented in `UI.js`'s own header and had exactly one caller in
+the project: the cinematics, clearing it. With the interactables finally live,
+every door, breaker, valve, socket and pickup was still silent on screen — no key
+badge, no verb, no reason when it refused, no hold ring on the four actions that
+need one. `Interactor` maintains a stable `focus` object precisely so the UI can
+read it every frame.
+
+Nor did anything listen to `Progression`. It announced every objective change,
+core, hint and discovery on the bus, and the objective banner — the only place the
+game ever states what the player is trying to do — was blank for the whole of
+play. The pause screen's core count was the hard-coded string `'0 of 3'`, so it
+told every player they had fitted nothing right up to the ending.
+
+### Every mechanism in the building was silent
+
+`Library.js` registers 70 sounds. Twenty-one had no caller anywhere: `door.open`,
+`door.close`, `door.latch`, `door.locked`, `door.heavy`, `door.handle`,
+`valve.turn`, `hatch.open`, `lift.call`, `lift.arrive`, `relay.click`,
+`switch.click`, `locker.click`, `metal.clang`, `pipe.knock`, `chair.scrape`,
+`flashlight.click`, `flashlight.rattle`, `kettle.click`, `ui.hover`, `ui.journal`.
+
+For a game whose entity hunts by sound that is not a polish gap. The lamp switch
+had no click — so the cover key (hold V, silent by design) had nothing to be
+quieter *than*, and the single most important mechanic after WASD was
+unobservable.
+
+`tools/qa/audiowiring.mjs` now checks both directions statically: every sound
+played by name is registered, every player-facing event has a listener, and
+nothing a player *does* in the world goes unanswered. Five library sounds are
+declared accepted orphans — `impact.soft`, `impact.hard`, `debris.small`,
+`glass.crack`, `cable.twang` — because each needs a physics event that does not
+exist. They are listed so the gap is visible and the count cannot creep.
+
+### The light budget was ranked wrong
+
+`LightRig` can drive 6 / 10 / 14 real lights by tier and it kept the N **nearest**.
+That sounds obviously right and is not: irradiance falls as 1/d², but rated output
+spans 9 to 340 candela across `FIXTURE_TYPES` — a factor of thirty-eight — so the
+output term is much the stronger of the two. A 9 cd emergency bulkhead 2 m away
+outranked a 340 cd high bay 5 m away.
+
+Fixtures now rank on estimated irradiance at the camera. Measured rather than
+assumed: `lightreach --budget 10` sums what the chosen ten deliver under both
+rankings at every walkable sample point. Importance can never lose — it is
+choosing the top N of the very quantity being summed — so the numbers are the
+margin that was being left on the table:
+
+| zone | gain | worst point |
+|---|---:|---:|
+| Plant | **+13.7 %** | ×1.66 |
+| Stack | +3.5 % | ×1.11 |
+| Service Spine | +1.2 % | ×1.07 |
+| Ductwork | +1.1 % | ×1.06 |
+| Residence | +0.4 % | ×1.02 |
+| Cistern | +0.1 % | ×1.02 |
+| Intake, Office | 0.0 % | ×1.03 |
+
+The Plant is where distance and output disagree, which is exactly where the zone's
+own header comment says the composition lives.
+
+### Nobody had measured the blackout
+
+Board C carries eight ways and lets four be live at once, so the player *chooses*
+which parts of the building go dark — and a blacked-out zone is supposed to stay
+navigable on the always-powered emergency circuit plus a flashlight. That case had
+never been measured. `lightreach --blackout` measures it, and it was bad:
+
+| zone | before (mean / worst) | after |
+|---|---|---|
+| Intake | 43.8 m / 82.8 m | **10.6 / 26.4** |
+| Service Spine | 11.5 / 26.4 | **4.4 / 11.3** |
+| Cistern | 26.4 / 47.2 | **6.2 / 15.4** |
+| Residence | 20.0 / 41.4 | **4.0 / 7.9** |
+| Plant | 11.8 / 23.8 | **6.9 / 15.0** |
+| Stack | **no emergency fixtures at all** | **5.2 / 10.3** |
+
+The Stack had none — the only zone without, and the only one that is a 47 m
+vertical drop with a bay of handrail missing. Tripping its way from inside it put
+the player in total darkness on a deck ring above a shaft. It now has four, one per
+face, plus one four levels down on the far side of the well: the only light in the
+shaft that never goes out, and so the thing the eye finds when you look over the
+edge. Adding twenty-odd dim lamps across the building is only safe *because* of the
+ranking fix above; under distance ranking they would have stolen the key light from
+every lit room they stand in.
+
+### Three safety nets that fired once and never again
+
+- **`Player._fellOut`** latches so one fall emits one `player:fell` — and nothing
+  cleared it, so the net that catches a player leaving the world worked exactly
+  once per session. A run showed the second fall reaching −31 m and staying there
+  for 64 seconds with the game running perfectly happily. Cleared on `teleport`,
+  which is the end of a fall by definition.
+- **Arriving in a zone now spends every door in it.** Arming only the matching pair
+  was not enough: `enter(zone)` with no portal id uses the zone's own spawn, and the
+  Cistern's spawn is 300 mm from its own exit door — it fired on the next frame and
+  sent the player back to the Spine. A radius test looked like the fix and was not
+  (the Plant's Service door is 1.7 m from its spawn and the bounce still happened).
+  Each door re-arms itself the first frame the player is not standing in it.
+- **A hiding place's prompt said "Get in" while you were inside it.** Inside, the
+  controls are disabled and the only key that does anything is the one whose label
+  was wrong. A session had the bot climb in at 1:53 and still be in there nine
+  minutes later, with every later movement phase doing nothing and the whole run
+  measuring a player standing still in the dark.
+
+### Checkpoint saves
+
+The title screen has always offered Continue. `UI.readHasSave()` decided whether
+to enable it by reading `localStorage['annex.save']`, and nothing ever wrote that
+key: permanently greyed out, and every session started at the arrival lift. The
+game is about forty minutes long.
+
+`src/systems/SaveGame.js` does not snapshot the world — the zones are
+deterministic functions of one seed. What cannot be reproduced is what the *player*
+changed, and that is a short list: where they are (local to the zone, so a
+`ZONE_ORIGIN` can move without invalidating saves), what they carry, the objective
+states and cores and gates, which papers they have read, each way of Board C, and
+which of Set No. 2's sockets are filled. Keeping the list short is the point: a
+format that serialises geometry breaks the first time a zone builder is edited.
+
+Checkpoints, not save-anywhere — on entering the Office of Record, on completing an
+objective, and on starting the set. A horror game that lets you save mid-chase has
+no chases in it, and the Office is already the room the fiction offers as the place
+you may sit down.
+
+### The playthrough bot can now play
+
+A `seek` mode aims yaw *and* pitch at a target through `Input.mouse`, walks to it,
+and taps the interact key **on the frame the interactor's own reticle reports the
+item as focused** — so a pass means the raycast, the distance pre-filter, the range
+test and the prompt all agreed before anything was pressed. The key is dispatched
+in-page rather than from the driver process because `input.pressed()` is true for
+exactly one frame and a round trip to Node cannot hit a chosen one.
+
+Steering is the honest weak point: there is no navmesh, so `seek` walks toward a
+target and steps around what it bumps into. Where that is not enough the phase
+declares `at`, which repositions the player and is logged as SCRIPTED, exactly as
+the zone changes are. A reposition now *refuses* a coordinate with no floor rather
+than dropping the player into the void — which is how the 64-second fall got into
+a session and poisoned every measurement after it.
+
+### New audits
+
+```
+node tools/qa/props.mjs             71 declared props: support height, buried
+                                    depth from the nearest face, and a ring search
+                                    for a standing/crouching/crawling position with
+                                    line of sight inside the prop's own reach
+node tools/qa/chain.mjs             builds all eight zones, runs the real gameplay
+                                    wiring over them, and plays the critical path
+                                    through Interactor's own refusal gate
+node tools/qa/audiowiring.mjs       sounds reachable, events heard
+node tools/qa/lightreach.mjs --blackout   navigability with every way tripped
+node tools/qa/lightreach.mjs --budget 10  which N fixtures the rig should keep
+```
+
+`props.mjs` found three real coordinate errors and one zone-wide posture bug.
+`chain.mjs` walks the whole spine — arrival bay to goods lift, board to Stack,
+warden's card to R-207, three cores, twelve primer strokes, `ending = left` — plus
+a save round trip that captures at the end of a completed run, breaks everything,
+restores, and compares field by field.
+
+### What this pass did not close
+
+- **Frame rate on real hardware is still unverified.** This environment has no GPU.
+  Zone-build shader compilation is now pre-warmed on `zone:build` rather than
+  landing on the first frame after a transition, which is the right fix regardless
+  of hardware, but the absolute numbers here remain a CPU rasteriser's.
+- **Nobody has listened to the audio.** The mechanism sounds are wired and the
+  wiring is statically verified; whether they are *good* is not something a static
+  check or an RMS measurement can answer.
+- **The bot is not a player.** It presses the right things because it is told which
+  ones. It will not find a secret, misread a note, or get lost — and getting lost is
+  most of what this game is.
