@@ -125,6 +125,36 @@ export class Game {
     };
 
     // ---- world ------------------------------------------------------------
+    // SHADER PRE-WARM PER ZONE.
+    //
+    // Boot compiles the start zone's programs (see the end of this method), and
+    // nothing compiled the other seven. Every zone introduces materials the
+    // renderer has not seen — the Cistern's water, the Stack's spandrel glow, the
+    // Plant's high-bay cones — so the FIRST FRAME after a transition compiled
+    // them all, and a continuous session recorded that as an 11-second frame with
+    // a p99 of 7 ms either side of it. On a real GPU it is a hitch rather than a
+    // stall, but it is the same hitch, and it lands on the one frame the player
+    // is looking at a room they have never seen.
+    //
+    // Compiling at BUILD time moves it to where the build already is: either the
+    // loading screen, or `World._preload`, which raises a neighbour a portal
+    // leads to while the player is still walking toward it. The zone's own root
+    // is the target and the scene supplies the lights, so this compiles the new
+    // material set and not the whole building again.
+    this.bus.on('zone:build', (e) => {
+      const z = this.world?.zones?.[e?.zone];
+      if (!z?.root || !this.engine?.renderer) return;
+      const t0 = performance.now();
+      try {
+        this.engine.renderer.compile(z.root, this.engine.camera, this.engine.scene);
+      } catch (err) {
+        console.warn('[game] shader pre-warm failed for', e?.zone, err);
+        return;
+      }
+      const ms = performance.now() - t0;
+      if (ms > 40) console.info(`[game] pre-warmed ${e.zone} shaders in ${ms.toFixed(0)} ms`);
+    });
+
     const worldMod = await optional('world', 'world/World.js');
     if (worldMod?.createWorld) {
       // A half-finished world must not take the whole build down with it.

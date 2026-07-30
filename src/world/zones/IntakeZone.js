@@ -480,6 +480,40 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
     emergencyLight(b, rigW(b), -halfW + 0.14, 2.42, lz - 1.2, { yaw: Math.PI / 2, seed: 907 });
   }
 
+  // EMERGENCY LIGHTING ON THE ESCAPE ROUTES.
+  //
+  // One emergency bulkhead, in the entrance bay, for a 63 x 63 m floor plate. A
+  // blackout measurement (`lightreach --blackout`, which pretends every switchable
+  // way at Distribution Board C is tripped) put the mean distance to the nearest
+  // burning lamp at 44 m and the worst at 83 m: the player tripping the Intake way
+  // from anywhere on the plate was left with a flashlight and nothing to walk
+  // toward. A real floor plate has these every 10-15 m along the escape route, and
+  // the two spines ARE the escape route.
+  //
+  // Adding them is only safe because the light budget now ranks by importance
+  // rather than distance (see LightRig.update): a 9 cd emergency lamp two metres
+  // away no longer displaces a 31 cd troffer four metres away, which under the old
+  // distance ranking is exactly what a dozen of these would have done.
+  {
+    const zSpine = cellPos(plan.spineRow, 0)[1];
+    const zSpine2 = cellPos(plan.spineRow2, 0)[1];
+    for (const [ex, ez, eyaw] of [
+      [cellPos(0, 3)[0], zSpine, 0], [cellPos(0, 7)[0], zSpine, 0], [cellPos(0, 11)[0], zSpine, 0],
+      [cellPos(0, 4)[0], zSpine2, Math.PI], [cellPos(0, 9)[0], zSpine2, Math.PI],
+      [halfW - 0.14, zSpine, -Math.PI / 2],
+    ]) {
+      const b = builderFor(Math.max(0, Math.min(INTAKE.rows - 1,
+        Math.round(ez / cell + rows / 2 - 0.5))), Math.max(0, Math.min(cols - 1,
+        Math.round(ex / cell + cols / 2 - 0.5))));
+      emergencyLight(b, rigW(b), ex, ceiling - 0.30, ez, { yaw: eyaw, seed: 910 + ex, circuit: 'emergency' });
+    }
+    // The far corner, where the ceiling has come down. Something has to be
+    // visible in there or it reads as a hole rather than a room.
+    const [fx, fz] = cellPos(1, cols - 2);
+    const bf = builderFor(1, cols - 2);
+    emergencyLight(bf, rigW(bf), fx, ceiling - 0.42, fz, { yaw: Math.PI, seed: 919, circuit: 'emergency' });
+  }
+
   // =========================================================================
   // ROOM INTERIORS
   // =========================================================================

@@ -113,6 +113,8 @@ export class Fixture {
     this._dead = health === HEALTH.DEAD;
     this._shadowWanted = false;
     this.distToCam = 1e9;
+    /** Estimated irradiance at the camera; the light budget ranks on this. */
+    this._importance = 0;
     this.audioNode = null;
   }
 
@@ -453,8 +455,14 @@ export class LightRig {
       for (const f of this.fixtures) {
         const p = f.group.position;
         f.distToCam = Math.hypot(p.x - camPos.x, p.y - camPos.y, p.z - camPos.z);
+        // Estimated irradiance at the camera. `def.intensity` is physical candela
+        // and spans 6 (an emergency bulkhead) to 240 (a high bay), so this term
+        // dominates distance and is the whole reason for ranking on it.
+        const rated = (f.def?.intensity ?? 20) * (f.intensityScale ?? 1);
+        const supply = this.circuits.get(f.circuit)?.target ?? 1;
+        f._importance = (rated * supply) / (1 + f.distToCam * f.distToCam);
       }
-      // Rank by distance among fixtures that are *supposed* to be on.
+      // Rank by importance among fixtures that are *supposed* to be on.
       //
       // This deliberately tests the circuit's TARGET and the fixture's health,
       // not its instantaneous `level`. Level is a transient: a freshly built
@@ -469,20 +477,35 @@ export class LightRig {
           const c = this.circuits.get(f.circuit);
           return c ? c.target > 0.05 : true;
         })
-        .sort((a, b) => a.distToCam - b.distToCam);
+        .sort((a, b) => b._importance - a._importance);
 
-      // Distance-ranked active set. Without this the "keep the first N" loop
-      // below walks the fixture array in creation order, so which lights
-      // survive the budget depends on the order the zone happened to emit them
-      // rather than on where the player is standing.
+      // IMPORTANCE-RANKED active set, not distance-ranked.
+      //
+      // Ranking by distance alone means the nearest lamp always wins, whatever it
+      // is worth. A 6 cd emergency bulkhead 2 m away displaced a 240 cd high bay
+      // 5 m away, and at the shipping medium tier the budget is ten fixtures, so a
+      // handful of dim wall-washes and emergency lamps standing near the player
+      // could push most of the real lighting out of the frame. Irradiance falls as
+      // 1/d^2 and rated output spans a factor of forty across FIXTURE_TYPES, so
+      // distance is the weaker of the two terms by a long way.
+      //
+      // `_importance` is the estimated irradiance the fixture delivers AT THE
+      // CAMERA: rated candela x its own scale x its circuit's level, over
+      // (1 + d^2). It is computed in the loop above where the distance already is.
+      // This is what makes it safe to put emergency lighting on the escape routes
+      // — the lamps that keep a blacked-out zone navigable no longer cost the lit
+      // zones their key light.
       this._activeSet = new Set(live.slice(0, this.maxActiveLights));
 
       const want = new Set(live.slice(0, this.maxShadows));
-      // Hysteresis: keep an existing caster if it is still within 1.35x the
-      // cut-off distance, so shadows do not pop while the player sways.
-      const cutoff = live[this.maxShadows]?.distToCam ?? Infinity;
+      // Hysteresis: keep an existing caster while it is still worth more than a
+      // little under the cut-off, so shadows do not pop while the player sways.
+      // The band is expressed in IMPORTANCE now that the ranking is: reading a
+      // distance off `live[maxShadows]` after an importance sort picks an
+      // arbitrary fixture's distance and the hysteresis stops meaning anything.
+      const cutoff = live[this.maxShadows]?._importance ?? 0;
       for (const f of this._shadowSet) {
-        if (!want.has(f) && f.level > 0.05 && f.distToCam < cutoff * 1.35 && want.size < this.maxShadows + 1) {
+        if (!want.has(f) && f.level > 0.05 && f._importance > cutoff * 0.55 && want.size < this.maxShadows + 1) {
           want.add(f);
         }
       }

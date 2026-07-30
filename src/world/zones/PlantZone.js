@@ -353,6 +353,21 @@ export function buildPlant(ctx, opts = {}) {
   bulkhead(bEast, rigFor(bEast), HX1 - 0.3, FLOOR + 3.4, 2.4, { yaw: -Math.PI / 2, circuit: 'plant', health: 'good', seed: 61 });
   emergencyLight(bDeck, rigFor(bDeck), HX0 + 0.30, G1 + 2.5, -2.0, { yaw: -Math.PI / 2, seed: 62 });
   emergencyLight(bEast, rigFor(bEast), 12.0, FLOOR + 2.6, HZ0 + 0.4, { yaw: 0, seed: 63 });
+  // The hall floor is 35 x 23 m and had two emergency lamps, both up on the deck.
+  // With way 6 tripped — which a player will do, because four ways is not many —
+  // the worst point on that floor was 24 m from anything burning, in a room with
+  // open drain channels and a 6.7 m drop off the gantry. Four more at working
+  // height around the perimeter, and one on the walkway's far end.
+  for (const [ex, ey, ez, eyaw] of [
+    [HX0 + 0.14, FLOOR + 2.6, -6.0, Math.PI / 2],
+    [HX0 + 0.14, FLOOR + 2.6, 6.0, Math.PI / 2],
+    [HX1 - 0.14, FLOOR + 2.6, 6.4, -Math.PI / 2],
+    [-2.0, FLOOR + 2.6, HZ1 - 0.14, Math.PI],
+    [12.0, G1 + 2.5, 9.9, Math.PI],
+  ]) {
+    const b = ex < 0 ? bWest : bEast;
+    emergencyLight(b, rigFor(b), ex, ey, ez, { yaw: eyaw, seed: 64 + ex, circuit: 'emergency' });
+  }
 
   // =========================================================================
   // 7. dressing and evidence

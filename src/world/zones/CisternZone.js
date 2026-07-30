@@ -338,6 +338,19 @@ export function buildCistern(ctx, opts = {}) {
     cagedLadder(b, 19.9, 1.62, 5.8, 3.2, { yaw: -Math.PI / 2, cage: true, key: 'rust' });
   }
 
+  // Emergency lighting down the tunnel and in the chamber. With the Cistern way
+  // tripped, the blackout measurement put the worst walkable point 47 m from the
+  // only burning lamp — in 420 mm of water, in the dark, with a thing in it that
+  // hunts by sound. Three more, on the always-powered circuit, along the route.
+  for (const [ex, ey, ez, eyaw] of [
+    [-13.0, 2.20, R_TUNNEL[1] + 0.12, 0],
+    [-1.0, 2.20, R_TUNNEL[3] - 0.12, Math.PI],
+    [12.4, 2.40, R_CHAMBER[1] + 0.12, 0],
+  ]) {
+    const b = ex < -12 ? bStair : ex < 10 ? bTunnel : bChamber;
+    emergencyLight(b, rigFor(b), ex, ey, ez, { yaw: eyaw, seed: 36 + ex, circuit: 'emergency' });
+  }
+
   // =========================================================================
   // 5. silt, tide lines, debris
   // =========================================================================

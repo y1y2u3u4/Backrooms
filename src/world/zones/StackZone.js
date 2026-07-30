@@ -682,6 +682,29 @@ export function buildStack(ctx, opts = {}) {
       }
     }
 
+    // EMERGENCY LIGHTING. The Stack had none — the only zone in the building
+    // without it, and the only one that is a 47 m vertical drop with a bay of
+    // handrail missing. Its lamps are on the 'stack' circuit, which starts dead at
+    // Distribution Board C and which the player has every reason to trip later to
+    // light somewhere else: doing that from inside this zone put them in total
+    // darkness on a deck ring above a shaft. A vertical circulation core with no
+    // emergency lighting would also fail the survey the zone contains a note
+    // about. Four, one per face, on the always-powered circuit.
+    for (const [ex, ez, eyaw] of [
+      [-OUTER + 0.14, 0, Math.PI / 2],
+      [OUTER - 0.14, -2.0, -Math.PI / 2],
+      [-1.0, -OUTER + 0.14, 0],
+      [1.0, OUTER - 0.14, Math.PI],
+    ]) {
+      emergencyLight(b, rigFor(b), ex, 2.24, ez, { yaw: eyaw, seed: 320 + ex, circuit: 'emergency' });
+    }
+    // And one four levels down, on the far side of the well. It is the only light
+    // in the shaft that never goes out, so it is the thing the eye finds when the
+    // player looks over the edge into the dark — and it says the building is still,
+    // in some minimal sense, maintained.
+    emergencyLight(bFar, rigFor(bFar), -WALL_OUT - 0.10, -4 * LEVEL + 2.24, 1.2,
+      { yaw: -Math.PI / 2, seed: 329, circuit: 'emergency' });
+
     if (D) {
       D.roomPlate(b, -2.0, 2.05, -OUTER + 0.10, 0, roomNumber('K', 24), 'STACK');
       // Edge marking along the base of the well wall, on the deck side of it.

@@ -21,6 +21,29 @@
  *   node tools/qa/lightreach.mjs intake     # one zone
  */
 import * as THREE from 'three';
+
+/** `--blackout`: pretend every switchable way at the board is tripped. */
+const EMERGENCY_ONLY = process.argv.includes('--blackout');
+/**
+ * `--budget N`: compare the two ways of choosing which N fixtures the rig keeps.
+ *
+ * `LightRig` can only drive a handful of real lights at once (6 / 10 / 14 by
+ * tier). It used to keep the N NEAREST, which sounds obviously right and is not:
+ * irradiance falls as 1/d^2 but rated output spans 9 to 340 candela across
+ * FIXTURE_TYPES, a factor of thirty-eight, so the output term is much the
+ * stronger of the two. A 9 cd emergency bulkhead 2 m away outranked a 340 cd high
+ * bay 5 m away and the Plant lost its key light to a green safety lamp.
+ *
+ * This measures both rankings at every walkable sample point: total estimated
+ * irradiance delivered by the chosen N. Ranking by importance can never do worse
+ * than ranking by distance at the same N — it is choosing the top N of the very
+ * quantity being summed — so what this reports is HOW MUCH was being left on the
+ * table, per zone.
+ */
+const BUDGET = (() => {
+  const i = process.argv.indexOf('--budget');
+  return i >= 0 ? parseInt(process.argv[i + 1] || '10', 10) : 0;
+})();
 import { CollisionWorld } from '../../src/player/Physics.js';
 import { FIXTURE_TYPES } from '../../src/render/Lighting.js';
 
@@ -169,10 +192,50 @@ async function audit(id) {
   }
 
   // Only fixtures that emit light count. A dead tube is a prop.
-  const live = rig.fixtures.filter((f) => f.health !== 'dead');
+  // BLACKOUT MODE. Distribution Board C carries eight ways and lets four be live
+  // at once, so a player CHOOSES which parts of the building go dark — and the
+  // parts that go dark are supposed to still be navigable on the always-powered
+  // 'emergency' circuit plus a flashlight. Measuring only the fully-lit case says
+  // nothing about that, and the Stack turned out to have no emergency lighting at
+  // all: tripping its way from inside it left the player in total darkness on a
+  // deck ring above a 47 m shaft.
+  const live = rig.fixtures.filter((f) => f.health !== 'dead'
+    && (!EMERGENCY_ONLY || f.circuit === 'emergency'));
   const pts = walkablePoints(collision);
   if (!pts.length) return { id, error: 'no floor rects registered' };
   if (!live.length) return { id, fixtures: 0, live: 0, points: pts.length, error: 'no live fixtures' };
+
+  // ---- budget-ranking comparison ----------------------------------------
+  if (BUDGET > 0) {
+    const irr = (f, p) => {
+      const q = f.group.position;
+      const d2 = (q.x - p[0]) ** 2 + (q.y - (p[1] + 1.6)) ** 2 + (q.z - p[2]) ** 2;
+      return ((f.def?.intensity ?? 20) * (f.intensityScale ?? 1)) / (1 + d2);
+    };
+    let byDist = 0, byImp = 0, worseAt = null, worstRatio = 1;
+    for (const p of pts) {
+      const scored = live.map((f) => ({
+        f,
+        d: Math.hypot(f.group.position.x - p[0], f.group.position.y - (p[1] + 1.6), f.group.position.z - p[2]),
+        i: irr(f, p),
+      }));
+      const nearest = [...scored].sort((a, b) => a.d - b.d).slice(0, BUDGET);
+      const best = [...scored].sort((a, b) => b.i - a.i).slice(0, BUDGET);
+      const sN = nearest.reduce((a, x) => a + x.i, 0);
+      const sB = best.reduce((a, x) => a + x.i, 0);
+      byDist += sN; byImp += sB;
+      const ratio = sN > 0 ? sB / sN : 1;
+      if (ratio > worstRatio) { worstRatio = ratio; worseAt = p.map((v) => +v.toFixed(1)); }
+    }
+    return {
+      id, fixtures: rig.fixtures.length, live: live.length, points: pts.length,
+      budget: {
+        byDist: byDist / pts.length, byImp: byImp / pts.length,
+        gain: byDist > 0 ? byImp / byDist : 1,
+        worstRatio, worseAt,
+      },
+    };
+  }
 
   let worst = 0, worstAt = null, sum = 0;
   const over5 = [];
@@ -202,18 +265,46 @@ async function audit(id) {
   };
 }
 
-const only = process.argv[2];
+// `--budget N` consumes the token after it, so a positional zone name has to be
+// found by skipping flag values rather than by "the first thing without dashes".
+const only = (() => {
+  const a = process.argv.slice(2);
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] === '--budget') { i++; continue; }
+    if (a[i].startsWith('--')) continue;
+    return a[i];
+  }
+  return undefined;
+})();
 const ids = only ? [only] : Object.keys(ZONES);
 const rows = [];
 for (const id of ids) rows.push(await audit(id));
 
 console.log('');
-console.log('light reach — horizontal distance from a walkable point to the nearest live fixture');
-console.log('');
-console.log('zone        fixt  live   pts   mean  worst   >5m   worst position');
+if (BUDGET > 0) {
+  console.log(`light budget — irradiance delivered by the ${BUDGET} fixtures the rig keeps,`);
+  console.log('ranked the two possible ways. Importance can never lose; this is the margin.');
+  console.log('');
+  console.log('zone        live   pts   nearest-N   best-N    gain   worst point');
+} else {
+  console.log(EMERGENCY_ONLY
+    ? 'light reach, BLACKOUT — every switchable way tripped; emergency circuit only'
+    : 'light reach — horizontal distance from a walkable point to the nearest live fixture');
+  console.log('');
+  console.log('zone        fixt  live   pts   mean  worst   >5m   worst position');
+}
 for (const r of rows) {
-  if (r.error && r.worst === undefined) {
+  if (r.error && r.worst === undefined && !r.budget) {
     console.log(`${r.id.padEnd(11)} ${String(r.error)}`);
+    continue;
+  }
+  if (r.budget) {
+    const b = r.budget;
+    console.log(
+      `${r.id.padEnd(11)} ${String(r.live).padStart(4)} ${String(r.points).padStart(5)}`
+      + `   ${b.byDist.toFixed(2).padStart(9)} ${b.byImp.toFixed(2).padStart(8)}`
+      + `   ${`${((b.gain - 1) * 100).toFixed(1)}%`.padStart(6)}`
+      + `   x${b.worstRatio.toFixed(2)} @ [${(b.worseAt || []).join(',')}]`);
     continue;
   }
   console.log(
@@ -223,5 +314,12 @@ for (const r of rows) {
     + `   [${r.worstAt}]`);
 }
 console.log('');
-console.log('A corridor lit to a 4 m fixture grid should show a worst case near 3 m.');
+if (BUDGET > 0) {
+  console.log('A gain near zero means distance and output happened to agree in that zone.');
+  console.log('The Plant is where they do not: 340 cd high bays against 20 cd bulkheads.');
+  process.exit(0);
+} else if (EMERGENCY_ONLY) {
+  console.log('In a blackout the bar is different: somewhere to walk TOWARD, not a lit room.');
+  console.log('A zone with no emergency fixture at all reports "no live fixtures" and is a trap.');
+} else console.log('A corridor lit to a 4 m fixture grid should show a worst case near 3 m.');
 console.log('Anything over about 6 m is somewhere the player can stand with no lamp above them.');

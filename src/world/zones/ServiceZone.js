@@ -789,6 +789,21 @@ export function buildService(ctx, opts = {}) {
     Props.blanketNest(b, x1 - 1.1, STAIR_BOTTOM, 9.3, { seed: 353, yaw: 0.5, r: 0.8 });
   }
 
+  // EMERGENCY LIGHTING ALONG THE SPINE.
+  //
+  // 57 m of corridor had three, all of them in rooms off it, so a blackout
+  // measurement put the worst walkable point 26 m from the nearest burning lamp.
+  // The spine is the escape route for the entire building — every other zone
+  // connects through it — so it gets the spacing a real one would have. Cheap now
+  // that the light budget ranks by importance rather than distance.
+  for (const [ex, ez, eyaw] of [
+    [-26.0, -HW + 0.12, 0], [-18.0, HW - 0.12, Math.PI], [-8.0, -HW + 0.12, 0],
+    [2.0, HW - 0.12, Math.PI], [12.0, -HW + 0.12, 0], [21.0, HW - 0.12, Math.PI],
+  ]) {
+    const b = byX(ex);
+    emergencyLight(b, rigFor(b), ex, CEIL - 0.32, ez, { yaw: eyaw, seed: 400 + ex, circuit: 'emergency' });
+  }
+
   // =========================================================================
   // 10. gameplay — Distribution Board C
   //

@@ -279,6 +279,15 @@ export function buildResidence(ctx, opts = {}) {
     if (fs % 2 === 0) smokeDetector(b, x + 0.7, CEIL - 0.014, 0.5, 'plasticWhite');
   }
   emergencyLight(bEast, rigFor(bEast), X1 - 0.14, 2.28, 0.6, { yaw: Math.PI / 2, seed: 90 });
+  // A 37 m corridor with one emergency lamp at the far end measured a 41 m worst
+  // case with the Residence way tripped. Three more, on the escape route, spaced
+  // as a real landing would be. Safe to add now that the light budget ranks by
+  // importance rather than by distance.
+  for (const [ex, ez, eyaw] of [
+    [X0 + 1.0, -HW + 0.05, 0], [-6.4, HW - 0.05, Math.PI], [8.2, -HW + 0.05, 0],
+  ]) {
+    emergencyLight(byX(ex), rigFor(byX(ex)), ex, 2.30, ez, { yaw: eyaw, seed: 91 + ex, circuit: 'emergency' });
+  }
 
   // =========================================================================
   // 2. the end of the corridor — a mirror on the axis

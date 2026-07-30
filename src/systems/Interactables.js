@@ -2032,7 +2032,7 @@ export function hidingPlace(ctx, {
     state: () => ({ ...state }),
   };
 
-  interactor?.add({
+  const hideItem = interactor?.add({
     id: `${id}_enter`, object: root, kind: 'hide',
     verb: 'Get in', label: kind, range: 2.0,
     refusal: () => {
@@ -2040,7 +2040,19 @@ export function hidingPlace(ctx, {
       if (ctx.inventory?.handsFull) return 'Not with a core in your arms.';
       return null;
     },
-    onUse: () => (state.inside ? api.exit() : api.enter()),
+    onUse: () => {
+      const r = state.inside ? api.exit() : api.enter();
+      // The prompt is the ONLY thing that tells the player how to get out again:
+      // inside a locker `controlEnabled` is false, so WASD does nothing and the
+      // one key that works is the one whose label used to read "Get in". A
+      // continuous session had the bot climb in at 1:53 and still be in there
+      // nine minutes later with the game running perfectly happily.
+      if (hideItem) {
+        hideItem.verb = state.inside ? 'Get out' : 'Get in';
+        hideItem.label = state.inside ? `the ${kind}` : kind;
+      }
+      return r;
+    },
   });
 
   return {

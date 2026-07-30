@@ -103,6 +103,13 @@ const SCRIPT = [
   { name: 'lamp on', seconds: 22, mode: 'wander', keys: ['w'], tap: ['f'] },
   { name: 'stop and listen (lamp on)', seconds: 18, mode: 'pan', keys: [] },
   { name: 'INTERACT: get into the locker by the lift', seconds: 24, mode: 'seek', target: 'locker_intake_enter' },
+  { name: 'inside the locker — two louvre slots and your own breathing', seconds: 12, mode: 'still', keys: [] },
+  // GET OUT AGAIN. The first session did not, and spent nine minutes in a steel
+  // box: inside a hiding place `controlEnabled` is false, so every later movement
+  // phase did nothing and the whole run measured a player standing still in the
+  // dark. That is a bot mistake and it exposed a real one — the prompt still read
+  // "Get in" — but the harness has to press E twice either way.
+  { name: 'INTERACT: get out of the locker', seconds: 20, mode: 'seek', target: 'locker_intake_enter' },
   { name: 'crouch-walk — nearly silent', seconds: 22, mode: 'wander', keys: ['w', 'Control'] },
   { name: 'sprint — deliberately loud', seconds: 18, mode: 'wander', keys: ['w', 'Shift'] },
   { name: 'walk on, lamp off (the entity only moves in light)', seconds: 26, mode: 'wander', keys: ['w'], tap: ['f'] },
@@ -456,6 +463,9 @@ function installDriver(cfg) {
       speed: +Math.hypot(v.x, v.z).toFixed(2),
       moving: Math.hypot(v.x, v.z) > 0.25,
       crouch: !!g.player.crouching,
+      crawl: !!g.player.crawling,
+      hidden: !!(g.gameplay?.director?.hidden),
+      controls: !!g.player.controlEnabled,
       exertion: +(g.player.exertion ?? 0).toFixed(2),
       fear: dir ? +dir.fear.toFixed(3) : null,
       tension: dir ? +dir.tension.toFixed(3) : null,
@@ -561,9 +571,13 @@ function installDriver(cfg) {
     return s;
   };
 
+  /** True while the player is inside a hiding place and cannot move. */
+  PT.isHidden = () => !!(g.gameplay?.director?.hidden);
+
   PT.harvest = () => ({
     samples: PT.samples, events: PT.events, entityStates: PT.entityStates,
     interactions: PT.interactions,
+    hiddenSamples: PT.samples.filter((s) => s.hidden).length,
     progression: g.gameplay?.progression?.debugState?.() || null,
     inventory: g.gameplay?.inventory?.snapshot?.() || null,
     interactorItems: (g.interactor?.items || []).length,
@@ -842,6 +856,19 @@ async function main() {
   check('every zone visited reported lit fixtures',
     S.every((s) => (s.lights?.active ?? 0) > 0),
     `min active lights = ${Math.min(...S.map((s) => s.lights?.active ?? 0))}`);
+  // A hiding place takes the controls away, so a session that gets stuck in one
+  // measures a player standing still and reports it as a quiet game. That happened
+  // once and cost a whole run, so it is an assertion now rather than something to
+  // notice in a graph.
+  check('the session did not get stuck inside a hiding place',
+    (H.hiddenSamples ?? 0) < S.length * 0.25,
+    `${H.hiddenSamples ?? 0} of ${S.length} samples were spent hidden`);
+  check('at least one interactable was operated',
+    (H.interactions?.length ?? 0) >= 6,
+    (H.interactions || []).map((i) => `${i.id}:${i.result}`).join('; ') || 'none');
+  check('the player was able to move for most of the session',
+    frac((s) => s.controls !== false) > 0.7,
+    `${(frac((s) => s.controls !== false) * 100).toFixed(0)}% of samples had controls enabled`);
 
   const failed = checks.filter((c) => !c.ok);
 
@@ -908,6 +935,24 @@ async function main() {
     L.push(`**${failed.length} check(s) failed.**`);
     L.push('');
   }
+
+  // -- what was actually operated
+  L.push('## Interactions');
+  L.push('');
+  if (!(H.interactions || []).length) {
+    L.push('Nothing was operated. Every `seek` phase failed to reach its target.');
+  } else {
+    L.push('| at | interactable | verb | result |');
+    L.push('|---|---|---|---|');
+    for (const i of H.interactions) {
+      L.push(`| ${fmt(i.t)} | \`${i.id}\` | ${i.verb || ''} | ${i.result} |`);
+    }
+  }
+  L.push('');
+  L.push(`Objective state at the end: \`${JSON.stringify(H.progression)}\``);
+  L.push(`Carried: \`${JSON.stringify(H.inventory)}\``);
+  L.push(`Interactor registry: ${H.interactorItems} items, ${H.doors} doors.`);
+  L.push('');
 
   // -- pacing
   L.push('## Pacing');
