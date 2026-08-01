@@ -71,10 +71,14 @@ async function main() {
     }
   }
 
+  // `--gpu` drops the SwiftShader flags and lets the machine's real GPU render.
+  // This tool has always forced a CPU rasteriser, which is right on a headless
+  // box with no GPU and wrong on a laptop with one — the frames are the same
+  // picture either way but they arrive one to two orders of magnitude faster,
+  // and any timing printed alongside them means something.
   const browser = await chromium.launch({
     args: [
-      '--use-gl=angle', '--use-angle=swiftshader',
-      '--enable-unsafe-swiftshader',
+      ...(args.gpu ? [] : ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']),
       '--disable-gpu-sandbox', '--no-sandbox',
       '--ignore-gpu-blocklist', '--enable-webgl',
       '--disable-dev-shm-usage',

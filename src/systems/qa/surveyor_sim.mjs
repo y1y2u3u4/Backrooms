@@ -246,11 +246,57 @@ console.log('\nSurveyor — headless state machine checks\n');
   s.hear(new THREE.Vector3(-6, 0, 6), 30);
   run(s, 4);
   run(s, 70);
-  ok('does not tunnel through the divider', Math.abs(s.position.z) > 0.15 || true);
+  // `|| true` made this unfailable, and it survived three independent reviews
+  // being pointed at it. The claim is that the entity does not end up inside the
+  // divider slab: the wall spans z in [-0.15, 0.15] everywhere except the
+  // doorway at |x| < 1, so being in the slab AND outside the doorway is the
+  // failure. Standing in the doorway is not.
+  ok('does not tunnel through the divider',
+    Math.abs(s.position.z) > 0.15 || Math.abs(s.position.x) < 1.2,
+    `at (${s.position.x.toFixed(2)}, ${s.position.z.toFixed(2)})`);
   ok('makes progress rather than jamming on the wall',
     s.position.distanceTo(new THREE.Vector3(-6, 0, -6)) > 3,
     `moved ${s.position.distanceTo(new THREE.Vector3(-6, 0, -6)).toFixed(2)} m`);
   if (VERBOSE) console.log('   ', JSON.stringify(s.debugState()));
+}
+
+// 7b. It can kill more than once ---------------------------------------------
+//
+// THE BUG THIS EXISTS FOR. `_killed` was set true on the first completed capture
+// and reset nowhere in the file; `captureT` was initialised in the constructor
+// and only ever incremented. Neither `despawn()` nor `spawnAt()` cleared them,
+// so after one kill the guard at the bottom of STATE.CAPTURING could never pass
+// again: `game:death` was emitted once per page load, and CAPTURING — which had
+// no exit of its own — simply never ended. A delivered session recorded five
+// threat episodes, two of them reaching CAPTURING, and one death.
+//
+// Every other test in this file builds a fresh entity, which is exactly why the
+// whole harness was structurally blind to it. This one reuses ONE entity across
+// two captures, which is the only shape that can fail.
+{
+  console.log('it can kill more than once');
+  const { s, bus } = makeEntity({ light: 4 });
+  let deaths = 0;
+  bus.on('game:death', () => deaths++);
+
+  const capture = () => {
+    s.spawnAt(0, 0, 1.2, 0);
+    s.rouse(new THREE.Vector3(0, 0, 0), 0);
+    s._setState(STATE.CAPTURING);
+    run(s, 2.0);
+  };
+
+  capture();
+  ok('the first capture kills', deaths === 1, `deaths=${deaths}`);
+  capture();
+  ok('the second capture also kills', deaths === 2, `deaths=${deaths}`);
+
+  // And a capture that nothing resolves must not latch the state machine.
+  s.spawnAt(0, 0, 1.2, 0);
+  s._setState(STATE.CAPTURING);
+  run(s, 8.0);
+  ok('an unresolved capture lets go instead of latching',
+    s.state !== STATE.CAPTURING, `state=${s.state}`);
 }
 
 // 8. Debug contract ---------------------------------------------------------

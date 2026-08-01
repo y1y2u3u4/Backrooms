@@ -563,6 +563,183 @@ check('the starting objective is now revealed',
     } live portals checked`);
 }
 
+// -- every zone grids to a walkable area a coverage metric can divide by ----
+//
+// `tools/qa/explore.mjs` measures how much of a zone an unguided player has
+// stood in. Its denominator came from taking the centre of each 2 m grid cell
+// and discarding it if it fell outside the floor rectangle — so a rectangle
+// narrower than the grid contributed NOTHING. The Ductwork is built from 1.8 m
+// spines and gridded to **zero cells**, which made its coverage a division by
+// zero and let its visited cells inflate the overall figure with no denominator
+// of their own.
+//
+// The exploration bot cannot catch this: it has never reached the Ductwork in
+// any session, which is exactly why the defect survived. This file builds all
+// eight zones with a real CollisionWorld and no browser, so it can.
+{
+  const CELL = 2.0;
+  const empty = [];
+  const counts = [];
+  for (const [zid, zone] of Object.entries(zones)) {
+    const o = ZONE_ORIGIN[zid] || [0, 0, 0];
+    const cand = new Map();
+    for (const f of collision.floors) {
+      const cx = (f.minX + f.maxX) / 2, cz = (f.minZ + f.maxZ) / 2;
+      // Zones are 400 m apart, so nearest-origin is an exact zone test.
+      let best = null, bd = Infinity;
+      for (const [k, oo] of Object.entries(ZONE_ORIGIN)) {
+        const d = (cx - oo[0]) ** 2 + (cz - oo[2]) ** 2;
+        if (d < bd) { bd = d; best = k; }
+      }
+      if (best !== zid) continue;
+      const i0 = Math.floor(f.minX / CELL), i1 = Math.floor(f.maxX / CELL);
+      const j0 = Math.floor(f.minZ / CELL), j1 = Math.floor(f.maxZ / CELL);
+      if ((i1 - i0 + 1) * (j1 - j0 + 1) > 60000) continue;
+      for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+        const x = Math.min(Math.max((i + 0.5) * CELL, f.minX + 0.02), f.maxX - 0.02);
+        const z = Math.min(Math.max((j + 0.5) * CELL, f.minZ + 0.02), f.maxZ - 0.02);
+        if (!(x >= f.minX && x <= f.maxX && z >= f.minZ && z <= f.maxZ)) continue;
+        cand.set(`${i}|${j}|${Math.round(f.y / 3)}`, { x, z, y: f.y });
+      }
+    }
+    let n = 0;
+    for (const c of cand.values()) {
+      const top = collision.sampleFloor(c.x, c.z, c.y + 0.3, 0.4);
+      if (!top) continue;
+      // Crawl height — the Ductwork's soffit is 800 mm and is a corridor.
+      if (collision.resolveCapsule(c.x, top.y + 0.1, c.z, 0.29, 0.62).hit) continue;
+      n++;
+    }
+    counts.push(`${zid}:${n}`);
+    if (n === 0) empty.push(zid);
+    void o;
+  }
+  check('every zone grids to a non-zero walkable area',
+    empty.length === 0,
+    empty.length ? `no walkable cells at all in: ${empty.join(', ')}` : counts.join('  '));
+}
+
+// -- every bound key is on the screen that lists the keys --------------------
+//
+// `Input.ACTIONS` binds `cover` (V), `swapCell` (B) and `throwDecoy` (T). None
+// of the three was on the pause screen's control list — and `Input.js`'s own
+// comment calls `cover` "the single most important key in the game after WASD,
+// which is why it is a hold rather than a toggle", because the Surveyor hears
+// the lamp's switch click and does not hear a palm over the lens.
+//
+// A player cannot deduce a keybinding. Nothing in the project compared the two
+// lists, so a key could be bound and unlisted forever, which is what happened.
+{
+  const { ACTIONS: BOUND } = await import('../../src/core/Input.js');
+  const { CONTROLS } = await import('../../src/ui/Pause.js');
+  // The listing is player-facing prose, so match on the key names it prints
+  // rather than on the action ids: 'Ctrl / C', 'Q · R', 'Tab / J' are one row
+  // covering several codes.
+  const listed = CONTROLS.map(([k]) => k.toUpperCase()).join(' ');
+  // Actions a player never presses deliberately, or that the UI owns.
+  const EXEMPT = new Set(['forward', 'back', 'left', 'right', 'cancel', 'confirm', 'peek']);
+  const CODE_TO_LABEL = {
+    KeyW: 'W', KeyA: 'A', KeyS: 'S', KeyD: 'D', KeyE: 'E', KeyF: 'F', KeyG: 'G',
+    KeyQ: 'Q', KeyR: 'R', KeyV: 'V', KeyB: 'B', KeyT: 'T', KeyC: 'C', KeyJ: 'J',
+    KeyO: 'O', Tab: 'TAB', Escape: 'ESC', ShiftLeft: 'SHIFT', ControlLeft: 'CTRL',
+  };
+  const missing = [];
+  for (const [action, codes] of Object.entries(BOUND)) {
+    if (EXEMPT.has(action)) continue;
+    const labels = codes.map((c) => CODE_TO_LABEL[c]).filter(Boolean);
+    if (!labels.length) continue;                       // arrow keys etc.
+    if (!labels.some((l) => new RegExp(`(^| |/|·)${l}( |$|/|·)`).test(listed))) {
+      missing.push(`${action} (${labels.join('/')})`);
+    }
+  }
+  check('every bound key appears on the pause screen\'s control list',
+    missing.length === 0,
+    missing.length ? `not listed: ${missing.join(', ')}` : `${CONTROLS.length} rows cover every bound action`);
+}
+
+// -- a shut door must not shut every door that shares its name ---------------
+//
+// A PORTAL ID IS NOT UNIQUE. `to_plant` names the Service Spine's lobby door
+// (open, critical path), the Ductwork's hatch (open) and the Cistern's ladder
+// hatch, which its zone file authors `locked: true`. `to_service`, `to_intake`
+// and `to_residence` are likewise declared in more than one place.
+//
+// Two different bugs have lived in that fact. The registry was keyed by bare id,
+// so the last zone built silently overwrote the others; re-keying it to
+// `zone:id` fixed that and replaced it with a worse one, because `isGated` then
+// answered with a UNION over homonyms — and one authored-shut hatch in the
+// Cistern reported every route into the Plant as locked, permanently, with
+// nothing able to open them. `World._preload` builds the Cistern from 14 m away,
+// so it did not even need the player to go there.
+//
+// Neither version failed a single existing check: the critical path walks the
+// interactor, and the portal graph reads the zone files rather than the gate
+// state. This is the check that fails for both.
+{
+  const byId = new Map();
+  for (const [zid, zone] of Object.entries(zones)) {
+    for (const p of zone.portals || []) {
+      if (!p.target?.zone) continue;
+      if (!byId.has(p.id)) byId.set(p.id, []);
+      byId.get(p.id).push({ zid, p });
+    }
+  }
+  const shared = [...byId].filter(([, l]) => l.length > 1);
+
+  // THE INVARIANT, and it is the one both bugs broke: what the world is told
+  // about a door must be what that door's own registration says.
+  //
+  // Anything softer than this has no teeth. The first version of this check
+  // skipped a portal its zone authored `locked: true` (correct scenery) and
+  // skipped a portal that belongs to a gate group (correct gating) — which
+  // between them skipped every portal involved, and the check passed with the
+  // union bug restored. Comparing the answer to the registration cannot be
+  // skipped away: under the union, `isGated('to_plant', 'service')` is true
+  // while `portals.get('service:to_plant').locked` is false, and that is the
+  // whole defect in one line.
+  const bled = [];
+  for (const [id, list] of shared) {
+    for (const { zid } of list) {
+      const own = progression.portals.get(`${zid}:${id}`);
+      if (!own) { bled.push(`${zid}/${id} (never registered)`); continue; }
+      const said = progression.isGated(id, zid);
+      if (said !== !!own.locked) {
+        bled.push(`${zid}/${id} reads ${said ? 'locked' : 'open'} but is registered ${own.locked ? 'locked' : 'open'}`);
+      }
+    }
+    // AND THE PATH THE BUG ACTUALLY SHIPPED THROUGH.
+    //
+    // The comparison above is a tautology against the current implementation:
+    // `isGated(id, zone)` with a truthy zone IS `portals.get(zone:id).locked`,
+    // so it reduces to `x !== x`. It fails on the two historical implementations
+    // — verified — and it would not notice the way the defect reached players in
+    // the first place, which was `World.update` calling `isGated(p.id)` with no
+    // zone at all. Drop that one argument and the Plant reseals with this file
+    // still reporting every check green.
+    //
+    // So exercise the bare-id form too. For an id that names doors in several
+    // zones, it must never answer "locked" on behalf of a door somewhere else.
+    // Asserting on `isGated(id)`'s answer is not enough: with an arbitrary
+    // `_byId(id)[0]` fallback the answer depends on which zone happened to build
+    // first, and in this file's build order that happens to be an open door — so
+    // the check would pass by luck. Assert the invariant instead. An ambiguous
+    // bare id with no current zone must resolve to NOTHING, because a door
+    // nobody can identify must not be allowed to shut the building.
+    const here = progression.player?.game?.currentZone ?? progression.director?.zone ?? null;
+    const r = progression._resolve(id);
+    if (r && r.zone !== here) {
+      bled.push(`_resolve('${id}') answered with ${r.zone}/${id} while the player is in ${here ?? 'no zone'}`
+        + ` — one of ${list.length} doors with that name`);
+    }
+  }
+  check('a door authored shut does not shut every door sharing its name',
+    bled.length === 0,
+    bled.length
+      ? bled.join('; ')
+      : `${shared.length} id(s) declared in more than one zone: ${shared.map(([k, l]) => `${k}x${l.length}`).join(', ')}`);
+
+}
+
 // -- doors ----------------------------------------------------------------
 // The reason every door in the building is now a `DoorLatch` is not that doors
 // are fun: it is that `Kit.doorway` leaves the wall opening walkable on purpose

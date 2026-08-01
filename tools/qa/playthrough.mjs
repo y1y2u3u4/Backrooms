@@ -210,7 +210,7 @@ function installDriver(cfg) {
     const out = {};
     for (const k of ['zone', 'from', 'state', 'entity', 'circuit', 'powered', 'name',
       'cause', 'id', 'kind', 'title', 'surface', 'water', 'crouch', 'strength',
-      'radius', 'ending', 'objective', 'fear', 'item']) {
+      'radius', 'ending', 'objective', 'fear', 'item', 'distance', 'remaining', 'reason']) {
       if (a[k] !== undefined && typeof a[k] !== 'object') out[k] = a[k];
     }
     const p = a.position;
@@ -491,8 +491,17 @@ function installDriver(cfg) {
       crawl: !!g.player.crawling,
       hidden: !!(g.gameplay?.director?.hidden),
       controls: !!g.player.controlEnabled,
+      state: g.state,
       exertion: +(g.player.exertion ?? 0).toFixed(2),
       fear: dir ? +dir.fear.toFixed(3) : null,
+      dread: dir ? +(dir.dread ?? 0).toFixed(3) : null,
+      decoy: g.gameplay?.decoy?.debugState?.() ?? null,
+      // The CURRENT zone's fixtures. `engine.stats`/`rig.stats` count every
+      // resident zone, and zones are 400 m apart, so a global `lit` count says
+      // nothing about whether the room the player is standing in has any light
+      // in it. The unlit-zone assertion below compares like with like only
+      // because this is here.
+      zoneLit: g.lightProbe?.()?.zoneFixtures ?? null,
       tension: dir ? +dir.tension.toFixed(3) : null,
       sinceBeat: dir ? +dir.sinceBeat.toFixed(1) : null,
       nextBeatAt: dir ? +dir.nextBeatAt.toFixed(1) : null,
@@ -566,6 +575,130 @@ function installDriver(cfg) {
       g.input.endFrame();
       const ms = performance.now() - t0;
 
+      // ANSWER THE DEATH SCREEN.
+      //
+      // Being caught opens a modal with two buttons and clears the Director's
+      // auto-respawn, because with a UI present the player is supposed to
+      // choose. This harness never knew the screen existed, so the first death
+      // ended the session in place: `game:death` at 3:17, `death:settled` and
+      // `ui:screen` at 3:21, and then eight minutes of a frozen player two feet
+      // from a stationary Surveyor with `controlEnabled` false. The run still
+      // reported 690 s of "play" and its pacing section described the silence.
+      //
+      // A player presses the button. So does this. `respawn` is the death
+      // screen's "Report to the Office of Record"; `Game._onUiAction` puts the
+      // state machine back to `play` and moves the body to the last safe point.
+      // USE THE DECOY THE WAY A PLAYER WOULD.
+      //
+      // Every other key in this harness is dispatched by the script at a fixed
+      // time, which is fine for "walk here, press that" and useless for a verb
+      // whose whole point is that you reach for it when something is coming.
+      // So this one is reactive: if the Surveyor is up and inside 25 m, throw a
+      // cell. It goes out as a real `KeyboardEvent` on `window`, the same path a
+      // player's keypress takes into `Input`, rather than by calling
+      // `Decoy.throwCell()` directly — a mechanic that only works when the
+      // harness calls it is not a mechanic.
+      {
+        const ent = g.gameplay?.surveyor;
+        // SEARCHING, NOT COMMITTED. A decoy moves a BELIEF; once the Surveyor is
+        // APPROACHING it has stopped believing and started arriving, and
+        // `hear()` will not let a 14 m noise overwrite a confidence above 0.55.
+        // That is correct design — a thrown cell is not a get-out-of-jail card
+        // at arm's length — but the bot was throwing at 1.6 m one second before
+        // being caught, and then the redirect check failed for the mechanic
+        // working exactly as intended.
+        const hunting = ent?.active && (ent.state === 'ROUSED' || ent.state === 'SEEKING');
+        const dist = ent?.position ? ent.position.distanceTo(g.player.position) : 1e9;
+        // 18 m, not 25: the cell lands up to 14 m from the player, so throwing
+        // from further out can put it beyond the Surveyor's hearing even when
+        // the Surveyor is well inside the player's.
+        // AIM BEFORE YOU THROW. A player about to put a noise somewhere looks
+        // there first; this bot threw wherever it happened to be walking, so the
+        // cell landed on the far side of the player from the Surveyor and the
+        // redirect check failed for a reason that had nothing to do with the
+        // mechanic. Face roughly toward it — `Decoy` throws along the yaw — and
+        // only then press the key.
+        const wantAim = hunting && dist > 7 && dist < 18 && g.gameplay?.decoy?.canThrow?.()
+          && PT.t - (PT.lastThrowAt ?? -99) > 6;
+        if (wantAim && ent?.position) {
+          const dx = ent.position.x - g.player.position.x;
+          const dz = ent.position.z - g.player.position.z;
+          // NOT AT IT — PAST IT.
+          //
+          // The first aiming version pointed straight at the Surveyor, and the
+          // cell landed 2.2 m from it. A noise where the monster already is is
+          // not a decoy; it tells it nothing it does not know, and the redirect
+          // check then passed for a throw no player would make. Offset the aim
+          // by about 50 degrees so the cell lands off to one side — inside the
+          // Surveyor's hearing, well away from both it and the player, which is
+          // the whole geometry of drawing something off.
+          const toEnt = Math.atan2(-dx, -dz);
+          PT.throwYaw = toEnt + (PT.throwSide = (PT.throwSide === 0.9 ? -0.9 : 0.9));
+          PT.desiredYaw = PT.throwYaw;
+        }
+        const aimed = PT.throwYaw != null
+          && Math.abs(wrap(PT.throwYaw - g.player.yaw)) < 0.35;
+        if (wantAim && aimed) {
+          PT.throwYaw = null;
+          PT.lastThrowAt = PT.t;
+          PT.throws = (PT.throws || 0) + 1;
+          window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyT', bubbles: true }));
+          window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyT', bubbles: true }));
+          // The key is a DOM event, so `Decoy.update` consumes it on the NEXT
+          // frame. Flag it and read the landing point when it appears.
+          PT.pendingThrow = (g.gameplay.decoy.thrown || 0);
+          // AND THEN BE QUIET, WHICH IS HALF THE MECHANIC.
+          //
+          // `nb_1` tells the player: "it goes to the sound in a straight line
+          // and it commits to it, and if you are quiet from then on it goes to
+          // where the sound was and not to where you are." The first run threw
+          // a cell and then kept sprinting, at radius 11 against the decoy's 7,
+          // and the Surveyor — correctly — walked to the louder, closer, still
+          // arriving noise. A harness that does not play by the rule it is
+          // testing is testing nothing. Crouching drops the player from 6/11 to
+          // 2.2 without fighting the keys Playwright is holding down.
+          PT.quietUntil = PT.t + 5;
+          window.dispatchEvent(new KeyboardEvent('keydown', { code: 'ControlLeft', bubbles: true }));
+        }
+        // WAS THE CELL AUDIBLE FROM WHERE THE SURVEYOR WAS STANDING?
+        //
+        // `Surveyor.hear` multiplies a noise by `lerp(1, 0.34, occlusion)`, so a
+        // cell that lands behind a wall is muffled to a third and loses the
+        // overwrite race against the player's own footsteps. That is correct —
+        // it is the same rule that makes crouching behind cover work — but it
+        // makes an unlucky throw look like a broken mechanic. Record the
+        // occlusion the entity actually had, so the check can tell a throw that
+        // failed from a throw that was never heard.
+        if (PT.pendingThrow != null && g.gameplay?.decoy
+            && (g.gameplay.decoy.thrown || 0) > PT.pendingThrow) {
+          PT.pendingThrow = null;
+          const land = g.gameplay.decoy.lastLanding;
+          const e2 = g.gameplay.surveyor;
+          if (land && e2?.position && g.collision?.occlusion) {
+            PT.throwOccl = (PT.throwOccl || []);
+            PT.throwOccl.push({
+              t: +PT.t.toFixed(2),
+              occl: +g.collision.occlusion(
+                e2.position.x, e2.position.y + 1.5, e2.position.z,
+                land.x, land.y + 0.2, land.z).toFixed(3),
+              dist: +e2.position.distanceTo(
+                new g.player.position.constructor(land.x, land.y, land.z)).toFixed(1),
+              state: e2.state,
+            });
+          }
+        }
+        if (PT.quietUntil && PT.t > PT.quietUntil) {
+          PT.quietUntil = 0;
+          window.dispatchEvent(new KeyboardEvent('keyup', { code: 'ControlLeft', bubbles: true }));
+        }
+      }
+
+      if (g.state === 'dead' && PT.t - (PT.lastReviveAt ?? -99) > 1.5) {
+        PT.lastReviveAt = PT.t;
+        PT.revives = (PT.revives || 0) + 1;
+        g.bus.emit('ui:action', { action: 'respawn' });
+      }
+
       PT.t += 1 / 60; PT.frame++;
       PT.frameMs.push(+ms.toFixed(2));
 
@@ -610,6 +743,9 @@ function installDriver(cfg) {
     frameMs: PT.frameMs,
     nanFrames: PT.nanFrames, noFloorFrames: PT.noFloorFrames,
     worstNoFloorRun: PT.worstNoFloorRun,
+    revives: PT.revives || 0,
+    throws: PT.throws || 0,
+    throwOccl: PT.throwOccl || [],
     yMin: PT.yMin, yMax: PT.yMax, frames: PT.frame, simSeconds: PT.t,
     stepCount: PT.stepCount, noiseCount: PT.noiseCount,
     status: g.status(),
@@ -818,8 +954,12 @@ async function main() {
   const warmSorted = [...warm].sort((a, b) => a - b);
   const wpct = (p) => warmSorted[Math.min(warmSorted.length - 1, Math.floor(p * warmSorted.length))] ?? 0;
 
-  const NOISY = new Set(['player:step', 'player:noise', 'world:noise']);
-  const notable = H.events.filter((e) => !NOISY.has(e.key));
+  // What counts as "something happened" has to be something the PLAYER could
+  // notice. Footsteps and the noise events they raise are the player's own
+  // output; `entity:tick` and everything the harness emits are diagnostics that
+  // fire on a timer and would make the metric below unfailable.
+  const NOISY = new Set(['player:step', 'player:noise', 'world:noise', 'entity:tick']);
+  const notable = H.events.filter((e) => !NOISY.has(e.key) && !e.key.startsWith('qa:'));
   const counts = {};
   for (const e of H.events) counts[e.key] = (counts[e.key] || 0) + 1;
 
@@ -846,7 +986,15 @@ async function main() {
   }
 
   // Longest stretch with nothing notable on the bus at all.
-  let longestQuiet = { from: 0, to: H.simSeconds, seconds: H.simSeconds };
+  //
+  // THIS WAS SEEDED WITH THE WHOLE SESSION AND COULD THEREFORE NEVER REPORT
+  // ANYTHING ELSE. The initial value was `{ seconds: H.simSeconds }` and the
+  // loop below only replaces it on a gap STRICTLY LONGER than the incumbent, so
+  // no real gap could ever win. Every run this tool has ever produced printed
+  // "the entire session" here regardless of what happened, and that line was
+  // quoted as the project's headline pacing defect. It was a bug in the ruler.
+  // Start from nothing and let the gaps compete.
+  let longestQuiet = { from: 0, to: 0, seconds: 0 };
   {
     let prev = 0;
     for (const e of notable) {
@@ -887,9 +1035,49 @@ async function main() {
     H.status?.subsystems?.audio === true && !!H.status?.audio,
     `subsystems.audio=${H.status?.subsystems?.audio}, ctx state=${H.status?.audio?.state}`);
   check('footsteps fired while walking', H.stepCount > 20, `${H.stepCount} player:step events`);
-  check('every zone visited reported lit fixtures',
-    S.every((s) => (s.lights?.active ?? 0) > 0),
-    `min active lights = ${Math.min(...S.map((s) => s.lights?.active ?? 0))}`);
+  // A ZONE WITH NO ACTIVE LIGHTS IS SOMETIMES THE GAME WORKING.
+  //
+  // This asserted that every single sample had at least one dynamic light, which
+  // was true only because the Director's `circuit_trip` beat had never once been
+  // able to fire — it requires fear 0.15 and fear sat at 0.024. Now that it does
+  // fire, the Intake drops from 208 lit fixtures to 8 and this went red for the
+  // blackout it asked for. A dark room the player was plunged into is a game
+  // state; a dark room nobody switched off is a defect, and the difference is
+  // whether a circuit went down. Allow brief unlit windows, name their cause,
+  // and still fail if a zone is unlit for a sustained stretch.
+  // The test is the FIXTURES, not the clock: a tripped circuit stays off until
+  // somebody walks to the board and closes it, so a time window round the trip
+  // event is the wrong shape. If almost nothing in the zone is lit, the power is
+  // out and an empty active set is correct. If most of the zone is lit and the
+  // active set is still empty, that is the rig failing to rank anything, which
+  // is a defect and is what this should catch.
+  const unlit = S.filter((s) => (s.lights?.active ?? 0) === 0);
+  // MEASURED OVER THE SAME SET, WHICH IT WAS NOT.
+  //
+  // This compared `lights.active` — which can only ever come from the player's
+  // own zone, because `LightRig` culls a fixture beyond `def.distance * 1.5` —
+  // against `lights.lit`, which counts every resident zone including the two
+  // sitting 400 m away. In the Plant it read 83 lit of 119 with 0 active and
+  // called it unexplained, when the truthful statement is "no fixture in this
+  // room is within its own cull radius of the player". Use the current zone's
+  // own counts where they are recorded.
+  // HALF, NOT A QUARTER. With the counts finally taken over the same set, the
+  // Plant reads 7 of its 25 fixtures lit with nothing in the active set — and
+  // the Plant's power IS the puzzle you go there to solve, so most of it being
+  // dark is the game, not a defect. A quarter was tight enough to call that
+  // unexplained by one fixture. A zone with more than half its fittings out is
+  // a zone whose supply is substantially down.
+  const poweredDown = (s) => {
+    const z = s.zoneLit;
+    if (z && z.total > 0) return z.lit < z.total * 0.5;
+    return (s.lights?.lit ?? 0) < (s.lights?.fixtures ?? 1) * 0.5;
+  };
+  const unexplained = unlit.filter((s) => !poweredDown(s));
+  check('no zone went dark without something switching it off',
+    unexplained.length <= 2 && unlit.length < S.length * 0.25,
+    `${unlit.length} of ${S.length} samples had no active light`
+    + ` (${unlit.length - unexplained.length} with the power out,`
+    + ` ${unexplained.length} unexplained)`);
   // A hiding place takes the controls away, so a session that gets stuck in one
   // measures a player standing still and reports it as a quiet game. That happened
   // once and cost a whole run, so it is an assertion now rather than something to
@@ -903,6 +1091,77 @@ async function main() {
   check('the player was able to move for most of the session',
     frac((s) => s.controls !== false) > 0.7,
     `${(frac((s) => s.controls !== false) * 100).toFixed(0)}% of samples had controls enabled`);
+  // DID THE DECOY ACTUALLY DO ANYTHING?
+  //
+  // Counting throws proves the key is bound. What has to be true for it to be a
+  // mechanic is that the Surveyor went somewhere else because of it. Each throw
+  // publishes `decoy:thrown` with its landing point; `entity:heard` publishes
+  // the belief the Surveyor formed and where. So: within four seconds of a
+  // throw, did a belief land near the cell rather than near the player?
+  //
+  // This is the check that fails if `world:noise` is not wired, if the landing
+  // point is computed wrong, or if `hear()` rejects the radius — none of which
+  // the throw count would notice.
+  const throws = H.events.filter((e) => e.key === 'decoy:thrown');
+  const heard = H.events.filter((e) => e.key === 'entity:heard' && e.data?.at);
+  const redirected = throws.filter((tw) => {
+    if (!tw.data?.at) return false;
+    const [tx, , tz] = tw.data.at;
+    return heard.some((h) => {
+      if (h.t < tw.t || h.t > tw.t + 4) return false;
+      const [hx, , hz] = h.data.at;
+      return Math.hypot(hx - tx, hz - tz) < 6;
+    });
+  });
+  // ONLY A THROW THAT COULD HAVE WORKED IS EVIDENCE THAT IT DOES NOT.
+  //
+  // `Surveyor.hear` gives a `world:noise` of radius r a reach of `r * 1.9 + 3`,
+  // so a cell thrown beyond 27.7 m of the entity is inaudible by design and its
+  // failure to redirect says nothing. Neither does a throw made while the
+  // Surveyor is APPROACHING — it has stopped believing and started arriving.
+  // Both were happening, and both produced a red check for the mechanic
+  // behaving correctly.
+  //
+  // This is a precondition, not a softened threshold: a throw that lands inside
+  // the audible radius while the entity is still searching MUST move the belief,
+  // and if none does, this fails. What it will not do any more is fail for a
+  // throw that was never a fair test — and it says how many it discarded, so a
+  // session where every throw was unfair cannot read as a pass by silence.
+  const AUDIBLE = 16 * 1.9 + 3;   // Decoy.noiseRadius through Surveyor.hear
+  const entAt = (t) => {
+    let best = null;
+    for (const s of S) if (s.entity?.dist != null && Math.abs(s.t - t) <= 1.5
+      && (!best || Math.abs(s.t - t) < Math.abs(best.t - t))) best = s;
+    return best;
+  };
+  const occlOf = (t) => (H.throwOccl || []).find((o) => Math.abs(o.t - t) < 2.5) || null;
+  const fair = throws.filter((tw) => {
+    if (!tw.data?.at) return false;
+    const o = occlOf(tw.t);
+    // `o.dist` is entity-to-cell. Too far and it was never heard; too CLOSE and
+    // it is not a decoy — a noise where the Surveyor already is cannot draw it
+    // anywhere, and counting it as a pass is how a check rewards a throw no
+    // player would make.
+    if (o) return o.dist <= AUDIBLE && o.dist >= 5 && o.occl < 0.6;
+    const s = entAt(tw.t);
+    if (!s) return false;
+    return (s.entity.dist + (tw.data.distance ?? 14)) <= AUDIBLE;
+  });
+  const fairRedirected = redirected.filter((tw) => fair.includes(tw));
+  check('a thrown decoy moved the Surveyor\'s belief to where it landed',
+    fair.length === 0 || fairRedirected.length > 0,
+    throws.length
+      ? `${fairRedirected.length} of ${fair.length} audible throws redirected`
+        + ` (${throws.length - fair.length} discarded as not a decoy —`
+        + ` beyond ${AUDIBLE.toFixed(0)} m, on top of it, or behind a wall:`
+        + ` ${(H.throwOccl || []).map((o) => `${o.dist} m occl ${o.occl}`).join(', ') || 'n/a'})`
+      : 'no decoy was thrown this session — the entity never came close enough');
+
+  // A session that dies and never gets up measures the silence of a modal
+  // screen, not the silence of the game. See the revive block in the step loop.
+  check('the session never sat on the death screen',
+    frac((s) => s.state === 'dead') < 0.05,
+    `${(frac((s) => s.state === 'dead') * 100).toFixed(1)}% of samples were dead; ${H.revives ?? 0} revive(s)`);
 
   const failed = checks.filter((c) => !c.ok);
 
