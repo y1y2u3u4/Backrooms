@@ -322,6 +322,8 @@ export class World {
 
   update(dt, playerPos) {
     this._transitionCooldown = Math.max(0, this._transitionCooldown - dt);
+    /** Seconds since boot. Only the locked-door explanation reads it. */
+    this._nagT = (this._nagT ?? 0) + dt;
     // Which zone patch is the player standing in? Zones are 400 m apart, so a
     // nearest-origin test is exact and costs nothing.
     if (playerPos) {
@@ -400,16 +402,33 @@ export class World {
         if (this.ctx.collision?.segmentBlocked(
           playerPos.x, playerPos.y + PROBE_Y, playerPos.z,
           w[0], w[1] + PROBE_Y, w[2], 'ceiling')) continue;
-        const gated = this.ctx.progression?.isGated?.(p.id);
+        // Ask about THIS door, in the zone whose portal list we are walking —
+        // `to_plant` is the id of three different doors in three zones and one
+        // of them is authored shut. See Progression.isGated.
+        const gated = this.ctx.progression?.isGated?.(p.id, p.zone);
         if (gated) {
           // Tell the player why, at most once every few seconds.
-          if (this._lastGateNag !== p.id) {
-            this._lastGateNag = p.id;
+          //
+          // IT SAID "AT MOST ONCE EVERY FEW SECONDS" AND MEANT "ONCE, EVER".
+          // The latch was a bare id compared against the last id nagged, and it
+          // was only cleared by successfully passing through some other portal.
+          // So a player who walks up to a shut door, reads the reason, wanders
+          // off and comes back gets nothing the second time — and if they never
+          // pass a portal in between, nothing for the rest of the session. An
+          // unguided session recorded exactly one `portal:locked` in 540 s
+          // against a door it approached repeatedly. A locked door that will not
+          // repeat itself is a locked door with no explanation.
+          //
+          // Time is what "every few seconds" needs, so this is a per-door clock.
+          const now = this._nagT ?? 0;
+          if (!this._nag) this._nag = new Map();
+          const key = `${p.zone}:${p.id}`;
+          if (now - (this._nag.get(key) ?? -99) > 6) {
+            this._nag.set(key, now);
             this.ctx.bus?.emit('portal:locked', { id: p.id, zone: p.target.zone });
           }
           continue;
         }
-        this._lastGateNag = null;
         this._spentPortals.add(p.id);
         // `portal()` stores the far-side door as `target.portalId`. Reading
         // `target.portal` found undefined every time and fell back to `p.id` —

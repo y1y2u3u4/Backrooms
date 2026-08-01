@@ -199,25 +199,83 @@ export class Progression {
    * carrying whatever lock the group is under. Without that, walking away from a
    * zone and back would silently unlock its doors.
    */
+  /**
+   * A PORTAL ID IS NOT UNIQUE, AND THIS MAP USED IT AS A KEY.
+   *
+   * `to_plant` is declared by three different zone files — the Service Spine's
+   * lobby door (open, on the critical path), the Ductwork's hatch (open) and the
+   * Cistern's ladder hatch, which carries `{ locked: true }`. Zones are built on
+   * demand as the player reaches them, so the registration order is the player's
+   * route, and `portals.set(portal.id, p)` meant the last one to build won. Take
+   * the ordinary route and detour through the Cistern first, and `isGated
+   * ('to_plant')` starts answering for the Cistern's locked ladder — reporting
+   * the Service Spine's main door to the Plant as shut, with nothing in the game
+   * able to open it.
+   *
+   * It has never been seen because every harness in `tools/qa` changes zone by
+   * teleport. No gated portal has ever been walked through.
+   *
+   * The map is now keyed by `zone:id`, which is unique. Bare-id lookups still
+   * work — `_resolve` prefers the portal in the zone the player is standing in,
+   * which is the one they are looking at — so every existing call site is
+   * unaffected, including `installDefaultGates` and the group machinery.
+   */
   registerPortal(portal, { locked = false, reason = '', group = null } = {}) {
     const g = group ? this.groups.get(group) : null;
     const p = {
-      id: portal.id, portal, group,
+      id: portal.id, zone: portal.zone ?? null, portal, group,
       locked: g ? g.locked : locked,
       reason: g && g.reason ? g.reason : reason,
     };
-    this.portals.set(portal.id, p);
+    this.portals.set(`${p.zone ?? '?'}:${p.id}`, p);
     if (group && !this.groups.has(group)) this.groups.set(group, { locked, reason });
     if (portal) portal.locked = p.locked;
     return p;
   }
 
+  /** Every registered portal carrying this bare id, nearest zone first. */
+  _byId(id) {
+    const here = this.player?.game?.currentZone ?? this.director?.zone ?? null;
+    const hits = [];
+    for (const p of this.portals.values()) if (p.id === id) hits.push(p);
+    hits.sort((a, b) => (b.zone === here ? 1 : 0) - (a.zone === here ? 1 : 0));
+    return hits;
+  }
+
+  /** One portal for a bare id — the one in the zone the player is in, if any. */
+  /**
+   * One portal for a bare id — and NEVER an arbitrary one.
+   *
+   * This returned `_byId(id)[0]`, which for a unique id is right and for a
+   * homonym is a coin toss weighted by whichever zone happened to build first.
+   * `to_plant` names three doors and one of them is authored shut, so a caller
+   * that forgot to pass a zone could still be told the Service Spine's lobby
+   * door was locked — the same critical-path break as the union, reachable by
+   * dropping one argument at one call site. A check that compares
+   * `isGated(id, zone)` against the registration cannot see that, because with a
+   * zone the two are the same expression.
+   *
+   * So an ambiguous bare id with nothing in the player's current zone resolves
+   * to null, and null reads as open. A door nobody can identify must not be
+   * allowed to shut the building.
+   */
+  _resolve(id) {
+    const direct = this.portals.get(id);
+    if (direct) return direct;
+    const hits = this._byId(id);
+    if (hits.length <= 1) return hits[0] || null;
+    const here = this.player?.game?.currentZone ?? this.director?.zone ?? null;
+    return hits.find((p) => p.zone === here) || null;
+  }
+
   /** @param {string} key a portal id, or a group name. */
   gate(key, locked, reason = '') {
     const targets = [];
-    const direct = this.portals.get(key);
-    if (direct) targets.push(direct);
-    if (this.groups.has(key) || !direct) {
+    // A bare id may now name more than one portal (see registerPortal). Gating
+    // `to_plant` must gate every door called that, not whichever built last.
+    const direct = this._byId(key);
+    for (const d of direct) targets.push(d);
+    if (this.groups.has(key) || !direct.length) {
       const g = this.groups.get(key) || { locked, reason };
       g.locked = locked;
       if (reason) g.reason = reason;
@@ -237,10 +295,34 @@ export class Progression {
     return true;
   }
 
-  isGated(id) { return !!this.portals.get(id)?.locked; }
+  /**
+   * Is THIS door shut? Not "is any door with this name shut".
+   *
+   * The re-keying that fixed the last-build-wins collision introduced a worse
+   * bug in its place: this read `_byId(id).some(p => p.locked)`, a union over
+   * every portal sharing a bare id. `to_plant` is the id of the Service Spine's
+   * lobby door, the Ductwork's hatch AND the Cistern's ladder hatch — and the
+   * Cistern's is authored `locked: true` at registration. So the moment the
+   * Cistern was built, which `World._preload` does from 14 m away, **every route
+   * into the Plant in the building read as locked, with nothing able to open
+   * them.** Before the re-key it depended on the player's route; after it, it
+   * was certain. That is a critical-path break, and it was mine.
+   *
+   * A portal is gated if the portal in ITS OWN zone is gated. `zone` is passed
+   * by `World.update`, which knows which zone's portal list it is walking; the
+   * fallbacks are for callers that only have a name, and they resolve to the
+   * player's current zone rather than to a union.
+   *
+   * @param {string} id
+   * @param {string} [zone] the zone the portal being asked about belongs to
+   */
+  isGated(id, zone = null) {
+    if (zone) return !!this.portals.get(`${zone}:${id}`)?.locked;
+    return !!this._resolve(id)?.locked;
+  }
 
   /** Player-facing refusal text for a gated portal. */
-  gateReason(id) { return this.portals.get(id)?.reason || ''; }
+  gateReason(id) { return this._resolve(id)?.reason || ''; }
 
   // -- wiring -------------------------------------------------------------------
 

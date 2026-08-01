@@ -81,7 +81,11 @@ export class Game {
     const P = (v, m) => onProgress(v, m);
 
     P(0.02, 'initialising renderer');
-    this.engine = new Engine(this.canvas, { quality: detectQuality() });
+    // `readback` is only wanted by the QA harnesses, which pull frames out of
+    // the canvas with toDataURL. It maps to preserveDrawingBuffer, which asks
+    // the driver to keep the back buffer alive after presentation and costs a
+    // full-frame copy on tile-based GPUs. Players do not need it.
+    this.engine = new Engine(this.canvas, { quality: detectQuality(), readback: this.qa });
     this.input = new Input(this.canvas);
 
     P(0.05, 'forging surfaces');
@@ -331,6 +335,36 @@ export class Game {
     // last safe point was.
     this.bus.on('player:fell', (e) => {
       console.warn(`[game] player left the world (${(e?.drop ?? 0).toFixed(1)} m); respawning`);
+      // FALLING TWICE IN A ROW MEANS THE RESPAWN POINT IS THE PROBLEM.
+      //
+      // Measured: a free-roaming bot fell through a hole in the Service Spine,
+      // respawned onto a point that was itself in the void, fell again six
+      // seconds later, and repeated it for the remaining 106 s of the session
+      // with `controlEnabled` false the whole time. Retrying the same coordinates
+      // is not a recovery, it is a loop, and the player is a spectator to it.
+      const t = this._now ?? 0;
+      // A hard floor on how often this can run at all. `teleport` re-arms the
+      // fall detector, so without a cooldown a destination that does not hold
+      // turns the recovery into a per-frame loop instead of a recovery.
+      if (t - (this._lastRecoverAt ?? -99) < 0.75) return;
+      this._lastRecoverAt = t;
+      const repeat = t - (this._lastFellAt ?? -99) < 12;
+      this._lastFellAt = t;
+      if (repeat) {
+        const p = this._anyFloorNear(this.player.position.x, this.player.position.z);
+        if (p) {
+          console.warn('[game] fell again straight after a respawn; placing on the nearest built floor');
+          this.player.teleport(p[0], p[1], p[2], this.player.yaw);
+          this.player.controlEnabled = true;
+          this.player.lookEnabled = true;
+          this.player.frozen = false;
+          this.state = 'play';
+          this.ui?.show?.(null);
+          this._respawnSettle = 0;
+          this._respawnAt = null;
+          return;
+        }
+      }
       this.respawn();
     });
 
@@ -468,11 +502,41 @@ export class Game {
   }
 
   /** Death -> respawn. The world is expected to have shifted slightly. */
+  /**
+   * Put the player back at the last safe point.
+   *
+   * TWO THINGS THIS DID NOT DO, AND A SESSION THAT ENDED BECAUSE OF IT.
+   *
+   * The safe point is `{id, position, yaw, zone}` and this read three of those
+   * four fields. Zones are 400 m apart and streamed, so respawning into a zone
+   * that is not resident teleports the player to the right coordinates in an
+   * empty world — no floor, no colliders. And `teleport` was given the stored Y
+   * verbatim with no floor snap, where every other placement path in this file
+   * goes through `collision.sampleFloor` first.
+   *
+   * Observed: the player fell out of the Service Spine, the `player:fell` net
+   * called this, this dropped them into the Safe Room at y = -28.04, they fell
+   * again, and it looped — seven falls and fifteen respawns, `controlEnabled`
+   * false for the last minute of the session. The net that exists to catch a
+   * fall was the thing causing them.
+   */
   respawn() {
     this.progression?.respawn?.();
+    const safe = this.gameplay?.director?.lastSafe || null;
     const point = this.progression?.lastSafePoint?.() || this.world?.spawn || [0, 0, 0];
     const yaw = this.progression?.lastSafeYaw?.() ?? this.world?.spawnYaw ?? 0;
-    this.player.teleport(point[0], point[1], point[2], yaw);
+
+    // The zone has to be resident before the coordinates in it mean anything.
+    if (safe?.zone && this.world?.goto && this.currentZone !== safe.zone) {
+      try { this.world.goto(safe.zone); } catch { /* streaming will catch up */ }
+    }
+
+    const y = this._floorYAt(point[0], point[2], point[1]);
+    this.player.teleport(point[0], y ?? point[1], point[2], yaw);
+    // No floor yet — the zone is still building. Hold the body and keep trying
+    // rather than letting gravity have it. See `_settleRespawn`.
+    this._respawnSettle = y === null ? 2.0 : 0;
+    this._respawnAt = [point[0], point[2], point[1]];
     this.player.controlEnabled = true;
     this.player.lookEnabled = true;
     this.player.frozen = false;
@@ -480,6 +544,97 @@ export class Game {
     this.state = 'play';
     this.ui?.show?.(null);
     if (this.sequencer?.play) this.sequencer.play('respawn');
+  }
+
+  /** Highest floor at (x,z) at or below `fromY` plus a generous reach, or null. */
+  _floorYAt(x, z, fromY) {
+    const fl = this.collision?.sampleFloor?.(x, z, (fromY ?? 0) + 2.5, 6);
+    return fl ? fl.y : null;
+  }
+
+  /**
+   * Finish a respawn that landed before its zone had colliders. Runs from
+   * `step`; holds the body still and re-places it the moment a floor appears.
+   */
+  _settleRespawn(dt) {
+    if (!(this._respawnSettle > 0) || !this._respawnAt) return;
+    this._respawnSettle -= dt;
+    const [x, z, y0] = this._respawnAt;
+    const y = this._floorYAt(x, z, y0);
+    if (y !== null) {
+      this.player.teleport(x, y, z, this.player.yaw);
+      this._respawnSettle = 0;
+      this._respawnAt = null;
+      return;
+    }
+    // Still nothing under it. Do not let it accelerate into the void while we
+    // wait, and if the wait runs out put it on any floor that actually exists.
+    this.player.position.y = y0;
+    if (this.player.velocity) this.player.velocity.y = 0;
+    if (this._respawnSettle <= 0) {
+      const p = this._anyFloorNear(x, z) || this._anyFloorNear(...(this.world?.spawn || [0, 0, 0]));
+      if (p) {
+        this.player.teleport(p[0], p[1], p[2], this.player.yaw);
+        console.warn('[game] respawn point had no floor; placed on the nearest built floor instead');
+      } else {
+        console.error('[game] respawn found no floor anywhere in the resident world');
+      }
+      this._respawnAt = null;
+    }
+  }
+
+  /**
+   * The centre of the nearest floor rectangle a body fits on, anywhere in the
+   * resident world. The last-resort respawn.
+   *
+   * THIS EXISTS BECAUSE THE SAFETY NET HAD NO NET UNDER IT. An exploration bot
+   * walked through `service_door3` into a hole in the Service Spine, fell, and
+   * then respawned into somewhere with no floor — and did it again every six
+   * seconds for the remaining 106 seconds of the session, `controlEnabled` false
+   * throughout. `Director.respawn` teleports to `lastSafe`, `Game.respawn`
+   * teleports to the same point with a floor snap, and the previous fallback
+   * from here was `world.spawn` — which is the INTAKE's spawn, and the Intake is
+   * not resident when you are in the Service Spine, so it had no floor either.
+   * Three fallbacks, all of which could be in a zone that is not loaded.
+   *
+   * `collision.floors` is the set of rectangles the streamer has actually built.
+   * If that is empty there is no game to respawn into; if it is not, this cannot
+   * fail.
+   */
+  _anyFloorNear(x, z) {
+    const col = this.collision;
+    const floors = col?.floors;
+    if (!floors?.length) return null;
+    // Nearest first, then PROVE each candidate before handing it back.
+    //
+    // The first version returned a rectangle's centre and trusted it. It does
+    // not follow that a body fits there: a rect centre can be under a machine,
+    // inside a wall return, or on a lip the capsule gets pushed off. Handing
+    // back an unstandable point is worse than handing back nothing, because
+    // `Player.teleport` sets `_fellOut = false` — it re-arms the fall detector —
+    // so a bad destination makes `player:fell` fire again next frame, and the
+    // recovery becomes a 60 Hz loop. Measured: 5 992 `player:fell` events in one
+    // 106 s stretch.
+    const cands = [];
+    for (const f of floors) {
+      if (f.tag === 'void' || (f.water ?? 0) > 0.8) continue;
+      if (f.maxX - f.minX < 1.2 || f.maxZ - f.minZ < 1.2) continue;
+      const cx = (f.minX + f.maxX) / 2, cz = (f.minZ + f.maxZ) / 2;
+      cands.push({ d: (cx - x) ** 2 + (cz - z) ** 2, cx, cz, y: f.y });
+    }
+    cands.sort((a, b) => a.d - b.d);
+    const r = this.player?.radius ?? 0.29;
+    const h = this.player?.height ?? 1.74;
+    for (const c of cands.slice(0, 40)) {
+      const fl = col.sampleFloor?.(c.cx, c.cz, c.y + 0.5, 1.0);
+      if (!fl) continue;
+      const res = col.resolveCapsule?.(c.cx, fl.y, c.cz, r, h);
+      if (res && (res.hit || Math.hypot(res.x - c.cx, res.z - c.cz) > 0.25)) continue;
+      const head = col.ceilingAbove?.(c.cx, c.cz, fl.y + 0.05, r);
+      if (Number.isFinite(head) && head - fl.y < h) continue;
+      return [c.cx, fl.y, c.cz];
+    }
+    return null;
   }
 
   // -------------------------------------------------------------------------
@@ -640,6 +795,8 @@ export class Game {
 
   /** One logic step. Split out so the QA harness can advance deterministically. */
   step(dt) {
+    /** Seconds of simulated time since boot. Only the fall-loop guard reads it. */
+    this._now = (this._now ?? 0) + dt;
     updateMaterialGlobals(dt);
 
     // Order is load-bearing and is asserted by the gameplay and UI layers:
@@ -657,6 +814,9 @@ export class Game {
       this.menuCamera.update(dt);
     } else {
       this.player.update(dt, this.input);
+      // Immediately after integration, so a respawn that landed before its zone
+      // had colliders cannot accumulate a frame of fall.
+      this._settleRespawn(dt);
     }
     this.gameplay?.update?.(dt, this.input);
     this.world?.update?.(dt, this.player.position);
@@ -837,7 +997,15 @@ export class Game {
         const list = z?._fixtures || [];
         return { total: list.length, lit: list.filter((f) => f.level > 0.05).length };
       })(),
+      // The AUTHORED exposure multiplier — a constant, and named badly enough
+      // that three harnesses waited on it for an eye adaptation it has nothing
+      // to do with. Kept under its old name so nothing that reads it breaks.
       exposure: +this.engine.grade.uniforms.uExposure.value.toFixed(3),
+      // What the eye has actually adapted to. `adaptation.autoGain` is the
+      // multiplier the grade applies, clamped by AUTO_EXPOSURE to about 1.6
+      // stops end to end — so a room four stops darker than the one before it
+      // stays four stops darker, by design. This is the number to settle on.
+      adaptation: this.engine.exposure?.read?.() ?? null,
     };
   }
 
