@@ -559,8 +559,44 @@ export function troffer(b, rig, x, y, z, {
     repeat: [1.6, 1.6], color: 0xbfbfb8, metalness: 0.9, roughness: 0.55,
     dirtAmount: 0.15, detailStrength: 0.25, envMapIntensity: 0.8,
   }));
-  const housing = box(L + 0.06, 0.12, W + 0.06, 0.006, 1);
-  housing.translate(0, 0.062, 0);
+  // THE HOUSING IS A PAN, NOT A BOX.
+  //
+  // This was a solid `box(L+0.06, 0.12, W+0.06)` sitting at +0.062, i.e. y in
+  // [0.002, 0.122] — and the tubes live at y in [0.021, 0.059]. The lamps were
+  // sealed inside their own casing. Every troffer in the building (200 of the
+  // Intake's 208 fixtures) therefore rendered as an unlit steel rectangle set
+  // into the grid, and the emissive batch it fed was invisible: hiding every
+  // emissive mesh in the Intake moved the frame's peak by 2/255 and its mean by
+  // 0.0, measured standing under a lit fitting.
+  //
+  // That is why no frame in this game had a pixel above ~208 and why the dark
+  // zones resisted every increase in fill: the only surfaces allowed to be
+  // bright were behind sheet steel. Fill cannot substitute for a visible source,
+  // which is what constraint 3 of the brief has been saying all along.
+  //
+  // Five plates instead of one solid: a top, and four sides, leaving the
+  // aperture open the way a louvred fitting actually is. The interior is unlit
+  // steel and reads black, which is what frames the tubes.
+  //
+  // The pan pieces pass radius 0, i.e. plain BoxGeometry: they are unlit steel
+  // seen edge-on through a 300 mm aperture and a chamfer on them is 150
+  // triangles nobody will ever resolve. Five plain boxes come to fewer
+  // triangles than the one RoundedBoxGeometry they replace. The flange below
+  // keeps its chamfer, because that one is at eye level and catches light.
+  const T = 0.012, OW = L + 0.06, OD = W + 0.06, HH = 0.12;
+  const pan = [];
+  const top = box(OW, T, OD, 0, 1); top.translate(0, HH + 0.002 - T / 2, 0);
+  pan.push(top);
+  for (const sz of [-1, 1]) {
+    const s = box(OW, HH, T, 0, 1);
+    s.translate(0, 0.062, sz * (OD - T) / 2);
+    pan.push(s);
+  }
+  for (const sx of [-1, 1]) {
+    const s = box(T, HH, OD - 2 * T, 0, 1);
+    s.translate(sx * (OW - T) / 2, 0.062, 0);
+    pan.push(s);
+  }
   // Specular reflector pan behind the tubes.
   const reflector = box(L - 0.01, 0.014, W - 0.01, 0.003, 1);
   reflector.translate(0, 0.085, 0);
@@ -591,7 +627,7 @@ export function troffer(b, rig, x, y, z, {
   // tubes animate, so they cannot be baked — they go into the chunk's shared
   // instanced emissive mesh instead, which costs one draw call for every
   // troffer in the zone put together.
-  const staticGeo = merge([housing, reflector, ...frameParts, ...capGeos]);
+  const staticGeo = merge([...pan, reflector, ...frameParts, ...capGeos]);
   staticGeo.rotateY(rotation);
   staticGeo.translate(x, y, z);
   worldUV(staticGeo, 0.9);
@@ -602,12 +638,42 @@ export function troffer(b, rig, x, y, z, {
   const fixture = rig.add({ type, position: [x, y, z], rotation, circuit, health, seed });
   // Twin tubes with their end caps, authored about the fixture's own origin so
   // every troffer of this type shares the geometry.
-  fixture.tube = b.tube(`troffer:${type}`, () => merge([-W * 0.24, W * 0.24].map((off) => {
-    const t = new THREE.CylinderGeometry(0.019, 0.019, L - 0.10, 10, 1);
-    t.rotateZ(Math.PI / 2);
-    t.translate(0, 0.040, off);
-    return t;
-  })), 0xfff6e2, [x, y, z], rotation);
+  // THE DIFFUSER IS WHY A CORRIDOR OF THESE READS AT ALL.
+  //
+  // Opening the pan makes the lamps visible from underneath, and that is not
+  // enough on its own. The Intake's ceiling is 2.75 m and the eye is at 1.63,
+  // so a fitting 7 m down the corridor is seen 9 degrees above the horizontal —
+  // past the 68-degree cross-axis cut-off of a 120 mm-deep aperture. Measured
+  // with the pan open and no diffuser: 81 lit fixtures inside the frustum, 21
+  // pixels above 200 in the whole frame. Physically correct, and it is why the
+  // corridor still had no visible source.
+  //
+  // A real 1970s troffer closes that aperture with an opal or prismatic panel
+  // sitting flush in the flange, which glows from every angle including
+  // grazing. That panel is what the eye reads as "the light". It has been named
+  // in this function's doc comment since the fixture was written and was never
+  // built.
+  //
+  // It rides in the emissive instance with the lamps (see
+  // EmissiveBatch.materialize) so it dims, flickers and dies with them for no
+  // extra draw call. 0.90, and that number was measured rather than reasoned:
+  // 0.42, from the ratio of lamp projected area to aperture area, made the
+  // fitting DIMMER than the open pan — 208 peak and 9,055 pixels above 200,
+  // against 234 and 39,957 — because an opaque panel across the aperture hides
+  // the lamps behind it. Flux was the wrong quantity; the frame sees luminance.
+  // At 0.90 the same pose gives 244 and 47,733.
+  fixture.tube = b.tube(`troffer:${type}`, () => {
+    const lamps = [-W * 0.24, W * 0.24].map((off) => {
+      const t = new THREE.CylinderGeometry(0.019, 0.019, L - 0.10, 10, 1);
+      t.rotateZ(Math.PI / 2);
+      t.translate(0, 0.040, off);
+      return t;
+    });
+    const diffuser = box(L - 0.012, 0.006, W - 0.012, 0, 1);
+    diffuser.translate(0, 0.012, 0);
+    vertexShade(diffuser, () => 0.90);
+    return merge([...lamps, diffuser]);
+  }, 0xfff6e2, [x, y, z], rotation);
 
   if (cone) {
     const c = makeLightCone(3.2, 1.55, 0xfff0cf);

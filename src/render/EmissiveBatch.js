@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { whiteColors } from './geo.js';
 
 /**
  * EmissiveBatch — one draw call per fixture *type* per zone for the glowing
@@ -134,7 +135,18 @@ export class EmissiveBatch {
       if (!g.slots.length) { g.geo.dispose(); continue; }
       // instanceColor multiplies the material colour, so the material must be
       // white or every source would be tinted twice.
-      const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, fog: true, toneMapped: true });
+      //
+      // `vertexColors` is on so one emissive geometry can carry more than one
+      // brightness. A troffer's lamps and the opal diffuser in front of them
+      // dim together and belong in the same instance, but they are not the same
+      // luminance — the diffuser is light that has been through glass. Baking
+      // that ratio into the vertices keeps it at one draw call. Any geometry
+      // that arrives without colours gets white, so a source that wants a
+      // single brightness is unaffected.
+      whiteColors(g.geo);
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0xffffff, fog: true, toneMapped: true, vertexColors: true,
+      });
       const mesh = new THREE.InstancedMesh(g.geo, mat, g.slots.length);
       mesh.name = `${name}:emissive:${key}`;
       mesh.castShadow = false;

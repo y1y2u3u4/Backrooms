@@ -597,9 +597,22 @@ export function buildStack(ctx, opts = {}) {
           //
           // Scaled to 0.45 (~150 cd): full output at 340 cd from eight fittings a
           // level would turn the zone into a stadium.
+          //
+          // AND IT HAS TO BE POINTED ACROSS THE WELL, which is the half of this
+          // that was never built. `ZoneKit.highbay` did not set `f.target`, so
+          // it inherited Fixture's default of (0, -3, 0) — straight down — and
+          // these corner fittings lit the gantry beneath themselves, which the
+          // mid-side strips were already doing. The paragraph above is the
+          // argument for crossing the void; nothing crossed it.
+          //
+          // Aimed inward and down from the corner: horizontally toward the
+          // shaft's centreline, dropping roughly a level and a half over the
+          // 14 m diagonal, so the throw lands on the far wall below rather than
+          // on the deck opposite or on nothing.
           highbay(b, rigFor(b), lx, y + LEVEL - 0.16, lz, {
             circuit: 'stack', health, seed: 400 + i * 9 + pi, drop: 0.34,
             cone: dist <= 2, intensityScale: 0.45,
+            aim: [-Math.sign(lx) * 10, -6, -Math.sign(lz) * 10],
           });
         } else {
           // The mid-side strips stay: they are the rhythm that makes the shaft

@@ -780,6 +780,25 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
     { kind: 'pickup', item: 'battery_cell', position: [-halfW + 1.6, 0.02, lz - 0.9], rotation: 0.5 },
     { kind: 'pickup', item: 'tape_player', position: [-halfW + 1.9, 0.02, lz - 1.3], rotation: 1.8 },
     { kind: 'pickup', item: 'note', noteId: 'note_induction', position: [-halfW + 1.4, 0.02, lz + 1.9], rotation: -0.4 },
+    // KEARNS' FIRST PAGE BELONGS HERE, NOT THREE ZONES AWAY.
+    //
+    // `nb_1` is the page that says the Surveyor moves only when there is light
+    // on it, cannot see, and commits to a sound rather than to you. Those are
+    // the rules of the entire game. It was placed in the Ductwork; `nb_2`, the
+    // one that says to cover the lens rather than click the switch, was in the
+    // Residence, which is most of the way through. `seedIntakeDemo` does put all
+    // three by the bench — but that only runs when `seedDemo` is true, which is
+    // `!subsystems.world`, i.e. never in the real game.
+    //
+    // So a player met the Surveyor at t=22 s holding a lit torch, having been
+    // told nothing, and the lesson death teaches there is "this is unfair",
+    // not "put the light out". A player who dies to a rule they were never
+    // given does not deduce the rule; they stop playing.
+    //
+    // Only the rules page moves. `nb_2` and `nb_3` stay where they are — the
+    // refinements are still worth finding, and piecing the rest together is the
+    // point of the building.
+    { kind: 'pickup', item: 'note', noteId: 'nb_1', position: [-halfW + 2.1, 0.02, lz + 2.6], rotation: 0.9 },
     // The locker in the entrance bay. It is 3 m from where the player wakes up on
     // purpose: the first thing the game teaches is where to go when it starts.
     { kind: 'hide', id: 'locker_intake', position: [-halfW + 0.42, 0, lz + 3.9], rotation: Math.PI / 2 },

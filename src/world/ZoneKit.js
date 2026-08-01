@@ -559,9 +559,16 @@ export function stripLight(b, rig, x, y, z, { rotation = 0, circuit = 'service',
   b.add('fixtureBodyStrip', hg, () => bodyMat);
 
   const f = rig.add({ type: 'strip', position: [x, y, z], rotation, circuit, health, seed, intensityScale });
+  // THE TUBE HANGS UNDER THE GEAR TRAY.
+  //
+  // It used to sit at +0.002 while the body box spans [0.0005, 0.0755], so the
+  // top 55% of a 38 mm tube was inside sheet steel and what reached the frame
+  // was a 17 mm sliver. On a batten fitting the lamp is *below* the tray — that
+  // is the whole point of the form — and the Service Spine is built out of these.
+  // See the pan note in Kit.troffer for the measurement that started this.
   f.tube = b.tube('strip', () => {
     const t = new THREE.CylinderGeometry(0.019, 0.019, 1.44, 8, 1);
-    t.rotateZ(Math.PI / 2); t.translate(0, 0.002, 0);
+    t.rotateZ(Math.PI / 2); t.translate(0, -0.024, 0);
     return t;
   }, 0xdfeaff, [x, y, z], rotation);
   if (cone) {
@@ -615,7 +622,7 @@ export function bulkhead(b, rig, x, y, z, { yaw = 0, circuit = 'service', health
 }
 
 /** High-bay sodium lamp on a drop rod — the Plant's ceiling. */
-export function highbay(b, rig, x, y, z, { circuit = 'plant', health = 'good', seed = 1, drop = 0.7, cone = true, intensityScale = 1 } = {}) {
+export function highbay(b, rig, x, y, z, { circuit = 'plant', health = 'good', seed = 1, drop = 0.7, cone = true, intensityScale = 1, aim = null } = {}) {
   const mat = b.mat('highbayBody', () => b.materials.get('steelPainted', {
     repeat: [1.4, 1.4], color: 0x6f6b60, metalness: 0.8, roughness: 0.55,
     dirtAmount: 0.65, dirtBase: -1, detailStrength: 0.3, envMapIntensity: 0.7,
@@ -647,6 +654,35 @@ export function highbay(b, rig, x, y, z, { circuit = 'plant', health = 'good', s
   f.tube = b.tube('highbay',
     () => lathe([[0, 0], [0.045, -0.03], [0.05, -0.10], [0.03, -0.15], [0, -0.16]], 12),
     0xffca80, [x, y - 0.10, z]);
+  // AIMING A HIGH BAY SOMEWHERE OTHER THAN STRAIGHT DOWN.
+  //
+  // `Fixture` defaults its target to (0, -3, 0) and this function never touched
+  // it, so every high bay in the game threw vertically. That is right over a
+  // plant floor and wrong in the Stack, where StackZone's own comment says the
+  // corner high bays exist because "only a fitting whose throw actually crosses
+  // the well can light the wall opposite, which is what makes a shaft read as a
+  // shaft rather than as floors floating in black" — and then aimed them at the
+  // gantry under their own feet. Measured in the Stack with every circuit live:
+  // 297 units of direct light at head height and 95.1% of the frame at pure
+  // black, with the eye adaptation pinned against both of its clamps.
+  //
+  // `aim` is a direction in the fixture's local frame, not a position.
+  if (aim) {
+    const [ax, ay, az] = aim;
+    f.target.position.set(ax, ay, az);
+    if (cone) {
+      // The volumetric cone has to follow the light or the beam is drawn in one
+      // direction and cast in another, which reads worse than having no cone.
+      const horiz = Math.hypot(ax, az);
+      const cn = makeLightCone(9.5, 4.6, 0xffb45c);
+      cn.position.set(0, -0.25, 0);
+      cn.rotation.order = 'YXZ';
+      cn.rotation.y = Math.atan2(ax, az);
+      cn.rotation.x = -Math.atan2(horiz, Math.max(1e-4, -ay));
+      f.group.add(cn); f.coneMesh = cn;
+    }
+    return f;
+  }
   if (cone) {
     const cn = makeLightCone(9.5, 4.6, 0xffb45c);
     cn.position.set(0, -0.25, 0);
@@ -682,10 +718,48 @@ export function pendant(b, rig, x, y, z, { circuit = 'residence', health = 'good
   b.add('pendantBody', hg, () => mat);
 
   const f = rig.add({ type: 'pendant', position: [x, y - drop - 0.08, z], circuit, health, seed, intensityScale });
+  // THE SHADE IS THE LIGHT, AND IT WAS PAINTED STEEL WITH THE BULB SEALED IN.
+  //
+  // This is the troffer defect (`Kit.troffer`) in a second fitting, and the
+  // geometry proves it without a screenshot. The bulb is a 33 mm sphere sitting
+  // at the shade's mid-height; the cone shade opens downward with a half-angle
+  // of about 30 degrees from vertical, and the globe encloses the bulb outright.
+  // A player 2.5 m from a pendant hung at 2.17 m stands 0.54 m below it, which
+  // is 77.5 degrees off the shade's axis — outside the cone's cut-off and behind
+  // the globe. Measured with tools/qa/emissive.mjs standing where a player can
+  // actually stand, the four Residence pendants came back at delta -18, -6, +2
+  // and +3 against a threshold of 24: the fitting was exactly as bright as the
+  // ceiling around it, which is what "no visible source" measures as.
+  //
+  // A domestic pendant of this period is opal glass, not sheet steel, and the
+  // shade is what the eye reads as the lamp. So the shade joins the emissive
+  // instance, one size larger than the painted one, and covers it when lit —
+  // the painted shade stays in the static body so an unpowered pendant is still
+  // an object hanging from a ceiling rather than a bare flex.
+  //
   // `drop` varies per pendant, so it goes through the instance position rather
   // than the geometry — otherwise every distinct drop would need its own batch.
-  f.tube = b.tube('pendant', () => new THREE.SphereGeometry(0.033, 10, 8),
-    0xffd08a, [x, y - drop - 0.09, z]);
+  // `shade` changes the geometry, so it has to be in the key.
+  f.tube = b.tube(`pendant:${shade}`, () => {
+    const bulb = new THREE.SphereGeometry(0.033, 10, 8);
+    let glow;
+    if (shade === 'cone') {
+      // The same profile 4% out, so it sits just proud of the painted shade.
+      // The mouth stays open: from directly below you see the bulb through it,
+      // which is the one angle a coolie shade is meant to show its lamp from.
+      glow = lathe([[0.031, 0], [0.057, -0.021], [0.151, -0.198], [0.156, -0.208],
+        [0.146, -0.208], [0.050, -0.021], [0.027, 0]], 16);
+      glow.translate(0, 0.07, 0);
+    } else {
+      glow = new THREE.SphereGeometry(0.119, 14, 10);
+      glow.scale(1, 0.85, 1);
+      glow.translate(0, -0.01, 0);
+    }
+    // Light that has been through glass, not the filament itself. 0.86 is a
+    // starting value; emissive.mjs is what decides whether it is the right one.
+    vertexShade(glow, () => 0.86);
+    return merge([bulb, glow]);
+  }, 0xffd08a, [x, y - drop - 0.09, z]);
   if (cone) {
     const cn = makeLightCone(2.4, 1.25, 0xffb964);
     cn.position.set(0, -drop - 0.14, 0);
