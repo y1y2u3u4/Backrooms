@@ -474,6 +474,41 @@ export class EntityAudio {
     const prev = this.state;
     this.state = s;
 
+    // THE ROOM WITHDRAWS AS IT ARRIVES.
+    //
+    // The only `duck()` in this file was on `capture` — the instant the player
+    // dies. Nothing touched the mix during ROUSED, SEEKING, MEASURING or
+    // APPROACHING, so the ambience beds ran at full level for the whole of a
+    // seventy-five-second encounter and the mix opened up only after it was
+    // over. Measured on the rendered scene by an independent review:
+    // `scenes/surveyor.wav` has **2.9 dB** of short-term dynamic range, with the
+    // beds at -11.6 to -12.8 dBFS RMS peaking at -3. Commit f980964's own
+    // summary — "the mix has no dynamics at all" — was still true of the one
+    // sequence in the game that most needs them.
+    //
+    // A horror mix does the opposite of getting louder: the room gets out of the
+    // way and the thing occupies the space it leaves. `setDuck` is a sustained
+    // duck that already exists, already takes both the dry and the send path
+    // (see its own note about the room ringing underneath), and was used by
+    // nothing in the entity's path. These are deliberately shallow — the deepest
+    // is a third of the bed — because nobody has heard any of it and the failure
+    // mode of guessing loud is a mix that sounds like a video game.
+    const WITHDRAW = {
+      dormant: 0, despawn: 0,
+      spawn: 0.10, approach: 0.16, search: 0.16,
+      measure: 0.24,          // it has stopped, and so does the room
+      hunt: 0.34,             // the deepest sustained state
+      frozen: 0.30,
+    };
+    if (WITHDRAW[s] !== undefined) {
+      // Away fast, back slowly: the same asymmetry `Director._computeFear` uses
+      // for fear, and for the same reason — a room that returns the instant the
+      // thing turns away undoes the scare.
+      const want = WITHDRAW[s];
+      const prevWant = WITHDRAW[prev] ?? 0;
+      this.engine.setDuck(want, want > prevWant ? 0.9 : 3.4, ['ambience', 'world', 'music']);
+    }
+
     switch (s) {
       case 'spawn':
       case 'approach':
