@@ -68,6 +68,7 @@ const { Interactor } = await import('../../src/player/Interactor.js');
 const { Interactables } = await import('../../src/systems/Interactables.js');
 const { NotesLibrary } = await import('../../src/systems/Notes.js');
 const { Progression, ENDINGS } = await import('../../src/systems/Progression.js');
+const { Setpieces, SETPIECE_IDS } = await import('../../src/systems/Setpieces.js');
 const { ZoneGameplay } = await import('../../src/systems/ZoneGameplay.js');
 const SaveGame = await import('../../src/systems/SaveGame.js');
 
@@ -120,10 +121,13 @@ function makeRig() {
         setHealth(h) { this.health = h; },
       };
       fixtures.push(f);
-      if (!circuits.has(f.circuit)) circuits.set(f.circuit, { powered: true, level: 1 });
+      // `target` as well as `level`: the real LightRig damps `level` toward
+      // `target`, and anything that reads circuit state — lightSwitch does —
+      // reads the target. A stub missing it reports every way as off.
+      if (!circuits.has(f.circuit)) circuits.set(f.circuit, { powered: true, level: 1, target: 1 });
       return f;
     },
-    setCircuit(name, powered) { circuits.set(name, { powered: !!powered, level: powered ? 1 : 0 }); },
+    setCircuit(name, powered) { circuits.set(name, { powered: !!powered, level: powered ? 1 : 0, target: powered ? 1 : 0 }); },
     isPowered: (n) => !!circuits.get(n)?.powered,
     circuitLevel: (n) => (circuits.get(n)?.level ?? 0),
     invalidateShadows() {}, requestShadowRefresh() {}, setLightBudget() {},
@@ -186,6 +190,11 @@ const director = {
 const progression = new Progression({
   bus, inventory, notes, interactables, interactor, director, player,
 });
+// Six authored moments hang off progression events. They are content, so they
+// need the same treatment as content: something that fails when they stop
+// firing. This walks the real critical path, so it triggers them the way a
+// player does rather than by calling `fire` directly.
+const setpieces = new Setpieces({ bus, player, rig, director, surveyor: null, attendant: null });
 
 const world = {
   zones,
@@ -381,6 +390,13 @@ enter('cistern');
   if (core) check('the Cistern core can be taken', use(core.id) === null);
 }
 
+// -- the Office of Record --------------------------------------------------
+// Not a detour. `note_induction`, the first thing the player reads, says
+// "Report to Room 7/G-004 at the start and end of every shift", and the Office
+// is the safe room the respawn depends on. Walking it here also means the two
+// setpieces that hang off optional content are exercised rather than assumed.
+enter('safe');
+
 enter('plant');
 check('the second core fits', use('set_2_socket1') === null);
 
@@ -561,6 +577,89 @@ check('the starting objective is now revealed',
     unreachable.length === 0, unreachable.join(', ') || `${
       Object.values(zones).reduce((n, z) => n + (z.portals || []).filter((p) => p.target?.zone && !p.locked).length, 0)
     } live portals checked`);
+}
+
+// -- the light switch actually cuts the light -------------------------------
+//
+// The playthrough's "killing the lights froze the Surveyor" check passes
+// vacuously whenever the scripted route does not happen to put a switch in
+// reach during an encounter, which is a routing accident and not evidence. The
+// causal chain the mechanic rests on is: switch -> circuit target 0 -> fixtures
+// below `level 0.02` -> `illuminationAt` skips them -> `_moveToward` freezes.
+// The last two links are covered by src/systems/qa/surveyor_sim.mjs's light
+// rule. These are the first two, and they are exactly the ones a level edit or
+// a circuit rename would break.
+{
+  const sw = (interactor.items || []).find((i) => i.kind === 'switch');
+  check('the Intake has a light switch a player can reach', !!sw, sw ? sw.id : 'none registered');
+  if (sw) {
+    const circuit = 'intake';
+    const on = () => (rig.circuits.get(circuit)?.level ?? 0) > 0.05;
+    rig.setCircuit(circuit, true);
+    const before = on();
+    use(sw.id);
+    const afterOff = on();
+    use(sw.id);
+    const afterOn = on();
+    check('flipping the switch cuts the general lighting',
+      before === true && afterOff === false,
+      `before ${before}, after ${afterOff}`);
+    check('flipping it back restores the way', afterOn === true, `after second flip ${afterOn}`);
+    // And it must not be able to close a way the distribution board has opened,
+    // or it short-circuits the breaker puzzle.
+    rig.setCircuit(circuit, false);
+    rig.circuits.get(circuit).powered = false;
+    const refused = use(sw.id);
+    check('a switch cannot supply a way the board has opened',
+      typeof refused === 'string' && /board/i.test(refused),
+      refused === null ? 'it closed a dead way' : String(refused));
+    rig.circuits.get(circuit).powered = true;
+    rig.setCircuit(circuit, true);
+  }
+}
+
+// -- the rooms a zone declares are the rooms it builds ----------------------
+//
+// IntakeZone declares five enclosed rooms — copy, store, interview, breakout,
+// records — and its own header calls them "where set dressing and narrative
+// fragments live". It built ONE. Room placement ran after 190 partition-wall
+// attempts and a wall run only refused to cross a spine, so the grid was full
+// before the rooms were tried; the dressing code then hid it behind
+// `rooms.find(store) || rooms.find(records) || rooms[0]`.
+//
+// Nothing measured it. props.mjs counts what was declared, geobudget counts
+// triangles, and both were green while four fifths of the opening zone's
+// authored interiors did not exist.
+{
+  const declared = 5;   // roomSpecs in planIntake
+  const built = (zones.intake?.plan?.rooms || []).length;
+  check('the Intake builds every room it plans',
+    built >= declared, `${built} of ${declared} placed`);
+  // And a room the player cannot get into is not a room.
+  const doored = (zones.intake?.plan?.rooms || []).filter((r) => r._door).length;
+  check('every Intake room has a doorway', doored === built, `${doored} of ${built} have one`);
+}
+
+// -- the authored moments actually happen -----------------------------------
+//
+// `Director` is systemic and after this pass it works, but every instant it
+// produces is a sample from one distribution — a player has nothing they would
+// describe to somebody afterwards. `Setpieces` is six things that happen once
+// each, hung off progression rather than a clock. Content with no check rots
+// silently: an event renamed in Progression.js would unhook one of these and
+// nothing else in the suite would notice.
+{
+  const fired = setpieces.debugState().fired;
+  const missed = SETPIECE_IDS.filter((id) => !fired.includes(id));
+  // `the_stack_goes_out` and `something_in_the_water` need their zones entered,
+  // which this file does; `the_kettle` needs the office discovery. All six are
+  // reachable on the path walked above.
+  check('every authored setpiece fires somewhere on the critical path',
+    missed.length === 0,
+    missed.length ? `never fired: ${missed.join(', ')}` : `${fired.length}: ${fired.join(', ')}`);
+  check('no setpiece fires twice',
+    setpieces.log.length === new Set(setpieces.log.map((l) => l.id)).size,
+    `${setpieces.log.length} firings, ${new Set(setpieces.log.map((l) => l.id)).size} distinct`);
 }
 
 // -- every zone grids to a walkable area a coverage metric can divide by ----

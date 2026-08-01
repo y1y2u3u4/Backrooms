@@ -687,11 +687,69 @@ function installDriver(cfg) {
             });
           }
         }
+        // KILL THE LIGHTS WHEN IT IS COMING — the decision the light switches
+        // exist for. `Surveyor._moveToward` freezes below LIGHT_DEAD, so this is
+        // the player's strongest counter and it costs them their own sight.
+        // Driven through the real interact key, and only when a switch is in
+        // reach, which is exactly the constraint a player is under.
+        {
+          const f = g.interactor?.focus;
+          const hunted = ent?.active && (ent.state === 'ROUSED' || ent.state === 'SEEKING'
+            || ent.state === 'APPROACHING');
+          if (hunted && f && f.kind === 'switch' && !f.blocked
+              && PT.t - (PT.lastFlipAt ?? -99) > 8) {
+            PT.lastFlipAt = PT.t;
+            PT.flips = (PT.flips || 0) + 1;
+            window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
+            window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
+            PT.flipWatch = { t: PT.t, wasFrozen: !!ent.debugState?.().frozen };
+          }
+        }
+        // Did it actually stop? Recorded rather than asserted from the game's
+        // own claim: `frozen` is the entity's report of its own lightScale.
+        if (PT.flipWatch && PT.t - PT.flipWatch.t > 1.2) {
+          const e3 = g.gameplay?.surveyor;
+          PT.flipResult = (PT.flipResult || []);
+          PT.flipResult.push({
+            t: +PT.flipWatch.t.toFixed(1),
+            frozenBefore: PT.flipWatch.wasFrozen,
+            frozenAfter: !!e3?.debugState?.().frozen,
+            lightScale: +(e3?.lightScale ?? -1).toFixed(3),
+            lampOn: !!g.flashlight?.isOn,
+          });
+          PT.flipWatch = null;
+        }
+
         if (PT.quietUntil && PT.t > PT.quietUntil) {
           PT.quietUntil = 0;
           window.dispatchEvent(new KeyboardEvent('keyup', { code: 'ControlLeft', bubbles: true }));
         }
       }
+
+      // GET OUT OF THE BOX.
+      //
+      // The script has a phase to enter a hiding place and a phase to leave it,
+      // and it presses interact on whatever is in reach. If the walk to the
+      // locker runs long — which it does whenever the layout changes — the bot
+      // arrives during the LEAVE phase and the press puts it in. Measured after
+      // the Intake room fix: `hide:enter` at 134.9 s, one second into the phase
+      // named "get out of the locker", and 478 of 612 samples hidden with
+      // controls disabled for 78% of the session. The harness's own comment
+      // warns about this exact failure and it happened anyway, because the
+      // guard was a phase ordering rather than a state check.
+      //
+      // A player in a steel box for twenty seconds with nothing happening gets
+      // out. So does this, and it is a state check, so no future re-ordering can
+      // defeat it.
+      if (PT.isHidden()) {
+        PT.hiddenFor = (PT.hiddenFor || 0) + 1 / 60;
+        if (PT.hiddenFor > 20 && PT.t - (PT.lastUnhideAt ?? -99) > 3) {
+          PT.lastUnhideAt = PT.t;
+          PT.unhides = (PT.unhides || 0) + 1;
+          window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
+          window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
+        }
+      } else PT.hiddenFor = 0;
 
       if (g.state === 'dead' && PT.t - (PT.lastReviveAt ?? -99) > 1.5) {
         PT.lastReviveAt = PT.t;
@@ -745,6 +803,9 @@ function installDriver(cfg) {
     worstNoFloorRun: PT.worstNoFloorRun,
     revives: PT.revives || 0,
     throws: PT.throws || 0,
+    flips: PT.flips || 0,
+    unhides: PT.unhides || 0,
+    flipResult: PT.flipResult || [],
     throwOccl: PT.throwOccl || [],
     yMin: PT.yMin, yMax: PT.yMax, frames: PT.frame, simSeconds: PT.t,
     stepCount: PT.stepCount, noiseCount: PT.noiseCount,
@@ -1156,6 +1217,23 @@ async function main() {
         + ` beyond ${AUDIBLE.toFixed(0)} m, on top of it, or behind a wall:`
         + ` ${(H.throwOccl || []).map((o) => `${o.dist} m occl ${o.occl}`).join(', ') || 'n/a'})`
       : 'no decoy was thrown this session — the entity never came close enough');
+
+  // DID KILLING THE LIGHTS ACTUALLY STOP IT?
+  //
+  // The whole point of a light switch is `Surveyor._moveToward` freezing below
+  // LIGHT_DEAD, and `nb_1` states the rule to the player on the first page they
+  // read. Counting flips proves the switch is wired; what has to be true for it
+  // to be a mechanic is that the thing stopped. Each flip records the entity's
+  // own `frozen` report a second later, and its lamp state, because the player's
+  // torch feeds the same sum and turning it on undoes the trick.
+  const flips = H.flipResult || [];
+  const froze = flips.filter((f) => f.frozenAfter && !f.frozenBefore);
+  check('killing the lights froze the Surveyor',
+    flips.length === 0 || froze.length > 0,
+    flips.length
+      ? `${froze.length} of ${flips.length} flips froze it`
+        + ` (${flips.map((f) => `lightScale ${f.lightScale}${f.lampOn ? ' lamp on' : ''}`).join(', ')})`
+      : 'no switch was in reach while it was hunting');
 
   // A session that dies and never gets up measures the silence of a modal
   // screen, not the silence of the game. See the revive block in the step loop.
