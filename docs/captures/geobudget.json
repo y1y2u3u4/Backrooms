@@ -1,17 +1,17 @@
 {
-  "at": "2026-08-01T13:37:26.671Z",
+  "at": "2026-08-01T16:22:02.898Z",
   "zones": {
     "intake": {
       "id": "intake",
-      "meshes": 91,
-      "triangles": 466364,
-      "instances": 217,
+      "meshes": 109,
+      "triangles": 642804,
+      "instances": 228,
       "chunks": 4,
-      "colliders": 161,
+      "colliders": 223,
       "floors": 4,
-      "fixtures": 217,
+      "fixtures": 228,
       "unlit": [],
-      "props": 7,
+      "props": 13,
       "portals": 3
     },
     "service": {
