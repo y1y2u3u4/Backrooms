@@ -1,0 +1,299 @@
+[
+  {
+    "name": "01_intake_fitting_overhead",
+    "setup": "for (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true); g.world.goto('intake'); g.look(-21, 0, 26.0, Math.PI, 0.30); if (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }",
+    "settle": 50,
+    "file": "docs/captures/lum_after/01_intake_fitting_overhead.png",
+    "stats": {
+      "ms": 5563.860000012138,
+      "fps": 0.17973133759616858,
+      "p90": 1.1999998092651367,
+      "calls": 129,
+      "tris": 328656,
+      "quality": "medium",
+      "res": "896x504",
+      "lights": {
+        "fixtures": 208,
+        "lit": 149,
+        "active": 12,
+        "tubes": 149,
+        "shadows": 3
+      },
+      "probe": {
+        "zone": "intake",
+        "directAtHead": 33.619,
+        "directAtFloor": 30.676,
+        "fillUp": 0.634,
+        "fillDown": 1.028,
+        "fixtures": {
+          "fixtures": 208,
+          "lit": 149,
+          "active": 12,
+          "tubes": 149,
+          "shadows": 3
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1
+        },
+        "zoneFixtures": {
+          "total": 208,
+          "lit": 149
+        },
+        "exposure": 1
+      }
+    }
+  },
+  {
+    "name": "02_intake_corridor",
+    "setup": "const r = g.world.goto('intake'); const p = (r && r.position) || g.world.spawn; g.lookOpen(p, (r && r.yaw) || 0, 0); if (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }",
+    "settle": 50,
+    "file": "docs/captures/lum_after/02_intake_corridor.png",
+    "stats": {
+      "ms": 43.77037039509526,
+      "fps": 22.84650531794577,
+      "p90": 1.3000001907348633,
+      "calls": 287,
+      "tris": 948372,
+      "quality": "medium",
+      "res": "896x504",
+      "lights": {
+        "fixtures": 208,
+        "lit": 149,
+        "active": 12,
+        "tubes": 149,
+        "shadows": 3
+      },
+      "probe": {
+        "zone": "intake",
+        "directAtHead": 36.893,
+        "directAtFloor": 33.803,
+        "fillUp": 0.634,
+        "fillDown": 1.028,
+        "fixtures": {
+          "fixtures": 208,
+          "lit": 149,
+          "active": 12,
+          "tubes": 149,
+          "shadows": 3
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1
+        },
+        "zoneFixtures": {
+          "total": 208,
+          "lit": 149
+        },
+        "exposure": 1
+      }
+    }
+  },
+  {
+    "name": "03_intake_ceiling_up",
+    "setup": "g.world.goto('intake'); g.look(-21, 0, 29.4, 0, 0.95); if (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }",
+    "settle": 50,
+    "file": "docs/captures/lum_after/03_intake_ceiling_up.png",
+    "stats": {
+      "ms": 138.0943396226415,
+      "fps": 7.2414264243749145,
+      "p90": 1.0999999046325684,
+      "calls": 183,
+      "tris": 870264,
+      "quality": "medium",
+      "res": "896x504",
+      "lights": {
+        "fixtures": 208,
+        "lit": 149,
+        "active": 12,
+        "tubes": 149,
+        "shadows": 3
+      },
+      "probe": {
+        "zone": "intake",
+        "directAtHead": 28.244,
+        "directAtFloor": 25.264,
+        "fillUp": 0.634,
+        "fillDown": 1.028,
+        "fixtures": {
+          "fixtures": 208,
+          "lit": 149,
+          "active": 12,
+          "tubes": 149,
+          "shadows": 3
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1
+        },
+        "zoneFixtures": {
+          "total": 208,
+          "lit": 149
+        },
+        "exposure": 1
+      }
+    }
+  },
+  {
+    "name": "04_service_spine",
+    "setup": "const r = g.world.goto('service'); const p = (r && r.position) || g.world.spawn; g.lookOpen(p, (r && r.yaw) || 0, 0); if (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }",
+    "settle": 50,
+    "file": "docs/captures/lum_after/04_service_spine.png",
+    "stats": {
+      "ms": 1371.1072727029973,
+      "fps": 0.7293375360985451,
+      "p90": 2,
+      "calls": 421,
+      "tris": 606840,
+      "quality": "medium",
+      "res": "896x504",
+      "lights": {
+        "fixtures": 302,
+        "lit": 225,
+        "active": 10,
+        "tubes": 225,
+        "shadows": 2
+      },
+      "probe": {
+        "zone": "service",
+        "directAtHead": 19.268,
+        "directAtFloor": 15.479,
+        "fillUp": 0.095,
+        "fillDown": 0.133,
+        "fixtures": {
+          "fixtures": 302,
+          "lit": 225,
+          "active": 10,
+          "tubes": 225,
+          "shadows": 2
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 0,
+          "stack": 0,
+          "residence": 0,
+          "duct": 0,
+          "plant_lift": 0
+        },
+        "zoneFixtures": {
+          "total": 74,
+          "lit": 72
+        },
+        "exposure": 1
+      }
+    }
+  },
+  {
+    "name": "05_service_up",
+    "setup": "const r = g.world.goto('service'); const p = (r && r.position) || g.world.spawn; g.lookOpen(p, (r && r.yaw) || 0, 0.45); if (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }",
+    "settle": 50,
+    "file": "docs/captures/lum_after/05_service_up.png",
+    "stats": {
+      "ms": 144.1888888588658,
+      "fps": 6.935347154098778,
+      "p90": 1.799999713897705,
+      "calls": 419,
+      "tris": 605816,
+      "quality": "medium",
+      "res": "896x504",
+      "lights": {
+        "fixtures": 302,
+        "lit": 225,
+        "active": 14,
+        "tubes": 225,
+        "shadows": 2
+      },
+      "probe": {
+        "zone": "service",
+        "directAtHead": 20.456,
+        "directAtFloor": 16.432,
+        "fillUp": 0.093,
+        "fillDown": 0.131,
+        "fixtures": {
+          "fixtures": 302,
+          "lit": 225,
+          "active": 14,
+          "tubes": 225,
+          "shadows": 2
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 0,
+          "stack": 0,
+          "residence": 0,
+          "duct": 0,
+          "plant_lift": 0
+        },
+        "zoneFixtures": {
+          "total": 74,
+          "lit": 72
+        },
+        "exposure": 1
+      }
+    }
+  },
+  {
+    "name": "06_plant_hall",
+    "setup": "const r = g.world.goto('plant'); const p = (r && r.position) || g.world.spawn; g.lookOpen(p, (r && r.yaw) || 0, 0.05); if (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }",
+    "settle": 50,
+    "file": "docs/captures/lum_after/06_plant_hall.png",
+    "stats": {
+      "ms": 496.255769261947,
+      "fps": 2.015089923261231,
+      "p90": 1.9000000953674316,
+      "calls": 368,
+      "tris": 839302,
+      "quality": "medium",
+      "res": "896x504",
+      "lights": {
+        "fixtures": 119,
+        "lit": 98,
+        "active": 10,
+        "tubes": 99,
+        "shadows": 2
+      },
+      "probe": {
+        "zone": "plant",
+        "directAtHead": 293.673,
+        "directAtFloor": 283.555,
+        "fillUp": 0.087,
+        "fillDown": 0.124,
+        "fixtures": {
+          "fixtures": 119,
+          "lit": 98,
+          "active": 10,
+          "tubes": 99,
+          "shadows": 2
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 0,
+          "stack": 0,
+          "residence": 0,
+          "duct": 0,
+          "plant_lift": 0
+        },
+        "zoneFixtures": {
+          "total": 25,
+          "lit": 23
+        },
+        "exposure": 1
+      }
+    }
+  }
+]

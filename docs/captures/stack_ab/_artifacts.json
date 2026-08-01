@@ -1,0 +1,95 @@
+{
+  "dir": "docs/captures/stack_ab",
+  "limits": {
+    "crushed": 0.16,
+    "clipped": 0.03,
+    "dynamicRange": 0.22,
+    "banding": 0.055,
+    "speckle": 0.0035,
+    "emptiness": 0.72
+  },
+  "hfMedian": 0.06561238011276628,
+  "rows": [
+    {
+      "file": "stack_a_ACROSS.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.04358503808298677,
+      "contrast": 0.09271513949304075,
+      "dynamicRange": 0.6368156671524048,
+      "crushed": 0.5287605503526419,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.06561238011276628,
+      "speckle": 0,
+      "emptiness": 0.5515738813735692,
+      "colourCast": 0.6305081852336689
+    },
+    {
+      "file": "stack_a_DOWN.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.021904760099586047,
+      "contrast": 0.08545193880736926,
+      "dynamicRange": 0.6368156671524048,
+      "crushed": 0.7722424557752341,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.0320825969626899,
+      "speckle": 0,
+      "emptiness": 0.7853364550815123,
+      "colourCast": 0.5967435313714123
+    },
+    {
+      "file": "stack_b_ACROSS.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.24913732265393074,
+      "contrast": 0.24289845214218891,
+      "dynamicRange": 0.7365066409111023,
+      "crushed": 0.1354491848768644,
+      "clipped": 0.00021678806798473813,
+      "banding": 0.0001734304543877905,
+      "highFreq": 0.09144066743784586,
+      "speckle": 0.0001607740539908505,
+      "emptiness": 0.14498063359926003,
+      "colourCast": 0.3952205044517962
+    },
+    {
+      "file": "stack_b_DOWN.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.14858451347916687,
+      "contrast": 0.24948295365952775,
+      "dynamicRange": 0.7241913676261902,
+      "crushed": 0.5961238293444329,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.05935046916671184,
+      "speckle": 0.00006577120390534793,
+      "emptiness": 0.6003945542837322,
+      "colourCast": 0.20498015071528297
+    }
+  ],
+  "flagged": [
+    {
+      "file": "stack_a_ACROSS.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    },
+    {
+      "file": "stack_a_DOWN.png",
+      "flags": [
+        "CRUSHED",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "stack_b_DOWN.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    }
+  ]
+}

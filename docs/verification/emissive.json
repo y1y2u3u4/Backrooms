@@ -1,0 +1,1323 @@
+{
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+  "quality": "low",
+  "minDelta": 24,
+  "ranges": [
+    2.5,
+    6
+  ],
+  "summary": [
+    {
+      "type": "bulkhead",
+      "range": 2.5,
+      "n": 8,
+      "apertureMean": 230,
+      "ceilingMedian": 160,
+      "delta": 67,
+      "ok": true,
+      "gates": true,
+      "ringClipped": 0,
+      "blown": false
+    },
+    {
+      "type": "bulkhead",
+      "range": 6,
+      "n": 8,
+      "apertureMean": 155,
+      "ceilingMedian": 110,
+      "delta": 8,
+      "ok": false,
+      "gates": false,
+      "ringClipped": 0,
+      "blown": false
+    },
+    {
+      "type": "emergency",
+      "range": 2.5,
+      "n": 4,
+      "apertureMean": 148,
+      "ceilingMedian": 157,
+      "delta": 23,
+      "ok": false,
+      "gates": true,
+      "ringClipped": 0,
+      "blown": false
+    },
+    {
+      "type": "emergency",
+      "range": 6,
+      "n": 2,
+      "apertureMean": 177,
+      "ceilingMedian": 166,
+      "delta": 11,
+      "ok": false,
+      "gates": false,
+      "ringClipped": 0.003,
+      "blown": false
+    },
+    {
+      "type": "pendant",
+      "range": 2.5,
+      "n": 3,
+      "apertureMean": 182,
+      "ceilingMedian": 102,
+      "delta": 80,
+      "ok": true,
+      "gates": true,
+      "ringClipped": 0,
+      "blown": false
+    },
+    {
+      "type": "pendant",
+      "range": 6,
+      "n": 2,
+      "apertureMean": 193,
+      "ceilingMedian": 126,
+      "delta": 67,
+      "ok": true,
+      "gates": false,
+      "ringClipped": 0,
+      "blown": false
+    },
+    {
+      "type": "strip",
+      "range": 2.5,
+      "n": 4,
+      "apertureMean": 132,
+      "ceilingMedian": 41,
+      "delta": 91,
+      "ok": true,
+      "gates": true,
+      "ringClipped": 0,
+      "blown": false
+    },
+    {
+      "type": "strip",
+      "range": 6,
+      "n": 2,
+      "apertureMean": 132,
+      "ceilingMedian": 142,
+      "delta": -9,
+      "ok": false,
+      "gates": false,
+      "ringClipped": 0,
+      "blown": false
+    },
+    {
+      "type": "troffer",
+      "range": 2.5,
+      "n": 2,
+      "apertureMean": 179,
+      "ceilingMedian": 98,
+      "delta": 81,
+      "ok": true,
+      "gates": true,
+      "ringClipped": 0,
+      "blown": false
+    },
+    {
+      "type": "troffer",
+      "range": 6,
+      "n": 1,
+      "apertureMean": 89,
+      "ceilingMedian": 100,
+      "delta": -11,
+      "ok": false,
+      "gates": false,
+      "ringClipped": 0,
+      "blown": false
+    }
+  ],
+  "rows": [
+    {
+      "zone": "intake",
+      "type": "troffer",
+      "range": 2.5,
+      "dist": 2.5,
+      "level": 0.86,
+      "health": "dying",
+      "apertureMean": 179,
+      "apertureMax": 243,
+      "ceilingMedian": 98,
+      "delta": 81,
+      "ringClipped": 0,
+      "apertureRadiusPx": 62.9,
+      "respondsTo6x": 134
+    },
+    {
+      "zone": "intake",
+      "type": "troffer",
+      "range": 6,
+      "dist": 6,
+      "level": 0.98,
+      "health": "buzz",
+      "apertureMean": 89,
+      "apertureMax": 217,
+      "ceilingMedian": 100,
+      "delta": -11,
+      "ringClipped": 0,
+      "apertureRadiusPx": 26.2,
+      "respondsTo6x": 81
+    },
+    {
+      "zone": "intake",
+      "type": "troffer",
+      "range": 2.5,
+      "dist": 2.5,
+      "level": 0.98,
+      "health": "good",
+      "apertureMean": 166,
+      "apertureMax": 233,
+      "ceilingMedian": 89,
+      "delta": 77,
+      "ringClipped": 0,
+      "apertureRadiusPx": 62.9,
+      "respondsTo6x": 140
+    },
+    {
+      "zone": "intake",
+      "type": "emergency",
+      "range": 2.5,
+      "dist": 2.5,
+      "level": 0.98,
+      "health": "good",
+      "apertureMean": 120,
+      "apertureMax": 255,
+      "ceilingMedian": 157,
+      "delta": -37,
+      "ringClipped": 0,
+      "apertureRadiusPx": 10.3,
+      "respondsTo6x": 18
+    },
+    {
+      "zone": "service",
+      "type": "strip",
+      "range": 2.5,
+      "dist": 2.5,
+      "level": 0.81,
+      "health": "dying",
+      "apertureMean": 132,
+      "apertureMax": 228,
+      "ceilingMedian": 25,
+      "delta": 107,
+      "ringClipped": 0,
+      "apertureRadiusPx": 74.1,
+      "respondsTo6x": 145
+    },
+    {
+      "zone": "service",
+      "type": "strip",
+      "range": 6,
+      "dist": 6,
+      "level": 0.98,
+      "health": "good",
+      "apertureMean": 14,
+      "apertureMax": 215,
+      "ceilingMedian": 23,
+      "delta": -9,
+      "ringClipped": 0,
+      "apertureRadiusPx": 30.9,
+      "respondsTo6x": 102
+    },
+    {
+      "zone": "service",
+      "type": "strip",
+      "range": 2.5,
+      "dist": 2.5,
+      "level": 1,
+      "health": "good",
+      "apertureMean": 145,
+      "apertureMax": 234,
+      "ceilingMedian": 54,
+      "delta": 91,
+      "ringClipped": 0,
+      "apertureRadiusPx": 74.1,
+      "respondsTo6x": 139
+    },
+    {
+      "zone": "service",
+      "type": "strip",
+      "range": 6,
+      "dist": 5.73,
+      "level": 0.94,
+      "health": "buzz",
+      "apertureMean": 132,
+      "apertureMax": 239,
+      "ceilingMedian": 142,
+      "delta": -10,
+      "ringClipped": 0,
+      "apertureRadiusPx": 32.3,
+      "respondsTo6x": 15
+    },
+    {
+      "zone": "service",
+      "type": "strip",
+      "range": 2.5,
+      "dist": 2.5,
+      "level": 0.8,
+      "health": "dying",
+      "apertureMean": 81,
+      "apertureMax": 219,
+      "ceilingMedian": 3,
+      "delta": 78,
+      "ringClipped": 0,
+      "apertureRadiusPx": 74.1,
+      "respondsTo6x": 14
+    },
+    {
+      "zone": "service",
+      "type": "bulkhead",
+      "range": 2.5,
+      "dist": 2.24,
+      "level": 0.89,
+      "health": "buzz",
+      "apertureMean": 216,
+      "apertureMax": 223,
+      "ceilingMedian": 212,
+      "delta": 4,
+      "ringClipped": 0,
+      "apertureRadiusPx": 17.5,
+      "respondsTo6x": 40
+    },
+    {
+      "zone": "service",
+      "type": "bulkhead",
+      "range": 6,
+      "dist": 5.9,
+      "level": 0.98,
+      "health": "good",
+      "apertureMean": 173,
+      "apertureMax": 199,
+      "ceilingMedian": 91,
+      "delta": 82,
+      "ringClipped": 0,
+      "apertureRadiusPx": 6.7,
+      "respondsTo6x": 163
+    },
+    {
+      "zone": "service",
+      "type": "bulkhead",
+      "range": 2.5,
+      "dist": 2.24,
+      "level": 0.97,
+      "health": "good",
+      "apertureMean": 197,
+      "apertureMax": 215,
+      "ceilingMedian": 130,
+      "delta": 67,
+      "ringClipped": 0,
+      "apertureRadiusPx": 17.5,
+      "respondsTo6x": 174
+    },
+    {
+      "zone": "service",
+      "type": "bulkhead",
+      "range": 6,
+      "dist": 6.03,
+      "level": 0.94,
+      "health": "buzz",
+      "apertureMean": 155,
+      "apertureMax": 216,
+      "ceilingMedian": 164,
+      "delta": -9,
+      "ringClipped": 0,
+      "apertureRadiusPx": 6.5,
+      "respondsTo6x": 17
+    },
+    {
+      "zone": "service",
+      "type": "bulkhead",
+      "range": 2.5,
+      "dist": 2.51,
+      "level": 0.97,
+      "health": "good",
+      "apertureMean": 208,
+      "apertureMax": 231,
+      "ceilingMedian": 178,
+      "delta": 30,
+      "ringClipped": 0,
+      "apertureRadiusPx": 15.7,
+      "respondsTo6x": 160
+    },
+    {
+      "zone": "service",
+      "type": "bulkhead",
+      "range": 6,
+      "dist": 6,
+      "level": 1,
+      "health": "good",
+      "apertureMean": 193,
+      "apertureMax": 222,
+      "ceilingMedian": 54,
+      "delta": 139,
+      "ringClipped": 0,
+      "apertureRadiusPx": 6.5,
+      "respondsTo6x": 220
+    },
+    {
+      "zone": "cistern",
+      "type": "bulkhead",
+      "range": 2.5,
+      "dist": 2.5,
+      "level": 0.97,
+      "health": "good",
+      "apertureMean": 231,
+      "apertureMax": 250,
+      "ceilingMedian": 116,
+      "delta": 115,
+      "ringClipped": 0.002,
+      "apertureRadiusPx": 15.7,
+      "respondsTo6x": 247
+    },
+    {
+      "zone": "cistern",
+      "type": "bulkhead",
+      "range": 6,
+      "dist": 5.98,
+      "level": 0.81,
+      "health": "buzz",
+      "apertureMean": 87,
+      "apertureMax": 118,
+      "ceilingMedian": 117,
+      "delta": -30,
+      "ringClipped": 0.001,
+      "apertureRadiusPx": 6.6,
+      "respondsTo6x": 73
+    },
+    {
+      "zone": "cistern",
+      "type": "bulkhead",
+      "range": 2.5,
+      "dist": 2.5,
+      "level": 0.98,
+      "health": "buzz",
+      "apertureMean": 236,
+      "apertureMax": 248,
+      "ceilingMedian": 171,
+      "delta": 65,
+      "ringClipped": 0,
+      "apertureRadiusPx": 15.7,
+      "respondsTo6x": 117
+    },
+    {
+      "zone": "cistern",
+      "type": "bulkhead",
+      "range": 6,
+      "dist": 6.04,
+      "level": 0.98,
+      "health": "buzz",
+      "apertureMean": 152,
+      "apertureMax": 193,
+      "ceilingMedian": 144,
+      "delta": 8,
+      "ringClipped": 0,
+      "apertureRadiusPx": 6.5,
+      "respondsTo6x": 13
+    },
+    {
+      "zone": "cistern",
+      "type": "bulkhead",
+      "range": 2.5,
+      "dist": 2.5,
+      "level": 0.97,
+      "health": "good",
+      "apertureMean": 230,
+      "apertureMax": 252,
+      "ceilingMedian": 152,
+      "delta": 78,
+      "ringClipped": 0,
+      "apertureRadiusPx": 15.7,
+      "respondsTo6x": 116
+    },
+    {
+      "zone": "cistern",
+      "type": "bulkhead",
+      "range": 6,
+      "dist": 6,
+      "level": 0.87,
+      "health": "dying",
+      "apertureMean": 67,
+      "apertureMax": 84,
+      "ceilingMedian": 61,
+      "delta": 6,
+      "ringClipped": 0,
+      "apertureRadiusPx": 6.5,
+      "respondsTo6x": 14
+    },
+    {
+      "zone": "cistern",
+      "type": "bulkhead",
+      "range": 2.5,
+      "dist": 2.43,
+      "level": 0.95,
+      "health": "buzz",
+      "apertureMean": 231,
+      "apertureMax": 251,
+      "ceilingMedian": 160,
+      "delta": 71,
+      "ringClipped": 0,
+      "apertureRadiusPx": 16.1,
+      "respondsTo6x": 117
+    },
+    {
+      "zone": "cistern",
+      "type": "bulkhead",
+      "range": 6,
+      "dist": 6.02,
+      "level": 0.88,
+      "health": "dying",
+      "apertureMean": 111,
+      "apertureMax": 131,
+      "ceilingMedian": 110,
+      "delta": 1,
+      "ringClipped": 0,
+      "apertureRadiusPx": 6.5,
+      "respondsTo6x": 9
+    },
+    {
+      "zone": "residence",
+      "type": "pendant",
+      "range": 2.5,
+      "dist": 2.5,
+      "level": 0.98,
+      "health": "good",
+      "apertureMean": 182,
+      "apertureMax": 254,
+      "ceilingMedian": 102,
+      "delta": 80,
+      "ringClipped": 0,
+      "apertureRadiusPx": 19.3,
+      "respondsTo6x": 161
+    },
+    {
+      "zone": "residence",
+      "type": "pendant",
+      "range": 6,
+      "dist": 6,
+      "level": 0.94,
+      "health": "buzz",
+      "apertureMean": 112,
+      "apertureMax": 116,
+      "ceilingMedian": 96,
+      "delta": 16,
+      "ringClipped": 0,
+      "apertureRadiusPx": 5.1,
+      "respondsTo6x": 35
+    },
+    {
+      "zone": "residence",
+      "type": "pendant",
+      "range": 2.5,
+      "dist": 2.5,
+      "level": 0.87,
+      "health": "dying",
+      "apertureMean": 52,
+      "apertureMax": 61,
+      "ceilingMedian": 34,
+      "delta": 18,
+      "ringClipped": 0,
+      "apertureRadiusPx": 12.2,
+      "respondsTo6x": 30
+    },
+    {
+      "zone": "residence",
+      "type": "pendant",
+      "range": 6,
+      "dist": 6,
+      "level": 0.84,
+      "health": "dying",
+      "apertureMean": 193,
+      "apertureMax": 202,
+      "ceilingMedian": 126,
+      "delta": 67,
+      "ringClipped": 0,
+      "apertureRadiusPx": 5.1,
+      "respondsTo6x": 240
+    },
+    {
+      "zone": "residence",
+      "type": "emergency",
+      "range": 2.5,
+      "dist": 2.35,
+      "level": 0.97,
+      "health": "good",
+      "apertureMean": 180,
+      "apertureMax": 255,
+      "ceilingMedian": 167,
+      "delta": 13,
+      "ringClipped": 0,
+      "apertureRadiusPx": 10.9,
+      "respondsTo6x": 40
+    },
+    {
+      "zone": "residence",
+      "type": "emergency",
+      "range": 6,
+      "dist": 6.01,
+      "level": 0.99,
+      "health": "good",
+      "apertureMean": 11,
+      "apertureMax": 182,
+      "ceilingMedian": 0,
+      "delta": 11,
+      "ringClipped": 0,
+      "apertureRadiusPx": 4.3,
+      "respondsTo6x": 13
+    },
+    {
+      "zone": "plant",
+      "type": "bulkhead",
+      "range": 2.5,
+      "dist": 2.27,
+      "level": 0.93,
+      "health": "buzz",
+      "apertureMean": 163,
+      "apertureMax": 235,
+      "ceilingMedian": 119,
+      "delta": 44,
+      "ringClipped": 0.118,
+      "apertureRadiusPx": 17.3,
+      "respondsTo6x": 29
+    },
+    {
+      "zone": "plant",
+      "type": "bulkhead",
+      "range": 6,
+      "dist": 6,
+      "level": 0.97,
+      "health": "good",
+      "apertureMean": 186,
+      "apertureMax": 227,
+      "ceilingMedian": 80,
+      "delta": 106,
+      "ringClipped": 0,
+      "apertureRadiusPx": 6.5,
+      "respondsTo6x": 203
+    },
+    {
+      "zone": "plant",
+      "type": "emergency",
+      "range": 2.5,
+      "dist": 2.49,
+      "level": 0.99,
+      "health": "good",
+      "apertureMean": 142,
+      "apertureMax": 255,
+      "ceilingMedian": 119,
+      "delta": 23,
+      "ringClipped": 0,
+      "apertureRadiusPx": 10.3,
+      "respondsTo6x": 8
+    },
+    {
+      "zone": "stack",
+      "type": "strip",
+      "range": 2.5,
+      "dist": 2.5,
+      "level": 0.92,
+      "health": "buzz",
+      "apertureMean": 97,
+      "apertureMax": 242,
+      "ceilingMedian": 41,
+      "delta": 56,
+      "ringClipped": 0,
+      "apertureRadiusPx": 74.1,
+      "respondsTo6x": 15
+    },
+    {
+      "zone": "stack",
+      "type": "emergency",
+      "range": 2.5,
+      "dist": 2.06,
+      "level": 0.97,
+      "health": "good",
+      "apertureMean": 148,
+      "apertureMax": 255,
+      "ceilingMedian": 0,
+      "delta": 148,
+      "ringClipped": 0,
+      "apertureRadiusPx": 12.4,
+      "respondsTo6x": 58
+    },
+    {
+      "zone": "stack",
+      "type": "emergency",
+      "range": 6,
+      "dist": 6.01,
+      "level": 1,
+      "health": "good",
+      "apertureMean": 177,
+      "apertureMax": 213,
+      "ceilingMedian": 166,
+      "delta": 11,
+      "ringClipped": 0.003,
+      "apertureRadiusPx": 4.3,
+      "respondsTo6x": 15
+    },
+    {
+      "zone": "safe",
+      "type": "pendant",
+      "range": 2.5,
+      "dist": 2.32,
+      "level": 0.98,
+      "health": "good",
+      "apertureMean": 237,
+      "apertureMax": 238,
+      "ceilingMedian": 138,
+      "delta": 99,
+      "ringClipped": 0,
+      "apertureRadiusPx": 13.2,
+      "respondsTo6x": 254
+    }
+  ],
+  "skipped": [
+    {
+      "zone": "intake",
+      "type": "troffer",
+      "range": 6,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "intake",
+      "type": "troffer",
+      "range": 6,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "intake",
+      "type": "troffer",
+      "range": 6,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "intake",
+      "type": "troffer",
+      "range": 6,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "intake",
+      "type": "troffer",
+      "range": 6,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "intake",
+      "type": "emergency",
+      "range": 6,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "intake",
+      "type": "emergency",
+      "range": 6,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "intake",
+      "type": "emergency",
+      "range": 6,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "intake",
+      "type": "emergency",
+      "range": 6,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "intake",
+      "type": "emergency",
+      "range": 6,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "intake",
+      "type": "emergency",
+      "range": 6,
+      "why": "fitting could not be centred (pitch clamp)"
+    },
+    {
+      "zone": "intake",
+      "type": "emergency",
+      "range": 6,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "service",
+      "type": "strip",
+      "range": 6,
+      "why": "fitting could not be centred (pitch clamp)"
+    },
+    {
+      "zone": "service",
+      "type": "strip",
+      "range": 6,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "service",
+      "type": "strip",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "service",
+      "type": "bulkhead",
+      "range": 6,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "service",
+      "type": "bulkhead",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "service",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "service",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "service",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "service",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "service",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "service",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "service",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "service",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "service",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "cistern",
+      "type": "bulkhead",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "cistern",
+      "type": "bulkhead",
+      "range": 6,
+      "why": "fitting could not be centred (pitch clamp)"
+    },
+    {
+      "zone": "cistern",
+      "type": "bulkhead",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "cistern",
+      "type": "bulkhead",
+      "range": 6,
+      "why": "fitting could not be centred (pitch clamp)"
+    },
+    {
+      "zone": "cistern",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "cistern",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "cistern",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "cistern",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "residence",
+      "type": "pendant",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "residence",
+      "type": "pendant",
+      "range": 6,
+      "why": "fitting could not be centred (pitch clamp)"
+    },
+    {
+      "zone": "residence",
+      "type": "pendant",
+      "range": 6,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "residence",
+      "type": "pendant",
+      "range": 6,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "residence",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting could not be centred (pitch clamp)"
+    },
+    {
+      "zone": "residence",
+      "type": "emergency",
+      "range": 6,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "plant",
+      "type": "bulkhead",
+      "range": 2.5,
+      "why": "fitting could not be centred (pitch clamp)"
+    },
+    {
+      "zone": "plant",
+      "type": "bulkhead",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "plant",
+      "type": "bulkhead",
+      "range": 6,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "plant",
+      "type": "bulkhead",
+      "range": 6,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "plant",
+      "type": "bulkhead",
+      "range": 6,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "plant",
+      "type": "bulkhead",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "plant",
+      "type": "highbay",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "plant",
+      "type": "highbay",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "plant",
+      "type": "highbay",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "plant",
+      "type": "highbay",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "plant",
+      "type": "highbay",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "plant",
+      "type": "highbay",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "plant",
+      "type": "highbay",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "plant",
+      "type": "highbay",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "plant",
+      "type": "highbay",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "plant",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "plant",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "plant",
+      "type": "emergency",
+      "range": 6,
+      "why": "fitting could not be centred (pitch clamp)"
+    },
+    {
+      "zone": "plant",
+      "type": "emergency",
+      "range": 6,
+      "why": "fitting could not be centred (pitch clamp)"
+    },
+    {
+      "zone": "plant",
+      "type": "emergency",
+      "range": 6,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "plant",
+      "type": "emergency",
+      "range": 6,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "duct",
+      "type": "bulkhead",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "duct",
+      "type": "bulkhead",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "duct",
+      "type": "bulkhead",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "duct",
+      "type": "bulkhead",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "duct",
+      "type": "bulkhead",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "duct",
+      "type": "bulkhead",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "duct",
+      "type": "bulkhead",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "duct",
+      "type": "bulkhead",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "duct",
+      "type": "bulkhead",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "duct",
+      "type": "bulkhead",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "duct",
+      "type": "bulkhead",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "duct",
+      "type": "bulkhead",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "duct",
+      "type": "bulkhead",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "duct",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "duct",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "duct",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "duct",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "duct",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "duct",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "duct",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "duct",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "duct",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "duct",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "duct",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "stack",
+      "type": "strip",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "stack",
+      "type": "strip",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "stack",
+      "type": "strip",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "stack",
+      "type": "strip",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "stack",
+      "type": "strip",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "stack",
+      "type": "strip",
+      "range": 6,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "stack",
+      "type": "strip",
+      "range": 6,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "stack",
+      "type": "highbay",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "stack",
+      "type": "highbay",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "stack",
+      "type": "highbay",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "stack",
+      "type": "highbay",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "stack",
+      "type": "highbay",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "stack",
+      "type": "highbay",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "stack",
+      "type": "highbay",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "stack",
+      "type": "highbay",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "stack",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "stack",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting not visible from the standing point (aperture does not respond to its own lamp)"
+    },
+    {
+      "zone": "stack",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "stack",
+      "type": "bulkhead",
+      "range": 2.5,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "safe",
+      "type": "pendant",
+      "range": 6,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "safe",
+      "type": "pendant",
+      "range": 6,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "safe",
+      "type": "pendant",
+      "range": 6,
+      "why": "no standing point at this range"
+    },
+    {
+      "zone": "safe",
+      "type": "emergency",
+      "range": 2.5,
+      "why": "fitting could not be centred (pitch clamp)"
+    }
+  ]
+}
