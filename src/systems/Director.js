@@ -29,19 +29,39 @@ import { STATE as SURVEYOR_STATE } from '../entities/Surveyor.js';
  * agent uses for the mix. Nothing displays it.
  */
 
+/**
+ * `acts` — DOES THE PLAYER HAVE TO DO ANYTHING ABOUT IT?
+ *
+ * This is the distinction the table was missing, and the measurement that says
+ * so is a delivered session: five beats fired in nine minutes and **four of them
+ * were a noise somewhere the player was not**. A door closing, something
+ * settling in the services, the Attendant having moved a chair — the player
+ * hears it, turns their head, and carries on doing exactly what they were doing.
+ *
+ * That is atmosphere, and atmosphere is not pacing. A system that produces four
+ * parts ambience to one part tension is an ambience system, however well it is
+ * scheduled, and the weights were pushing it that way: the three beats that ask
+ * nothing carry 3.45 of weight between them and are gated at `minFear 0`, while
+ * the three that change the player's situation carry 2.0, sit behind fear gates,
+ * and cost two to thirteen times as much tension.
+ *
+ * The fix is not to raise a number. It is to name the property and then refuse
+ * to let a session drift — see `_eligible`, which forces the next beat to be one
+ * that acts once `atmosphereRun` consecutive ones have not.
+ */
 const BEATS = {
   /** A door closes somewhere you have already been. */
-  distant_door: { weight: 1.0, minFear: 0.0, cost: 0.10 },
+  distant_door: { weight: 1.0, minFear: 0.0, cost: 0.10, acts: false },
   /** A lighting circuit drops out. The most useful beat: it changes the map. */
-  circuit_trip: { weight: 0.85, minFear: 0.15, cost: 0.22 },
+  circuit_trip: { weight: 0.85, minFear: 0.15, cost: 0.22, acts: true },
   /** The Attendant leaves evidence. Always available, always the best answer. */
-  attendant: { weight: 1.35, minFear: 0.0, cost: 0.05 },
+  attendant: { weight: 1.35, minFear: 0.0, cost: 0.05, acts: false },
   /** Something heavy settles in the services. Pure atmosphere. */
-  services: { weight: 1.1, minFear: 0.0, cost: 0.04 },
+  services: { weight: 1.1, minFear: 0.0, cost: 0.04, acts: false },
   /** The Surveyor wakes and walks. Expensive. Rationed hard. */
-  rouse: { weight: 0.55, minFear: 0.25, cost: 0.65 },
+  rouse: { weight: 0.55, minFear: 0.25, cost: 0.65, acts: true },
   /** The lamp stutters once, for no reason. */
-  lamp_stutter: { weight: 0.6, minFear: 0.30, cost: 0.08 },
+  lamp_stutter: { weight: 0.6, minFear: 0.30, cost: 0.08, acts: true },
 };
 
 export class Director {
@@ -102,6 +122,14 @@ export class Director {
      * whenever half of it was locked out by `minFear`.
      */
     this.beatCooldown = 100;
+    /**
+     * How many beats that ask nothing of the player may fire back to back before
+     * the next one has to be one that does. Two, so the shape is
+     * atmosphere-atmosphere-tension rather than a metronome of scares, and a
+     * session lands nearer 2:1 than the measured 4:1.
+     */
+    this.atmosphereRun = 2;
+    this._atmosphereRun = 0;
 
     // ---- runtime ----
     this.time = 0;
@@ -344,7 +372,15 @@ export class Director {
     // escalation on present fear alone is a deadlock, because escalation is the
     // only thing that produces fear.
     const pressure = Math.max(this.fear, this.dread);
+    // Two beats in a row that asked nothing, and the third has to ask something.
+    // `dread` is what makes this possible at all — the beats that act are gated
+    // on fear the player does not have when nothing has happened, which is the
+    // deadlock dread exists to break. If none of them is available (a cooldown,
+    // the tension budget, the Surveyor already up) the run is not reset and the
+    // demand carries to the next opportunity rather than being forgotten.
+    const demandAction = this._atmosphereRun >= this.atmosphereRun;
     for (const [name, def] of Object.entries(BEATS)) {
+      if (demandAction && !def.acts) continue;
       if (pressure < def.minFear) continue;
       if (name === 'rouse' && (!this.surveyor || this.surveyor.state !== SURVEYOR_STATE.DORMANT)) continue;
       if (name === 'attendant' && !this.attendant) continue;
@@ -368,6 +404,7 @@ export class Director {
   _fire(name) {
     const def = BEATS[name];
     this.tension = clamp01(this.tension + def.cost);
+    this._atmosphereRun = def.acts ? 0 : this._atmosphereRun + 1;
     this.sinceBeat = 0;
     this.dread = 0;
     // Jitter kept, tail trimmed. The point of the random factor is that the
@@ -689,7 +726,15 @@ export class Director {
     // Never while the player is inside something.
     if (this.player.controlEnabled === false) return;
 
-    const options = this._eligible();
+    let options = this._eligible();
+    // A demand that cannot be met must not become silence. If nothing that acts
+    // is available this instant, take an atmosphere beat rather than waiting —
+    // but do NOT clear the run, so the demand is still standing next time.
+    if (!options.length && this._atmosphereRun >= this.atmosphereRun) {
+      this._atmosphereRun = 0;
+      options = this._eligible();
+      this._atmosphereRun = this.atmosphereRun;
+    }
     // Nothing was eligible this instant — a cooldown, or the tension budget.
     //
     // THIS RAN EVERY FRAME. The previous version wrote
@@ -720,6 +765,7 @@ export class Director {
     return {
       fear: +this.fear.toFixed(3),
       dread: +this.dread.toFixed(3),
+      atmosphereRun: this._atmosphereRun,
       tension: +this.tension.toFixed(3),
       intensity: +this.intensity.toFixed(2),
       sinceBeat: +this.sinceBeat.toFixed(1),

@@ -1152,6 +1152,36 @@ async function main() {
   check('the player was able to move for most of the session',
     frac((s) => s.controls !== false) > 0.7,
     `${(frac((s) => s.controls !== false) * 100).toFixed(0)}% of samples had controls enabled`);
+  // FOUR PARTS AMBIENCE TO ONE PART TENSION IS AN AMBIENCE SYSTEM.
+  //
+  // Counting beats says the Director is running. What it does not say is whether
+  // any of them asked the player for anything — and a delivered session fired
+  // five, of which four were a noise somewhere the player was not. `BEATS` now
+  // carries `acts`, and the Director refuses to let more than two that ask
+  // nothing fire back to back. This is the check that notices if that stops
+  // working, or if the beats that act quietly become unreachable again the way
+  // `rouse` was for the whole life of the project.
+  const ACTS = new Set(['circuit_trip', 'rouse', 'lamp_stutter']);
+  const acted = beats.filter((b) => ACTS.has(b.data?.name));
+  let worstRun = 0, run = 0;
+  for (const b of beats) {
+    if (ACTS.has(b.data?.name)) run = 0; else run = Math.max(worstRun, ++run);
+    worstRun = Math.max(worstRun, run);
+  }
+  // THE LINE IS THE RATIO, NOT THE RUN LENGTH.
+  //
+  // The first version of this asserted "no more than three in a row asked
+  // nothing", and the session that motivated it — five beats, one of which asked
+  // anything — passed, because its longest run was exactly three. A check that
+  // the measured bad state satisfies is not a check. Its actual failure was the
+  // MIX: one in five. At least one beat in three has to ask the player for
+  // something, which the old behaviour fails and a 2:1 session clears.
+  check('the Director asks the player for something, not just for atmosphere',
+    beats.length < 3 || acted.length * 3 >= beats.length,
+    `${acted.length} of ${beats.length} beats required a response`
+    + ` (${beats.map((b) => b.data?.name).join(', ')})`
+    + `; longest run that did not: ${worstRun}`);
+
   // DID THE DECOY ACTUALLY DO ANYTHING?
   //
   // Counting throws proves the key is bound. What has to be true for it to be a
