@@ -88,25 +88,37 @@ export class Game {
     this.engine = new Engine(this.canvas, { quality: detectQuality(), readback: this.qa });
     this.input = new Input(this.canvas);
 
-    P(0.05, 'forging surfaces');
+    // THE BAR WAS WEIGHTED BY GUESS, AND THE GUESS WAS BACKWARDS.
+    //
+    // Texture synthesis was allotted half the bar. Timed on the deployed build
+    // at the high tier: the fourteen surfaces take **0.85 s of a 9.5 s boot**,
+    // about 9%, while the two phases that actually dominate — the hero assets
+    // at 2.4 s and raising the first zone at 2.9 s — were given 10% and 16%
+    // between them. A player watched the bar rush to 55% and then sit there for
+    // most of the wait, which is the shape that reads as "it has hung".
+    //
+    // The weights below are the measured proportions, rounded. They are a
+    // measurement and they will drift; `tools/qa/boot.mjs` is how to re-take
+    // them rather than re-guess.
+    P(0.04, 'forging surfaces');
     this.forge = new TextureForge({ quality: this.engine.q.textureQuality });
-    await this.forge.forgeAll((p, name) => P(0.05 + p * 0.50, `forging ${name}`));
+    await this.forge.forgeAll((p, name) => P(0.04 + p * 0.10, `forging ${name}`));
 
-    P(0.56, 'mixing materials');
+    P(0.15, 'mixing materials');
     this.materials = new MaterialLibrary(this.forge, { envMap: this.engine.envMap });
     materialGlobals.uStochastic.value = this.engine.q.stochastic;
     this.palette = buildPalette(this.materials);
 
-    P(0.58, 'unpacking assets');
+    P(0.17, 'unpacking assets');
     this.assets = new Assets({ materials: this.materials, palette: this.palette });
     await this.assets.loadManifest();
     const manifestNames = (this.assets.manifest?.assets || []).map((a) =>
       (a.file || a.name || '').replace(/\.glb$/, '')).filter(Boolean);
     if (manifestNames.length) {
-      await this.assets.loadAll(manifestNames, (p, n) => P(0.58 + p * 0.10, `loading ${n}`));
+      await this.assets.loadAll(manifestNames, (p, n) => P(0.17 + p * 0.24, `loading ${n}`));
     }
 
-    P(0.69, 'raising structure');
+    P(0.42, 'raising structure');
     this.collision = new CollisionWorld();
     this.rig = new LightRig(this.engine.scene, {
       maxShadows: this.engine.q.maxShadows,
@@ -181,7 +193,7 @@ export class Game {
       // A half-finished world must not take the whole build down with it.
       try {
         this.world = worldMod.createWorld(this.ctx);
-        await this.world.boot?.((p, m) => P(0.69 + p * 0.16, m));
+        await this.world.boot?.((p, m) => P(0.42 + p * 0.42, m));
         this.subsystems.world = true;
       } catch (e) {
         console.error('[game] world failed to build; falling back to Intake', e);
@@ -195,7 +207,7 @@ export class Game {
       this.engine.scene.add(intake.root);
       this.world = makeSingleZoneWorld(intake, this.engine);
     }
-    P(0.86, 'settling dust');
+    P(0.85, 'settling dust');
 
     // ---- player -----------------------------------------------------------
     this.player = new Player({
