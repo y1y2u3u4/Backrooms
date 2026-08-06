@@ -76,7 +76,29 @@ export class EntityAudio {
     this._unsub.push(bus.on('entity:state', (e) => this.setState(e)));
     this._unsub.push(bus.on('entity:heard', (e) => {
       // It turns its head toward what it heard. That tick is your bearing.
-      if (this.state !== 'dormant' && this.state !== 'despawn') this.headTick(e?.position);
+      //
+      // It plays at `from` — the entity — and NOT at `position`, which is where
+      // the noise was. Placing it at the noise was the single reason a decoy
+      // gave the player nothing: they threw a cell thirty metres away and heard
+      // a tick thirty metres away, which is just their own can landing again.
+      // The whole point of the throw is to learn where the thing went, and the
+      // only sound that can carry that is one made by the thing.
+      if (this.state === 'dormant' || this.state === 'despawn') return;
+      const at = e?.from || e?.position;
+      // A swing of most of a circle moves a body, not just a head plate. Gain
+      // rides the angle so "it turned right round" and "it corrected slightly"
+      // are audibly different events rather than the same click twice.
+      const turn = clamp01((e?.turn ?? 0) / Math.PI);
+      this.headTick(at, 0.55 + 1.05 * turn);
+      // And the body follows the head. This is not decoration: `entity.tick` is
+      // ref 4.0 / rolloff 0.9 / maxDist 45, which is about 0.19 of unit gain at
+      // 25 m, and a decoy is *designed* to put the entity that far away — the
+      // one cue the mechanic depends on is weakest exactly where it is needed.
+      // `entity.step` is ref 6.0 / rolloff 0.72 / maxDist 70: ~0.24 at the same
+      // range and still ~0.16 at forty metres. A heavy thing swinging round
+      // carries further than its head plate, which is both true and the reason
+      // the far-field half of this signal survives.
+      if (turn > 0.45) this.footfall(0.5 + 0.5 * turn);
     }));
     return this;
   }
@@ -585,10 +607,11 @@ export class EntityAudio {
   }
 
   /** Head plate rotation. Pass a position to point the tick somewhere. */
-  headTick(at = null) {
+  headTick(at = null, gain = 1) {
     if (!this.engine.available) return null;
     const p = at || this.position;
-    return this.engine.playAt('entity.tick', { x: p.x ?? p[0], y: (p.y ?? p[1]) + 2.4, z: p.z ?? p[2] }, {});
+    return this.engine.playAt('entity.tick',
+      { x: p.x ?? p[0], y: (p.y ?? p[1]) + 2.4, z: p.z ?? p[2] }, { gain });
   }
 
   /** The measuring pose. Your window. */

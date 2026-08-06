@@ -210,14 +210,21 @@ function installDriver(cfg) {
     const out = {};
     for (const k of ['zone', 'from', 'state', 'entity', 'circuit', 'powered', 'name',
       'cause', 'id', 'kind', 'title', 'surface', 'water', 'crouch', 'strength',
-      'radius', 'ending', 'objective', 'fear', 'item', 'distance', 'remaining', 'reason']) {
+      'radius', 'ending', 'objective', 'fear', 'item', 'distance', 'remaining', 'reason',
+      'turn']) {
       if (a[k] !== undefined && typeof a[k] !== 'object') out[k] = a[k];
     }
-    const p = a.position;
-    if (p && typeof p === 'object') {
-      const x = p.x ?? p[0], y = p.y ?? p[1], z = p.z ?? p[2];
-      if (Number.isFinite(x)) out.at = [+x.toFixed(1), +y.toFixed(1), +z.toFixed(1)];
-    }
+    const pt = (v) => {
+      if (!v || typeof v !== 'object') return null;
+      const x = v.x ?? v[0], y = v.y ?? v[1], z = v.z ?? v[2];
+      return Number.isFinite(x) ? [+x.toFixed(1), +y.toFixed(1), +z.toFixed(1)] : null;
+    };
+    const at = pt(a.position);
+    if (at) out.at = at;
+    // `from` is a point on some events and a scalar on others; the scalar copy
+    // above already took the scalar case and left objects alone.
+    const fr = pt(a.from);
+    if (fr) out.fromAt = fr;
     return out;
   };
   g.bus.emit = (k, ...a) => {
@@ -516,6 +523,9 @@ function installDriver(cfg) {
         active: !!ent.active, state: ent.state,
         stateTime: +ent.stateTime.toFixed(1),
         dist: +ent.position.distanceTo(g.player.position).toFixed(2),
+        // Where it actually is. Without this the tick-placement check below has
+        // nothing to compare against and passes on anything.
+        at: [+ent.position.x.toFixed(1), +ent.position.y.toFixed(1), +ent.position.z.toFixed(1)],
         illum: +(ent.illumination ?? 0).toFixed(3),
         conf: +(ent.confidence ?? 0).toFixed(2),
         speed: +(ent.speed ?? 0).toFixed(2),
@@ -1247,6 +1257,45 @@ async function main() {
         + ` beyond ${AUDIBLE.toFixed(0)} m, on top of it, or behind a wall:`
         + ` ${(H.throwOccl || []).map((o) => `${o.dist} m occl ${o.occl}`).join(', ') || 'n/a'})`
       : 'no decoy was thrown this session — the entity never came close enough');
+
+  // COULD THE PLAYER TELL?
+  //
+  // The check above proves the Surveyor's belief moved. It says nothing about
+  // whether the player has any way of knowing that, and for the whole life of
+  // this file the answer was no: `entity:heard` carried only the noise's
+  // position, so the head-plate tick — the one sound in the game that reports a
+  // redirect — was played AT THE THROWN CELL. A player who lobbed a spare cell
+  // thirty metres down a corridor heard a click thirty metres down a corridor,
+  // which is their own can landing. The mechanic worked and was imperceptible.
+  //
+  // Two things must hold, and neither held before:
+  //   * the tick is placed at the entity, so its direction is the entity's;
+  //   * a redirect that swings the entity round reports a large `turn`, so the
+  //     sound can be louder for a big swing than for a small correction.
+  const heardFull = H.events.filter((e) => e.key === 'entity:heard');
+  const placed = heardFull.filter((e) => e.data?.fromAt);
+  const atEntity = placed.filter((e) => {
+    const s = entAt(e.t);
+    if (!s?.entity?.at) return true;         // no sample to compare against
+    const [ex, , ez] = s.entity.at, [fx, , fz] = e.data.fromAt;
+    return Math.hypot(fx - ex, fz - ez) < 3.5;
+  });
+  check('the head-plate tick is placed at the entity, not at the noise',
+    heardFull.length === 0
+      || (placed.length === heardFull.length && atEntity.length === placed.length),
+    heardFull.length
+      ? `${placed.length}/${heardFull.length} heard events carry the entity's own position`
+        + ` and ${atEntity.length}/${placed.length} of those match where it was standing`
+      : 'the entity heard nothing this session');
+
+  // A redirect the player can act on is one that turned it away from where it
+  // was going. If every belief change this session was a nudge of a few degrees
+  // the decoy is not a redirect mechanic, whatever the belief check says.
+  const swings = heardFull.filter((e) => (e.data?.turn ?? 0) > 0.6);   // > ~34°
+  check('at least one belief change actually turned the entity',
+    heardFull.length < 3 || swings.length > 0,
+    `${swings.length} of ${heardFull.length} belief changes swung it more than 34 degrees`
+      + ` (largest ${Math.max(0, ...heardFull.map((e) => e.data?.turn ?? 0)).toFixed(2)} rad)`);
 
   // DID KILLING THE LIGHTS ACTUALLY STOP IT?
   //

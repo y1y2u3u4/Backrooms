@@ -110,9 +110,25 @@ function profileRunZ(profile, length, side = 1, bevel = 0.0015) {
  * Subdivided so vertex shading can darken the perimeter — a floor lit only by
  * ceiling lights is always brighter in the middle of the room.
  */
+/**
+ * @param {(x:number,z:number)=>number} [opts.wear] 0..1 traffic at a point.
+ *
+ * WHY THIS IS A CALLBACK AND NOT A NOISE TERM.
+ *
+ * `Materials.js` already has a traffic term, and you cannot see it: it maxes at
+ * a 12% darkening (`mix(1.0, 0.76, ...)` times `uGrimeAmount` 0.5) and it is
+ * driven by `axLeakN.y`, which is the channel authored for the vertical leak
+ * streaks on walls. Reusing it on a floor gives blotches, and blotches are not
+ * what wear looks like — wear follows where people walk, which is a property of
+ * the building's circulation and is unknowable to a shader.
+ *
+ * The zone knows. `floorSlab` already subdivides at 1.6–2.1 m and vertex-shades
+ * for edge darkening, so the vertices to paint are already there; this just
+ * lets the zone say which of them are on a path.
+ */
 export function floorSlab(b, rect, y, {
   key = 'carpet', surface = 'carpet', water = 0, tag = 'floor',
-  subdiv = 1.6, edgeShade = 0.22, collide = true,
+  subdiv = 1.6, edgeShade = 0.22, collide = true, wear = null,
 } = {}) {
   const [x0, z0, x1, z1] = rect;
   const w = Math.abs(x1 - x0), d = Math.abs(z1 - z0);
@@ -124,7 +140,12 @@ export function floorSlab(b, rect, y, {
   vertexShade(g, (x, _y, z) => {
     const ex = 1 - clamp01((Math.abs(x - cx) / (w / 2)) ** 3);
     const ez = 1 - clamp01((Math.abs(z - cz) / (d / 2)) ** 3);
-    return 1 - edgeShade * (1 - Math.min(ex, ez));
+    const edge = 1 - edgeShade * (1 - Math.min(ex, ez));
+    // Ground-in dirt down the lanes people use. 0.28 is the deepest, which is
+    // more than twice what the shader's own traffic term can reach and is what
+    // makes it visible at all on a 63 m plate of one carpet.
+    const t = wear ? clamp01(wear(x, z)) : 0;
+    return edge * (1 - 0.28 * t);
   });
   b.add(key, g);
   if (collide) {
@@ -414,7 +435,32 @@ export function ceilingGrid(b, rect, y, {
   const shellFlip = shell.clone();
   shellFlip.applyMatrix4(new THREE.Matrix4().makeScale(-1, 1, 1)); // inward-facing
   worldUV(shellFlip, 1.4);
-  vertexShade(shellFlip, () => 0.58);
+  // A MISSING TILE SHOULD READ AS A DARK SPACE, NOT AS A HOLE IN THE RENDER.
+  //
+  // This was a flat 0.58 everywhere, and a flat shade in an unlit box is a flat
+  // black rectangle: captured at the medium tier the ceiling grid showed several
+  // pure-black cells with hard straight edges, which reads as missing geometry
+  // rather than as somewhere the light does not reach.
+  //
+  // The void already contains hangers, conduit, a sagging cable bundle and a
+  // soffit — see the `missing` loop below. What it does not have is anything
+  // lighting them: every fixture in the building hangs BELOW this plane and
+  // throws downward, so the only thing reaching in here is bounce fill, and a
+  // flat 0.58 under near-zero light is a flat black rectangle with a hard
+  // straight edge. That reads as missing geometry, not as a dark space.
+  //
+  // The fix that is available without putting a light in every ceiling is to
+  // let the shell carry the falloff itself: brightest at the lip, where the
+  // room genuinely does spill in, dropping back with depth. Mean shade goes up
+  // rather than down — darkening the deck was the wrong direction and made the
+  // hole blacker — and a coarse per-void break stops every hole in a corridor
+  // reading as the same stamped rectangle.
+  vertexShade(shellFlip, (px, py, pz) => {
+    const t = clamp01((py - (y + 0.02)) / Math.max(plenumDepth, 1e-3));
+    const depth = 0.55 + 0.45 * (1 - t) ** 1.4;
+    const grain = 0.88 + 0.24 * hash2(Math.round(px * 1.6), Math.round(pz * 1.6));
+    return clamp01(depth * grain);
+  });
   plenum.push(shellFlip);
   shell.dispose();
 

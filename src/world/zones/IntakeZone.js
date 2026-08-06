@@ -187,6 +187,45 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
   const builderFor = (r, c) => builders[Math.floor(r / INTAKE.chunkCells) * nChunk + Math.floor(c / INTAKE.chunkCells)]
     || builders[0];
 
+  // WHERE PEOPLE WALKED.
+  //
+  // The carpet is the largest surface in almost every frame of this zone and it
+  // was a single flat sand colour across 63 x 63 m — the biggest and dullest
+  // thing on screen. `Materials.js` has a traffic term, but it maxes at a 12%
+  // darkening and is driven by the noise channel authored for vertical leak
+  // streaks, so on a floor it produces blotches rather than lanes and reads as
+  // nothing at all.
+  //
+  // Wear is not noise. It follows circulation, and the plan knows exactly where
+  // that is: two crossing spines, a third that dead-ends, and a doorway into
+  // every enclosed room. A lane down the middle of a corridor and a fan of dirt
+  // spreading from each door is what thirty years of a night shift looks like,
+  // and it tells the player where the building expects them to go without a
+  // sign or a marker — which matters in a zone whose whole problem is that an
+  // unguided walker takes eight minutes to find its way out.
+  // The spine coordinates are already computed further down for the lighting;
+  // these are the same three lines, hoisted, because the floor is built first.
+  const wearSpineZ = cellPos(plan.spineRow, 0)[1];
+  const wearSpineX = cellPos(0, plan.spineCol)[0];
+  const wearSpine2Z = cellPos(plan.spineRow2, 0)[1];
+  const doorPts = [];
+  const lane = (d, half) => clamp01(1 - Math.abs(d) / half);
+  const intakeWear = (x, z) => {
+    // Along the spines: a 1.5 m lane, softened over another metre.
+    let t = Math.max(
+      lane(z - wearSpineZ, 2.4),
+      lane(x - wearSpineX, 2.4),
+      lane(z - wearSpine2Z, 2.0) * 0.8,
+    );
+    // A fan of dirt spreading out of every doorway.
+    for (const [dx, dz] of doorPts) {
+      const r = Math.hypot(x - dx, z - dz);
+      t = Math.max(t, clamp01(1 - r / 3.2) * 0.85);
+    }
+    // Nobody walks a perfectly straight line for sixty metres.
+    return clamp01(t * (0.82 + 0.18 * hash2(Math.round(x * 0.7), Math.round(z * 0.7))));
+  };
+
   // ---- plan the fixtures first -------------------------------------------
   // The ceiling grid needs to know which cells a fixture occupies so it can
   // leave those tiles out; building the ceiling first and the lights second
@@ -290,7 +329,9 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
     const [x1] = cellPos(r0, c1 - 1);
     const z0 = cellPos(r0, c0)[1], z1 = cellPos(r1 - 1, c0)[1];
     const rect = [x0 - cell / 2, z0 - cell / 2, x1 + cell / 2, z1 + cell / 2];
-    floorSlab(b, rect, 0, { key: 'carpet', surface: 'carpet', subdiv: 2.1, edgeShade: 0.18 });
+    floorSlab(b, rect, 0, {
+      key: 'carpet', surface: 'carpet', subdiv: 2.1, edgeShade: 0.18, wear: intakeWear,
+    });
 
     const dmg = damageAt((r0 + r1) / 2, (c0 + c1) / 2);
     const slots = fixturePlan
@@ -383,6 +424,7 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
           hinge: rng.chance(0.5) ? 1 : -1, seed: room.r * 7 + i,
         });
         room._door = { dx, dz, ang };
+        doorPts.push([dx, dz]);
       }
     });
     room.centre = [(minX + maxX) / 2, (minZ + maxZ) / 2];

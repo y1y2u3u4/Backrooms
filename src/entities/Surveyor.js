@@ -572,6 +572,12 @@ export class Surveyor {
     const a = this.rng() * TAU;
     const r = this.rng() * err;
 
+    // Bearing it was already working on, sampled before the belief moves.
+    const prevX = this.lastHeard.x - this.position.x;
+    const prevZ = this.lastHeard.z - this.position.z;
+    const prevConf = this.confidence;
+    const prevState = this.state;
+
     // A stronger cue overwrites a weaker belief; a weaker one only refreshes it.
     if (strength >= this.confidence * 0.72) {
       this.lastHeard.set(position.x + Math.cos(a) * r, position.y, position.z + Math.sin(a) * r);
@@ -587,8 +593,33 @@ export class Surveyor {
       // A loud noise cuts a measuring cycle short. Quiet ones do not.
       this.measureHold = Math.min(this.measureHold, 0.6);
     }
+    // HOW FAR IT SWUNG. This is the player's only feedback that a decoy or a
+    // switch worked, and until now nothing carried it: the event said where the
+    // *sound* was, so the head tick played at the thrown cell thirty metres
+    // away. The player heard their own can land — which they already knew — and
+    // learned nothing about the thing they threw it to move.
+    //
+    // `turn` is the angle between the bearing it was already working on and the
+    // bearing it now believes in, so a decoy that pulls it right round reads
+    // differently from a correction of half a metre. It cannot lie: it is
+    // computed from the belief that actually changed.
+    const nx = this.lastHeard.x - this.position.x, nz = this.lastHeard.z - this.position.z;
+    let turn = 0;
+    // `prevState` and not `this.state`: a DORMANT entity is not working on a
+    // bearing, and its stale belief can be four hundred metres away in another
+    // zone, which would report a huge swing for simply waking up. That would
+    // make the swing check pass on the one case it must not be satisfied by.
+    if (prevState !== STATE.DORMANT && prevState !== STATE.RETREATING
+        && prevConf > 0.08 && (prevX * prevX + prevZ * prevZ) > 0.25 && (nx * nx + nz * nz) > 0.25) {
+      const d = (prevX * nx + prevZ * nz) / (Math.hypot(prevX, prevZ) * Math.hypot(nx, nz));
+      turn = Math.acos(Math.min(1, Math.max(-1, d)));
+    }
     this.bus?.emit('entity:heard', {
       entity: 'surveyor', position: this.lastHeard.clone(),
+      // Where the LISTENER is, not where the sound was. The head plate is on
+      // its head; that is the only place the tick can honestly come from.
+      from: this.position.clone(),
+      turn: +turn.toFixed(3),
       radius, strength: +strength.toFixed(3),
     });
     return strength;

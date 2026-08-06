@@ -42,7 +42,9 @@
  *   zone:enter    {zone, from}                     reverb + ambience profile
  *   light:circuit {circuit, powered}               breaker/relay + hum settle
  *   entity:state  {entity, state, position}        the Surveyor / Attendant
- *   entity:heard  {position, radius}               head-plate tick
+ *   entity:heard  {position, radius, from, turn}   head-plate tick, AT `from`
+ *                 `from` is the entity, `position` is the noise; the tick has to
+ *                 come from the thing that turned or a decoy tells you nothing
  *   item:pickup   {id, name}                       pickup one-shot
  *   story:note    {id, title, body}                paper + UI
  *   game:death    {cause}                          full duck, ambience out

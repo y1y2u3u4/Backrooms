@@ -311,5 +311,77 @@ console.log('\nSurveyor — headless state machine checks\n');
   ok('position is a 3-tuple', Array.isArray(d.position) && d.position.length === 3);
 }
 
+// 9. Can the player tell it turned? ------------------------------------------
+//
+// The Surveyor is blind and the player is not told anything; the only channel
+// carrying "your decoy worked" is the head-plate tick on `entity:heard`. For the
+// whole life of this file that event carried the NOISE's position and nothing
+// else, so the tick was played at the thrown cell — thirty metres away, where
+// the player already knew a sound had happened. They heard their own can land
+// and learned nothing about the thing they threw it to move.
+//
+// Two properties are required and neither is implied by the belief moving:
+//   * `from` is the entity, so the sound's direction is the entity's direction;
+//   * `turn` reports the angle between the bearing it was working on and the one
+//     it now believes, so a redirect is audibly different from a correction.
+{
+  console.log('the player can hear it turn');
+  const { s, bus } = makeEntity({ light: 3, playerAt: [0, -8] });
+  const heard = [];
+  bus.on('entity:heard', (e) => heard.push(e));
+
+  s.spawnAt(0, 0, 8, 0.5);
+  s._setState(STATE.SEEKING);
+  // It is working on a bearing due north of itself.
+  s.lastHeard.set(0, 0, 18);
+  s.confidence = 0.8;
+
+  // A decoy lands hard the other way — behind it and to one side.
+  s.hear(new THREE.Vector3(-6, 0, 2), 16);
+
+  ok('a belief change is announced at all', heard.length === 1, `${heard.length} events`);
+  const e = heard[heard.length - 1];
+  ok('the event carries the entity\'s own position, not the noise\'s',
+    !!e?.from && e.from.distanceTo(s.position) < 0.01,
+    `from=${e?.from ? [e.from.x, e.from.z].map((v) => v.toFixed(1)).join(',') : 'absent'}`
+    + ` entity=${[s.position.x, s.position.z].map((v) => v.toFixed(1)).join(',')}`);
+  ok('`from` is NOT the noise position — that was the defect',
+    !!e?.from && e.from.distanceTo(new THREE.Vector3(-6, 0, 2)) > 1,
+    `from=${e?.from ? [e.from.x, e.from.z].map((v) => v.toFixed(1)).join(',') : 'absent'}`);
+  ok('a decoy the other way reports a large turn',
+    (e?.turn ?? 0) > 1.5, `turn=${(e?.turn ?? 0).toFixed(2)} rad`);
+
+  // And a correction of half a metre must NOT read the same, or the gain the
+  // audio rides on this value tells the player nothing.
+  const { s: s2, bus: b2 } = makeEntity({ light: 3, playerAt: [0, -8] });
+  const heard2 = [];
+  b2.on('entity:heard', (e2) => heard2.push(e2));
+  s2.spawnAt(0, 0, 8, 0.5);
+  s2._setState(STATE.SEEKING);
+  s2.lastHeard.set(0, 0, 18);
+  s2.confidence = 0.8;
+  s2.hear(new THREE.Vector3(0.3, 0, 18.2), 3);
+  const e2 = heard2[heard2.length - 1];
+  ok('a small correction reports a small turn',
+    heard2.length === 0 || (e2?.turn ?? 9) < 0.5,
+    e2?.turn === undefined ? 'no `turn` on the event at all' : `turn=${e2.turn.toFixed(2)} rad`);
+
+  // Waking up is not turning. A DORMANT entity's belief can be in another zone
+  // four hundred metres away, and counting that as a swing would let the check
+  // pass on exactly the case it exists to catch.
+  const { s: s3, bus: b3 } = makeEntity({ light: 3, playerAt: [0, -8] });
+  const heard3 = [];
+  b3.on('entity:heard', (e3) => heard3.push(e3));
+  s3.spawnAt(0, 0, 8, 0.5);
+  s3._setState(STATE.DORMANT);
+  s3.lastHeard.set(0, 0, 400);
+  s3.confidence = 0.9;
+  s3.hear(new THREE.Vector3(-6, 0, 2), 16);
+  const e3 = heard3[heard3.length - 1];
+  ok('waking from dormant does not count as a turn',
+    heard3.length === 0 || (e3?.turn ?? 9) < 0.01,
+    e3?.turn === undefined ? 'no `turn` on the event at all' : `turn=${e3.turn.toFixed(2)} rad`);
+}
+
 console.log(`\n${passed} passed, ${failed} failed\n`);
 process.exit(failed ? 1 : 0);
