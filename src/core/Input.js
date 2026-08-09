@@ -27,6 +27,12 @@ export const ACTIONS = {
    */
   cover: ['KeyV'],
   swapCell: ['KeyB'],
+  /**
+   * Throw a spare cell to make a noise somewhere you are not. The only verb in
+   * the game that redirects the Surveyor rather than hiding from it — see
+   * `src/player/Decoy.js` for why that mattered enough to add a key.
+   */
+  throwDecoy: ['KeyT'],
   /** Push a hiding place ajar to look out. Shares KeyV — context decides. */
   peek: ['KeyV'],
 };

@@ -2081,7 +2081,119 @@ export function hidingPlace(ctx, {
 
 // ---------------------------------------------------------------------------
 
+/**
+ * A LIGHT SWITCH BY THE DOOR — the counter-verb the fiction already promised.
+ *
+ * `Surveyor._moveToward` freezes the entity outright below `LIGHT_DEAD` (0.30),
+ * `_sampleLight` sums the fixed rig and the player's own lamp, and `nb_1` — the
+ * page the player is handed in the first room — states the rule in plain prose:
+ * "It moves when there is light on it… In the dark it does not move at all. Not
+ * slowly. At all."
+ *
+ * The player could not act on it. In a dark zone, lamp off is the whole answer
+ * and it works. In a LIT zone — which is where every recorded encounter has
+ * happened; the Intake runs 37 units at head height — the player has no way to
+ * make it dark. The rule was trivia.
+ *
+ * Breaker boards exist, but a `breakerPanel` is a resource puzzle with a
+ * `maxOn` limit and it lives in one room. A wall switch by a door is what a
+ * 1970s facility actually has, it is where a person would look for one, and it
+ * turns nb_1 from a fact into a decision: kill the lights and the thing stops,
+ * but so does your ability to see — and the lamp you reach for is the thing
+ * that feeds it.
+ *
+ * IT CANNOT SUPPLY A DEAD CIRCUIT. A local switch downstream of an open breaker
+ * does nothing, which is both electrically true and the thing that stops this
+ * from short-circuiting the distribution-board puzzle: it can only interrupt a
+ * way the board has already closed.
+ */
+/**
+ * Ways a light switch has opened, as opposed to ways the distribution board has.
+ *
+ * `LightRig.setCircuit` sets `powered` AND `target` together — it models the
+ * breaker, which is the only thing that used to touch a circuit. A wall switch
+ * is downstream of that, and using the same call meant a switch that turned the
+ * lights off then read its own handiwork as "the board is open" and refused to
+ * turn them back on. It could darken a room permanently, which is a trap rather
+ * than a mechanic.
+ *
+ * Module scope rather than per-switch, so two switches on one way can undo each
+ * other — which is what a corridor with a switch at each end does.
+ */
+const SWITCHED_OFF = new Set();
+
+export function lightSwitch(ctx, {
+  id = 'sw_1', position = [0, 1.15, 0], rotation = 0,
+  circuit = 'intake', label = 'the light switch', parent = null,
+} = {}) {
+  const { bus, interactor, rig } = ctx;
+  const root = placed(position, rotation, `switch:${id}`);
+  (parent || ctx.scene).add(root);
+
+  const steel = M(ctx, 'machinePaint');
+  const plastic = M(ctx, 'plasticWhite');
+  // A 86 x 86 backplate with a single rocker, the standard plate of the period.
+  const plate = box(0.086, 0.086, 0.010, 0.003, 1);
+  root.add(meshOf(plate, plastic, { uv: 0.12, shade: () => 0.82 }));
+  const rocker = box(0.034, 0.050, 0.009, 0.002, 1);
+  rocker.translate(0, 0, 0.009);
+  const rockerMesh = meshOf(rocker, plastic, { uv: 0.1, shade: () => 0.92 });
+  root.add(rockerMesh);
+  const screwGeo = [];
+  for (const sy of [-1, 1]) {
+    const sc = cyl(0.0035, 0.0035, 0.004, 6);
+    sc.rotateX(Math.PI / 2); sc.translate(0, sy * 0.033, 0.006);
+    screwGeo.push(sc);
+  }
+  root.add(meshOf(merge(screwGeo), steel, { uv: 0.06, shade: () => 0.6 }));
+
+  const live = () => {
+    const c = rig?.circuits?.get(circuit);
+    if (!c) return false;
+    // `powered` is the breaker. A way this switch (or its twin down the
+    // corridor) opened is still LIVE — the board has not moved.
+    return !!c.powered || SWITCHED_OFF.has(circuit);
+  };
+  const on = () => (rig?.circuits?.get(circuit)?.target ?? 0) > 0.05;
+
+  const handle = {
+    id, root,
+    state: () => ({ on: on(), live: live() }),
+    update() {
+      // The rocker sits down when the way is off. Cheap, and it is the only
+      // feedback the player gets in a room that is already dark.
+      rockerMesh.position.y = on() ? 0.004 : -0.004;
+    },
+  };
+
+  interactor?.add({
+    id: `${id}_flip`, object: root, kind: 'switch',
+    verb: 'Lights', label, range: 1.5,
+    refusal: () => (live() ? null : 'Nothing on this way. The board is open.'),
+    onUse: () => {
+      const next = !on();
+      if (next) SWITCHED_OFF.delete(circuit); else SWITCHED_OFF.add(circuit);
+      rig?.setCircuit?.(circuit, next);
+      rig?.invalidateShadows?.();
+      bus?.emit('light:circuit', { circuit, powered: next, cause: 'player' });
+      // `sfx:breaker` without `heavy` is already wired to `switch.click` at 0.7
+      // (src/audio/index.js) — which is precisely what a wall rocker is. Inventing
+      // `sfx:switch` for it emitted an event nothing answered, and audiowiring's
+      // "nothing the player does in the world goes unanswered" caught it.
+      bus?.emit('sfx:breaker', { id, position: root.position.clone() });
+      // A switch clicks, and the Surveyor hears clicks — the same fact `nb_2`
+      // teaches about the lamp. Reaching for the lights is not free.
+      ctx.player?.makeNoise?.(4.5);
+      return true;
+    },
+  });
+
+  return handle;
+}
+
 export const FACTORIES = {
+  lightSwitch,
+  switch: lightSwitch,
   breaker: breakerPanel,
   breakerPanel,
   valve,

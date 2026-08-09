@@ -92,6 +92,19 @@ export class Inventory {
 
     // The lamp is not a pickup; you arrived with it.
     this.add('lamp', 1, { silent: true });
+    // And so is one spare cell. This is not generosity: a cell is now two things
+    // at once — the only way to refill the lamp (`Flashlight.swapBattery`) and
+    // the only way to throw a noise somewhere you are not (`Decoy`). Starting at
+    // zero would have made the decoy unusable until the player found a cell on a
+    // floor somewhere, which is not a mechanic, it is a rumour.
+    //
+    // ONE, not two, because the induction form in the first room says so in as
+    // many words — "You have been issued: one lamp, one spare cell, one set of
+    // keys, one pager" (`note_induction`) — and there is a second cell on the
+    // matting three metres from where the player wakes up. The fiction, the
+    // floor and the code agree, and the first throw costs the player the thing
+    // that refills their lamp.
+    this.add('battery_cell', 1, { silent: true });
     this.select('lamp');
   }
 

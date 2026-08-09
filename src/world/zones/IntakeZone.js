@@ -61,33 +61,19 @@ export function planIntake(seed = 20240607) {
   const spineRow2 = Math.floor(rows * 0.78);
   for (let c = 2; c < cols - 4; c++) grid[spineRow2][c] = SPINE;
 
-  // Partition walls: horizontal and vertical runs of 2-5 cells, never crossing
-  // a spine, biased to leave open bays rather than dense corridors.
-  const walls = [];
-  const tryRun = (r, c, dr, dc, len) => {
-    const cells = [];
-    for (let i = 0; i < len; i++) {
-      const rr = r + dr * i, cc = c + dc * i;
-      if (rr < 1 || rr >= rows - 1 || cc < 1 || cc >= cols - 1) return false;
-      if (grid[rr][cc] === SPINE) return false;
-      cells.push([rr, cc]);
-    }
-    return cells;
-  };
-  for (let attempt = 0; attempt < 190; attempt++) {
-    const horizontal = rng.chance(0.5);
-    const r = rng.int(1, rows - 2), c = rng.int(1, cols - 2);
-    const len = rng.int(2, 5);
-    const cells = tryRun(r, c, horizontal ? 0 : 1, horizontal ? 1 : 0, len);
-    if (!cells) continue;
-    // Reject if it would seal a bay off entirely.
-    let neighbours = 0;
-    for (const [rr, cc] of cells) if (grid[rr][cc] === WALL) neighbours++;
-    if (neighbours > 1) continue;
-    for (const [rr, cc] of cells) grid[rr][cc] = WALL;
-    walls.push({ r, c, horizontal, len });
-  }
-
+  // ROOMS BEFORE WALLS.
+  //
+  // This ran after the 190 partition-wall attempts, and a partition run only
+  // refused to cross a SPINE — so by the time the five room specs were tried,
+  // the 15x15 grid was full of 2-5 cell walls and a clear (w+2) x (h+2) footprint
+  // no longer existed. Measured: **one room placed out of five**, every build,
+  // and the dressing code hid it behind `rooms.find(store) || rooms.find(records)
+  // || rooms[0]`. The copy room, the interview room, the breakout and the records
+  // room — which this file's own header calls "where set dressing and narrative
+  // fragments live" — were never in the game.
+  //
+  // Rooms are placed first now and `tryRun` refuses to cross one, which is the
+  // same rule it already applied to spines.
   // Enclosed rooms off the spines.
   const rooms = [];
   const roomSpecs = [
@@ -117,6 +103,33 @@ export function planIntake(seed = 20240607) {
       rooms.push({ ...spec, r, c });
       break;
     }
+  }
+
+  // Partition walls: horizontal and vertical runs of 2-5 cells, never crossing
+  // a spine, biased to leave open bays rather than dense corridors.
+  const walls = [];
+  const tryRun = (r, c, dr, dc, len) => {
+    const cells = [];
+    for (let i = 0; i < len; i++) {
+      const rr = r + dr * i, cc = c + dc * i;
+      if (rr < 1 || rr >= rows - 1 || cc < 1 || cc >= cols - 1) return false;
+      if (grid[rr][cc] === SPINE || grid[rr][cc] === ROOM) return false;
+      cells.push([rr, cc]);
+    }
+    return cells;
+  };
+  for (let attempt = 0; attempt < 190; attempt++) {
+    const horizontal = rng.chance(0.5);
+    const r = rng.int(1, rows - 2), c = rng.int(1, cols - 2);
+    const len = rng.int(2, 5);
+    const cells = tryRun(r, c, horizontal ? 0 : 1, horizontal ? 1 : 0, len);
+    if (!cells) continue;
+    // Reject if it would seal a bay off entirely.
+    let neighbours = 0;
+    for (const [rr, cc] of cells) if (grid[rr][cc] === WALL) neighbours++;
+    if (neighbours > 1) continue;
+    for (const [rr, cc] of cells) grid[rr][cc] = WALL;
+    walls.push({ r, c, horizontal, len });
   }
 
   // Structural columns on every third grid intersection.
@@ -173,6 +186,45 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
   builders.forEach((b, i) => { b.chunk = [Math.floor(i / nChunk), i % nChunk]; });
   const builderFor = (r, c) => builders[Math.floor(r / INTAKE.chunkCells) * nChunk + Math.floor(c / INTAKE.chunkCells)]
     || builders[0];
+
+  // WHERE PEOPLE WALKED.
+  //
+  // The carpet is the largest surface in almost every frame of this zone and it
+  // was a single flat sand colour across 63 x 63 m — the biggest and dullest
+  // thing on screen. `Materials.js` has a traffic term, but it maxes at a 12%
+  // darkening and is driven by the noise channel authored for vertical leak
+  // streaks, so on a floor it produces blotches rather than lanes and reads as
+  // nothing at all.
+  //
+  // Wear is not noise. It follows circulation, and the plan knows exactly where
+  // that is: two crossing spines, a third that dead-ends, and a doorway into
+  // every enclosed room. A lane down the middle of a corridor and a fan of dirt
+  // spreading from each door is what thirty years of a night shift looks like,
+  // and it tells the player where the building expects them to go without a
+  // sign or a marker — which matters in a zone whose whole problem is that an
+  // unguided walker takes eight minutes to find its way out.
+  // The spine coordinates are already computed further down for the lighting;
+  // these are the same three lines, hoisted, because the floor is built first.
+  const wearSpineZ = cellPos(plan.spineRow, 0)[1];
+  const wearSpineX = cellPos(0, plan.spineCol)[0];
+  const wearSpine2Z = cellPos(plan.spineRow2, 0)[1];
+  const doorPts = [];
+  const lane = (d, half) => clamp01(1 - Math.abs(d) / half);
+  const intakeWear = (x, z) => {
+    // Along the spines: a 1.5 m lane, softened over another metre.
+    let t = Math.max(
+      lane(z - wearSpineZ, 2.4),
+      lane(x - wearSpineX, 2.4),
+      lane(z - wearSpine2Z, 2.0) * 0.8,
+    );
+    // A fan of dirt spreading out of every doorway.
+    for (const [dx, dz] of doorPts) {
+      const r = Math.hypot(x - dx, z - dz);
+      t = Math.max(t, clamp01(1 - r / 3.2) * 0.85);
+    }
+    // Nobody walks a perfectly straight line for sixty metres.
+    return clamp01(t * (0.82 + 0.18 * hash2(Math.round(x * 0.7), Math.round(z * 0.7))));
+  };
 
   // ---- plan the fixtures first -------------------------------------------
   // The ceiling grid needs to know which cells a fixture occupies so it can
@@ -277,7 +329,9 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
     const [x1] = cellPos(r0, c1 - 1);
     const z0 = cellPos(r0, c0)[1], z1 = cellPos(r1 - 1, c0)[1];
     const rect = [x0 - cell / 2, z0 - cell / 2, x1 + cell / 2, z1 + cell / 2];
-    floorSlab(b, rect, 0, { key: 'carpet', surface: 'carpet', subdiv: 2.1, edgeShade: 0.18 });
+    floorSlab(b, rect, 0, {
+      key: 'carpet', surface: 'carpet', subdiv: 2.1, edgeShade: 0.18, wear: intakeWear,
+    });
 
     const dmg = damageAt((r0 + r1) / 2, (c0 + c1) / 2);
     const slots = fixturePlan
@@ -369,6 +423,8 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
           open: rng.chance(0.45) ? rng.range(0.35, 1.3) : 0,
           hinge: rng.chance(0.5) ? 1 : -1, seed: room.r * 7 + i,
         });
+        room._door = { dx, dz, ang };
+        doorPts.push([dx, dz]);
       }
     });
     room.centre = [(minX + maxX) / 2, (minZ + maxZ) / 2];
@@ -772,6 +828,45 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
   // next time the seed changes.
   // =========================================================================
   const lz = spawnCell[1];
+  // A LIGHT SWITCH BESIDE THE DOOR.
+  //
+  // `Surveyor._moveToward` freezes below LIGHT_DEAD and `nb_1` tells the player
+  // so on the first page they read. In a dark zone they can act on it — the lamp
+  // is theirs. In the Intake, which runs 37 units at head height and is where
+  // every recorded encounter has happened, they could not: nothing the player
+  // carries makes a room darker. The rule was trivia.
+  //
+  // These are on the corridor side of a room door, at plate height, on the
+  // `intake` way — so they interrupt the general lighting and leave the
+  // emergency circuit, which is what a real switch does. `lightSwitch` refuses
+  // to close a way the distribution board has left open, so this cannot be used
+  // to bypass the breaker puzzle. See src/systems/Interactables.js.
+  const switches = [];
+  {
+    const withDoors = rooms.filter((r) => r._door);
+    // Five, spread through the plate. One per room is more faithful and turns
+    // the registry into a list of light switches; five is enough that one is
+    // reachable from most of the floor, which is the property that matters.
+    const step = Math.max(1, Math.floor(withDoors.length / 5));
+    for (let i = 0, n = 0; i < withDoors.length && n < 5; i += step, n++) {
+      const r = withDoors[i];
+      const { dx, dz, ang } = r._door;
+      // Along the wall, away from the room centre so it lands corridor-side.
+      const ax = Math.sin(ang), az = Math.cos(ang);
+      const toRoomX = r.centre ? r.centre[0] - dx : 0;
+      const toRoomZ = r.centre ? r.centre[1] - dz : 0;
+      // Push out of the wall on the side the room is NOT.
+      const nx = az, nz = -ax;
+      const outward = (toRoomX * nx + toRoomZ * nz) > 0 ? -1 : 1;
+      switches.push({
+        kind: 'lightSwitch', id: `sw_intake_${n}`, circuit: 'intake',
+        label: 'the light switch',
+        position: [dx + ax * 0.74 + nx * outward * 0.07, 1.15, dz + az * 0.74 + nz * outward * 0.07],
+        rotation: ang + (outward > 0 ? 0 : Math.PI),
+      });
+    }
+  }
+
   const interactables = [
     // Not a lamp: you arrived with the lamp (see Inventory's constructor). What is
     // on the floor by the matting is the spare cell for it and the dictaphone
@@ -780,9 +875,29 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
     { kind: 'pickup', item: 'battery_cell', position: [-halfW + 1.6, 0.02, lz - 0.9], rotation: 0.5 },
     { kind: 'pickup', item: 'tape_player', position: [-halfW + 1.9, 0.02, lz - 1.3], rotation: 1.8 },
     { kind: 'pickup', item: 'note', noteId: 'note_induction', position: [-halfW + 1.4, 0.02, lz + 1.9], rotation: -0.4 },
+    // KEARNS' FIRST PAGE BELONGS HERE, NOT THREE ZONES AWAY.
+    //
+    // `nb_1` is the page that says the Surveyor moves only when there is light
+    // on it, cannot see, and commits to a sound rather than to you. Those are
+    // the rules of the entire game. It was placed in the Ductwork; `nb_2`, the
+    // one that says to cover the lens rather than click the switch, was in the
+    // Residence, which is most of the way through. `seedIntakeDemo` does put all
+    // three by the bench — but that only runs when `seedDemo` is true, which is
+    // `!subsystems.world`, i.e. never in the real game.
+    //
+    // So a player met the Surveyor at t=22 s holding a lit torch, having been
+    // told nothing, and the lesson death teaches there is "this is unfair",
+    // not "put the light out". A player who dies to a rule they were never
+    // given does not deduce the rule; they stop playing.
+    //
+    // Only the rules page moves. `nb_2` and `nb_3` stay where they are — the
+    // refinements are still worth finding, and piecing the rest together is the
+    // point of the building.
+    { kind: 'pickup', item: 'note', noteId: 'nb_1', position: [-halfW + 2.1, 0.02, lz + 2.6], rotation: 0.9 },
     // The locker in the entrance bay. It is 3 m from where the player wakes up on
     // purpose: the first thing the game teaches is where to go when it starts.
     { kind: 'hide', id: 'locker_intake', position: [-halfW + 0.42, 0, lz + 3.9], rotation: Math.PI / 2 },
+    ...switches,
   ];
 
   // A dressed room gets the drawing and a cassette, so the first room the player

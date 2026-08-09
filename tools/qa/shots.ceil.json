@@ -1,0 +1,17 @@
+[
+ {
+  "name": "c1_ceiling_up",
+  "settle": 1,
+  "setup": "const settle=(m)=>{let l=-1,st=0;for(let i=0;i<m;i++){g.renderOnce(1/60);const a=g.lightProbe().adaptation;const e=a?a.autoGain:0;if(i>150&&Math.abs(e-l)<2e-3){if(++st>20)return i;}else st=0;l=e;}return m;};for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;const r=g.world.goto('intake');const cine=g.ui&&g.ui.cine;let n=0;while(cine&&cine.active&&n<4000){g.renderOnce(1/60);n++;}if(g.flashlight){g.flashlight.isOn=false;g.flashlight.on=false;}const p=(r&&r.position)||g.world.spawn;g.lookOpen(p,(r&&r.yaw)||0,0.62);settle(700);"
+ },
+ {
+  "name": "c2_ceiling_up_spine",
+  "settle": 1,
+  "setup": "const settle=(m)=>{let l=-1,st=0;for(let i=0;i<m;i++){g.renderOnce(1/60);const a=g.lightProbe().adaptation;const e=a?a.autoGain:0;if(i>150&&Math.abs(e-l)<2e-3){if(++st>20)return i;}else st=0;l=e;}return m;};for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;const r=g.world.goto('intake');const cine=g.ui&&g.ui.cine;let n=0;while(cine&&cine.active&&n<4000){g.renderOnce(1/60);n++;}if(g.flashlight){g.flashlight.isOn=false;g.flashlight.on=false;}const p=(r&&r.position)||g.world.spawn;g.lookOpen([p[0]+6,p[1],p[2]+8],((r&&r.yaw)||0)+1.57,0.55);settle(700);"
+ },
+ {
+  "name": "c3_ceiling_walking",
+  "settle": 1,
+  "setup": "const settle=(m)=>{let l=-1,st=0;for(let i=0;i<m;i++){g.renderOnce(1/60);const a=g.lightProbe().adaptation;const e=a?a.autoGain:0;if(i>150&&Math.abs(e-l)<2e-3){if(++st>20)return i;}else st=0;l=e;}return m;};for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;const r=g.world.goto('intake');const cine=g.ui&&g.ui.cine;let n=0;while(cine&&cine.active&&n<4000){g.renderOnce(1/60);n++;}if(g.flashlight){g.flashlight.isOn=false;g.flashlight.on=false;}const p=(r&&r.position)||g.world.spawn;g.lookOpen([p[0]-4,p[1],p[2]+4],((r&&r.yaw)||0)+3.14,0.30);settle(700);"
+ }
+]

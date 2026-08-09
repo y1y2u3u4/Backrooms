@@ -16,6 +16,7 @@ import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { Buffer } from 'node:buffer';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import { readdir } from 'node:fs/promises';
 
 const args = Object.fromEntries(
   process.argv.slice(2).join(' ').split('--').filter(Boolean)
@@ -71,10 +72,14 @@ async function main() {
     }
   }
 
+  // `--gpu` drops the SwiftShader flags and lets the machine's real GPU render.
+  // This tool has always forced a CPU rasteriser, which is right on a headless
+  // box with no GPU and wrong on a laptop with one — the frames are the same
+  // picture either way but they arrive one to two orders of magnitude faster,
+  // and any timing printed alongside them means something.
   const browser = await chromium.launch({
     args: [
-      '--use-gl=angle', '--use-angle=swiftshader',
-      '--enable-unsafe-swiftshader',
+      ...(args.gpu ? [] : ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']),
       '--disable-gpu-sandbox', '--no-sandbox',
       '--ignore-gpu-blocklist', '--enable-webgl',
       '--disable-dev-shm-usage',
@@ -198,6 +203,23 @@ async function grabCanvas(page, file) {
 async function loadShots(page, name) {
   const file = `tools/qa/shots.${name}.json`;
   if (existsSync(file)) return JSON.parse(await readFile(file, 'utf8'));
+  // A NAMED LIST THAT DOES NOT EXIST IS A MISTAKE, NOT A REQUEST FOR THE DEFAULT.
+  //
+  // The fallback below is for `--shots` being absent. When a name WAS given and
+  // no such file exists, falling through to it silently shot the default twelve
+  // frames and wrote them to the default directory — forty minutes of software
+  // rendering that answered a question nobody asked, and the log looked like a
+  // clean pass. The trigger was `--shots=ceil` instead of `--shots ceil`: this
+  // parser splits on spaces, so the whole token became a key and `args.shots`
+  // was undefined. Either way the tool should say so.
+  if (name && name !== 'default') {
+    console.error(`No such shot list: ${file}`);
+    console.error(`Available: ${'\n  '}${
+      (await readdir('tools/qa')).filter((f) => /^shots\..+\.json$/.test(f))
+        .map((f) => f.slice(6, -5)).sort().join(', ')}`);
+    console.error('Note: arguments are space-separated — `--shots ceil`, not `--shots=ceil`.');
+    process.exit(2);
+  }
   // Fall back to a generic sweep the game itself proposes.
   return page.evaluate(() => {
     const g = window.ANNEX;

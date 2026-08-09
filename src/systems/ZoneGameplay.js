@@ -156,8 +156,23 @@ export class ZoneGameplay {
         // wrong storey and the leaf's own Y is the truth.
         const here = collision?.sampleFloor(_p.x, _p.z, _p.y + 1.2, 3.0);
         const base = here && Math.abs(here.y - _p.y) < 1.2 ? here.y : _p.y;
-        const sides = [1, -1].map((s) => collision?.sampleFloor(
-          _p.x + nx * REACH * s, _p.z + nz * REACH * s, base + 1.2, 2.0));
+        // TWO PROBES A SIDE, NOT ONE. A STRIDE, NOT A THRESHOLD.
+        //
+        // This sampled once at 0.85 m — clear of the leaf and its frame, which
+        // is what it was chosen for — so a doorway with floor for the first
+        // metre and nothing after it passed the test and stayed openable. An
+        // exploration bot walked through `service_door3`, took one more step and
+        // fell out of the world at (380.5, -23.3, -6.1); it then respawned into
+        // the void and looped there for the remaining 106 s of the session.
+        // Neither `floorgaps` nor any scripted playthrough had ever been through
+        // that door, because the scripted runs change zone by teleport.
+        //
+        // A door is passable when there is somewhere to put both feet on the
+        // other side, so probe the far side at a stride as well as at the
+        // threshold.
+        const REACH2 = 1.9;
+        const sides = [1, -1].flatMap((s) => [REACH, REACH2].map((r) => collision?.sampleFloor(
+          _p.x + nx * r * s, _p.z + nz * r * s, base + 1.2, 2.0)));
         const isPortal = nearPortal(_p.x, base, _p.z);
         const passable = isPortal
           || sides.every((f) => f && Math.abs(f.y - base) < 0.45);

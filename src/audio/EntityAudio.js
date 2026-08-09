@@ -76,7 +76,29 @@ export class EntityAudio {
     this._unsub.push(bus.on('entity:state', (e) => this.setState(e)));
     this._unsub.push(bus.on('entity:heard', (e) => {
       // It turns its head toward what it heard. That tick is your bearing.
-      if (this.state !== 'dormant' && this.state !== 'despawn') this.headTick(e?.position);
+      //
+      // It plays at `from` — the entity — and NOT at `position`, which is where
+      // the noise was. Placing it at the noise was the single reason a decoy
+      // gave the player nothing: they threw a cell thirty metres away and heard
+      // a tick thirty metres away, which is just their own can landing again.
+      // The whole point of the throw is to learn where the thing went, and the
+      // only sound that can carry that is one made by the thing.
+      if (this.state === 'dormant' || this.state === 'despawn') return;
+      const at = e?.from || e?.position;
+      // A swing of most of a circle moves a body, not just a head plate. Gain
+      // rides the angle so "it turned right round" and "it corrected slightly"
+      // are audibly different events rather than the same click twice.
+      const turn = clamp01((e?.turn ?? 0) / Math.PI);
+      this.headTick(at, 0.55 + 1.05 * turn);
+      // And the body follows the head. This is not decoration: `entity.tick` is
+      // ref 4.0 / rolloff 0.9 / maxDist 45, which is about 0.19 of unit gain at
+      // 25 m, and a decoy is *designed* to put the entity that far away — the
+      // one cue the mechanic depends on is weakest exactly where it is needed.
+      // `entity.step` is ref 6.0 / rolloff 0.72 / maxDist 70: ~0.24 at the same
+      // range and still ~0.16 at forty metres. A heavy thing swinging round
+      // carries further than its head plate, which is both true and the reason
+      // the far-field half of this signal survives.
+      if (turn > 0.45) this.footfall(0.5 + 0.5 * turn);
     }));
     return this;
   }
@@ -474,6 +496,41 @@ export class EntityAudio {
     const prev = this.state;
     this.state = s;
 
+    // THE ROOM WITHDRAWS AS IT ARRIVES.
+    //
+    // The only `duck()` in this file was on `capture` — the instant the player
+    // dies. Nothing touched the mix during ROUSED, SEEKING, MEASURING or
+    // APPROACHING, so the ambience beds ran at full level for the whole of a
+    // seventy-five-second encounter and the mix opened up only after it was
+    // over. Measured on the rendered scene by an independent review:
+    // `scenes/surveyor.wav` has **2.9 dB** of short-term dynamic range, with the
+    // beds at -11.6 to -12.8 dBFS RMS peaking at -3. Commit f980964's own
+    // summary — "the mix has no dynamics at all" — was still true of the one
+    // sequence in the game that most needs them.
+    //
+    // A horror mix does the opposite of getting louder: the room gets out of the
+    // way and the thing occupies the space it leaves. `setDuck` is a sustained
+    // duck that already exists, already takes both the dry and the send path
+    // (see its own note about the room ringing underneath), and was used by
+    // nothing in the entity's path. These are deliberately shallow — the deepest
+    // is a third of the bed — because nobody has heard any of it and the failure
+    // mode of guessing loud is a mix that sounds like a video game.
+    const WITHDRAW = {
+      dormant: 0, despawn: 0,
+      spawn: 0.10, approach: 0.16, search: 0.16,
+      measure: 0.24,          // it has stopped, and so does the room
+      hunt: 0.34,             // the deepest sustained state
+      frozen: 0.30,
+    };
+    if (WITHDRAW[s] !== undefined) {
+      // Away fast, back slowly: the same asymmetry `Director._computeFear` uses
+      // for fear, and for the same reason — a room that returns the instant the
+      // thing turns away undoes the scare.
+      const want = WITHDRAW[s];
+      const prevWant = WITHDRAW[prev] ?? 0;
+      this.engine.setDuck(want, want > prevWant ? 0.9 : 3.4, ['ambience', 'world', 'music']);
+    }
+
     switch (s) {
       case 'spawn':
       case 'approach':
@@ -550,10 +607,11 @@ export class EntityAudio {
   }
 
   /** Head plate rotation. Pass a position to point the tick somewhere. */
-  headTick(at = null) {
+  headTick(at = null, gain = 1) {
     if (!this.engine.available) return null;
     const p = at || this.position;
-    return this.engine.playAt('entity.tick', { x: p.x ?? p[0], y: (p.y ?? p[1]) + 2.4, z: p.z ?? p[2] }, {});
+    return this.engine.playAt('entity.tick',
+      { x: p.x ?? p[0], y: (p.y ?? p[1]) + 2.4, z: p.z ?? p[2] }, { gain });
   }
 
   /** The measuring pose. Your window. */

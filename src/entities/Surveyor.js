@@ -403,6 +403,12 @@ export class Surveyor {
     this.illumination = 0;
     this.lightScale = 0;          // 0..1 movement multiplier from light
 
+    // ---- idle patrol (see STATE.DORMANT) ----
+    /** Roughly how far from the player it is willing to drift while dormant. */
+    this.wanderRadius = 26;
+    this._wanderGoal = null;
+    this._wanderT = 0;
+
     // ---- decision ----
     this.state = STATE.DORMANT;
     this.stateTime = 0;
@@ -566,6 +572,12 @@ export class Surveyor {
     const a = this.rng() * TAU;
     const r = this.rng() * err;
 
+    // Bearing it was already working on, sampled before the belief moves.
+    const prevX = this.lastHeard.x - this.position.x;
+    const prevZ = this.lastHeard.z - this.position.z;
+    const prevConf = this.confidence;
+    const prevState = this.state;
+
     // A stronger cue overwrites a weaker belief; a weaker one only refreshes it.
     if (strength >= this.confidence * 0.72) {
       this.lastHeard.set(position.x + Math.cos(a) * r, position.y, position.z + Math.sin(a) * r);
@@ -581,8 +593,33 @@ export class Surveyor {
       // A loud noise cuts a measuring cycle short. Quiet ones do not.
       this.measureHold = Math.min(this.measureHold, 0.6);
     }
+    // HOW FAR IT SWUNG. This is the player's only feedback that a decoy or a
+    // switch worked, and until now nothing carried it: the event said where the
+    // *sound* was, so the head tick played at the thrown cell thirty metres
+    // away. The player heard their own can land — which they already knew — and
+    // learned nothing about the thing they threw it to move.
+    //
+    // `turn` is the angle between the bearing it was already working on and the
+    // bearing it now believes in, so a decoy that pulls it right round reads
+    // differently from a correction of half a metre. It cannot lie: it is
+    // computed from the belief that actually changed.
+    const nx = this.lastHeard.x - this.position.x, nz = this.lastHeard.z - this.position.z;
+    let turn = 0;
+    // `prevState` and not `this.state`: a DORMANT entity is not working on a
+    // bearing, and its stale belief can be four hundred metres away in another
+    // zone, which would report a huge swing for simply waking up. That would
+    // make the swing check pass on the one case it must not be satisfied by.
+    if (prevState !== STATE.DORMANT && prevState !== STATE.RETREATING
+        && prevConf > 0.08 && (prevX * prevX + prevZ * prevZ) > 0.25 && (nx * nx + nz * nz) > 0.25) {
+      const d = (prevX * nx + prevZ * nz) / (Math.hypot(prevX, prevZ) * Math.hypot(nx, nz));
+      turn = Math.acos(Math.min(1, Math.max(-1, d)));
+    }
     this.bus?.emit('entity:heard', {
       entity: 'surveyor', position: this.lastHeard.clone(),
+      // Where the LISTENER is, not where the sound was. The head plate is on
+      // its head; that is the only place the tick can honestly come from.
+      from: this.position.clone(),
+      turn: +turn.toFixed(3),
       radius, strength: +strength.toFixed(3),
     });
     return strength;
@@ -725,6 +762,26 @@ export class Surveyor {
     const from = this.state;
     this.state = s;
     this.stateTime = 0;
+    // EVERY CAPTURE IS A NEW CAPTURE.
+    //
+    // `captureT` was initialised once in the constructor and only ever
+    // incremented; `_killed` was set true on the first kill and reset nowhere in
+    // the file. Neither `despawn()` nor `spawnAt()` touched them, and
+    // `Director.respawn()` calls both. So after the Surveyor caught the player
+    // once, `captureT` stayed above the 1.35 s threshold and `_killed` stayed
+    // true forever — the guard at the bottom of STATE.CAPTURING could never pass
+    // again, `game:death` was never emitted again, and the entity simply stood
+    // on the player.
+    //
+    // **It could kill exactly once per page load.** Measured in a delivered
+    // session: five threat episodes, two of which reached CAPTURING, and one
+    // `game:death` in the whole log. The second capture did nothing and the
+    // entity sat in CAPTURING for 41.7 s while the player walked around it.
+    if (s === STATE.CAPTURING) {
+      this.captureT = 0;
+      this.captureBlend = 0;
+      this._killed = false;
+    }
     this.bus?.emit('entity:state', {
       entity: 'surveyor', state: s, from,
       position: this.position.clone(),
@@ -754,8 +811,33 @@ export class Surveyor {
     switch (this.state) {
       // -------------------------------------------------------------- DORMANT
       case STATE.DORMANT: {
-        this.speed = damp(this.speed, 0, 6, dt);
-        // Even dormant it is not idle: it holds whatever pose it froze in.
+        // IT DRIFTS. A DORMANT SURVEYOR THAT NEVER MOVES IS SCENERY.
+        //
+        // This used to damp to a stop and hold its pose until something made a
+        // noise inside its hearing radius — walking is audible at 14 m, so a
+        // player who never comes within 14 m of the exact spot it was placed
+        // will not meet it in an hour. Traced through a session: it sat at one
+        // point for five minutes while the player's distance to it wandered
+        // between 22 and 56 m purely because the *player* was moving.
+        //
+        // So it patrols, slowly, and not toward the player: `wanderGoal` is a
+        // point picked in the player's rough half of the room, far enough away
+        // that this is not stalking. What it produces is a distance that
+        // changes, which is what makes an encounter possible by geometry rather
+        // than only by the Director deciding one should happen.
+        this._wanderT -= dt;
+        if (this._wanderT <= 0 || !this._wanderGoal) {
+          this._wanderT = 9 + this.rng() * 11;
+          const a = this.rng() * TAU;
+          const r = this.wanderRadius * (0.45 + this.rng() * 0.55);
+          this._wanderGoal = {
+            x: p.position.x + Math.cos(a) * r,
+            z: p.position.z + Math.sin(a) * r,
+          };
+        }
+        // A quarter of seeking speed: audible if you are close, invisible on a
+        // distance plot, and never fast enough to be a chase.
+        this._moveToward(dt, this._wanderGoal.x, this._wanderGoal.z, baseSpeed * 0.26);
         if (this.confidence > 0.25) this.rouse(this.lastHeard);
         break;
       }
@@ -856,6 +938,14 @@ export class Surveyor {
           this._killed = true;
           this.bus?.emit('game:death', { cause: 'surveyor', position: this.position.clone() });
         }
+        // AND IT MUST BE ABLE TO LET GO.
+        //
+        // CAPTURING had no exit of its own: it ended only when something outside
+        // the entity changed its state, which in practice meant the death →
+        // respawn → `despawn()` chain. Any run where that chain did not complete
+        // left the Surveyor standing on the player indefinitely. A capture that
+        // has not resolved in six seconds has failed; it goes back to looking.
+        if (this.stateTime > 6) { this.confidence = 0.35; this._setState(STATE.SEEKING); }
         break;
       }
 

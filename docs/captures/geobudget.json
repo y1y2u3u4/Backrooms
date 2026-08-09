@@ -1,17 +1,17 @@
 {
-  "at": "2026-07-30T19:58:24.194Z",
+  "at": "2026-08-06T03:07:59.485Z",
   "zones": {
     "intake": {
       "id": "intake",
-      "meshes": 91,
-      "triangles": 473888,
-      "instances": 217,
+      "meshes": 109,
+      "triangles": 642804,
+      "instances": 228,
       "chunks": 4,
-      "colliders": 161,
+      "colliders": 223,
       "floors": 4,
-      "fixtures": 217,
+      "fixtures": 228,
       "unlit": [],
-      "props": 6,
+      "props": 13,
       "portals": 3
     },
     "service": {
@@ -42,8 +42,8 @@
     },
     "residence": {
       "id": "residence",
-      "meshes": 115,
-      "triangles": 152502,
+      "meshes": 118,
+      "triangles": 160218,
       "instances": 37,
       "chunks": 4,
       "colliders": 120,
@@ -94,8 +94,8 @@
     },
     "safe": {
       "id": "safe",
-      "meshes": 61,
-      "triangles": 44072,
+      "meshes": 62,
+      "triangles": 44828,
       "instances": 5,
       "chunks": 1,
       "colliders": 21,

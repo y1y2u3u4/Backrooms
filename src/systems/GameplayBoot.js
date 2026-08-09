@@ -8,6 +8,8 @@ import { ZoneGameplay } from './ZoneGameplay.js';
 import { Surveyor, STATE as SURVEYOR_STATE } from '../entities/Surveyor.js';
 import { Attendant } from '../entities/Attendant.js';
 import { Director } from './Director.js';
+import { Decoy } from '../player/Decoy.js';
+import { Setpieces } from './Setpieces.js';
 import { Progression } from './Progression.js';
 import { NotesLibrary } from './Notes.js';
 
@@ -76,6 +78,11 @@ export async function installGameplay(game, {
   const progression = new Progression({
     bus, inventory, notes, interactables, interactor, director, player,
   });
+  // The only verb that puts a signal somewhere the player is not. See Decoy.js.
+  const decoy = new Decoy({ player, inventory, bus, collision });
+  // Six things that happen exactly once, on progression rather than a clock.
+  // The Director carries the minute-to-minute; these are what gets remembered.
+  const setpieces = new Setpieces({ bus, player, rig, director, surveyor: entity, attendant });
 
   // Blender hero assets are optional at every step.
   if (assets) {
@@ -90,7 +97,7 @@ export async function installGameplay(game, {
 
   const gameplay = {
     notes, inventory, flashlight, hands, interactor, interactables,
-    surveyor: entity, attendant, director, progression, ctx,
+    surveyor: entity, attendant, director, progression, decoy, setpieces, ctx,
     zoneGameplay: null,
 
     /** Build and register a prop. See `Interactables.FACTORIES` for kinds. */
@@ -99,6 +106,7 @@ export async function installGameplay(game, {
     /** One logic step. Order matters; see the file header. */
     update(dt, input) {
       flashlight.update(dt, input);
+      decoy.update(dt, input);
       interactor.update(dt, input);
       interactables.update(dt);
       if (entity) entity.update(dt);
@@ -117,6 +125,8 @@ export async function installGameplay(game, {
         progression: progression.debugState(),
         interactor: interactor.debugState(),
         flashlight: flashlight.debugState(),
+        decoy: decoy.debugState(),
+        setpieces: setpieces.debugState(),
         hands: hands.debugState(),
         inventory: inventory.snapshot(),
       };

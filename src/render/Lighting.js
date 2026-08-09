@@ -55,9 +55,27 @@ export const FIXTURE_TYPES = {
     tubeColor: 0xffd08a, tubeIntensity: 0.9, cone: 0.07, hum: 0.0,
   },
   /** Battery emergency light — the only thing left when the grid is down. */
+  /**
+   * Battery emergency light — the only thing left when the grid is down.
+   *
+   * THE GREEN WAS A FILTER, NOT A LIGHT. At 0x86ffa8 the emitted colour is 53%
+   * red against full green, and in a zone running on emergency alone — which is
+   * every blackout, and every arrival in the Stack now that a setpiece takes its
+   * lighting down — that tints the entire frame. A capture of the Stack gantry
+   * came back green from edge to edge, walls, floor, handrail and hazard stripe
+   * alike, which reads as a post effect rather than as a lamp somebody bolted to
+   * a wall.
+   *
+   * A real self-contained emergency luminaire is a cool white LED with a green
+   * legend beside it; the green belongs to the SIGN, not to the throw. So the
+   * cast light moves most of the way to white and the lens keeps its colour —
+   * `tubeColor` is what the player looks at and it stays green, so the fitting
+   * still reads as emergency lighting at a glance while the room it lights
+   * stops being a colour wash.
+   */
   emergency: {
     size: [0.22, 0.12, 0.11], mount: 'wall',
-    color: 0x86ffa8, intensity: 9, distance: 8.0, angle: 1.4, penumbra: 0.8,
+    color: 0xd8f4e2, intensity: 9, distance: 8.0, angle: 1.4, penumbra: 0.8,
     tubeColor: 0x9dffbe, tubeIntensity: 0.8, cone: 0.10, hum: 0.0,
   },
 };

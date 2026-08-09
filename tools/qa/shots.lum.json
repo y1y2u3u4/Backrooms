@@ -1,0 +1,8 @@
+[
+  { "name": "01_intake_fitting_overhead", "setup": "for (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true); g.world.goto('intake'); g.look(-21, 0, 26.0, Math.PI, 0.30); if (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }", "settle": 50 },
+  { "name": "02_intake_corridor", "setup": "const r = g.world.goto('intake'); const p = (r && r.position) || g.world.spawn; g.lookOpen(p, (r && r.yaw) || 0, 0); if (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }", "settle": 50 },
+  { "name": "03_intake_ceiling_up", "setup": "g.world.goto('intake'); g.look(-21, 0, 29.4, 0, 0.95); if (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }", "settle": 50 },
+  { "name": "04_service_spine", "setup": "const r = g.world.goto('service'); const p = (r && r.position) || g.world.spawn; g.lookOpen(p, (r && r.yaw) || 0, 0); if (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }", "settle": 50 },
+  { "name": "05_service_up", "setup": "const r = g.world.goto('service'); const p = (r && r.position) || g.world.spawn; g.lookOpen(p, (r && r.yaw) || 0, 0.45); if (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }", "settle": 50 },
+  { "name": "06_plant_hall", "setup": "const r = g.world.goto('plant'); const p = (r && r.position) || g.world.spawn; g.lookOpen(p, (r && r.yaw) || 0, 0.05); if (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }", "settle": 50 }
+]
