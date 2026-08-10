@@ -1636,3 +1636,174 @@ with `stack: 1` is a defect, and the evidence now says which.
   not a thing `audiodyn` can answer.
 - The Stack and the Cistern were not reached this pass; the capture evidence
   gathered for them turned out to be measuring an unpowered building.
+
+---
+
+## 10. Fifth pass: six per cent of the Intake was a room
+
+`lightreach.mjs` had been printing `intake 6 %` — six per cent of walkable area
+beyond 5 m from a live fixture — since the tool was written. It sat next to
+`cistern 9 %` and `plant 9 %` in a table that was otherwise zeroes, and it was
+read, every time, as a rounding error: a metre of skirting here, the far side of
+a column there.
+
+It was not. It was a rectangle 30 m by 8 m with **no fitting in it at all**.
+
+### The percentage was not actionable and the worst point was worse than useless
+
+A fraction says how much and not where, and the single worst sample the summary
+prints is actively misleading: drop a lamp on it and the worst point moves three
+metres and reports a small improvement, which is exactly what "raise the fill
+again" felt like from inside. Three previous passes at the dark zones did that.
+
+So `lightreach` gained `--map`: the zone in plan, one character per metre, shaded
+by distance to the nearest live fixture, with fixtures drawn on it. Live fittings
+are `*` and dead ones `x`, because "there is no lamp here" and "there is a lamp
+here and it is dead" have opposite fixes and a map that shows only working lamps
+cannot tell them apart. Cells take the **worst** sample that lands in them, so a
+dark lower deck is not averaged away by a lit walkway above it — the same
+mistake, in miniature, that the first plenum tool made last pass.
+
+The Intake came out like this, with the fixture rows stripped out for width:
+
+```
+z=  -22 |.* .. .: -+ #@ ## +# ++ #+ + ## +- --+ +# +- :.*.: *. .* .: --|
+z=  -21 |.. .: :- +# @@ @@ @@ @@ @@ @ @@ ## ### ## +- :. .: .. :. .: +#|
+z=  -19 |:. :- -+ #@ @@ @@ @@ @@ @@ @ @@ @@ #@@ +- -- -: :: .. :: :- +@|
+z=  -18 |.* .- +# ## @@ @# ## ## @@ @ @@ #+ ++# +: .. :- -: *. :- ++ #@|
+z=  -16 |.. :- ++ ++ +# #+ ++ ++ +# @ @# +- :-- -: .* .- -: .. :: -- +@|
+```
+
+No `*`. No `x`. Nothing had ever been planned there.
+
+### The cause: a fix that assumed the thing it was written to disprove
+
+`planIntake` lays the office out on a 15 x 15 grid of 4.2 m cells. A `WALL` cell
+is not a solid cell — it is a cell with a 160 mm partition through its centre and
+open carpet either side, which an earlier pass had already established, in a
+comment, while fixing the fact that `WALL` cells got no light:
+
+> A WALL cell is a 4.2 m cell containing a 160 mm partition through its centre:
+> 96 % of it is open floor.
+
+That fix then declined to light a side whose neighbouring cell was itself a
+`WALL`, on the reasoning that you cannot step off a partition into another
+partition — which treats a `WALL` cell as solid. It is the exact assumption the
+paragraph above it was written to correct, reintroduced four lines later.
+
+While partition runs stay isolated the difference is invisible. This seed does
+not keep them isolated: rows 1-4, cols 1-5 are a solid block of `WALL`, which the
+geometry pass renders as **four parallel 21 m partitions with three full-length
+4.2 m lanes between them**, and every cell in that block has `WALL` on all four
+sides. Zero fixtures over about 350 m2 of the zone the player starts in.
+
+The rule is now: light the lane too, and the lower-indexed of the two cells that
+form a lane owns it. That is a rule, not a proximity heuristic — the first
+version of this fix used a 2.6 m exclusion radius and **deleted 26 fixtures that
+already existed** while adding the new ones, which the summary line reported as a
+mean improvement. A distance test that can silently remove work is the same shape
+of instrument as the plenum tool that reported "no change" twice last pass.
+
+### And one enclosed room had lost both its lamps
+
+With the lanes lit, the residue was a single block, and it was the interview
+room: the wear roll is per cell and independent, so a two-cell room at this
+damage level has about a one-in-ten chance of losing both fittings, and this seed
+took it. Rooms are, in this file's own words, "where set dressing and narrative
+fragments live" — a room with no light is a room whose contents were authored and
+then hidden. An enclosed room now keeps at least one fitting, at worst a `dying`
+one, which flickers and is worse to stand under than a steady lamp.
+
+### The Cistern and the Plant, same tool, same afternoon
+
+**Cistern.** The sump — a 7 x 4.5 m pocket off the north side of the tunnel,
+floor 550 mm below it, the lowest point in the zone — had no fitting whatsoever.
+The stair hall, 8 x 7.2 m, had one lamp, on the door wall, at the far end from a
+flight of fourteen treads going down into standing water. And the tunnel's
+westernmost bulkhead — the one at the mouth, where the stair arrives — had rolled
+`dead`, leaving the whole west end to the door lamp 9 m away.
+
+Two vapour-tights on the sump's back wall (one in the middle still leaves both
+far corners 5.6 m away, measured), two flanking the descent, and a rule: **the
+ends of a lighting run are never dead.** A dead lamp mid-run is a gap between two
+working ones and is the point of the wear system; a dead lamp at the end of a run
+is a stub of corridor with nothing at all.
+
+**Plant.** Eight roof bays over a 35 x 23 m hall is a 8.4 x 9.8 m grid, so the
+south-east quarter's entire cover was one fitting — and that fitting is the one
+the wear pass kills. Underneath it sits a 4.2 m air handler with no light on it.
+Separately, the bay grid's northern row is at z = −5.6 and the north wall is at
+−11.6, so the 35 m aisle where the cable drums, the ladder and the nest are was
+6 m from a lamp for its whole length. A third low bay over the air handler, four
+wall packs down the north aisle at working height, and one at the south-west
+corner where the gantry run stops 11 m short of the wall.
+
+### What moved
+
+| zone | mean | worst | area beyond 5 m | fixtures |
+|---|---|---|---|---|
+| intake | 2.33 → **2.03** | 8.32 → **7.04** | 6 % → **2 %** | 228 → 254 |
+| cistern | 2.73 → **2.22** | 7.21 → **4.77** | 9 % → **0 %** | 20 → 24 |
+| plant | 2.93 → **2.48** | 6.71 → **5.27** | 9 % → **1 %** | 25 → 31 |
+
+Every other zone was already at 0 % and is unchanged. The Cistern now meets the
+brief's stated bar for it — 0 % of walkable area beyond 5 m from a lamp — without
+the bounce fill moving.
+
+**What is left, stated as it is.** The Intake's residual 2 % is the last 0.7 m
+strip of the plate against the perimeter wall plus a handful of cells the 10 %
+skip roll emptied; the worst of it is the south-east corner at 7.04 m. The
+Plant's 1 % is a sliver of open floor mid-hall at 5.27 m. The 5 m bar is a
+corridor bar and the middle of a 35 x 23 m hall is not a corridor, but the number
+is over it and is reported over it rather than argued down.
+
+### `perf.mjs` was measuring a bundle, not the game
+
+The run made straight after these lighting changes returned **the same 176 draw
+calls, the same 593,350 triangles and the same 222 fixtures** as a run made with
+the changes stashed — every workload number identical across a change that adds
+36 fixtures. Two independent runs agreeing is normally the strongest evidence a
+measurement offers. Here it was the signature of measuring nothing: `perf.mjs`
+serves `dist/` through `vite preview`, and neither run had built.
+
+The recorded baseline in `docs/captures/perf.json` — 170 draw calls, 128
+programs, `pass: true` — turned out to be **six commits old**. A build takes one
+second. The tool now rebuilds whenever any file under `src/`, `index.html`,
+`public/` or `vite.config.js` is newer than `dist/index.html`, says that it did,
+and refuses to measure if the build fails; `--no-build` opts out. When something
+is already listening on the port it prints that it cannot verify what that server
+is serving, rather than implying the numbers belong to the current tree.
+
+With both sides rebuilt, at the shipping low tier:
+
+| | before | after | budget |
+|---|---:|---:|---:|
+| draw calls | 176 | **178** | 180 |
+| triangles | 593,350 | **615,302** | 1,200,000 |
+| active lights | 6 | 6 | 28 |
+| shadow lights | 1 | 1 | 3 |
+| programs | 162 | **161** | 140 |
+| logic ms | 0.3 | 0.2 | 4 |
+
+Thirty-six new fixtures cost **two draw calls** — `EmissiveBatch` is doing its
+job — and 22 k triangles.
+
+**The programs budget fails, and it failed before this pass too.** 162 against a
+budget of 140, not 128 as recorded. It is a load-time cost rather than a
+per-frame one and it is not caused by this change, which took it down by one; it
+is named here because the stale baseline was hiding it and it is now the only
+failing budget in the project.
+
+### No pixels this pass, and why
+
+Three attempts to capture the lanes and the sump through `capture.mjs` did not
+complete in this environment — the run reaches `ANNEX_READY`, then sits in the
+first shot without writing a frame, at full resolution and at 1280x720, with and
+without the shader pre-warm. That is a capture-harness problem rather than a game
+one; `bootcheck` boots the same build, renders, and passes 11/11 in 106 seconds.
+
+The artefact for this pass is therefore `docs/verification/lightreach.md`: the
+plan map of all eight zones, browser-free, regenerable in three seconds. For a
+change whose whole content is "which square metres have a fitting over them", the
+map is a better record than a photograph of one corner of it anyway — but it is
+not a substitute for looking, and nobody has looked at these lanes.

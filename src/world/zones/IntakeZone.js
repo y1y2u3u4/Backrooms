@@ -265,6 +265,28 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
     }
   }
 
+  // AN ENCLOSED ROOM IS NEVER LEFT WITH NOTHING BURNING.
+  //
+  // The wear roll is per cell and independent, so a two-cell room has about a one
+  // in ten chance of losing both its fittings at this seed's damage level, and
+  // the interview room is the one that did: every walkable point inside it
+  // measured beyond 6 m from a live lamp, in a zone otherwise averaging 2 m.
+  //
+  // Rooms are, in this file's own words, "where set dressing and narrative
+  // fragments live". A room with no light is a room whose contents were authored
+  // and then hidden, and the player has no reason to enter it twice. The floor is
+  // one dying fitting — which flickers, which is worse to stand under than a
+  // steady one, and which still shows what is in there.
+  for (const room of rooms) {
+    const mine = fixturePlan.filter((f) => f.r >= room.r && f.r < room.r + room.h
+      && f.c >= room.c && f.c < room.c + room.w);
+    if (mine.some((f) => f.health !== 'dead')) continue;
+    if (mine.length) { mine[0].health = 'dying'; continue; }
+    // Every cell of the room lost its 10 % coin flip as well: give it one back.
+    const [x, z] = cellPos(room.r, room.c);
+    fixturePlan.push({ r: room.r, c: room.c, x, z, health: 'dying', rotation: 0, cone: false });
+  }
+
   // WALL CELLS GET FIXTURES TOO — one either side of the partition.
   //
   // This is the fix for a real defect, and the defect was invisible in every
@@ -282,21 +304,54 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
   // ceiling-facing capture of it showed a lit ceiling with no fixture in it,
   // which breaks the project's own first rule about light having a visible
   // source.
+  //
+  // AND THAT FIX WAS HALF OF ONE. It refused to light a side whose neighbouring
+  // cell was itself a WALL, on the reasoning that you cannot step off a partition
+  // into another partition. That reasoning treats a WALL cell as solid, which is
+  // the exact mistake the paragraph above was written to correct: two adjacent
+  // WALL cells are two partitions 4.2 m apart with a 4.2 m lane of open carpet
+  // between them, and that lane is the most corridor-like thing in the zone.
+  //
+  // The consequence was invisible while partition runs stayed isolated, and this
+  // seed does not keep them isolated. `planIntake(20240607)` puts a solid 5 x 4
+  // block of WALL cells at rows 1-4, cols 1-5 — four parallel 21 m partitions,
+  // three full-length lanes between them — and every cell in its interior has
+  // WALL on all four sides, so the whole block was planned **zero fixtures**.
+  // Not a dead lamp, not a dying one: no fitting at all, over roughly 350 m2 of
+  // walkable office floor, 8.3 m from the nearest light at the worst point.
+  //
+  // Measured with `lightreach.mjs --map`, which is what found it — the summary
+  // line had been reporting "intake 6 % beyond 5 m" for the whole project and
+  // six per cent of a zone reads like a rounding error rather than like a room.
+  // The map draws the shape of it, and the shape was a rectangle.
+  //
+  // So: light the lane between two parallel partitions as well. The lane is
+  // reachable from both of the cells that form it and must not be filled twice —
+  // two troffers 1.68 m apart is not how anyone lights a corridor — so the cell
+  // with the lower index owns it, which is a rule rather than a distance
+  // heuristic and therefore cannot quietly delete a fixture that already exists.
+  // Everything the previous pass placed is placed unchanged; this only adds.
   const OFFSET = cell * 0.30;
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       if (grid[r][c] !== WALL) continue;
       const [x, z] = cellPos(r, c);
-      // Which way the partition runs decides which way to step off it.
+      // Which way the partition runs decides which way to step off it. This has
+      // to agree with the wall-building pass below, which uses the same test.
       const horiz = grid[r][c - 1] === WALL || grid[r][c + 1] === WALL;
       for (const side of [-1, 1]) {
-        // Only light a side that is actually a space. Stepping off the
-        // partition into the neighbouring cell is pointless if that cell is
-        // another partition or outside the plate.
+        // Off the plate is off the plate.
         const nr = horiz ? r + side : r;
         const nc = horiz ? c : c + side;
         const n = grid[nr]?.[nc];
-        if (n === undefined || n === WALL) continue;
+        if (n === undefined) continue;
+        if (n === WALL) {
+          // A lane between two partitions, but only if they are parallel: a run
+          // that ends in a T meets its neighbour's wall face-on and there is no
+          // lane there to light.
+          const nHoriz = grid[nr][nc - 1] === WALL || grid[nr][nc + 1] === WALL;
+          if (nHoriz !== horiz || side !== 1) continue;
+        }
         // Only circulation. An enclosed ROOM already has fixtures planned to the
         // room in the pass above, and a second one hard against its wall would
         // both double-light it and cost a draw call for the emissive tube —

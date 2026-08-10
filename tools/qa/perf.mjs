@@ -23,8 +23,8 @@
  *   node tools/qa/perf.mjs --port 4173 --quality high
  */
 import { chromium } from '@playwright/test';
-import { spawn } from 'node:child_process';
-import { writeFile, mkdir, readFile } from 'node:fs/promises';
+import { spawn, spawnSync } from 'node:child_process';
+import { writeFile, mkdir, readFile, readdir, stat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 
@@ -64,12 +64,68 @@ async function waitForServer(url, ms = 60000) {
   return false;
 }
 
+/**
+ * THIS TOOL MEASURES `dist/`, NOT `src/`.
+ *
+ * `vite preview` serves the build output, so every number below describes
+ * whatever was last compiled — and a source tree edited afterwards is not in it.
+ * That is not a hypothetical. The numbers recorded in `docs/captures/perf.json`
+ * (170 draw calls, 128 programs, `pass: true`) were six commits old, and a run
+ * made straight after a lighting change reported the same draw calls, the same
+ * triangles and the same fixture count as a run made with that change stashed —
+ * across a change that adds 36 fixtures — because both measured the same stale
+ * bundle. Two runs agreeing is normally the strongest evidence a measurement
+ * offers; here it was the signature of measuring nothing.
+ *
+ * A build is one second. There is no reason to ever risk this, so the tool
+ * rebuilds whenever any source file is newer than the bundle and says that it
+ * did. `--no-build` opts out, for measuring a build you have deliberately kept.
+ */
+async function newestMtime(entry) {
+  let newest = 0;
+  const walk = async (p) => {
+    let s;
+    try { s = await stat(p); } catch { return; }
+    if (s.isDirectory()) {
+      for (const name of await readdir(p)) {
+        if (name === 'node_modules' || name.startsWith('.')) continue;
+        await walk(path.join(p, name));
+      }
+    } else if (s.mtimeMs > newest) newest = s.mtimeMs;
+  };
+  await walk(entry);
+  return newest;
+}
+
+// Unconditional, and BEFORE the port check. A `vite preview` left listening from
+// an earlier run is the likeliest way to end up measuring last week's bundle, and
+// that is precisely the case a check placed inside the "no server yet" branch
+// would skip.
+if (args['no-build'] !== true) {
+  let src = 0;
+  for (const p of ['src', 'index.html', 'public', 'vite.config.js']) {
+    src = Math.max(src, await newestMtime(p));
+  }
+  const built = existsSync('dist/index.html') ? (await stat('dist/index.html')).mtimeMs : 0;
+  if (src > built) {
+    const age = built ? `${Math.round((src - built) / 1000)} s` : 'no build at all';
+    console.log(`dist is behind src (${age}) — rebuilding before measuring`);
+    const r = spawnSync('npx', ['vite', 'build'], { stdio: 'inherit' });
+    if (r.status !== 0) { console.error('build failed; refusing to measure a stale bundle'); process.exit(1); }
+  }
+}
+
 const url = `http://127.0.0.1:${PORT}/`;
 let server = null;
 if (!(await waitForServer(url, 1500))) {
   if (!existsSync('dist/index.html')) { console.error('run `npm run build` first'); process.exit(1); }
   server = spawn('npx', ['vite', 'preview', '--host', '127.0.0.1', '--port', String(PORT)], { stdio: 'ignore' });
   if (!(await waitForServer(url, 45000))) { console.error('server failed'); process.exit(1); }
+} else {
+  // Something was already listening. It may be a dev server on live source or a
+  // preview of a bundle from last week, and this tool cannot tell which — so it
+  // says so rather than implying the numbers belong to the current tree.
+  console.log(`measuring the server already running on ${url} — its contents are not verified against src/`);
 }
 
 const browser = await chromium.launch({

@@ -1,7 +1,7 @@
 {
   "quality": "low",
-  "width": 640,
-  "height": 360,
+  "width": 1600,
+  "height": 900,
   "budgets": {
     "drawCalls": 180,
     "triangles": 1200000,
@@ -11,117 +11,117 @@
     "logicMs": 4
   },
   "worst": {
-    "drawCalls": 170,
-    "triangles": 485642,
+    "drawCalls": 178,
+    "triangles": 615302,
     "activeLights": 6,
     "shadowLights": 1,
-    "programs": 128,
-    "logicMs": 1.6000000014901161
+    "programs": 161,
+    "logicMs": 0.20000000298023224
   },
-  "pass": true,
+  "pass": false,
   "results": [
     {
       "name": "corridor",
       "frameMs": {
-        "mean": 3.1555555555555554,
-        "p50": 2.600000001490116,
-        "p95": 6.299999997019768
+        "mean": 1.6622222223215632,
+        "p50": 0.5,
+        "p95": 0.7000000029802322
       },
       "logicMs": {
-        "mean": 0.16166666659216086,
-        "p95": 0.3999999985098839
+        "mean": 0.07666666669150193,
+        "p95": 0.20000000298023224
       },
-      "drawCalls": 91,
-      "triangles": 195614,
-      "programs": 98,
-      "geometries": 186,
+      "drawCalls": 93,
+      "triangles": 206172,
+      "programs": 115,
+      "geometries": 202,
       "textures": 54,
       "lights": {
-        "fixtures": 208,
-        "lit": 149,
+        "fixtures": 242,
+        "lit": 172,
         "active": 6,
-        "tubes": 149,
+        "tubes": 172,
         "shadows": 1
       },
-      "res": "397x223",
+      "res": "992x558",
       "quality": "low"
     },
     {
       "name": "open_bay",
       "frameMs": {
-        "mean": 2.902222222255336,
-        "p50": 2.2000000029802322,
-        "p95": 6.199999995529652
+        "mean": 2.6311111112435657,
+        "p50": 0.8000000044703484,
+        "p95": 1.5999999940395355
       },
       "logicMs": {
-        "mean": 0.275,
-        "p95": 1.6000000014901161
+        "mean": 0.06999999992549419,
+        "p95": 0.10000000149011612
       },
-      "drawCalls": 154,
-      "triangles": 454436,
-      "programs": 126,
-      "geometries": 203,
+      "drawCalls": 167,
+      "triangles": 570294,
+      "programs": 158,
+      "geometries": 225,
       "textures": 56,
       "lights": {
-        "fixtures": 208,
-        "lit": 149,
+        "fixtures": 242,
+        "lit": 172,
         "active": 6,
-        "tubes": 149,
+        "tubes": 172,
         "shadows": 1
       },
-      "res": "397x223",
+      "res": "992x558",
       "quality": "low"
     },
     {
       "name": "long_view",
       "frameMs": {
-        "mean": 1.7866666667991213,
-        "p50": 1.5,
-        "p95": 3
+        "mean": 1215.1022222220897,
+        "p50": 0.30000000447034836,
+        "p95": 0.8000000044703484
       },
       "logicMs": {
-        "mean": 0.1366666667163372,
-        "p95": 0.7000000029802322
+        "mean": 0.04666666674117247,
+        "p95": 0.10000000149011612
       },
       "drawCalls": 85,
-      "triangles": 160862,
-      "programs": 126,
-      "geometries": 203,
+      "triangles": 170186,
+      "programs": 158,
+      "geometries": 225,
       "textures": 58,
       "lights": {
-        "fixtures": 208,
-        "lit": 149,
+        "fixtures": 242,
+        "lit": 172,
         "active": 6,
-        "tubes": 149,
+        "tubes": 172,
         "shadows": 1
       },
-      "res": "397x223",
+      "res": "992x558",
       "quality": "low"
     },
     {
       "name": "many_lights",
       "frameMs": {
-        "mean": 8.622222222222222,
-        "p50": 2.6999999955296516,
-        "p95": 8.300000004470348
+        "mean": 0.6622222223215632,
+        "p50": 0.5,
+        "p95": 1
       },
       "logicMs": {
-        "mean": 0.5583333333333333,
-        "p95": 1.3000000044703484
+        "mean": 0.053333333258827526,
+        "p95": 0.10000000149011612
       },
-      "drawCalls": 170,
-      "triangles": 485642,
-      "programs": 128,
-      "geometries": 213,
+      "drawCalls": 178,
+      "triangles": 615302,
+      "programs": 161,
+      "geometries": 234,
       "textures": 60,
       "lights": {
-        "fixtures": 208,
-        "lit": 149,
+        "fixtures": 242,
+        "lit": 172,
         "active": 6,
-        "tubes": 149,
+        "tubes": 172,
         "shadows": 1
       },
-      "res": "397x223",
+      "res": "992x558",
       "quality": "low"
     }
   ]

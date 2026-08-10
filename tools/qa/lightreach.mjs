@@ -19,6 +19,7 @@
  *
  *   node tools/qa/lightreach.mjs            # every zone
  *   node tools/qa/lightreach.mjs intake     # one zone
+ *   node tools/qa/lightreach.mjs intake --map   # ...and draw it in plan
  */
 import * as THREE from 'three';
 
@@ -44,6 +45,22 @@ const BUDGET = (() => {
   const i = process.argv.indexOf('--budget');
   return i >= 0 ? parseInt(process.argv[i + 1] || '10', 10) : 0;
 })();
+/**
+ * `--map`: draw the zone in plan, one character per metre, shaded by distance
+ * to the nearest live fixture.
+ *
+ * A percentage cannot be acted on. "9 % of the Cistern is beyond 5 m" was true
+ * for four iterations and told nobody WHERE, so the response each time was to
+ * raise output on the lamps that already existed — which moves the mean and
+ * leaves the hole exactly where it was, because the hole is a place with no
+ * fitting over it rather than a place with a weak one. The single worst point
+ * the summary prints is not enough either: it is one sample, and a lamp dropped
+ * on it just relocates the worst point three metres away.
+ *
+ * This prints the shape of the dark, which is the thing a lighting plan is
+ * drawn against.
+ */
+const MAP = process.argv.includes('--map');
 import { CollisionWorld } from '../../src/player/Physics.js';
 import { FIXTURE_TYPES } from '../../src/render/Lighting.js';
 
@@ -239,6 +256,7 @@ async function audit(id) {
 
   let worst = 0, worstAt = null, sum = 0;
   const over5 = [];
+  const samples = [];
   for (const p of pts) {
     let best = Infinity;
     for (const f of live) {
@@ -251,6 +269,7 @@ async function audit(id) {
     sum += best;
     if (best > worst) { worst = best; worstAt = p; }
     if (best > 5) over5.push(best);
+    if (MAP) samples.push([p[0], p[2], best]);
   }
 
   return {
@@ -262,7 +281,67 @@ async function audit(id) {
     worstAt: worstAt ? worstAt.map((v) => +v.toFixed(1)) : null,
     mean: +(sum / pts.length).toFixed(2),
     fracOver5m: +(over5.length / pts.length).toFixed(3),
+    map: MAP ? {
+      samples,
+      lamps: live.map((f) => [f.group.position.x, f.group.position.z]),
+      // Dead fittings are drawn separately. "There is no lamp here" and "there is
+      // a lamp here and it is dead" call for opposite fixes — one is a hole in
+      // the lighting plan, the other is a wear roll that landed badly — and a
+      // map that shows only live lamps cannot tell them apart.
+      dead: rig.fixtures.filter((f) => !live.includes(f))
+        .map((f) => [f.group.position.x, f.group.position.z]),
+    } : null,
   };
+}
+
+/**
+ * Plan view, one cell per metre. A cell takes the WORST distance of the walkable
+ * samples that land in it, because a plan drawn from the best sample in each cell
+ * is a plan that hides the gap it is being drawn to find.
+ */
+function drawMap(r) {
+  const { samples, lamps, dead } = r.map;
+  if (!samples.length) return;
+  const CELL = 1.0;
+  let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+  for (const [x, z] of samples) {
+    if (x < x0) x0 = x; if (x > x1) x1 = x;
+    if (z < z0) z0 = z; if (z > z1) z1 = z;
+  }
+  const cols = Math.floor((x1 - x0) / CELL) + 1;
+  const rows = Math.floor((z1 - z0) / CELL) + 1;
+  const cx = (x) => Math.min(cols - 1, Math.max(0, Math.floor((x - x0) / CELL)));
+  const cz = (z) => Math.min(rows - 1, Math.max(0, Math.floor((z - z0) / CELL)));
+  const grid = Array.from({ length: rows }, () => new Array(cols).fill(null));
+  for (const [x, z, d] of samples) {
+    const j = cz(z), i = cx(x);
+    if (grid[j][i] === null || d > grid[j][i]) grid[j][i] = d;
+  }
+  // Lamps are drawn only where they sit over floor the player can reach; a
+  // fitting on the far side of a wall is not lighting this room.
+  const inBox = (x, z) => !(x < x0 - CELL || x > x1 + CELL || z < z0 - CELL || z > z1 + CELL);
+  const lampCells = new Set();
+  for (const [x, z] of lamps) if (inBox(x, z)) lampCells.add(`${cz(z)},${cx(x)}`);
+  const deadCells = new Set();
+  for (const [x, z] of dead) if (inBox(x, z)) deadCells.add(`${cz(z)},${cx(x)}`);
+  const glyph = (d) => (d === null ? ' ' : d < 2 ? '.' : d < 3 ? ':' : d < 4 ? '-' : d < 5 ? '+' : d < 6 ? '#' : '@');
+
+  console.log('');
+  console.log(`  ${r.id} — plan, 1 m per character, north (−z) at the top`);
+  console.log(`  x ${x0.toFixed(1)} .. ${x1.toFixed(1)}   z ${z0.toFixed(1)} .. ${z1.toFixed(1)}`);
+  console.log('  . <2m   : 2-3   - 3-4   + 4-5   # 5-6   @ >6m   * live fixture   x dead one');
+  console.log('  Levels are flattened into one plan and each cell shows its WORST sample,');
+  console.log('  so a dark lower deck is not hidden by a lit walkway above it.');
+  console.log('');
+  for (let j = 0; j < rows; j++) {
+    let line = '';
+    for (let i = 0; i < cols; i++) {
+      const k = `${j},${i}`;
+      line += lampCells.has(k) ? '*' : deadCells.has(k) ? 'x' : glyph(grid[j][i]);
+    }
+    console.log(`  z=${(z0 + j * CELL).toFixed(0).padStart(5)} |${line}|`);
+  }
+  console.log(`         ${' '.repeat(1)} x=${x0.toFixed(0)} → x=${x1.toFixed(0)}`);
 }
 
 // `--budget N` consumes the token after it, so a positional zone name has to be
@@ -312,6 +391,7 @@ for (const r of rows) {
     + ` ${String(r.points).padStart(5)}  ${r.mean.toFixed(2).padStart(5)}`
     + `  ${r.worst.toFixed(2).padStart(5)}` + `  ${(r.fracOver5m * 100).toFixed(0).padStart(3)}%`
     + `   [${r.worstAt}]`);
+  if (r.map) drawMap(r);
 }
 console.log('');
 if (BUDGET > 0) {

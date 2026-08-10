@@ -337,10 +337,31 @@ export function buildPlant(ctx, opts = {}) {
   }
   // Two lower bays hung over the generator line. The roof bays establish the
   // volume; these are what actually model the machines.
-  for (const [x, z, health] of [[-7.4, -4.2, 'good'], [2.6, -4.2, 'buzz']]) {
+  // The third hangs over the air handler at [10.6, 4.0], which is a 4.2 m machine
+  // with nothing on it. Eight roof bays over a 35 x 23 m hall is a 8.4 x 9.8 m
+  // grid, so the south-east quarter's cover was one fitting — and that fitting is
+  // the one the wear pass kills. Measured before this line: 6.71 m worst, a 6 x 6 m
+  // block of '@' sitting exactly under the dead bay, in the quarter of the room
+  // where the route to the lift runs.
+  for (const [x, z, health] of [[-7.4, -4.2, 'good'], [2.6, -4.2, 'buzz'], [10.6, 3.2, 'good']]) {
     const b = x < 0 ? bWest : bEast;
     highbay(b, rigFor(b), x, FLOOR + 6.4, z, { circuit: 'plant', health, seed: 30 + fs++, drop: 0.9 });
   }
+  // Wall packs down the north aisle.
+  //
+  // The bay grid's northernmost row sits at z = -5.6 and the north wall is at
+  // -11.6, so the entire 35 m aisle between the tanks and the wall — where the
+  // cable drums, the ladder and the nest are — was 6 m from the nearest lamp for
+  // its whole length. A plant room lights that aisle from the wall, at working
+  // height, because the bays are 14 m up and the machines shadow them.
+  for (const [x, health] of [[-14.0, 'good'], [-7.0, 'buzz'], [0.0, 'good'], [7.0, 'dying']]) {
+    const b = x < 0 ? bWest : bEast;
+    bulkhead(b, rigFor(b), x, FLOOR + 2.6, HZ0 + 0.14, { yaw: 0, circuit: 'plant', health, seed: 70 + fs++ });
+  }
+  // The south aisle is covered by the gantry bulkheads below, but that run starts
+  // at x = -6 and the wall carries on for another 11 m: the south-west corner of
+  // the hall floor was the last point in this zone over 5 m, at 6.02.
+  bulkhead(bWest, rigFor(bWest), -13.0, FLOOR + 2.6, HZ1 - 0.14, { yaw: Math.PI, circuit: 'plant', health: 'buzz', seed: 70 + fs++ });
   // Walkway lighting so the gantries read as a route.
   for (const [x, z, yaw, health] of [
     [HX0 + 0.35, 0, -Math.PI / 2, 'good'], [HX0 + 0.35, 7.4, -Math.PI / 2, 'buzz'],

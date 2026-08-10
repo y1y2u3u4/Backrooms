@@ -31,9 +31,18 @@ re-derive the project.
   path, audio wiring, floor coverage, portal graph, geometry census, light reach;
   plus `bootcheck`, `perf`, `playthrough`, `capture`, `lightreach`, `blackout`.
 
-Current verification state, all green: props 70/70, chain 95/95, audiowiring 5/5,
+Current verification state: props 77/77, chain 106/106, audiowiring 5/5,
 floorgaps clean, portalgraph 8 zones / 19 doors, geobudget under every budget,
-bootcheck 11/11, perf passing every budget (worst scenario 170 draw calls / 180).
+bootcheck 11/11, light reach 0 % beyond 5 m in six of eight zones and 2 % / 1 %
+in the other two.
+
+`npm run perf` at the shipping low tier: 178 draw calls / 180, 615 k triangles /
+1.2 M, 6 active lights / 28, 1 shadow light / 3, 0.2 ms logic / 4 — and **161
+shader programs against a budget of 140, which fails.** That budget has been
+failing for some time and was not visible, because `perf.mjs` serves `dist/` and
+the recorded numbers in `docs/captures/perf.json` were six commits older than the
+tree they were being read as describing. The tool now rebuilds before it
+measures. See section 10 of the completion report.
 
 ---
 
