@@ -2372,3 +2372,79 @@ purely why a forged albedo built on `hexLin('#9c7358')` renders 2.9x brighter th
 a material whose `color.getHexString()` returns exactly `9c7358`. That is a colour
 space question with a definite answer, and the harness to check it is four frames
 and ninety seconds.
+
+---
+
+## 16. The 2.9x was `.clone()`, and it took four payloads to see it
+
+Section 15 left an open question: why a forged albedo rendered 2.38x brighter than
+the flat material it replaced, and why a modulation map authored to a mean of 1.0
+— which cannot change a level, by construction — rendered the *same* 2.89x.
+
+The answer is that neither map was the cause.
+
+```
+  forged albedo on hexLin('#9c7358')            2.38x
+  modulation map, mean 1.0                      2.89x
+  map alone, normal and roughness untouched     2.91x
+  roughness 0.74 -> 0.90, no map at all         2.95x
+```
+
+Four completely different payloads, one constant multiplier. The last of those
+touches nothing but a single float, which is what finally made it obvious: the
+payload was never the variable. **Every attempt had `mesh.material.clone()` in
+it.**
+
+`Assets.js` runs `materials.decorate()` over every material in every GLB, which
+installs this project's entire shader injection as an `onBeforeCompile` hook —
+the macro variation, the leak streaks, the detail normal and the **AO volume term
+that attenuates indirect light**. `THREE.Material.prototype.copy` copies a fixed
+list of properties, and `onBeforeCompile` is not on it. A clone silently drops the
+injection, renders perfectly happily, and comes out about three times brighter
+because nothing is darkening its indirect light any more.
+
+Same change, made in place on the shared material instead of on a clone:
+
+| | hand-region mean | vs baseline |
+|---|---|---|
+| exposure fix only | 0.0675 | 1.00x |
+| + vertex tint | 0.0651 | 0.96x |
+| + matte skin, **cloned** | 0.1990 | **2.95x** |
+| + matte skin, **in place** | 0.0672 | **1.00x** |
+
+`Materials.decorate()` now says so in its own docblock. A search of the rest of
+the tree found no other clone of a decorated material — the only two `.clone()`
+calls on materials are in `EmissiveBatch`, on the undecorated `MeshBasicMaterial`
+the emissive path deliberately uses, and in `Materials` itself on textures.
+
+### What the hands actually got
+
+Three changes, each measured, each level-preserving:
+
+1. **Exposure that tracks the room** (§15). Was pinned at 1.0 in every lit space
+   in the game; now 0.58 in the Cistern stair hall and 0.75 in the sump, recorded
+   per frame as `handExposure` beside `directAtHead`.
+2. **Vertex tint.** The model's meshes carry an RGBA colour attribute (0.67–0.94,
+   the asset's baked occlusion) and the material already has `vertexColors: true`,
+   so the working path was already there. Multiplying it in place adds blood
+   toward the fingertips — the strongest single cue that a hand is meat rather
+   than plastic — a ±3 % per-vertex mottle so no facet is uniform, and grime in
+   the lowest quarter of the baked occlusion, where dirt actually collects.
+   Measured at 0.96x: variation added, level held.
+3. **Matte skin.** Roughness 0.74 put a hard specular bead on each fingertip —
+   four white dots in the corner of the frame, and the most plastic thing about
+   the hands at the size they occupy. 0.90 is dry skin. In place, not cloned.
+
+### And the forged skin texture is no longer the obvious next step
+
+The claim in §15 that the hands are "the only untextured surface in the game" is
+not quite right, and finding the clone bug is what showed why: the skin material
+**is** decorated, so it already receives the macro variation, the grounding dirt
+and the detail normal that every wall gets. What it lacks is a base albedo map,
+and with the level bug understood, adding one is now a safe, ordinary change
+rather than a mystery — but it is a smaller gap than it looked, and it was not
+taken in this pass.
+
+What remains genuinely open is the model: fifteen meshes of smooth tapered
+cylinders with visible ring joints, which is a re-sculpt, and the one part of §2.4
+that really is a Blender task.

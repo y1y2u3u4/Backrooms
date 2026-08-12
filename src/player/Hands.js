@@ -309,6 +309,96 @@ export class Hands {
    * The pose springs are untouched either way — position, rotation, sway,
    * inertia, reach and recoil live on the hand root, not the knuckles.
    */
+  /**
+   * Break up the flat skin the model ships with.
+   *
+   * `hands_lowpoly.glb` carries four materials and only the sleeve has maps on
+   * it. `MAT_skin` — fifteen of the twenty-two meshes, and every pixel of hand a
+   * player ever sees — is a flat #9c7358 with one constant roughness, while
+   * every wall behind it in the frame goes through `TextureForge`. A single flat
+   * colour on the one object that is on screen in every frame of the game is
+   * most of why the viewmodel reads as a sticker pasted over the render.
+   *
+   * THIS GOES THROUGH THE VERTEX COLOURS, NOT A TEXTURE, AND THAT IS THE POINT.
+   *
+   * The obvious fix is a forged skin surface, and it was tried twice: once as a
+   * normal albedo built on the material's own `hexLin('#9c7358')`, and once as a
+   * modulation map authored to a mean of 1.0 so that multiplying by it could not
+   * change the level. Both rendered the hands **2.9x brighter** than the flat
+   * material, measured in the hand region of four Cistern frames — the same
+   * figure for both, which means the map's CONTENT was irrelevant and merely
+   * attaching one did it. Isolated further: the map alone, with normal and
+   * roughness untouched, 2.91x. Something in this project's colour handling does
+   * not survive a map arriving on that material, and I could not name it.
+   *
+   * The vertex colours need none of that. They are already there (RGBA, values
+   * 0.67-0.94, the asset's own baked occlusion), the material already has
+   * `vertexColors: true`, and the path is demonstrably working because those
+   * values are visibly being applied. Multiplying them in place preserves the
+   * artist's occlusion, preserves the level by construction, and needs no UVs,
+   * no texture memory and no colour space.
+   *
+   * What it adds is the thing that was missing: blood. Fingertips and the middle
+   * phalanges run redder than the back of the hand — it is the strongest single
+   * cue that a hand is meat rather than plastic — plus a per-vertex mottle so no
+   * facet is perfectly uniform, and grime, because nobody in this building has
+   * clean hands.
+   */
+  _dressSkin(mesh) {
+    // NEVER CLONE A MATERIAL THAT CAME OUT OF `Assets`.
+    //
+    // `Assets.js` runs `materials.decorate()` over every material in every GLB,
+    // which installs this project's entire shader injection as an
+    // `onBeforeCompile` hook — the dirt, the detail normal, and the AO volume
+    // term that attenuates indirect light. `THREE.Material.clone()` copies a
+    // fixed list of properties and **`onBeforeCompile` is not on it**. A clone
+    // therefore loses the injection silently, keeps rendering, and comes out
+    // 2.9x brighter because nothing is attenuating its indirect light any more.
+    //
+    // That single fact is the whole of the mystery recorded in the previous two
+    // attempts at this. A forged albedo measured 2.38x; a modulation map
+    // authored to a mean of 1.0, which cannot change a level by construction,
+    // measured the same 2.89x; the map alone with everything else untouched,
+    // 2.91x; and finally a change that touched nothing but `roughness`, 2.95x.
+    // Four different payloads and one constant multiplier, because the payload
+    // was never the cause — `.clone()` was, and every attempt had one in it.
+    //
+    // Skin is also not as glossy as the asset ships it. Roughness 0.74 under
+    // this viewmodel's key light puts a hard specular bead on every fingertip:
+    // four white dots in the corner of the frame, and the most plastic thing
+    // about the hands at the size they occupy. Real skin is 0.85-0.95 dry. The
+    // material is shared across all fifteen skin meshes, so this is set in place,
+    // once, on the shared instance — which is also the only safe way to do it.
+    if (mesh.material.roughness < 0.85) {
+      mesh.material.roughness = 0.90;
+      mesh.material.needsUpdate = true;
+    }
+    const attr = mesh.geometry.attributes.color;
+    if (!attr || attr.count < 3) return;
+    // Redness by phalanx. The node names are the asset's own and are already
+    // relied on by `_bindGlbFingers`, so keying off them is not a new assumption.
+    const n = mesh.name || '';
+    const blood = /_dist/.test(n) ? 1.0 : /_mid/.test(n) ? 0.62 : /_prox/.test(n) ? 0.28 : 0.12;
+    const pos = mesh.geometry.attributes.position;
+    for (let i = 0; i < attr.count; i++) {
+      const base = attr.getX(i);
+      // Cheap positional hash: mottling that is stable per vertex and needs no
+      // texture lookup. +-3 %, which is under the threshold of reading as noise
+      // and over the threshold of reading as "not a moulded surface".
+      const hx = Math.sin(pos.getX(i) * 91.7 + pos.getY(i) * 47.3 + pos.getZ(i) * 133.1) * 43758.5453;
+      const mottle = 1 + ((hx - Math.floor(hx)) - 0.5) * 0.06;
+      // Grime in the low quarter of the baked occlusion — creases and knuckle
+      // folds, which is where dirt actually collects on a hand.
+      const grime = 1 - clamp01((0.80 - base) / 0.30) * 0.10;
+      const s = mottle * grime;
+      attr.setXYZ(i,
+        clamp01(base * s * (1 + blood * 0.085)),
+        clamp01(attr.getY(i) * s * (1 - blood * 0.045)),
+        clamp01(attr.getZ(i) * s * (1 - blood * 0.070)));
+    }
+    attr.needsUpdate = true;
+  }
+
   async loadModel(assets) {
     if (!assets) return false;
     const proto = await assets.load('hands_lowpoly');
@@ -347,6 +437,7 @@ export class Hands {
 
       glbNode.traverse((o) => {
         if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; o.frustumCulled = false; }
+        if (o.isMesh && /skin/i.test(o.material?.name || '')) this._dressSkin(o);
       });
       hand.root.add(glbNode);
       hand.glb = glbNode;

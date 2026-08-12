@@ -429,7 +429,22 @@ export class MaterialLibrary {
     return mat;
   }
 
-  /** Apply the Annex shader injections to any MeshStandardMaterial. */
+  /**
+   * Apply the Annex shader injections to any MeshStandardMaterial.
+   *
+   * **DO NOT `.clone()` A DECORATED MATERIAL.** The injection lives on
+   * `onBeforeCompile`, and `THREE.Material.prototype.copy` copies a fixed list of
+   * properties that does not include it. A clone therefore drops the dirt, the
+   * detail normal and the AO volume term, keeps rendering perfectly happily, and
+   * comes out about three times brighter because nothing is attenuating its
+   * indirect light any more. Measured on the viewmodel: 2.95x, from a change that
+   * touched nothing but `roughness`.
+   *
+   * `Assets.js` decorates every material in every GLB, so this applies to loaded
+   * assets and not only to surfaces built here. If you need per-mesh variation on
+   * a decorated material, either mutate the shared instance or build a fresh one
+   * through this library — never clone.
+   */
   decorate(mat, opts = {}) {
     const o = { ...DEFAULTS, ...opts };
     mat.userData.annex = true;
