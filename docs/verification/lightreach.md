@@ -14,7 +14,7 @@ cistern       24    24   198   2.22   4.77    0%   [796.3,0.2,10.8]
 residence     37    37   113   1.05   2.19    0%   [-20.2,0,397.6]
 plant         31    30   434   2.48   5.27    1%   [407.6,-6,398.5]
 duct          25    25    29   0.67   1.53    0%   [792.1,0,400]
-stack         78    67   108   2.42   4.99    0%   [10.8,0,805.3]
+stack         98    87   108   2.40   4.99    0%   [10.8,0,805.3]
 safe           5     5    12   1.05   2.24    0%   [402,0,798.5]
 
 A corridor lit to a 4 m fixture grid should show a worst case near 3 m.
@@ -39,7 +39,7 @@ cistern       24   18.84    17.53    6.41     2.97     16%        85%   [796.3,0
 residence     37   15.92    17.45    8.19     6.54     18%        78%   [5.5,0,404.8]
 plant         30   16.14    15.46    8.34     6.31     20%        75%   [383.4,-6,410.8]
 duct          25    8.77     8.95    6.46     5.51     93%        80%   [785.8,0,400]
-stack         67   31.17    22.61   10.82     9.16      3%        57%   [1.5,0,790.4]
+stack         87   33.49    25.01   13.98    12.53      0%        53%   [3,0,789.2]
 safe           5   24.11    25.26   10.60    10.60      0%       100%   [402,0,798.5]
 
 kept/all near 100% means the budget is not the constraint there — every
@@ -59,7 +59,7 @@ cistern       24     4   198   6.17  15.38   57%           12%   [780.2,0,-2.9]
 residence     37     4   113   4.02   7.94   32%           43%   [-23.2,0,397.6]
 plant         31     7   434   6.94  15.03   66%            6%   [384.9,-6,390.7]
 duct          25    11    29   1.16   2.84    0%            0%   [785.8,0,400]
-stack         78     5   108   5.15  10.25   53%            0%   [10.8,0,808.3]
+stack         98     5   108   5.15  10.25   53%            0%   [10.8,0,808.3]
 safe           5     1    12   3.26   5.50    8%            8%   [398,0,801.7]
 
 In a blackout the bar is different: somewhere to walk TOWARD, not a lit room.
@@ -321,7 +321,7 @@ Anything over about 6 m is somewhere the player can stand with no lamp above the
 light reach — horizontal distance from a walkable point to the nearest live fixture
 
 zone        fixt  live   pts   mean  worst   >5m   worst position
-stack         78    67   108   2.42   4.99    0%   [10.8,0,805.3]
+stack         98    87   108   2.40   4.99    0%   [10.8,0,805.3]
 
   stack — plan, 1 m per character, north (−z) at the top
   x -10.8 .. 10.8   z 789.2 .. 810.8
@@ -330,7 +330,7 @@ stack         78    67   108   2.42   4.99    0%   [10.8,0,805.3]
   so a dark lower deck is not hidden by a lit walkway above it.
 
   z=  789 |*. :+ -: ** .- ++ :. *|
-  z=  790 |*. :+ -: .. .- ++ :. .|
+  z=  790 |*. :+ -: .* .- ++ :. .|
   z=  791 |..                  ::|
   z=  792 |                      |
   z=  793 |::                  --|
@@ -339,7 +339,7 @@ stack         78    67   108   2.42   4.99    0%   [10.8,0,805.3]
   z=  796 |--                  :.|
   z=  797 |::                  .*|
   z=  798 |                      |
-  z=  799 |*.                  .*|
+  z=  799 |**                  **|
   z=  800 |..                  ..|
   z=  801 | *                    |
   z=  802 |..                  ::|
@@ -349,7 +349,7 @@ stack         78    67   108   2.42   4.99    0%   [10.8,0,805.3]
   z=  806 |--                  --|
   z=  807 |                      |
   z=  808 |::                  ::|
-  z=  809 |.. :+ +- .. .: -+ :. .|
+  z=  809 |.. :+ +- .* .: -+ :. .|
   z=  810 |*. :+ +- .**.: -+ :. *|
            x=-11 → x=11
 

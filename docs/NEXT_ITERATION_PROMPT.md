@@ -33,16 +33,33 @@ re-derive the project.
 
 Current verification state: props 77/77, chain 106/106, audiowiring 5/5,
 floorgaps clean, portalgraph 8 zones / 19 doors, geobudget under every budget,
-bootcheck 11/11, light reach 0 % beyond 5 m in six of eight zones and 2 % / 1 %
-in the other two.
+bootcheck 11/11, light reach 0 % beyond 5 m in six of eight zones and 1 % in the
+other two.
 
-`npm run perf` at the shipping low tier: 178 draw calls / 180, 615 k triangles /
-1.2 M, 6 active lights / 28, 1 shadow light / 3, 0.2 ms logic / 4 — and **161
-shader programs against a budget of 140, which fails.** That budget has been
-failing for some time and was not visible, because `perf.mjs` serves `dist/` and
-the recorded numbers in `docs/captures/perf.json` were six commits older than the
-tree they were being read as describing. The tool now rebuilds before it
-measures. See section 10 of the completion report.
+`npm run perf` at the shipping low tier — **every budget passes, for the first
+time in this project's recorded history**: 179 draw calls / 180, 616 k triangles
+/ 1.2 M, 6 active lights / 28, 1 shadow light / 3, 40 shader programs / 140,
+0.2 ms logic / 4.
+
+Two cautions on that line:
+
+- **Draw calls are one from the ceiling** (179 of 180), and the worst scenario is
+  in the Intake. Anything added there needs measuring, not estimating.
+- **`programs` was failing at 162 and is now 40** because one `customProgramCacheKey`
+  was carrying seven uniform *values*. If you add a material option, put it in a
+  uniform; only put it in the cache key if it changes the generated GLSL. Census
+  it with `tools/qa/programs.mjs`. This is not cosmetic: it took the Intake's
+  shader pre-warm from 68 s to 0.175 s and is why the capture harness is usable.
+
+Three tools were repaired or added in the pass that produced these numbers, and
+each of them changed a conclusion:
+
+- `perf.mjs` rebuilds before measuring (it was serving a six-commit-old bundle).
+- `capture.mjs` polls on a timer rather than a frame callback, prints the renderer
+  it actually got, and streams progress. It was never hung.
+- `lightreach.mjs --delivered N` measures light that reaches the shader rather
+  than fittings that exist, `--map` draws the plan, and `--blackout` now asks
+  whether an emergency fitting is *visible* rather than how far away it is.
 
 ---
 
