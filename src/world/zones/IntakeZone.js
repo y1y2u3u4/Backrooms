@@ -608,10 +608,33 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
   {
     const zSpine = cellPos(plan.spineRow, 0)[1];
     const zSpine2 = cellPos(plan.spineRow2, 0)[1];
+    // THE THIRD SPINE HAD NONE.
+    //
+    // The paragraph above says "the two spines ARE the escape route" and then
+    // lights `spineRow` and `spineRow2` — which are the two that run east-west.
+    // `spineCol` runs the full 63 m north-south, is the route to the duct hatch
+    // and to the Service door, and had no emergency fitting anywhere along it.
+    //
+    // Invisible until the measure changed. `lightreach --blackout` reported
+    // distance to the nearest emergency lamp, which is the lit-room question; the
+    // question a blackout actually asks is whether you can SEE one from where you
+    // are standing, and by that measure 30 % of this floor had nothing at all.
+    // The north-south spine and the partition block in the north-west corner were
+    // most of it.
+    const xSpine = cellPos(0, plan.spineCol)[0];
     for (const [ex, ez, eyaw] of [
       [cellPos(0, 3)[0], zSpine, 0], [cellPos(0, 7)[0], zSpine, 0], [cellPos(0, 11)[0], zSpine, 0],
       [cellPos(0, 4)[0], zSpine2, Math.PI], [cellPos(0, 9)[0], zSpine2, Math.PI],
       [halfW - 0.14, zSpine, -Math.PI / 2],
+      // Down the north-south spine, at the spacing the east-west ones use.
+      [xSpine, cellPos(1, 0)[1], Math.PI / 2], [xSpine, cellPos(9, 0)[1], -Math.PI / 2],
+      [xSpine, cellPos(13, 0)[1], Math.PI / 2],
+      // The partition block: one on the perimeter wall the lanes run into, and
+      // one at the open end where they discharge onto the floor plate. A player
+      // in a 4.2 m lane between two 21 m partitions can see along it and nowhere
+      // else, so a lamp anywhere but on that axis is a lamp behind a wall.
+      [-halfW + 0.14, cellPos(2, 0)[1], -Math.PI / 2],
+      [cellPos(0, 6)[0], cellPos(3, 0)[1], Math.PI / 2],
     ]) {
       const b = builderFor(Math.max(0, Math.min(INTAKE.rows - 1,
         Math.round(ez / cell + rows / 2 - 0.5))), Math.max(0, Math.min(cols - 1,

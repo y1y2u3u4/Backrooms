@@ -1,15 +1,15 @@
 {
-  "at": "2026-08-10T01:11:12.759Z",
+  "at": "2026-08-12T04:51:23.273Z",
   "zones": {
     "intake": {
       "id": "intake",
       "meshes": 109,
-      "triangles": 663960,
-      "instances": 254,
+      "triangles": 665300,
+      "instances": 259,
       "chunks": 4,
       "colliders": 223,
       "floors": 4,
-      "fixtures": 254,
+      "fixtures": 259,
       "unlit": [],
       "props": 13,
       "portals": 3

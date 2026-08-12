@@ -1963,3 +1963,128 @@ none of the other three.
 A ratio against the family median rather than an absolute bar, because this game
 is deliberately dim in some zones and bright in others and an absolute threshold
 would flag the Cistern for being the Cistern.
+
+---
+
+## 12. Seventh pass: counting fittings is not counting light
+
+Two measurements existed for "is this dark", and both counted fittings. Section
+10 moved every number in the reach table by adding 36 of them, and nothing in the
+project could have said whether a single one of those reached the screen —
+`LightRig` uploads **six** lights at the shipping tier, and the Intake has 192
+live fixtures. A pass that adds thirty lamps to a zone that already had a hundred
+and eighty could improve every published number and change nothing a player sees.
+
+### `--delivered N`: the irradiance the shader is actually given
+
+Browser-free, using the expression the rig itself ranks on (`Lighting.js`,
+`updateRig`):
+
+```
+(rated candela x circuit supply) / (1 + d^2)
+```
+
+summed over the top N by that same ranking, at eye height, per walkable point.
+
+The floor is derived rather than invented — this project has been burned once by
+a budget somebody made up — so **under-lit means "below the dimmest five per cent
+of the Service Spine"**, which works out at 10.52. The reference is printed with
+the table so it can be argued with.
+
+One idealisation, stated in the source: the real rig ranks by distance to the
+*camera* and re-sorts five times a second, so one set serves the whole frame.
+This picks a set per sample point, which is what a player standing exactly there
+would get. Delivered light in the game is never *better* than this table.
+
+### The answer: yes, the fittings deliver
+
+Same tool, same tier, the only difference being `git checkout e5aa898 -- src/world/zones/`:
+
+| zone | under-lit area | mean delivered | 5th percentile |
+|---|---|---|---|
+| intake | 43 % → **34 %** | 11.44 → **12.53** | 3.47 → **5.22** |
+| cistern | 33 % → **16 %** | 14.85 → **18.84** | 2.23 → **6.41** |
+| plant | 38 % → **20 %** | 14.16 → **16.14** | 6.34 → **8.34** |
+
+The under-lit fraction roughly halved in every zone touched and the dim tail —
+the fifth percentile, which is precisely the area the word "under-lit" refers to
+— rose 2.9x in the Cistern. The six-light budget does not swallow them.
+
+### Three things the new column says that the old ones could not
+
+- **The Intake keeps 51 % of its own plan.** Half the light that zone's fittings
+  emit never reaches a shader at the shipping tier. That is not a defect — the
+  nearest six of 192 dominate anyway — but it is the ceiling on what any further
+  fixture work there can buy, and it was invisible before.
+- **The Ductwork is 93 % under-lit** and nobody has ever noticed, because its
+  reach numbers are perfect: 0 % beyond 5 m, worst case 1.53 m, 25 fittings in a
+  small box. It is densely lit with feeble lamps. Whether a 0.8 m galvanised crawl
+  duct *should* deliver half what a corridor does is a design question, and it is
+  now at least a visible one.
+- **The Stack has the highest delivered light in the building** — mean 31.17
+  against the Service Spine's 18.13, 3 % under-lit — and it is still the zone that
+  does not read as a shaft. That is a strong negative result. It rules out
+  quantity of light as the cause and supports what the brief has said for four
+  passes: the Stack needs a different *class* of fitting, aimed at the shaft wall,
+  not more output.
+
+### Blackout was answering the question its own footnote called wrong
+
+`--blackout` has always printed distance to the nearest emergency fitting, under
+a footnote reading: *"In a blackout the bar is different: somewhere to walk
+TOWARD, not a lit room."* Distance to the nearest lamp is the lit-room measure.
+An emergency scheme is not trying to light a 63 m floorplate; it is trying to
+make sure you can always **see** a fitting from wherever you are standing.
+
+So blackout now traces the segment from eye height to every live emergency
+fitting and reports the share of walkable area with a clear line to none of them.
+The two measures disagree, and where they disagree the old one was wrong:
+
+| zone | beyond 5 m | no sightline |
+|---|---|---|
+| plant | 66 % | **6 %** |
+| stack | 53 % | **0 %** |
+| cistern | 57 % | **12 %** |
+| residence | 32 % | **43 %** |
+| intake | 86 % | **30 %** |
+
+The Plant and the Stack are large open volumes: few lamps are near you and you
+can see one from almost anywhere, so the distance measure was alarmist. The
+Residence is the reverse — a corridor of small rooms where lamps are close and
+behind walls. **The distance measure ranked it seventh of eight zones. By the
+measure that matters it is the worst in the building.**
+
+### And it found a real omission
+
+`IntakeZone` has a comment reading "the two spines ARE the escape route", followed
+by emergency fittings along `spineRow` and `spineRow2` — the two that run
+east-west. `spineCol` runs the full 63 m north-south, carries the route to the
+duct hatch and the Service door, and had **no emergency fitting anywhere along
+it**. Three added, at the spacing the other two use, plus two for the partition
+block from section 10, whose 4.2 m lanes can see along themselves and nowhere
+else.
+
+Intake blind area **30 % → 22 %**, and its ordinary reach improved as a side
+effect (2 % → 1 % beyond 5 m, since an emergency fitting is a live fitting).
+
+### Where I stopped, and why
+
+The remaining 22 % of the Intake, the Residence's 43 % and the Service Spine's
+27 % are all the same thing, and the maps say so plainly: **every zone's escape
+route is covered and the rooms and bays off it are not.** That is what a
+partitioned floor plate does to a sightline, and it is what real emergency
+lighting design accepts — luminaires go on escape routes, not in every bay.
+
+I could have driven those numbers down by scattering emergency lamps through the
+bays. I did not, because the target would have been one I invented, and chasing an
+invented target with more fittings is the exact failure this report has documented
+six times. The number is reported, the interpretation is stated, and the honest
+next step for anyone who wants a target is a measure this tool does not implement:
+how far you must walk before a fitting comes into view.
+
+### Cost
+
+Five emergency fittings: draw calls 178 → **179 of 180**. That budget is now one
+call from its ceiling, which is worth knowing before anyone adds anything else to
+the Intake. `programs` still fails at 162 / 140. Everything else in
+`npm run audit` is green.
