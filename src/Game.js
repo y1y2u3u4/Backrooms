@@ -992,6 +992,16 @@ export class Game {
       zone: this.currentZone,
       directAtHead: +this.rig.illuminationAt(p.x, p.y + 1.6, p.z).toFixed(3),
       directAtFloor: +this.rig.illuminationAt(p.x, p.y + 0.1, p.z).toFixed(3),
+      // THE VIEWMODEL'S OWN EXPOSURE, next to the light it is supposed to track.
+      //
+      // `Hands._updateLights` claims the hands darken with the room. It samples
+      // exactly the number on the line above and maps it to 0..1, and for as long
+      // as nothing recorded the two side by side there was no way to notice that
+      // the mapping had stopped working: it divided by 5.2 against a comment
+      // reading "the rig's units run roughly 0..7", while the smallest reading
+      // anywhere in the powered building is 13.9. Pinned at 1.0 everywhere, in a
+      // game whose zones span a 23x range of illumination.
+      handExposure: +(this.hands?.debugState?.().exposure ?? -1),
       fillUp: +(skyL * this.rig.ambient.intensity).toFixed(3),
       fillDown: +(grL * this.rig.ambient.intensity).toFixed(3),
       fixtures: this.rig.stats,

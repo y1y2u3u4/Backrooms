@@ -2285,3 +2285,90 @@ appearance. It does not move. Neither does contrast. The frames are in
 concrete, the rust is still rust, and each wall still carries its own dirt.
 
 `npm run audit` green, `bootcheck` 11/11.
+
+---
+
+## 15. The hands: one bug found and fixed, one attempt measured and reverted
+
+"The hands look weird" — and §2.4 of the brief has said so for four passes, filed
+as a Blender task. It is not a Blender task. `hands_lowpoly.glb` is already in the
+build (`usingGlbHands: true`, 22 meshes, 6,836 vertices per hand) and the
+procedural fallback in `Hands.js` has not been on screen for a long time.
+
+### The bug: the viewmodel's exposure was pinned at maximum everywhere
+
+`Hands._updateLights` exists to make the hands darken with the room. The class
+comment at the top of the file is emphatic about why: *"Hands that stay lit in a
+dark room are the single loudest tell that a game's viewmodel is a sticker."*
+
+It sampled the world and mapped it:
+
+```js
+// The rig's units run roughly 0..7; map that onto a sane exposure.
+const target = clamp01(world / 5.2);
+```
+
+They do not run 0..7, and have not for some time. `illuminationAt` was fixed to
+include `intensityScale` — that fix is documented inside `Lighting.js` and it was
+the right fix — and every fixture output raised since multiplied the same number
+again. From the capture manifests:
+
+| | `directAtHead` | `world / 5.2` | exposure after clamp |
+|---|---|---|---|
+| Cistern stair hall | 13.9 | 2.7 | **1.000** |
+| Cistern tunnel | 20.8 | 4.0 | **1.000** |
+| Intake lane | 26.5 | 5.1 | **1.000** |
+| Stack | 315.8 | 60.7 | **1.000** |
+
+The smallest reading anywhere in the powered building is 2.7x the divisor. **The
+hands were at full exposure in every lit room in the game**, across a 23x spread
+of real illumination, and the entire mechanism did nothing outside a blackout.
+
+Fixed with a square-root curve — this maps to perceived brightness, and the Stack
+is twenty times brighter than the Cistern without looking twenty times brighter —
+referenced so an ordinary corridor lands near 0.8 and the brightest zone is the
+one that clamps. Measured in the game afterwards, recorded per frame:
+
+| frame | `directAtHead` | `handExposure` |
+|---|---|---|
+| Cistern stair hall | 14.3 | **0.580** |
+| Cistern chamber | 16.1 | **0.630** |
+| Cistern tunnel | 20.8 | **0.710** |
+| Cistern sump | 23.4 | **0.750** |
+
+In pixels, the hand region across those four frames is **0.82x** its previous
+brightness, and it now varies between rooms instead of being constant.
+
+`Game.lightProbe()` reports `handExposure` next to `directAtHead` from now on, so
+every capture records whether the two still agree. That is the whole reason this
+sat unnoticed: nothing had ever put them side by side.
+
+### The attempt: a skin texture, measured, and reverted
+
+The other half of "weird" is that **the hands are the only untextured surface in
+this game.** The model ships four materials; `MAT_fabric` (the sleeve) has an
+albedo and a normal map, and `MAT_skin` — fifteen of the twenty-two meshes, every
+pixel of hand a player sees — is a flat `#9c7358` with no maps and one constant
+roughness. Every wall, floor and pipe behind it goes through `TextureForge`.
+
+So: a `skin` recipe in the project's own idiom — pores, subdermal blotching,
+dirt in the creases rather than laid over the top, roughness varying between the
+oily high points and the dry ones — attached to the model's skin material by name.
+
+**It made the hands 2.38x brighter than the flat colour it replaced**, measured
+in the hand region of the same four frames. That is a change of level, not of
+variation, and level is not what the change was for. Isolating the maps showed
+the albedo alone accounts for all of it (2.89x against the exposure-corrected
+baseline); the normal and roughness maps are innocent.
+
+A `LEVEL` constant of 0.50 brought it to 1.43x, and 0.32 would have landed it on
+the target — **and that is where this stopped.** Compensating with an unphysically
+dark albedo for a brightness I could not explain is precisely the move this report
+has documented going wrong seven times. The recipe and its wiring are reverted.
+
+**What is left for whoever picks this up**: the diagnosis is solid and the target
+is measured. `MAT_skin` has no maps; adding them is right; the open question is
+purely why a forged albedo built on `hexLin('#9c7358')` renders 2.9x brighter than
+a material whose `color.getHexString()` returns exactly `9c7358`. That is a colour
+space question with a definite answer, and the harness to check it is four frames
+and ninety seconds.

@@ -637,8 +637,43 @@ export class Hands {
       world = this.rig.illuminationAt(p.position.x, p.position.y + 1.4, p.position.z);
     }
     const lampSpill = (this.flashlight?.beamStrength ?? 0) * (this.flashlight?.enabled ? 1 : 0);
-    // The rig's units run roughly 0..7; map that onto a sane exposure.
-    const target = clamp01(world / 5.2);
+    /**
+     * THIS LINE STOPPED WORKING AND NOTHING SAID SO.
+     *
+     * It was `clamp01(world / 5.2)`, under a comment reading "the rig's units run
+     * roughly 0..7". They do not, and have not for some time. `illuminationAt` was
+     * fixed to include `intensityScale` — the fix is documented forty lines into
+     * `Lighting.js`, and it was the right fix — and every fixture output raised
+     * since then multiplied the same number again. Measured from the capture
+     * manifests, `directAtHead` reads:
+     *
+     *     Cistern stair hall  13.9      Intake lane        20.6 - 35.5
+     *     Cistern chamber     16.0      Stack             278.6 - 315.8
+     *
+     * The smallest reading anywhere in the powered building is 13.9, which is
+     * 2.7x the divisor. **The hands were pinned at full exposure in every lit
+     * room in the game**, across a 23x spread of actual illumination, and the
+     * whole mechanism this function exists for did nothing except in a blackout.
+     * That is why the viewmodel reads as a sticker: it is a brightly lit object
+     * in a deliberately dim frame, which is the exact failure the class comment
+     * at the top of this file warns about.
+     *
+     * Square root rather than linear, because this maps to perceived brightness
+     * and because the Stack is twenty times brighter than the Cistern without
+     * looking twenty times brighter. The reference is set from the measurements
+     * above so that an ordinary lit corridor lands near 0.8 and the brightest
+     * zone in the building is the one that clamps:
+     *
+     *     blackout ~1     -> 0.15        Cistern tunnel 20.8 -> 0.70
+     *     Cistern hall 13.9 -> 0.58      Intake lane    26.5 -> 0.79
+     *     Cistern chamber 16.0 -> 0.62   Intake, bright 35.5 -> 0.92
+     *                                    Stack         278+  -> 1.00
+     *
+     * `Game.lightProbe()` now reports this next to `directAtHead`, so every
+     * capture from here on records whether the two still agree.
+     */
+    const REF = 42;
+    const target = clamp01(Math.sqrt(Math.max(0, world)) / Math.sqrt(REF));
     this.exposure = damp(this.exposure, target, 3.2, dt);
 
     const amb = 0.045 + this.exposure * 0.55;
