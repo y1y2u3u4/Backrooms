@@ -2088,3 +2088,92 @@ Five emergency fittings: draw calls 178 → **179 of 180**. That budget is now o
 call from its ceiling, which is worth knowing before anyone adds anything else to
 the Intake. `programs` still fails at 162 / 140. Everything else in
 `npm run audit` is green.
+
+---
+
+## 13. The Stack, measured for the first time in four passes
+
+The Stack has been the project's oldest open defect since the first completion
+report, on the strength of a sentence — *"the receding floors look like lit
+rectangles suspended in black rather than galleries inside a well"* — and a
+number, **0.925 crushed against a target of 0.85**. Both predate the well
+enclosure and the corner high-bay aiming. Nobody had re-measured, because the
+capture harness did not work.
+
+It works now. Four frames from the deck ring, all circuits live, shipping tier,
+`docs/captures/stack_now/`:
+
+| frame | crushed | dynamic range |
+|---|---|---|
+| across the well | 0.527 | 0.460 |
+| down the drop | **0.270** | 0.412 |
+| up the well | **0.295** | 0.453 |
+| corner, diagonal | 0.579 | 0.512 |
+
+**The brief's target was met some time ago and nobody knew.** 0.27 to 0.58
+against a bar of 0.85. The zone also has, by the measurement built in section 12,
+**the most delivered light in the building** — mean 31.17 against the Service
+Spine's 18.13, 3 % of its area under-lit.
+
+### The one thing genuinely missing, and what fixing it did not do
+
+Every fitting in the Stack points either down at the gantry or across the void.
+That is deliberate and it is what makes the far wall the brightest thing in the
+frame — but its corollary is that **no fitting ever lights the wall it is mounted
+on**. The office facade at the back of the ring, within arm's reach for the whole
+circuit of the level, received light from nothing at all. It shows: the two
+frames looking *along* the ring crush at 0.527 and 0.579, against 0.270 and 0.295
+for the two looking down and up the shaft, and in the diagonal frame the unlit
+facade is a hard-edged black mass filling half the picture.
+
+Four vapour-tights per near level on the shaft wall's outer face, throwing back
+across the walkway — deliberately not into the void, because the depth of this
+shaft is made by the far wall being the brightest thing in frame.
+
+Delivered light moved, and moved properly:
+
+| | before | after |
+|---|---|---|
+| mean delivered | 31.17 | **33.49** |
+| 5th percentile | 10.82 | **13.98** |
+| worst point | 9.16 | **12.53** |
+| under-lit area | 3 % | **0 %** |
+| kept/all | 57 % | 53 % |
+
+**And the crushed-pixel ratio did not move at all**: 0.527 → 0.516, 0.270 →
+0.283, 0.295 → 0.291, 0.579 → 0.558. Twenty fittings, more light delivered at
+every percentile, and the headline number the brief set as the Stack's exit
+criterion is flat.
+
+### Which means the exit criterion was never measuring the thing
+
+The black in these frames is not the walkable ring. It is the shaft's depth — the
+far galleries, the drop, the levels dissolving into fog seven storeys down. No
+amount of light on the deck can change pixels that are eighteen metres away
+through haze, and the only way to drive `crushed` down would be to light the
+void, which this zone's own source says in as many words destroys the reading it
+exists to create.
+
+So: **`crushed < 0.85` is not a test of whether the Stack reads as a shaft.** It
+is satisfied, it was satisfied before this pass, and satisfying it harder would
+make the zone worse. That is the eighth measurement in this project to be
+adjacent to its claim rather than on it, and the first one caught before it drove
+a change rather than after.
+
+The fittings are kept, on the evidence that did move: the dim tail rose 29 %, the
+worst point rose 37 %, under-lit area went to zero, and the across-the-well
+frame's dynamic range went **0.460 → 0.709** — more tonal separation in the same
+darkness, which is what "reads as a well" actually means and what the crushed
+count cannot see.
+
+### What the Stack still needs
+
+A human to look at it. Four frames are in `docs/captures/stack_now/` and
+`docs/captures/stack_wash/`; to my eye the two shots down and up the shaft read as
+a well, and the two along the ring read as a dark walkway with a lit wall
+opposite. That is a judgement, not a measurement, and this report has been wrong
+about the Stack from judgements before.
+
+Cost: 20 fixtures, 10,800 triangles, 4 meshes in the Stack. Draw calls unchanged
+at 179 of 180 — the worst scenario is in the Intake, not here. `npm run audit`
+green; `programs` still fails at 162 / 140.

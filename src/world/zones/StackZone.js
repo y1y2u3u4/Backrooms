@@ -623,6 +623,38 @@ export function buildStack(ctx, opts = {}) {
           });
         }
       }
+      // NOTHING IN THIS ZONE LIT THE SURFACE THE PLAYER IS STANDING NEXT TO.
+      //
+      // Every fitting here either points down at the gantry or across the void:
+      // the strips light the deck underfoot, the corner high-bays are aimed at
+      // the far wall on purpose, and the effect of "aimed at the far wall" is
+      // that no fitting ever illuminates the wall it is mounted on. The office
+      // facade at the back of the ring — the surface within arm's reach for the
+      // whole circuit of the level — receives light from nothing at all.
+      //
+      // Measured, on the four frames in `docs/captures/stack_now`: the two shots
+      // looking along the ring crushed at 0.527 and 0.579, against 0.270 and
+      // 0.295 for the two looking down and up the shaft. The difference between
+      // them is a near-field wall with no fitting facing it, and in the diagonal
+      // frame it is a hard-edged black mass filling half the picture.
+      //
+      // Four vapour-tights on the shaft wall's outer face, throwing back across
+      // the walkway at the facade. Deliberately NOT aimed into the void: the
+      // depth of this shaft is made by the far wall being the brightest thing in
+      // the frame, and adding output to the drop would flatten exactly the
+      // reading this zone has spent four passes trying to earn.
+      if (dist <= 2) {
+        for (const [wx, wz, wyaw] of [
+          [0, -(WALL_OUT + 0.10), 0], [0, WALL_OUT + 0.10, Math.PI],
+          [-(WALL_OUT + 0.10), 0, -Math.PI / 2], [WALL_OUT + 0.10, 0, Math.PI / 2],
+        ]) {
+          bulkhead(b, rigFor(b), wx, y + 2.25, wz, {
+            yaw: wyaw, circuit: 'stack', seed: 500 + i * 11 + wx + wz,
+            health: hash2(i * 13 + wx, wz) < 0.22 ? 'buzz' : 'good',
+            cone: false, intensityScale: 1.6,
+          });
+        }
+      }
     }
   }
 

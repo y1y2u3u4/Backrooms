@@ -1,0 +1,234 @@
+[
+  {
+    "name": "s1_across_the_well",
+    "settle": 200,
+    "setup": "g.world.goto('stack');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();if(g.flashlight){g.flashlight.isOn=false;g.flashlight.on=false;}g.look(0,0,789.8,3.1416,0.0);",
+    "file": "docs/captures/stack_now/s1_across_the_well.png",
+    "stats": {
+      "ms": 0.6000000014901161,
+      "fps": 1666.6666625274552,
+      "p90": 0.800000011920929,
+      "calls": 153,
+      "tris": 439578,
+      "quality": "low",
+      "res": "595x335",
+      "lights": {
+        "fixtures": 399,
+        "lit": 316,
+        "active": 6,
+        "tubes": 316,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "stack",
+        "directAtHead": 314.022,
+        "directAtFloor": 313.174,
+        "fillUp": 0.993,
+        "fillDown": 1.139,
+        "fixtures": {
+          "fixtures": 399,
+          "lit": 316,
+          "active": 6,
+          "tubes": 316,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "stack": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 0,
+          "residence": 0,
+          "duct": 0,
+          "plant_lift": 0
+        },
+        "zoneFixtures": {
+          "total": 78,
+          "lit": 67
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -3.7383,
+          "adapted": 0.0238,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "s2_down_the_drop",
+    "settle": 200,
+    "setup": "g.world.goto('stack');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();if(g.flashlight){g.flashlight.isOn=false;g.flashlight.on=false;}g.look(0,0,789.8,3.1416,-0.50);",
+    "file": "docs/captures/stack_now/s2_down_the_drop.png",
+    "stats": {
+      "ms": 0.5949999995529651,
+      "fps": 1680.6722701702843,
+      "p90": 0.800000011920929,
+      "calls": 153,
+      "tris": 439566,
+      "quality": "low",
+      "res": "595x335",
+      "lights": {
+        "fixtures": 399,
+        "lit": 316,
+        "active": 14,
+        "tubes": 316,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "stack",
+        "directAtHead": 315.844,
+        "directAtFloor": 315.04,
+        "fillUp": 0.993,
+        "fillDown": 1.139,
+        "fixtures": {
+          "fixtures": 399,
+          "lit": 316,
+          "active": 14,
+          "tubes": 316,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "stack": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1
+        },
+        "zoneFixtures": {
+          "total": 78,
+          "lit": 67
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -3.3477,
+          "adapted": 0.0352,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "s3_up_the_well",
+    "settle": 200,
+    "setup": "g.world.goto('stack');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();if(g.flashlight){g.flashlight.isOn=false;g.flashlight.on=false;}g.look(0,0,789.8,3.1416,0.50);",
+    "file": "docs/captures/stack_now/s3_up_the_well.png",
+    "stats": {
+      "ms": 0.6000000009934108,
+      "fps": 1666.6666639071923,
+      "p90": 0.7000000178813934,
+      "calls": 150,
+      "tris": 439158,
+      "quality": "low",
+      "res": "595x335",
+      "lights": {
+        "fixtures": 399,
+        "lit": 316,
+        "active": 14,
+        "tubes": 316,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "stack",
+        "directAtHead": 312.423,
+        "directAtFloor": 311.392,
+        "fillUp": 0.993,
+        "fillDown": 1.139,
+        "fixtures": {
+          "fixtures": 399,
+          "lit": 316,
+          "active": 14,
+          "tubes": 316,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "stack": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1
+        },
+        "zoneFixtures": {
+          "total": 78,
+          "lit": 67
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -3.4258,
+          "adapted": 0.0325,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "s4_corner_diagonal",
+    "settle": 200,
+    "setup": "g.world.goto('stack');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();if(g.flashlight){g.flashlight.isOn=false;g.flashlight.on=false;}g.look(-10.2,0,789.8,-2.356,-0.10);",
+    "file": "docs/captures/stack_now/s4_corner_diagonal.png",
+    "stats": {
+      "ms": 0.7591666663686435,
+      "fps": 1317.2338095181992,
+      "p90": 1.2000000178813934,
+      "calls": 165,
+      "tris": 441030,
+      "quality": "low",
+      "res": "595x335",
+      "lights": {
+        "fixtures": 399,
+        "lit": 316,
+        "active": 14,
+        "tubes": 316,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "stack",
+        "directAtHead": 278.611,
+        "directAtFloor": 275.294,
+        "fillUp": 0.993,
+        "fillDown": 1.139,
+        "fixtures": {
+          "fixtures": 399,
+          "lit": 316,
+          "active": 14,
+          "tubes": 316,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "stack": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1
+        },
+        "zoneFixtures": {
+          "total": 78,
+          "lit": 67
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -3.6445,
+          "adapted": 0.0261,
+          "autoGain": 1.55
+        }
+      }
+    }
+  }
+]
