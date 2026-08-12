@@ -2177,3 +2177,31 @@ about the Stack from judgements before.
 Cost: 20 fixtures, 10,800 triangles, 4 meshes in the Stack. Draw calls unchanged
 at 179 of 180 — the worst scenario is in the Intake, not here. `npm run audit`
 green; `programs` still fails at 162 / 140.
+
+### And the Cistern, while the harness was warm
+
+The other named lighting target, from §2.2 of the brief: *"Done when: crushed
+below 0.80 and area beyond 5 m at 0 %."*
+
+Area beyond 5 m went to 0 % in section 10. The crushed half had never been
+re-measured since the 0.842 that set the bar. Four frames, shipping tier, all
+twenty-four fittings live, `docs/captures/cistern_now/`:
+
+| frame | crushed | dynamic range | direct light at head |
+|---|---|---|---|
+| tunnel, looking east | **0.090** | 0.661 | 20.9 |
+| stair hall | **0.249** | 0.626 | 14.6 |
+| sump | **0.269** | 0.700 | 23.4 |
+| valve chamber | **0.398** | 0.783 | 16.1 |
+
+Against a bar of 0.80, and against the 0.47 dynamic range recorded when the item
+was written. The tunnel frame at 0.090 crushed is the cleanest in the project.
+
+**Both conditions of §2.2 are satisfied and the item is closed.** What is left in
+the Cistern is dressing density, which is §2.5 and is not a lighting problem.
+
+Two of the brief's three named Priority-1 defects turn out to have been met
+before this pass and unmeasured since — which is its own finding. The cost of a
+broken capture harness was not four missing screenshots; it was two zones carried
+as open defects for four iterations, and a lighting change made against the
+Stack's black pixels that could never have worked.

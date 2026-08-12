@@ -1,0 +1,94 @@
+{
+  "dir": "docs/captures/cistern_now",
+  "limits": {
+    "crushed": 0.16,
+    "clipped": 0.03,
+    "dynamicRange": 0.22,
+    "banding": 0.055,
+    "speckle": 0.0035,
+    "emptiness": 0.72
+  },
+  "hfMedian": 0.08773986427070295,
+  "rows": [
+    {
+      "file": "c1_tunnel_east.png",
+      "W": 595,
+      "H": 334,
+      "mean": 0.3139888773795871,
+      "contrast": 0.18625737340655057,
+      "dynamicRange": 0.6605607867240906,
+      "crushed": 0.0901021486438887,
+      "clipped": 0.000005031952900920848,
+      "banding": 0.00006038343481105017,
+      "highFreq": 0.07882093925639089,
+      "speckle": 0.00028444299965460496,
+      "emptiness": 0.10085543199315654,
+      "colourCast": 0.34932238800646676
+    },
+    {
+      "file": "c2_sump.png",
+      "W": 595,
+      "H": 334,
+      "mean": 0.15544023517212066,
+      "contrast": 0.1778928544068675,
+      "dynamicRange": 0.6997607946395874,
+      "crushed": 0.26896794646002115,
+      "clipped": 0.00010567101091933779,
+      "banding": 0,
+      "highFreq": 0.09771219295967497,
+      "speckle": 0.00004063471423637213,
+      "emptiness": 0.277114678206612,
+      "colourCast": 0.4560396681215226
+    },
+    {
+      "file": "c3_stairhall.png",
+      "W": 595,
+      "H": 334,
+      "mean": 0.2603508574121994,
+      "contrast": 0.20667227345341854,
+      "dynamicRange": 0.6263521313667297,
+      "crushed": 0.24882000704473406,
+      "clipped": 0.000025159764504604236,
+      "banding": 0,
+      "highFreq": 0.08773986427070295,
+      "speckle": 0.00038095044596598876,
+      "emptiness": 0.252322246263775,
+      "colourCast": 0.3637258653609856
+    },
+    {
+      "file": "c4_chamber.png",
+      "W": 595,
+      "H": 334,
+      "mean": 0.14478818200604915,
+      "contrast": 0.1893672349868317,
+      "dynamicRange": 0.7829631567001343,
+      "crushed": 0.39790167564031603,
+      "clipped": 0.000015095858702762542,
+      "banding": 0,
+      "highFreq": 0.0811029619221356,
+      "speckle": 0.00006603141063410471,
+      "emptiness": 0.40594273637598755,
+      "colourCast": 0.46453156225465636
+    }
+  ],
+  "flagged": [
+    {
+      "file": "c2_sump.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    },
+    {
+      "file": "c3_stairhall.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    },
+    {
+      "file": "c4_chamber.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    }
+  ]
+}
