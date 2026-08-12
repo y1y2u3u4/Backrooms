@@ -1,0 +1,206 @@
+[
+  {
+    "name": "l1_lane_north",
+    "settle": 150,
+    "setup": "g.look(-25.2, 0, -23.1, -1.5708, 0.0)",
+    "file": "docs/captures/lanes_after/l1_lane_north.png",
+    "stats": {
+      "ms": 1.1366666664679845,
+      "fps": 879.7653960482056,
+      "p90": 1.4000000059604645,
+      "calls": 307,
+      "tris": 1062976,
+      "quality": "high",
+      "res": "960x540",
+      "lights": {
+        "fixtures": 242,
+        "lit": 172,
+        "active": 12,
+        "tubes": 172,
+        "shadows": 3
+      },
+      "probe": {
+        "zone": "intake",
+        "directAtHead": 20.551,
+        "directAtFloor": 18.799,
+        "fillUp": 0.585,
+        "fillDown": 0.949,
+        "fixtures": {
+          "fixtures": 242,
+          "lit": 172,
+          "active": 12,
+          "tubes": 172,
+          "shadows": 3
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1
+        },
+        "zoneFixtures": {
+          "total": 242,
+          "lit": 172
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -3.0566,
+          "adapted": 0.047,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "l2_lane_middle",
+    "settle": 150,
+    "setup": "g.look(-25.2, 0, -18.9, -1.5708, 0.0)",
+    "file": "docs/captures/lanes_after/l2_lane_middle.png",
+    "stats": {
+      "ms": 1.112499999254942,
+      "fps": 898.8764050963731,
+      "p90": 1.4000000059604645,
+      "calls": 319,
+      "tris": 1076680,
+      "quality": "high",
+      "res": "960x540",
+      "lights": {
+        "fixtures": 242,
+        "lit": 172,
+        "active": 12,
+        "tubes": 172,
+        "shadows": 3
+      },
+      "probe": {
+        "zone": "intake",
+        "directAtHead": 26.456,
+        "directAtFloor": 24.012,
+        "fillUp": 0.585,
+        "fillDown": 0.949,
+        "fixtures": {
+          "fixtures": 242,
+          "lit": 172,
+          "active": 12,
+          "tubes": 172,
+          "shadows": 3
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1
+        },
+        "zoneFixtures": {
+          "total": 242,
+          "lit": 172
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -2.6855,
+          "adapted": 0.0682,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "l3_lane_ceiling",
+    "settle": 150,
+    "setup": "g.look(-16.5, 0, -18.9, -1.5708, 0.55)",
+    "file": "docs/captures/lanes_after/l3_lane_ceiling.png",
+    "stats": {
+      "ms": 1.0441666677594186,
+      "fps": 957.7015153584707,
+      "p90": 1.5999999940395355,
+      "calls": 277,
+      "tris": 932220,
+      "quality": "high",
+      "res": "960x540",
+      "lights": {
+        "fixtures": 242,
+        "lit": 172,
+        "active": 12,
+        "tubes": 172,
+        "shadows": 3
+      },
+      "probe": {
+        "zone": "intake",
+        "directAtHead": 35.484,
+        "directAtFloor": 32.083,
+        "fillUp": 0.585,
+        "fillDown": 0.949,
+        "fixtures": {
+          "fixtures": 242,
+          "lit": 172,
+          "active": 12,
+          "tubes": 172,
+          "shadows": 3
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1
+        },
+        "zoneFixtures": {
+          "total": 242,
+          "lit": 172
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -2.2773,
+          "adapted": 0.1026,
+          "autoGain": 1.316
+        }
+      }
+    }
+  },
+  {
+    "name": "l4_lane_across",
+    "settle": 150,
+    "setup": "g.look(-16.5, 0, -20.0, 0.0, 0.05)",
+    "file": "docs/captures/lanes_after/l4_lane_across.png",
+    "stats": {
+      "ms": 0.460833332935969,
+      "fps": 2169.9819186884774,
+      "p90": 0.5,
+      "calls": 113,
+      "tris": 350604,
+      "quality": "high",
+      "res": "960x540",
+      "lights": {
+        "fixtures": 242,
+        "lit": 171,
+        "active": 12,
+        "tubes": 172,
+        "shadows": 3
+      },
+      "probe": {
+        "zone": "intake",
+        "directAtHead": 35.965,
+        "directAtFloor": 32.427,
+        "fillUp": 0.585,
+        "fillDown": 0.949,
+        "fixtures": {
+          "fixtures": 242,
+          "lit": 171,
+          "active": 12,
+          "tubes": 172,
+          "shadows": 3
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1
+        },
+        "zoneFixtures": {
+          "total": 242,
+          "lit": 171
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": 0.7837,
+          "adapted": 2.1895,
+          "autoGain": 0.8
+        }
+      }
+    }
+  }
+]

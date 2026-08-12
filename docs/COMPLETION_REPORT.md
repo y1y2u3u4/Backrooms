@@ -1807,3 +1807,159 @@ plan map of all eight zones, browser-free, regenerable in three seconds. For a
 change whose whole content is "which square metres have a fitting over them", the
 map is a better record than a photograph of one corner of it anyway — but it is
 not a substitute for looking, and nobody has looked at these lanes.
+
+---
+
+## 11. Sixth pass: the capture harness was never hung
+
+Three capture runs were abandoned as hung in the previous pass — at 35, 20 and 15
+minutes, none of them having written a single frame, none of them having printed
+anything past `→ loading`. The completion report recorded that as "a
+capture-harness problem rather than a game one" and moved on. It was a harness
+problem, and this is what it was.
+
+### The blocking bug: waiting on a frame callback for a thing that blocks frames
+
+`capture.mjs` waited for the game with
+
+```js
+page.waitForFunction('window.ANNEX_READY === true || window.ANNEX_ERROR', { timeout: 180000 })
+```
+
+Playwright's default polling for `waitForFunction` is `requestAnimationFrame`.
+The game's boot ends with a synchronous shader pre-warm, and the page says so:
+
+```
+[game] pre-warmed intake shaders in 65751 ms
+THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported.
+```
+
+161 shader permutations, compiled one at a time on the main thread because the
+extension that makes `compileAsync` actually asynchronous is not present on a
+software rasteriser. No frame callback runs while that is happening, so the
+predicate was not merely false — it was never evaluated. The run then failed at
+180 seconds with `Timed out waiting for ANNEX_READY`, which reads like the game
+is broken.
+
+Polling on a timer instead (`polling: 500`) fixes it outright. The timeout is
+also now 600 s, because three minutes was never enough for this boot.
+
+### What the runs actually cost, measured
+
+The reason nobody caught this is that the numbers are genuinely enormous and
+nobody had ever measured them:
+
+| | measured on this machine |
+|---|---|
+| shader pre-warm, one zone | 66 s |
+| steady-state frame, 1600x900 high | 1.28 s |
+| a cross-zone `world.goto` | 453 s |
+| first frames after that goto | 25 s each |
+| one lane shot, 960x540 high | 701 s |
+
+`--prewarm 0` does not avoid the compile cost, it relocates it: boot drops from
+66 s to 2 s and the first `world.goto` inside a shot then takes 453 s instead.
+Compilation is paid either way. The only choice is whether it is paid somewhere
+the tool is watching — which is the same reason `programs 161 / 140` is a budget
+worth caring about even though it is not a per-frame cost.
+
+### And `--gpu` does not get a GPU
+
+The flag drops the SwiftShader launch arguments, on the reasoning that a machine
+with a real GPU should use it. On the Mac this was run on, it produces:
+
+```
+ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0)), SwiftShader driver)
+```
+
+Headless Chromium there has no GPU path and ANGLE falls back silently. Dropping
+the flags is a request, not a guarantee, and a run that believes it measured a
+GPU when it measured a CPU rasteriser is the same class of error as measuring a
+stale bundle. The tool now reads the renderer string out of the page, prints it,
+and says so when `--gpu` did not get one. **The project still has no
+GPU-verified frame rate, and now it can prove that rather than assume it.**
+
+### The three things that made a slow run indistinguishable from a dead one
+
+1. The per-shot progress line printed on **completion**. A run three minutes into
+   its first shot looked exactly like a run that died during boot.
+2. The page's own boot narration — zone builds, AO bakes, the pre-warm and its
+   duration — was buffered into an array and printed only on failure. The one
+   place a slow boot explains itself was the one place nobody could see.
+3. Nothing reported the renderer or the frame cost.
+
+All three are fixed: boot narration is echoed live, each shot prints its name
+before rendering, and a running ETA appears from the mean of completed shots.
+
+### The estimate I added was wrong by three orders of magnitude
+
+The first version of the projection timed ten frames and multiplied by the settle
+count. It printed **`≈ 0.0 min`** for a run that took eleven and a half minutes.
+
+The ten frames re-rendered a view that was already compiled and already settled,
+at about 1 ms each; the shots that followed took 161 s, 138 s, 28 s and 162 s,
+because almost none of a shot's cost is frames — it is compilation triggered when
+the camera moves somewhere that puts new materials on screen, and no amount of
+re-rendering the current view can predict it.
+
+That is the seventh instrument in this project to be confidently wrong in the
+reassuring direction, and it was written *in the commit that exists to catalogue
+the other six*. The steady-state number is now printed as what it is, with the
+sentence "this does NOT predict a shot" next to it, and the projection comes only
+from shots that have actually finished.
+
+### The lever is the programs budget, not the viewport
+
+Worth stating because it is counter-intuitive: **a smaller viewport barely helps.**
+A 960x540 lane shot costs 701 s, of which the 150 settle frames are 0.2 s at
+1.1 ms each. The other 700 seconds are shader compilation, which is
+resolution-independent. Halving the pixels halves nothing that matters.
+
+The thing that would actually make this harness usable is the failing budget:
+**161 shader permutations against 140.** Every one of them is compiled serially
+because `KHR_parallel_shader_compile` is unavailable here, and they are paid
+again on every boot, every zone transition and every camera move that reveals a
+material not yet seen. The programs budget has been read as a load-time nicety.
+It is the reason a four-shot contact sheet takes three quarters of an hour.
+
+### The lanes, finally photographed
+
+`docs/captures/lanes_after/` — four frames of the Intake partition block that
+section 10 lit, taken with the repaired harness at 960x540, quality high, all
+circuits live.
+
+| frame | what it shows | direct light at head |
+|---|---|---|
+| `l1_lane_north.png` | a lane looking east; troffers receding | 20.6 |
+| `l2_lane_middle.png` | the next lane; a lamp washing the partition | 26.5 |
+| `l3_lane_ceiling.png` | the ceiling of a lane, two fittings overhead | 35.5 |
+| `l4_lane_across.png` | **the lens against a wall — see below** | 36.0 |
+
+`l3` is the one that matters. The project's third standing rule is that if it
+glows there is a fixture and the fixture is where the light is, and the lanes had
+been lit by nothing but spill from the next bay over. The frame shows two
+troffers in the near ceiling and a run of them going away down the lane, in a
+ceiling that had no fitting in it at all before this.
+
+`l4` is a wall. It is left in the directory on purpose, because it is what made
+the next check worth writing.
+
+### A frame can be a photograph of nothing, and the manifest already knew
+
+`g.look` puts the camera exactly where it is told; `lookOpen` searches for a
+sightline first but is expensive, so shot lists mix the two. The very first list
+written after repairing the harness put one camera 40 cm from a partition and
+produced a full-frame wash of blown wallpaper — the exact failure `lookOpen` was
+built for, reintroduced by working around its cost.
+
+No new measurement was needed to catch it. The three good frames of that run
+adapted to 0.047, 0.068 and 0.103; the wall adapted to **2.19**, twenty to forty
+times its siblings, because the exposure system was metering a surface at arm's
+length. `capture.mjs` now flags any frame more than 8x off the run's median
+adapted luminance, in either direction — the same test catches a frame that came
+out dark. Verified against the manifest that motivated it: it flags `l4` and
+none of the other three.
+
+A ratio against the family median rather than an absolute bar, because this game
+is deliberately dim in some zones and bright in others and an absolute threshold
+would flag the Cistern for being the Cistern.

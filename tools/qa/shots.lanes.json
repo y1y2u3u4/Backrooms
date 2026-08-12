@@ -1,0 +1,22 @@
+[
+  {
+    "name": "l1_lane_north",
+    "settle": 150,
+    "setup": "g.look(-25.2, 0, -23.1, -1.5708, 0.0)"
+  },
+  {
+    "name": "l2_lane_middle",
+    "settle": 150,
+    "setup": "g.look(-25.2, 0, -18.9, -1.5708, 0.0)"
+  },
+  {
+    "name": "l3_lane_ceiling",
+    "settle": 150,
+    "setup": "g.look(-16.5, 0, -18.9, -1.5708, 0.55)"
+  },
+  {
+    "name": "l4_lane_west",
+    "settle": 150,
+    "setup": "g.look(-8.4, 0, -18.9, 1.5708, 0.0)"
+  }
+]
