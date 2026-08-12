@@ -2205,3 +2205,83 @@ before this pass and unmeasured since — which is its own finding. The cost of 
 broken capture harness was not four missing screenshots; it was two zones carried
 as open defects for four iterations, and a lighting change made against the
 Stack's black pixels that could never have worked.
+
+---
+
+## 14. One line, 125 shader programs down to 33
+
+`programs` was the only failing budget in the project — 162 against 140 — and it
+had been carried as a load-time nicety for as long as it had existed. Section 11
+established that it is not: `KHR_parallel_shader_compile` is unavailable on a
+software rasteriser, so every permutation compiles serially on the main thread
+and is paid again on every boot, every zone transition, and every camera move
+that reveals a material not yet seen. **The permutation count is the capture
+harness's speed.**
+
+A count is not actionable, so `tools/qa/programs.mjs` dumps three.js's own program
+cache keys, works out which of the 56 parameters actually vary across them, and
+ranks the axes by how much they multiply. The widest axis, by a distance, was not
+a three.js parameter at all:
+
+```
+  field   distinct   commonest values
+     54         38   <absent>x14  srgbx6  annex|-0.3|0.4|5|0.4|0x5  annex|-0.4|0.6|4|0.35|x3
+```
+
+`annex|…` is this project's own `customProgramCacheKey`, and it carried the
+**values** of seven material options:
+
+```js
+`annex|${o.dirtBase}|${o.dirtAmount}|${o.detailTile}|${o.detailStrength}|...`
+```
+
+All seven are uniforms, assigned a dozen lines above it in `onBeforeCompile`.
+Every string spliced into the shader source — `VERT_HEAD`, `VERT_BODY`,
+`FRAG_HEAD`, `FRAG_MAP`, `FRAG_ROUGH`, `FRAG_DETAIL_NORMAL`, `AO_VOLUME_APPLY` —
+is a module constant that never reads `o`. **The generated GLSL is byte-identical
+across all thirty-eight of them.** The key was asking the renderer to compile the
+same program thirty-eight times because a dirt amount differed.
+
+The comment above it stated the requirement correctly — *"distinct cache key so
+three does not share a program with an undecorated standard material"* — which
+needs exactly one token. And `rollWidth` was already collapsed to a boolean in
+that same string, so the principle was understood and applied to one option out
+of seven.
+
+```js
+mat.customProgramCacheKey = () => 'annex';
+```
+
+### What it bought
+
+| | before | after |
+|---|---|---|
+| programs, one zone (`programs.mjs`) | 125 | **33** |
+| programs, worst perf scenario | 162 / 140 **FAIL** | **40 / 140 PASS** |
+| Intake shader pre-warm | 68,351 ms | **175 ms** |
+| four-shot Cistern capture | minutes per frame | 46 s, 10 s, 19 s, 15 s |
+
+A **390x** reduction in pre-warm. Every budget in `npm run perf` now passes for
+the first time in this project's recorded history.
+
+### Verified in pixels, because this one could have been silently catastrophic
+
+Sharing a program between materials is exactly the change that, if the reasoning
+about uniforms were wrong, would make every surface in the game look identical —
+and would do it without erroring. So the same four Cistern frames, same shot list,
+same tier, before and after:
+
+| frame | crushed | dynamic range | contrast | high-freq |
+|---|---|---|---|---|
+| tunnel | 0.090 → 0.091 | 0.661 → 0.664 | 0.186 → 0.182 | 0.079 → 0.076 |
+| sump | 0.269 → 0.253 | 0.700 → 0.704 | 0.178 → 0.180 | 0.098 → 0.098 |
+| stair hall | 0.249 → 0.243 | 0.626 → 0.619 | 0.207 → 0.204 | 0.088 → 0.087 |
+| chamber | 0.398 → 0.376 | 0.783 → 0.781 | 0.189 → 0.193 | 0.081 → 0.080 |
+
+High-frequency energy is the one to watch — it is the texture-detail proxy, and
+it is the first thing that would collapse if every material had flattened to one
+appearance. It does not move. Neither does contrast. The frames are in
+`docs/captures/cistern_shared/` next to `cistern_now/`; the concrete is still
+concrete, the rust is still rust, and each wall still carries its own dirt.
+
+`npm run audit` green, `bootcheck` 11/11.
