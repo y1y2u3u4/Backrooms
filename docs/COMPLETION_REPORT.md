@@ -2448,3 +2448,69 @@ taken in this pass.
 What remains genuinely open is the model: fifteen meshes of smooth tapered
 cylinders with visible ring joints, which is a re-sculpt, and the one part of §2.4
 that really is a Blender task.
+
+---
+
+## 17. Where the viewmodel actually is, in numbers
+
+"Why is there always a hand on screen, and why only one?" Both answers turned out
+to be measurable, and the second one is a fact this project did not know.
+
+**The hand you can see is holding the torch.** Pose selection is
+`held === 'lamp' && flashlight.enabled → lamp_R`, which is a closed fist
+(curl 0.86–0.94). What reads as four fingertips is a set of knuckles, and with the
+flashlight left in its real state the torch body is visible between them. The
+viewmodel is only ever hidden by cinematics and hiding places.
+
+Worth recording as a self-inflicted wound: every capture in this project sets
+`flashlight.isOn = false` in its shot setup — inherited from the oldest shot list,
+to stop the beam blowing out the frame — so every frame anyone has looked at shows
+a fist gripping an unlit torch. The hand looked like it was holding nothing
+because of the QA harness, not because of the game.
+
+**The other hand has never been seen.** It is built, sprung, posed and lit every
+frame. Projected to screen space, with the bottom edge at −1.00:
+
+| | NDC y |
+|---|---|
+| right hand, holding the torch | −1.32 |
+| left hand, idle | **−1.43** |
+
+And that is not specific to idle. Every pose in the table, computed as
+`(y / −z) / tan(fov/2)` at the overlay camera's 52°:
+
+```
+reach_R     -0.63   ON SCREEN
+reach_L     -1.06   below frame
+cover_L     -1.09   below frame
+carry_R/L   -1.23   below frame
+lamp_R      -1.32   below frame
+idle_R      -1.34   below frame
+idle_L      -1.43   below frame
+pry_R       -1.54   below frame
+stow_R/L    -3.1    below frame
+```
+
+**Exactly one pose in the game puts a hand's origin inside the frame, and it is
+the one for reaching out to touch something.** The viewmodel is authored to live
+just under the bottom edge, clipping in a few knuckles, and to rise into view only
+when the player acts. That is a coherent design and it has been kept — but it is
+also the answer to why the hands read oddly at a glance: what is on screen is the
+top sixth of a fist in the extreme corner, which the eye cannot resolve into an
+object, and no amount of work on its surface was ever going to fix that.
+
+### Headroom that is not being taken
+
+The left hand costs **22 draw calls and 6,596 triangles every frame**, measured by
+toggling its root and re-reading the renderer's counters, for something that has
+never appeared in a frame. Against a draw-call budget currently sitting at 179 of
+180, that is twelve per cent of the entire budget spent on geometry nobody has
+seen.
+
+It is not being reclaimed here, for a reason worth writing down: `loadModel` sets
+`frustumCulled = false` on every mesh of both hands, which says somebody has
+already been bitten by culling this viewmodel. `cover_L` and `reach_L` sit at
+−1.09 and −1.06, close enough to the edge that a naive "hide the left hand" would
+pop. The correct version tests projected bounds per frame with a margin rather
+than switching on pose name, and that deserves its own pass with its own
+before/after frames.
