@@ -64,10 +64,14 @@ const { FIXTURE_TYPES } = await import('../../src/render/Lighting.js');
 const { ZONE_ORIGIN } = await import('../../src/world/ZoneKit.js');
 const { Bus } = await import('../../src/core/util.js');
 const { Inventory } = await import('../../src/player/Inventory.js');
-const { Interactor } = await import('../../src/player/Interactor.js');
+const { Interactor, DoorLatch } = await import('../../src/player/Interactor.js');
 const { Interactables } = await import('../../src/systems/Interactables.js');
 const { NotesLibrary } = await import('../../src/systems/Notes.js');
 const { Progression, ENDINGS } = await import('../../src/systems/Progression.js');
+// `card_contractor` is granted in `installGameplay`, which this harness does not
+// run — it builds its own inventory. Reading the source is the honest way to
+// assert it: the claim is "the game issues it", and that is where the game does.
+const bootSource = await (await import('node:fs/promises')).readFile('src/systems/GameplayBoot.js', 'utf8');
 const { Setpieces, SETPIECE_IDS } = await import('../../src/systems/Setpieces.js');
 const { ZoneGameplay } = await import('../../src/systems/ZoneGameplay.js');
 const SaveGame = await import('../../src/systems/SaveGame.js');
@@ -451,6 +455,114 @@ check('the starting objective is now revealed',
   const docket = interactor.get('docket_0000');
   check('Docket 0000 is on the desk', !!docket);
   check('the docket is not consumed by reading it', docket?.once === false);
+}
+
+// -- the third ending, which could not happen ------------------------------
+//
+// `ENDINGS.DESCENDED` was unreachable for the life of the project: the only
+// `setPower(true)` fires inside `gen:running`, which sets `setRunning` in the
+// same handler, so the resolver's `setRunning ? LEFT : DESCENDED` could only
+// ever yield LEFT. One of three endings, and nothing in the suite noticed —
+// because the suite drove the one path that works.
+//
+// Three properties, each of which the old build fails.
+{
+  // 1. There is somewhere to descend TO, it is below the plant floor, and it is
+  //    not on the button panel.
+  const liftSpec = (zones.plant?.interactables || []).find((i) => i.id === 'lift_2');
+  const fl = liftSpec?.floors || [];
+  const plant = fl.find((f) => f.name === 'PLANT');
+  const sub = fl.find((f) => f.ending === 'descended');
+  check('the shaft has a floor below the plant floor', !!sub && !!plant && sub.y < plant.y,
+    sub ? `${sub.name} at ${sub.y} vs PLANT at ${plant?.y}` : 'no floor names the descended ending');
+  check('that floor is an exit', !!sub?.exit);
+  check('and it is not callable from the panel', sub?.manualOnly === true,
+    'a player who started the set could otherwise call it and get the wrong ending');
+  check('the car still starts at the plant floor', fl[0]?.name === 'PLANT',
+    `index 0 is ${fl[0]?.name}`);
+
+  // 2. A dead car can be released, and a live one cannot — the verb is the
+  //    consequence of having no power, not an extra button.
+  // Optional-chained on purpose: on a build without the release the checks have
+  // to FAIL, not throw. A suite that crashes tells you less than one that says
+  // which claim is untrue.
+  const lift = interactables.get('lift_2');
+  const powered = lift?.api?.state?.().power;
+  check('a powered lift offers no brake release', powered === true && lift?.api?.canRelease?.() === false,
+    typeof lift?.api?.canRelease !== 'function' ? 'the lift has no canRelease at all' : '');
+  lift?.api?.setPower?.(false);
+  check('a dead lift does offer one', lift?.api?.canRelease?.() === true,
+    typeof lift?.api?.release !== 'function' ? 'the lift has no release at all' : '');
+  lift?.api?.setPower?.(powered);
+
+  // 3. The resolver produces DESCENDED for that floor even though the set is
+  //    running — which is the exact substitution the old code could not make.
+  const bus2 = new Bus();
+  const prog2 = new Progression({
+    bus: bus2, inventory, notes, interactables, interactor, director, player,
+  });
+  prog2.setRunning = true;
+  bus2.emit('lift:arrive', { id: 'lift_2', floor: 2, name: 'SUB', exit: true, ending: 'descended' });
+  check('arriving at the bottom of the shaft ends the game as DESCENDED',
+    prog2.ended === ENDINGS.DESCENDED, `ending = ${prog2.ended}`);
+
+  const bus3 = new Bus();
+  const prog3 = new Progression({
+    bus: bus3, inventory, notes, interactables, interactor, director, player,
+  });
+  prog3.setRunning = true;
+  bus3.emit('lift:arrive', { id: 'lift_2', floor: 1, name: 'SURFACE', exit: true, ending: 'left' });
+  check('and the surface still ends it as LEFT', prog3.ended === ENDINGS.LEFT,
+    `ending = ${prog3.ended}`);
+}
+
+// -- three promises the game made and did not keep --------------------------
+//
+// A tool with nothing to use it on, an item with a written payoff and no spawn
+// site, and a second item the same. All three had definitions, builders and
+// notes pointing at them; none of them existed in a run.
+{
+  // The pry bar opens something. `variant: 'jammed'` appears in exactly one
+  // place in the tree and it is `seedIntakeDemo`, which `Game.js` runs only
+  // when there is no world — so in a real game the bar opened nothing at all.
+  // The zone's declaration, and a FRESH latch built from it. The first version
+  // of this read `interactor.door('door_r207')` — which by this point in the
+  // file has been unlocked by the playthrough above, so the refusal checks were
+  // interrogating an open door and reported the fix missing. A latch test has to
+  // own its latch.
+  const r207spec = (zones.residence?.interactables || []).find((i) => i.id === 'door_r207');
+  check('R-207 is declared pryable', r207spec?.pryable === true,
+    'the pry bar needs a door somewhere in the shipping build');
+  check('R-207 still needs the warden card by default', r207spec?.requires === 'card_warden');
+
+  const fresh = () => new DoorLatch(new THREE.Group(), {
+    id: 'probe_r207', locked: true, requires: 'card_warden', pryable: true,
+  });
+  const noBar = { has: () => false, def: () => null };
+  const withBar = { has: (i) => i === 'pry_bar', def: () => null };
+  const withCard = { has: (i) => i === 'card_warden', def: () => null };
+  check('a locked pryable door refuses an empty-handed player',
+    typeof fresh().refusal(noBar) === 'string', `refusal = ${fresh().refusal(noBar)}`);
+  check('the card opens it', fresh().refusal(withCard) === null);
+  check('and so does the bar', fresh().refusal(withBar) === null,
+    `refusal = ${JSON.stringify(fresh().refusal(withBar))}`);
+
+  // Prying is the loud route or it is not a trade. A footstep is 4.
+  let pryNoise = 0;
+  const loudPlayer = {
+    position: new THREE.Vector3(0, 0, 0),
+    makeNoise: (n) => { pryNoise = Math.max(pryNoise, n); }, kick() {},
+  };
+  fresh().use(loudPlayer, withBar);
+  check('prying is much louder than walking', pryNoise >= 12, `noise ${pryNoise}`);
+
+  // Both orphan items have somewhere to be found.
+  const allSpawns = Object.values(zones).flatMap((z) => z.interactables || []);
+  check('keys_ring has a spawn site', allSpawns.some((i) => i.item === 'keys_ring'),
+    'defined, built and blurbed, but in no zone');
+  check('card_contractor is issued rather than found',
+    /inventory\.add\('card_contractor'/.test(bootSource),
+    'the reader carries a refusal written for a card no player ever held');
 }
 
 // -- reading ---------------------------------------------------------------
@@ -887,6 +999,6 @@ const failed = results.filter((r) => !r.ok);
 for (const r of failed) console.log(`  FAIL  ${r.name}${r.detail ? `  — ${r.detail}` : ''}`);
 console.log(`${results.length - failed.length}/${results.length} checks passed`);
 console.log(failed.length === 0
-  ? 'The game can be finished. Arrival lift to goods lift, three cores, one ending.'
+  ? 'The game can be finished. Arrival lift to goods lift, three cores, and both lift endings reachable.'
   : `${failed.length} check(s) FAILED`);
 process.exit(failed.length === 0 ? 0 : 1);

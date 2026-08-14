@@ -385,7 +385,10 @@ export class Progression {
     on('lift:arrive', (e) => {
       if (this.ended) return;
       if (!e?.exit) return;
-      this._end(this.setRunning ? ENDINGS.LEFT : ENDINGS.DESCENDED);
+      // The floor names its own ending where it knows it. `setRunning` alone
+      // could never produce DESCENDED, because the only thing that powered the
+      // lift also set that flag — see the floor table in PlantZone.
+      this._end(e.ending || (this.setRunning ? ENDINGS.LEFT : ENDINGS.DESCENDED));
     });
 
     on('valve:complete', (e) => {

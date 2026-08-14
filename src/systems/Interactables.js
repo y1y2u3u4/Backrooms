@@ -677,9 +677,24 @@ export function goodsLift(ctx, {
 
   interactor?.add({
     id: `${id}_call`, object: callGrp, kind: 'button',
-    verb: 'Call', label: 'the goods lift', range: 1.9,
-    refusal: () => (state.power ? null : 'Dead. Three-phase is out.'),
-    onUse: () => api.call(),
+    // AN UNPOWERED GOODS LIFT IS NOT A LOCKED DOOR.
+    //
+    // This used to refuse with "Dead. Three-phase is out." and that was the end
+    // of it — which made `ENDINGS.DESCENDED` unreachable, because the only
+    // `setPower(true)` in the game fires inside `gen:running`, which sets
+    // `setRunning` in the same breath. One of the game's three endings could not
+    // be arrived at by any sequence of player actions, in any run, ever.
+    //
+    // The ending's own text has always said what it should be: "Never started
+    // the set and rode the lift anyway. It only goes down." A goods lift with no
+    // three-phase still has a brake, and a brake can be released; the car goes
+    // down under its own weight and it does not come back up. So the dead lift
+    // offers exactly one thing, it is the wrong thing, and taking it is a
+    // decision the player makes with the indicator telling them the truth.
+    verb: () => (state.power ? 'Call' : 'Release the brake on'),
+    label: 'the goods lift', range: 1.9,
+    refusal: () => (state.power || api.canRelease() ? null : 'Dead. Three-phase is out.'),
+    onUse: () => (state.power ? api.call() : api.release()),
   });
 
   const carFloor = collision?.addFloor(
@@ -702,12 +717,39 @@ export function goodsLift(ctx, {
     },
     callTo(i) {
       if (!state.power || state.moving || i === state.floor) return false;
+      // A floor you can only fall to is not on the panel. Without this, a player
+      // who had started the set could call the bottom of the shaft and get the
+      // ending for never having started it.
+      if (floors[i].manualOnly) return false;
       state.targetFloor = i;
       state.gateTarget = 0;
       state.moving = true;
       state.trips++;
       bus?.emit('lift:travel', { id, from: state.floor, to: i, floors });
       bus?.emit('player:noise', { position: root.getWorldPosition(new THREE.Vector3()), radius: 26 });
+      return true;
+    },
+    /** Is there anywhere below to fall to, and is the car dead enough to fall? */
+    canRelease() {
+      if (state.power || state.moving) return false;
+      return floors.some((f, i) => i !== state.floor && f.y < floors[state.floor].y);
+    },
+    /**
+     * Let the car down on its brake. No power, no return trip: it goes to the
+     * lowest floor it can reach and stops there.
+     */
+    release() {
+      if (!api.canRelease()) return false;
+      let lowest = state.floor;
+      floors.forEach((f, i) => { if (f.y < floors[lowest].y) lowest = i; });
+      state.targetFloor = lowest;
+      state.gateTarget = 0;
+      state.moving = true;
+      state.freewheel = true;
+      state.trips++;
+      bus?.emit('lift:travel', { id, from: state.floor, to: lowest, floors, freewheel: true });
+      // Louder than a called trip. Nothing about this is controlled.
+      bus?.emit('player:noise', { position: root.getWorldPosition(new THREE.Vector3()), radius: 34 });
       return true;
     },
     state: () => ({ ...state, floorName: floors[state.floor]?.name }),
@@ -730,7 +772,10 @@ export function goodsLift(ctx, {
       if (state.moving && state.gate <= 0.02) {
         const targetY = floors[state.targetFloor].y;
         const dy = targetY - state.y;
-        const step = Math.sign(dy) * Math.min(Math.abs(dy), 0.55 * dt);
+        // 0.55 m/s is the motor. A released brake is gravity against a worn
+        // shoe: half as fast again, and it only ever goes one way.
+        const rate = state.freewheel ? 0.85 : 0.55;
+        const step = Math.sign(dy) * Math.min(Math.abs(dy), rate * dt);
         state.y += step;
 
         // Ride: if the player is standing in the car, move them with it.
@@ -758,9 +803,14 @@ export function goodsLift(ctx, {
             font: '600 28px "Courier New", monospace', bg: '#141310', fg: '#ff9a3c', glow: '#ff7a10',
           });
           player?.kick(0.03, 0, 0.02, 0.04);
+          state.freewheel = false;
           bus?.emit('lift:arrive', {
             id, floor: state.floor, name: floors[state.floor].name,
             exit: !!floors[state.floor].exit,
+            // A floor may name the ending it produces. Without this the only
+            // signal Progression had was `setRunning`, which is why the bottom
+            // of the shaft and the surface were indistinguishable to it.
+            ending: floors[state.floor].ending || null,
           });
           bus?.emit('player:noise', { position: root.getWorldPosition(new THREE.Vector3()), radius: 18 });
         }
@@ -1672,7 +1722,7 @@ export function generator(ctx, {
  */
 export function annexDoor(ctx, {
   id = 'door', position = [0, 0, 0], rotation = 0, variant = 'plain',
-  requires = null, width = 0.96, height = 2.06, hinge = 1, open = 0,
+  requires = null, pryable = false, width = 0.96, height = 2.06, hinge = 1, open = 0,
   label = 'the door', parent = null, builder = null, autoClose = 0, oneWaySide = 1,
 } = {}) {
   const { bus, interactor, collision, rig, player, inventory } = ctx;
@@ -1707,6 +1757,7 @@ export function annexDoor(ctx, {
     id, bus, rig, collision,
     locked: variant === 'locked',
     jammed: variant === 'jammed',
+    pryable,
     chained: variant === 'chained',
     welded: variant === 'welded',
     oneWay: variant === 'oneway' ? oneWaySide : 0,

@@ -474,10 +474,21 @@ export function buildPlant(ctx, opts = {}) {
       kind: 'lift', id: 'lift_2', rotation: -Math.PI / 2, powered: false,
       position: [HX1 + 0.95, FLOOR, 0],
       width: 2.2, depth: 2.0, height: 2.4,
+      // ORDER MATTERS AND IT IS NOT HEIGHT ORDER: index 0 is where the car
+      // starts. Adding the sub-basement at the top of this list parked the car
+      // at the bottom of the shaft at boot, and `chain.mjs` caught it in one
+      // run — the ending stopped resolving because the ride never happened.
       floors: [
         { name: 'PLANT', y: FLOOR },
         // Up and out. `exit: true` is what Progression reads to end the game.
-        { name: 'SURFACE', y: FLOOR + 9.6, exit: true },
+        { name: 'SURFACE', y: FLOOR + 9.6, exit: true, ending: 'left' },
+        // The bottom of the shaft. Reachable only by releasing the brake on a
+        // dead car — `manualOnly` keeps it off the button panel — and it is why
+        // `ENDINGS.DESCENDED` exists. Until now it could not happen: there was
+        // no floor under the Plant to descend to, and the only thing that made
+        // the lift move at all was starting the set, which is the condition
+        // that produces the other ending.
+        { name: 'SUB', y: FLOOR - 11.4, exit: true, ending: 'descended', manualOnly: true },
       ],
     },
     // The procedure, on the panel end of the set — findable without a hunt,

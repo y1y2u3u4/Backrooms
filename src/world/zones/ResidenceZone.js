@@ -584,6 +584,17 @@ export function buildResidence(ctx, opts = {}) {
       position: [r207.doorX, 0, r207.zSide], rotation: r207.north ? 0 : Math.PI,
       variant: 'locked', requires: 'card_warden', width: 0.94, height: 2.00,
       hinge: 1, label: 'R-207', autoClose: 0,
+      // AND THE OTHER WAY IN. The pry bar sits in the Service store under a note
+      // that says two doors in the building are jammed and this is the only
+      // thing that opens them — and no zone declared a single one, so the tool
+      // opened nothing in a real run. (The only `variant: 'jammed'` in the tree
+      // is in `seedIntakeDemo`, which `Game.js` runs only when there is no world
+      // at all.) This is a domestic flat door in a timber frame: it holds
+      // against a shoulder and it does not hold against 600 mm of hexagon
+      // stock. Taking it that way costs a noise of 16 — four times a footstep,
+      // the loudest thing a player can do — so the card is still the route you
+      // want and the bar is the route you take when you could not find it.
+      pryable: true,
     });
     // The reader, on the corridor side of the jamb.
     interactables.push({

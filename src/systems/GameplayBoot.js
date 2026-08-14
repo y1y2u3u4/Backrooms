@@ -48,6 +48,13 @@ export async function installGameplay(game, {
   // ---- player-side systems --------------------------------------------------
   const notes = new NotesLibrary(bus);
   const inventory = new Inventory({ bus, player });
+  // YOUR OWN CARD. `card_contractor`'s blurb reads "Your own. Issued March. It
+  // opens less than you were told it would", the card reader carries a written
+  // refusal for it — "Reader rejects it. Your card was issued in March." — and
+  // three notes build to that moment. It had no spawn site anywhere in the
+  // game, so no player ever held it and that refusal line had never once
+  // fired. It is not a pickup: it is the thing you walked in with.
+  inventory.add('card_contractor', 1);
   const flashlight = new Flashlight({
     scene, camera, player, inventory, collision, bus,
     castShadow: quality === 'high',

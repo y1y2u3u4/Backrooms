@@ -843,6 +843,11 @@ export function buildService(ctx, opts = {}) {
     { kind: 'pickup', item: 'pry_bar', position: [-11.7, 0.02, 4.3], rotation: 0.7 },
     { kind: 'pickup', item: 'battery_cell', position: [-13.2, 1.02, 3.2], rotation: 1.5 },
     { kind: 'pickup', item: 'note', noteId: 'note_lost_property', position: [-11.9, 0.02, 2.2], rotation: -0.8 },
+    // The ring of keys, in lost property, under the note about lost property.
+    // It had a definition, a builder and a blurb ("Eleven keys, four labelled,
+    // none of them labelled usefully") and no spawn site in any zone, so it
+    // existed everywhere except in the game.
+    { kind: 'pickup', item: 'keys_ring', position: [-12.3, 0.02, 2.05], rotation: 1.1 },
     { kind: 'pickup', item: 'note', noteId: 'note_12d_blank', position: [-11.2, 0.02, 2.6], rotation: 0.4 },
     // A locker against the store's back wall — the safest place in the Spine that
     // is not the Office of Record.
