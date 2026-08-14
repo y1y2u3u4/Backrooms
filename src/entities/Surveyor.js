@@ -564,7 +564,23 @@ export class Surveyor {
         this.position.x, this.position.y + 1.5, this.position.z,
         position.x, position.y + 1.0, position.z);
     }
-    const strength = clamp01(1 - dist / audible) * lerp(1, 0.34, occl);
+    // HIDING MUFFLES YOU, AND UNTIL NOW IT DID NOTHING AT ALL.
+    //
+    // There are thirteen locker and cupboard references across the zones, a
+    // `hide:enter` event, a UI prompt, an audio cue and a thirty-second Director
+    // grace. `grep -c hidden src/entities/Surveyor.js` returned **0**: the one
+    // system the whole verb exists to affect had never been told. The measured
+    // consequence was that climbing into a locker raised the player's fear by
+    // 0.30 and changed their odds by nothing.
+    //
+    // A steel door is not silence, so this is a muffle rather than a mute: 0.18
+    // multiplies through the same `strength` every other cue uses, which keeps
+    // the whole hearing model in one place. Loud noises made from inside a
+    // locker — slamming its door, a dropped core — can still just be heard, and
+    // that is the correct amount of not-safe.
+    const strength = clamp01(1 - dist / audible)
+      * lerp(1, 0.34, occl)
+      * (this.player?.hidden ? 0.18 : 1);
     if (strength < 0.06) return 0;
 
     // Localisation error grows with distance and with occlusion.
@@ -900,9 +916,38 @@ export class Surveyor {
 
       // ----------------------------------------------------------- APPROACHING
       case STATE.APPROACHING: {
-        // Still not a chase: it walks at the belief, which it refreshes only
-        // when the player makes noise. A silent player watches it walk past.
-        this._moveToward(dt, this.lastHeard.x, this.lastHeard.z, baseSpeed * 1.12);
+        // ONCE IT HAS COMMITTED, IT HAS TO BE ABLE TO ARRIVE.
+        //
+        // This used to run at `baseSpeed * 1.12` — 1.39 m/s at full aggression,
+        // against a 2.15 m/s walk and a 3.62 m/s sprint. It could not close on
+        // anybody who kept moving, in any state, ever; an independent assessment
+        // called the chase "unlosable" and the three deaths in the exploration
+        // session all happened after the bot had stopped. A threat that cannot
+        // reach a walking player is scenery, and every hour of atmosphere in
+        // this building is spent on a player who has worked that out.
+        //
+        // APPROACHING now has its own range instead of a multiplier on the
+        // survey pace, because it is a different behaviour and not a faster
+        // version of the same one:
+        //
+        //   aggression 0.0  ->  2.45 m/s   gains 0.30 m/s on a walk
+        //   aggression 1.0  ->  3.10 m/s   gains 0.95 m/s on a walk
+        //   player sprint       3.62 m/s   always wins, and always will
+        //
+        // Committing at 6.5 m and capturing at 1.15 m means the closing window
+        // is about eighteen seconds early on and under six late, which is long
+        // enough to be a decision and short enough to be a bad one to get wrong.
+        // The decision is the point: sprinting outruns it and is loud enough to
+        // refresh the belief it is chasing, walking is quiet and loses ground,
+        // and a locker is now actually a third option (see `hear`).
+        //
+        // Everything else about the design is untouched. It still walks at the
+        // BELIEF rather than at the player, it still cannot corner faster than
+        // 0.85 rad/s, and it is still stone in the dark — `_moveToward` scales
+        // all of this by `lightScale`, so none of these numbers apply in an
+        // unlit room. There is no lunge and no teleport.
+        this._moveToward(dt, this.lastHeard.x, this.lastHeard.z,
+          lerp(2.45, 3.10, this.aggression));
         if (playerDist < 1.15 && this.lightScale > 0.02) {
           this._setState(STATE.CAPTURING);
           break;

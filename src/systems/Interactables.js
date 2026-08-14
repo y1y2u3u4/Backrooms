@@ -2003,6 +2003,9 @@ export function hidingPlace(ctx, {
       if (col) col.enabled = false;
       state.doorTarget = 0;
       hands?.setVisible(false);
+      // The flag the Surveyor reads. It lived only on the Director until now,
+      // which is why the entity never knew: `Surveyor.hear` had no way to ask.
+      player.hidden = true;
       bus?.emit('hide:enter', { id, kind, position: p.clone() });
       return true;
     },
@@ -2021,6 +2024,10 @@ export function hidingPlace(ctx, {
         p.z + Math.cos(rotation) * (D / 2 + 0.55), rotation);
       state.doorTarget = 0.6;
       hands?.setVisible(true);
+      player.hidden = false;
+      // Getting out is loud, and it is loud AFTER the muffle comes off — which
+      // is the whole risk of a locker: you are safe in it and exposed the
+      // moment you leave.
       player.makeNoise(7);
       bus?.emit('hide:exit', { id, kind });
       return true;

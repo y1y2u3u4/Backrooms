@@ -383,5 +383,88 @@ console.log('\nSurveyor — headless state machine checks\n');
     e3?.turn === undefined ? 'no `turn` on the event at all' : `turn=${e3.turn.toFixed(2)} rad`);
 }
 
+// 11. Hiding, and whether the threat can arrive ------------------------------
+//
+// Two behaviours that the game shipped without for the whole of its history, so
+// these are written to fail loudly if either is ever unwired again.
+{
+  console.log('hiding muffles the player');
+
+  // Same noise, same distance, hidden and not. The hearing model is one
+  // expression, so a single multiplier is the whole difference — which is
+  // exactly why it has to be asserted rather than assumed.
+  const { s: sOpen, player: pOpen } = makeEntity({ light: 3, playerAt: [0, 6] });
+  sOpen.spawnAt(0, 0, 0, 0);
+  pOpen.hidden = false;
+  const openStrength = sOpen.hear(new THREE.Vector3(0, 0, 6), 6);
+
+  const { s: sHid, player: pHid } = makeEntity({ light: 3, playerAt: [0, 6] });
+  sHid.spawnAt(0, 0, 0, 0);
+  pHid.hidden = true;
+  const hidStrength = sHid.hear(new THREE.Vector3(0, 0, 6), 6);
+
+  ok('an unhidden noise is heard at all', openStrength > 0.06,
+    `strength ${openStrength.toFixed(3)}`);
+  ok('hiding cuts the same noise down', hidStrength < openStrength * 0.5,
+    `open ${openStrength.toFixed(3)} -> hidden ${hidStrength.toFixed(3)}`);
+  ok('hiding is a muffle, not a mute', hidStrength >= 0 && hidStrength < openStrength,
+    'a locker is a steel box, not silence');
+
+  // The consequence, not just the number: the same cue that rouses an entity
+  // from across a room must fail to rouse it through a locker door.
+  const { s: sR, player: pR } = makeEntity({ light: 3, playerAt: [0, 11] });
+  sR.spawnAt(0, 0, 0, 0);
+  pR.hidden = true;
+  sR.hear(new THREE.Vector3(0, 0, 11), 5);
+  run(sR, 1);
+  ok('a hidden player does not rouse it from across the room',
+    sR.state === STATE.DORMANT, `state ${sR.state}`);
+}
+{
+  console.log('the threat can actually arrive');
+
+  // Player walk is 2.15 m/s and sprint is 3.62 m/s (Player.js). An APPROACHING
+  // Surveyor that cannot exceed the first is scenery; one that exceeds the
+  // second removes the counterplay. Both bounds are asserted, because the whole
+  // design of the encounter lives between them.
+  const WALK = 2.15, SPRINT = 3.62;
+  // The player is parked far off the entity's line. The first version of this
+  // put them at (0, 4) with the belief at (0, 40), so the entity walked THROUGH
+  // them, tripped `playerDist < 1.15`, entered CAPTURING and damped to a stop —
+  // and the check read 0.20 m/s and called the fix absent. The measurement was
+  // wrong, not the change; a speed test has to measure a state the entity is
+  // still in.
+  const topSpeed = (aggression) => {
+    const { s } = makeEntity({ light: 5, playerAt: [200, 200] });
+    s.spawnAt(0, 0, 0, 0);
+    s.aggression = aggression;
+    s.confidence = 1;
+    s.lastHeard.set(0, 0, 40);
+    s._setState(STATE.APPROACHING);
+    // Long enough for the speed damp and the turn penalty to settle.
+    run(s, 6);
+    if (s.state !== STATE.APPROACHING) return NaN;   // measured the wrong state
+    return s.speed;
+  };
+  const slow = topSpeed(0), fast = topSpeed(1);
+  ok('at rest aggression it still gains on a walking player', slow > WALK,
+    `${slow.toFixed(2)} m/s vs a ${WALK} m/s walk`);
+  ok('at full aggression it is faster still', fast > slow,
+    `${slow.toFixed(2)} -> ${fast.toFixed(2)} m/s`);
+  ok('a sprinting player always outruns it', fast < SPRINT,
+    `${fast.toFixed(2)} m/s vs a ${SPRINT} m/s sprint`);
+
+  // And none of it applies in the dark. The light rule outranks the chase.
+  const { s: sDark } = makeEntity({ light: 0, playerAt: [200, 200] });
+  sDark.spawnAt(0, 0, 0, 0);
+  sDark.aggression = 1;
+  sDark.confidence = 1;
+  sDark.lastHeard.set(0, 0, 40);
+  sDark._setState(STATE.APPROACHING);
+  run(sDark, 4);
+  ok('an approach in darkness still goes nowhere', sDark.speed < 0.01,
+    `${sDark.speed.toFixed(3)} m/s`);
+}
+
 console.log(`\n${passed} passed, ${failed} failed\n`);
 process.exit(failed ? 1 : 0);
