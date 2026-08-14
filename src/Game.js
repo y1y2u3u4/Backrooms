@@ -72,6 +72,28 @@ export class Game {
     this.ready = false;
     this.state = 'boot';        // boot | menu | play | cine | dead | ended
     this.qa = new URLSearchParams(location.search).get('qa') === '1';
+    /**
+     * THE RUN SEED. Not the layout seed.
+     *
+     * `World` builds from a fixed 20240607 and it stays fixed: the eight zones
+     * are art-directed, every QA baseline in `docs/captures` is measured against
+     * that geometry, and re-rolling it would throw away the thing this project is
+     * good at in exchange for the thing it is worst at. The building is the same
+     * building every night.
+     *
+     * What is different every night is what is wrong with it. This seed drives
+     * the Director — when the Surveyor first appears, where it is put, which
+     * beats fire and in what order, how long it measures for — so two runs
+     * through identical architecture are not the same run.
+     *
+     * **Fixed under `qa=1`.** Every tool in `tools/qa` boots with that flag, so
+     * the whole suite stays deterministic and every recorded number keeps
+     * meaning what it meant, with no change to any of them. `?run=N` pins it by
+     * hand for reproducing a specific session.
+     */
+    const runParam = new URLSearchParams(location.search).get('run');
+    this.runSeed = this.qa ? 0xd12ec7
+      : (runParam ? (parseInt(runParam, 10) >>> 0) : ((Math.random() * 0xffffffff) >>> 0));
     this.subsystems = {};
   }
 

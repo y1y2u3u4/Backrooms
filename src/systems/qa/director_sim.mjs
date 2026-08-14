@@ -274,5 +274,83 @@ console.log('\nDirector — headless pacing checks\n');
     beats.length === 0, `${beats.length} beats inside a 30 s grace: ${beats.map((b) => `${b.t}s ${b.name}`).join(', ')}`);
 }
 
+// Dying costs something -----------------------------------------------------
+//
+// Death used to cost twenty seconds: the autosave floor. The whole reason a
+// player stops being frightened of a monster is that being caught turns out not
+// to matter, so this asserts the price and asserts that paying it does not
+// destroy the run.
+{
+  console.log('dying costs the thing you were carrying');
+
+  const bus = new Bus();
+  const player = { position: new THREE.Vector3(4, 0, -7), makeNoise() {}, kick() {}, fear: 0 };
+  let dropped = null;
+  bus.on('item:drop', (e) => { dropped = e; });
+
+  // A minimal inventory that behaves like the real one for this one verb.
+  const inventory = {
+    encumbered: true,
+    get handsFull() { return this.encumbered; },
+    dropCarried(pos) {
+      if (!this.encumbered) return null;
+      this.encumbered = false;
+      bus.emit('item:drop', { id: 'fuse_core', position: pos });
+      return 'fuse_core';
+    },
+  };
+  const d = new Director({ player, rig: makeRig(), bus, surveyor: null, inventory, seed: 3 });
+  d.onDeath({ cause: 'surveyor' });
+
+  ok('the carried core leaves your hands', inventory.encumbered === false);
+  ok('and an item:drop is announced', !!dropped, 'nothing would put it back in the world');
+  ok('it lands where the player fell', !!dropped?.position
+    && Math.hypot(dropped.position.x - 4, dropped.position.z + 7) < 0.01,
+    dropped?.position ? `at ${dropped.position.x}, ${dropped.position.z}` : 'no position on the event');
+
+  // Empty-handed death must not invent an item, and must not throw.
+  const bus2 = new Bus();
+  let dropped2 = null;
+  bus2.on('item:drop', (e) => { dropped2 = e; });
+  const inv2 = { encumbered: false, get handsFull() { return false; }, dropCarried() { return null; } };
+  const d2 = new Director({
+    player: { position: new THREE.Vector3(), makeNoise() {}, kick() {}, fear: 0 },
+    rig: makeRig(), bus: bus2, surveyor: null, inventory: inv2, seed: 3,
+  });
+  d2.onDeath({ cause: 'fall' });
+  ok('dying empty-handed drops nothing', dropped2 === null);
+  ok('and still counts as a death', d2.deaths === 1, `deaths = ${d2.deaths}`);
+}
+
+// The run seed makes a run ------------------------------------------------
+//
+// Every run of this game used the same building AND the same director seed, so
+// two sessions through identical architecture were the same session. The
+// geometry stays fixed on purpose — it is art-directed and every QA baseline is
+// measured against it — but what is wrong with the building tonight should not
+// be.
+{
+  console.log('two runs are not the same run');
+
+  const mk = (seed) => new Director({
+    player: { position: new THREE.Vector3(), makeNoise() {}, kick() {}, fear: 0 },
+    rig: makeRig(), bus: new Bus(), surveyor: null, seed,
+  });
+
+  const a = mk(1), b = mk(2), a2 = mk(1);
+  ok('the first appearance is not a constant',
+    Math.abs(a.firstSpawnAt - b.firstSpawnAt) > 0.5,
+    `${a.firstSpawnAt.toFixed(1)}s vs ${b.firstSpawnAt.toFixed(1)}s`);
+  ok('the same seed reproduces the same run exactly',
+    a.firstSpawnAt === a2.firstSpawnAt,
+    `${a.firstSpawnAt} vs ${a2.firstSpawnAt}`);
+  // The player's opening still belongs to the player, whatever the roll.
+  const many = Array.from({ length: 64 }, (_, i) => mk(i * 7919 + 3).firstSpawnAt);
+  ok('it never appears in the first eighteen seconds', Math.min(...many) >= 18,
+    `earliest ${Math.min(...many).toFixed(1)}s`);
+  ok('and never later than the Director would notice', Math.max(...many) <= 34,
+    `latest ${Math.max(...many).toFixed(1)}s`);
+}
+
 console.log(`\n${passed} passed, ${failed} failed\n`);
 process.exit(failed ? 1 : 0);

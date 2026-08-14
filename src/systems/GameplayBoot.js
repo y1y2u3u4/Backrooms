@@ -81,6 +81,10 @@ export async function installGameplay(game, {
 
   const director = new Director({
     player, rig, bus, surveyor: entity, attendant, flashlight, inventory, interactor,
+    // The run seed. `Game` fixes it under `qa=1` so the whole suite stays
+    // deterministic, and rolls it otherwise — see the long note there. The
+    // building is the same building every night; what is wrong with it is not.
+    seed: game.runSeed ?? 0xd12ec7,
   });
   const progression = new Progression({
     bus, inventory, notes, interactables, interactor, director, player,
@@ -99,6 +103,28 @@ export async function installGameplay(game, {
       entity ? entity.loadModel(assets).catch(() => false) : Promise.resolve(false),
     ]);
   }
+
+  // A DROPPED THING HAS TO STILL BE THERE.
+  //
+  // `Inventory.dropCarried` emits `item:drop` and nothing in the tree listened,
+  // so anything dropped left the player's hands and left the world at the same
+  // time. It had no callers either, so nobody had found out — until dying while
+  // carrying a fuse core became the cost of dying, at which point a silently
+  // vanishing core would make the run unwinnable and the save would carry the
+  // loss forward.
+  //
+  // Put it back where it fell, as a real pickup with a real collider, slightly
+  // off the exact death spot so it is never inside the respawning player.
+  bus.on('item:drop', (e) => {
+    const p = e?.position;
+    if (!p || !e?.id) return;
+    interactables.spawn('pickup', {
+      id: `${e.id}_dropped_${Math.round(p.x * 10)}_${Math.round(p.z * 10)}`,
+      item: e.id,
+      position: [p.x, Math.max(0, (p.y ?? 0)) + 0.02, p.z],
+      rotation: Math.atan2(p.x, p.z),
+    });
+  });
 
   if (seedDemo) seedIntakeDemo(ctx, { director, progression, attendant, entity });
 

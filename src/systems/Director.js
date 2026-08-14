@@ -134,7 +134,20 @@ export class Director {
     // ---- runtime ----
     this.time = 0;
     // Seconds before the Surveyor is first placed in the world. See _ensureSpawned.
-    this.firstSpawnAt = 22;
+    /**
+     * WHEN IT FIRST APPEARS, AND IT IS NOT ALWAYS THE SAME.
+     *
+     * A fixed 22 s meant every run had an identical opening: the same silence,
+     * the same length of it, and — once a player had died twice — the same
+     * moment to brace for. Knowing exactly when the game is going to start
+     * being a game is most of the way to it stopping being frightening.
+     *
+     * The band is 18 to 34 seconds off the run seed, which under `qa=1` is
+     * fixed, so every recorded number and every simulation still lands where it
+     * did. The floor is not lower than 18: the first seconds of a session
+     * belong to the player, and that has not changed.
+     */
+    this.firstSpawnAt = 18 + this.rng() * 16;
     this.firstSpawnRange = 26;
     /** Where it reappears when the player changes zone. See the `zone:enter`
      *  handler — without this it stays in the room it was first placed in. */
@@ -479,6 +492,30 @@ export class Director {
     if (this.dying > 0) return;
     this.deaths++;
     this.dying = this.respawnDelay;
+
+    // YOU DROP WHAT YOU WERE CARRYING, WHERE YOU FELL.
+    //
+    // Death used to cost twenty seconds. The game autosaves on a 20 s floor and
+    // respawns you in the Office of Record with your inventory intact, so being
+    // caught was an inconvenience with a loading screen — and a threat with no
+    // stake is a threat the player stops respecting about ten minutes in. That
+    // is most of what people mean when they say a horror game is not tense.
+    //
+    // The fuse cores are the run's currency: three of them, one at a time,
+    // 22 kg each, and carrying one halves your speed and takes both hands. So
+    // the cost of dying is the walk back — into the room that just killed you,
+    // where the thing that killed you is now more aggressive, to pick up the
+    // thing you already earned. Nothing is destroyed and nothing is taken away
+    // permanently; the punishment is distance and the knowledge of what is
+    // between you and it.
+    //
+    // `dropCarried` has existed since the inventory was written and had no
+    // caller anywhere in the tree, so this is the verb finally being used —
+    // and its `item:drop` event had no listener either, which meant a dropped
+    // core simply ceased to exist. Both halves are wired here.
+    const dropped = this.inventory?.dropCarried?.(this.player?.position?.clone?.());
+    if (dropped) this.bus.emit('progress:hint', { text: 'You let go of it as you fell.' });
+
     this.player.frozen = true;
     this.player.controlEnabled = false;
     this.bus.emit('cine:begin', { name: 'death', cause });
