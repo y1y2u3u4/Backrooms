@@ -797,6 +797,87 @@ export function emergencyLight(b, rig, x, y, z, { yaw = 0, circuit = 'emergency'
   return f;
 }
 
+/**
+ * Illuminated running-man exit sign, on the always-live emergency circuit.
+ *
+ * WHY THIS EXISTS. An exploration bot given no route, no zone list and no
+ * objectives spent **74.4 %** of a nine-minute session with nothing in view it
+ * could steer by, completed no objective at all, and reached two of the eight
+ * zones. Wayfinding was the worst-scoring dimension in the last independent
+ * assessment, at 3 out of 10, and it is the reason a player quits before the
+ * building has had a chance to frighten them: being lost with nothing to aim at
+ * is not tension, it is boredom wearing tension's coat.
+ *
+ * This is what a real building does about it, and this building already has the
+ * fiction for it — an emergency circuit that is live when everything else is
+ * dead. A sign is not a marker floating in space or a quest arrow: it is a
+ * 300 x 150 box screwed over a door, lit from inside, green because that is what
+ * the regulations say, and pointing the way somebody decided you should run
+ * thirty years ago. It reads at forty metres down a spine and it reads in a
+ * blackout, which is the one time the player most needs it and the one time this
+ * building offered nothing at all.
+ *
+ * `dir` is -1 for an arrow to the left, +1 to the right, 0 for straight through.
+ */
+export function exitSign(b, rig, x, y, z, { yaw = 0, dir = 0, circuit = 'emergency', seed = 1, health = 'good' } = {}) {
+  // SHARES THE EMERGENCY FITTING'S BATCHES ON PURPOSE.
+  //
+  // A distinct `exitBody` material key and a distinct `exitSign` tube key cost
+  // **five draw calls** — one body batch per chunk plus one emissive batch —
+  // and that was five whether there were seven signs or five, because the cost
+  // is per batch and not per sign. It took `npm run perf` from 179 to 184
+  // against a budget of 180. These are painted-metal boxes with a green lit
+  // face screwed to a soffit, which is precisely what `emergencyLight` already
+  // is, so they merge into its batches and cost nothing at all.
+  const mat = b.mat('emergBody', () => b.materials.get('doorPaint', {
+    repeat: [2.5, 2.5], color: 0xcfcabb, metalness: 0, roughness: 0.5,
+    dirtAmount: 0.5, detailStrength: 0.2, envMapIntensity: 0.5,
+  }));
+  const W = 0.30, H = 0.15, D = 0.055;
+  const parts = [];
+  // Housing, and the stem that hangs it off the soffit.
+  const body = box(W, H, D, 0.006, 1);
+  parts.push(body);
+  const stem = box(0.02, 0.09, 0.02, 0.003, 1);
+  stem.translate(0, H / 2 + 0.045, 0);
+  parts.push(stem);
+  const hg = merge(parts);
+  hg.rotateY(yaw); hg.translate(x, y, z);
+  worldUV(hg, 0.25); whiteColors(hg);
+  b.add('emergBody', hg, () => mat);
+
+  const f = rig.add({ type: 'emergency', position: [x, y, z], rotation: yaw, circuit, health, seed });
+  // The lit face, both sides, so the sign reads from either direction along a
+  // corridor. A sign you can only see from one side is half a sign.
+  f.tube = b.tube('emergency', () => {
+    const faces = [];
+    for (const sz of [-1, 1]) {
+      const panel = box(W - 0.03, H - 0.03, 0.004, 0.002, 1);
+      panel.translate(0, 0, sz * (D / 2 + 0.002));
+      faces.push(panel);
+      // The arrow, as a solid chevron block offset to one side of the panel.
+      // At the size this occupies on screen the direction is all that survives,
+      // so it is carried by position rather than by a glyph.
+      if (dir !== 0) {
+        const chev = box(0.055, H - 0.06, 0.006, 0.002, 1);
+        chev.translate(dir * (W * 0.30) * (sz > 0 ? 1 : -1), 0, sz * (D / 2 + 0.004));
+        faces.push(chev);
+      }
+    }
+    return merge(faces);
+  }, 0x9dffbe, [x, y, z], yaw);
+  // It washes the soffit and the head of the doorway under it rather than the
+  // floor: an exit sign is a beacon, not a downlight.
+  f.target.position.set(0, -0.35, 1.6);
+  f.intensityScale = 0.55;
+  // Tagged after construction because `Fixture` destructures a fixed option
+  // list and drops anything else. QA reads this: a sign is a navigational cue
+  // and an emergency bulkhead is not, and nothing could tell them apart.
+  f.signKind = 'exit';
+  f.signDir = dir;
+  return f;
+}
+
 // ---------------------------------------------------------------------------
 // misc structure
 // ---------------------------------------------------------------------------

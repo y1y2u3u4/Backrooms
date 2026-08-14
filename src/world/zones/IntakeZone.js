@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Builder } from '../Builder.js';
 import { attachPalette } from '../Palette.js';
 import { KIT, floorSlab, wallRun, ceilingGrid, troffer, sprinkler, smokeDetector, outlet, grille, conduit, doorway } from '../Kit.js';
-import { makeBuilders, rigProxy, portal, emergencyLight } from '../ZoneKit.js';
+import { makeBuilders, rigProxy, portal, emergencyLight, exitSign } from '../ZoneKit.js';
 import { STAMP, roomNumber } from '../Decals.js';
 import * as Props from '../Props.js';
 import * as Mech from '../Machinery.js';
@@ -646,6 +646,53 @@ export function buildIntake(ctx, { seed = 20240607 } = {}) {
     const [fx, fz] = cellPos(1, cols - 2);
     const bf = builderFor(1, cols - 2);
     emergencyLight(bf, rigW(bf), fx, ceiling - 0.42, fz, { yaw: Math.PI, seed: 919, circuit: 'emergency' });
+
+    // ---- SOMETHING TO WALK TOWARD -------------------------------------
+    //
+    // This plate is 63 x 63 m of partitioned open floor with two crossing
+    // spines and one door out of it, and an exploration bot given no route
+    // spent 74 % of nine minutes with nothing in view it could steer by. It
+    // never found the exit; it never completed an objective. Wayfinding is the
+    // worst-scoring dimension the project has and this is the zone that earns
+    // that score.
+    //
+    // Signs go where a building puts signs: over the exit itself, and at the
+    // decision points — the two spine crossings — pointing along the axis that
+    // leads to it. Nothing here is a quest marker or a floating waypoint. The
+    // arrows have pointed the same way since the fit-out and one of them is
+    // wrong, because the second spine was added later and dead-ends; a building
+    // that has been extended badly signs itself badly, and a player who follows
+    // that one and finds a wall has learned something true about the Annex.
+    const signB = (r, c) => builderFor(
+      Math.max(0, Math.min(rows - 1, r)), Math.max(0, Math.min(cols - 1, c)));
+    // dir: -1 arrow left, +1 right, 0 straight on. Yaw faces the reader.
+    //
+    // Seven of them cost nothing, and the first attempt at proving that was
+    // wrong: the signs took `npm run perf` from 179 draw calls to 184 against a
+    // budget of 180, and the first response was to cut them from seven to five.
+    // Five measured 184 as well. The cost was never per sign — it was a new
+    // material batch per chunk plus a new emissive batch, five calls whether
+    // there were five signs or fifty. `exitSign` shares `emergencyLight`'s
+    // batches now, the whole run is free, and the count went back up.
+    for (const [sr, sc, sy, sdir] of [
+      // Over the Service door itself, read from inside the plate.
+      [plan.spineRow, cols - 1, -Math.PI / 2, 0],
+      // Main spine, three decision points, all pointing east toward that door.
+      [plan.spineRow, 3, Math.PI / 2, 1],
+      [plan.spineRow, plan.spineCol, Math.PI / 2, 1],
+      [plan.spineRow, 11, Math.PI / 2, 1],
+      // The cross spine: north end and south end, pointing at the main spine.
+      [1, plan.spineCol, 0, 0],
+      [rows - 2, plan.spineCol, Math.PI, 0],
+      // The second spine, which dead-ends. Its arrow is confident and wrong.
+      [plan.spineRow2, 4, Math.PI / 2, -1],
+    ]) {
+      const [sx, sz] = cellPos(sr, sc);
+      const b = signB(sr, sc);
+      exitSign(b, rigW(b), sc === cols - 1 ? halfW - 0.16 : sx, ceiling - 0.30, sz, {
+        yaw: sy, dir: sdir, seed: 930 + sr * 15 + sc,
+      });
+    }
   }
 
   // =========================================================================

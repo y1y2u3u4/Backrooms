@@ -92,6 +92,9 @@ const FILM = parseFloat(args.film || '60');
 const SAMPLE = parseFloat(args.sample || '1');
 const RENDER_EVERY = Math.max(1, parseInt(args.renderEvery || '32', 10));
 const LIVE_AUDIO = !args['no-audio'];
+// `--follow-signs`: let the walker steer by the exit signage. Off by default so
+// every historical run of this tool stays comparable — see `chooseHeading`.
+const FOLLOW_SIGNS = !!args['follow-signs'];
 const BOOT_TIMEOUT = parseInt(args.timeout || '420000', 10);
 const CHUNK = Math.max(1, Math.round(SAMPLE / DT));
 
@@ -208,6 +211,18 @@ export function stalls(samples, radius = STALL_RADIUS, minSeconds = STALL_SECOND
 }
 
 /** Contiguous runs with nothing interactable and no door visible or in reach. */
+/**
+ * Time with nothing to steer by, counting signage as well as interactables.
+ *
+ * `cueless` below is the original and is deliberately untouched — it counts only
+ * things the player can operate, which is what every previous run of this tool
+ * measured, and changing it would make the number that motivated the fix
+ * incomparable with the number that shows it worked. Both are reported.
+ */
+export function cuelessOrSignless(samples, sampleDt) {
+  return cueless(samples.map((s) => ({ ...s, cue: (s.cue || 0) + (s.signs || 0) })), sampleDt);
+}
+
 export function cueless(samples, sampleDt) {
   const runs = [];
   let cur = null;
@@ -653,6 +668,49 @@ function installDriver(cfg) {
     return out.sort((a, b) => a.d - b.d);
   };
 
+  /**
+   * Signage in view. Counted SEPARATELY from interactables, and reported
+   * separately, because they are not the same claim.
+   *
+   * `EX.visible()` counts things you can operate. That is the right denominator
+   * for "is there anything to do here" and it was being read as the answer to
+   * "is there anything to walk toward", which is a different question — a lit
+   * exit sign at the end of a spine is the strongest navigational cue a building
+   * has and it is not an interactable. The old number is left exactly as it was
+   * so the two runs stay comparable; this is an addition, not a redefinition.
+   */
+  EX.followSigns = !!cfg.followSigns;
+  EX._signCache = [];
+
+  EX.visibleSigns = () => {
+    const p = g.player.position, ey = eyeY(), yaw = g.player.yaw;
+    const fx = -Math.sin(yaw), fz = -Math.cos(yaw);
+    const cosH = Math.cos(halfFov() + 0.09);
+    const out = [];
+    for (const f of g.rig?.fixtures || []) {
+      if (f.signKind !== 'exit') continue;
+      // An unlit sign is not a cue. Signs sit on the emergency circuit, so this
+      // is normally true — but if a way is dead the sign goes with it.
+      if ((f.level ?? 0) < 0.05) continue;
+      const q = f.group.position;
+      const dx = q.x - p.x, dz = q.z - p.z;
+      const flat = Math.hypot(dx, dz);
+      const dist = Math.hypot(dx, q.y - ey, dz);
+      // Signs are lit and read further than a prop does. 40 m is a spine.
+      if (dist > 40 || flat < 1e-3) continue;
+      if ((fx * dx + fz * dz) / flat < cosH) continue;
+      const t = Math.max(0, (dist - 0.45) / dist);
+      if (g.collision.segmentBlocked(p.x, ey, p.z,
+        p.x + dx * t, ey + (q.y - ey) * t, p.z + dz * t, 'ceiling')) continue;
+      out.push({ d: dist, dir: f.signDir ?? 0, x: q.x, z: q.z });
+    }
+    out.sort((a, b) => a.d - b.d);
+    // The heading chooser runs far more often than a sample does, so it reads a
+    // cache rather than re-tracing every sightline sixteen times a decision.
+    EX._signCache = out.slice(0, 3);
+    return out;
+  };
+
   // ---- MEASUREMENT: the coverage denominator ------------------------------
   // Built from `collision.floors` the first time a zone is resident. The bot
   // does not read this; it is the ruler, not the map.
@@ -732,8 +790,35 @@ function installDriver(cfg) {
       let rec = 0;
       for (const r of EX.recent) rec += Math.max(0, 1 - Math.abs(wrap(a - r)) / 0.6);
       const turn = Math.abs(wrap(a - (bias ?? g.player.yaw)));
+      // OPTIONAL: STEER BY THE SIGNAGE.
+      //
+      // Off by default, and that matters. The heading chooser is the walker's
+      // whole personality, so changing it changes every number this tool has
+      // ever produced; the historical runs measured a bot with no goal term at
+      // all, and its own source says so. `--follow-signs` adds one, and it is
+      // the honest way to answer a question the default bot structurally cannot:
+      // "there are signs now" and "the signs lead somewhere" are different
+      // claims, and only a walker that reads them can test the second.
+      //
+      // What it steers by is the BEARING TO THE SIGN plus its arrow, not a
+      // waypoint: a sign 30 m down a spine with a right-pointing chevron pulls
+      // the heading toward the sign, and once you are under it, to the right.
+      // If the signs are hung facing the wrong way or pointing at a dead end,
+      // this makes the bot slower rather than faster — which is exactly the
+      // failure mode a placement test has to be able to report.
+      let sign = 0;
+      if (EX.followSigns) {
+        for (const sg of EX._signCache || []) {
+          const toSign = Math.atan2(-(sg.x - p.x), -(sg.z - p.z));
+          const near = sg.d < 4;
+          const want = near ? toSign + (sg.dir || 0) * (Math.PI / 2) : toSign;
+          // Weight by proximity: a sign you are standing under is an
+          // instruction, one at forty metres is a suggestion.
+          sign += Math.max(0, 1 - Math.abs(wrap(a - want)) / 0.9) * (near ? 1.6 : 0.9);
+        }
+      }
       const s = nov * 4.0 + Math.min(o.d, LOOK) * 0.30 - turn * 0.55 - rec * 1.1
-        + (EX.rand() - 0.5) * 0.5;
+        + sign * 2.2 + (EX.rand() - 0.5) * 0.5;
       if (s > score) { score = s; best = a; bestOpen = o.d; bestNov = nov; }
     }
     return { yaw: best, open: bestOpen, novelty: bestNov };
@@ -1022,7 +1107,12 @@ function installDriver(cfg) {
       yaw: +g.player.yaw.toFixed(2),
       // THE NAVIGATIONAL-CUE METRIC. `cue` is the count of interactables and
       // doors either on screen with a clear sightline or literally within reach.
+      // Unchanged, so runs stay comparable across the life of the tool.
       cue: seen.length,
+      // Lit exit signs in view. Separate, because a thing you can walk toward
+      // and a thing you can operate are different claims — and for a lost
+      // player the first one is the whole question.
+      signs: (EX.visibleSigns?.() || []).length,
       cueNearest: seen.length ? +seen[0].d.toFixed(1) : null,
       doorsInView: seen.filter((v) => v.kind === 'door').length,
       focus: g.interactor?.focus?.id || null,
@@ -1125,7 +1215,8 @@ async function main() {
   console.log(`  booted in ${(bootMs / 1000).toFixed(1)}s`);
 
   const install = await page.evaluate(installDriver,
-    { renderEvery: RENDER_EVERY, cell: CELL, ycell: YCELL, seed: parseInt(args.seed || '20260731', 10) });
+    { renderEvery: RENDER_EVERY, cell: CELL, ycell: YCELL, followSigns: FOLLOW_SIGNS,
+      seed: parseInt(args.seed || '20260731', 10) });
   console.log(`  bot installed; zone=${install.zone} spawn=[${install.spawn.map((v) => v.toFixed(1)).join(', ')}]`
     + `  (${install.items} interactables registered — the bot is told about none of them)`);
 
@@ -1217,6 +1308,7 @@ async function main() {
   const lost = lostStretches(H.cellLog, H.simSeconds);
   const st = stalls(S);
   const cl = cueless(S, SAMPLE);
+  const cls = cuelessOrSignless(S, SAMPLE);
   const zt = perZone(S, H.cellLog, H.walkable, SAMPLE, H.interactions, H.events);
 
   const completions = H.events.filter((e) => e.key === 'progress:complete');
@@ -1316,7 +1408,8 @@ async function main() {
     generated: new Date().toISOString(),
     config: { quality: QUALITY, width: WIDTH, height: HEIGHT, dt: DT, seconds: SECONDS,
       sampleEvery: SAMPLE, filmEvery: FILM, renderEvery: RENDER_EVERY, liveAudio: LIVE_AUDIO,
-      cell: CELL, ycell: YCELL, seed: parseInt(args.seed || '20260731', 10) },
+      cell: CELL, ycell: YCELL, followSigns: FOLLOW_SIGNS,
+      seed: parseInt(args.seed || '20260731', 10) },
     boot: { ms: bootMs, audioInit },
     frames: H.frames, simSeconds: +H.simSeconds.toFixed(2), wallMs,
     checks, metrics,
@@ -1367,6 +1460,7 @@ async function main() {
   L.push(`| Revisit rate | **${pctS(rev.rate)}** — ${rev.revisits} of ${rev.entries} cell entries were somewhere it had already been |`);
   L.push(`| Longest stretch with nowhere new | **${lost.longest ? num(lost.longest.seconds, 1) + ' s' : '—'}**${lost.longest ? ` (${fmt(lost.longest.from)} → ${fmt(lost.longest.to)}), at ${pos3(lost.longest.at)} in \`${lost.longest.zone}\`${lost.longest.tail ? ' — and it never recovered' : ''}` : ''} |`);
   L.push(`| No navigational cue in sight | **${pctS(cl.fraction)}** of the session (${num(cl.totalSeconds, 0)} s), longest run ${cl.longest ? num(cl.longest.seconds, 0) + ' s' : '0 s'} |`);
+  L.push(`| ...counting lit exit signs too | **${pctS(cls.fraction)}** (${num(cls.totalSeconds, 0)} s), longest run ${cls.longest ? num(cls.longest.seconds, 0) + ' s' : '0 s'} |`);
   L.push(`| Zones reached | **${distinctZones.size} of 8** — ${[...distinctZones].join(', ')} |`);
   L.push(`| Ground covered | ${num(H.distance, 0)} m |`);
   L.push(`| Interactables operated | ${operated.length} operated, ${refused.length} refused, ${unreachable.length} seen but never reached |`);
