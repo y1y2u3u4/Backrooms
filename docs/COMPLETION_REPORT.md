@@ -2514,3 +2514,121 @@ already been bitten by culling this viewmodel. `cover_L` and `reach_L` sit at
 pop. The correct version tests projected bounds per frame with a margin rather
 than switching on pose name, and that deserves its own pass with its own
 before/after frames.
+
+---
+
+## 18. The four things that were stopping it being frightening
+
+An independent assessment scored this 45/100 and named the reasons. Thirteen days
+later I checked each against current source before touching anything, and the two
+worst were true to the character.
+
+### 1. The monster could not catch anybody
+
+```
+APPROACHING ran at baseSpeed * 1.12 = 1.39 m/s at full aggression
+player walk                            2.15 m/s
+player sprint                          3.62 m/s
+```
+
+It could not close on anybody who kept moving, in any state, ever. The three
+deaths in the last exploration session all happened after the bot had stopped.
+Every hour of atmosphere in this building was being spent on a player who had
+worked that out.
+
+APPROACHING has its own range now — 2.45 m/s at rest aggression to 3.10 at full,
+against a 3.62 sprint that always wins. Committing at 6.5 m and capturing at
+1.15 m makes the closing window eighteen seconds early and under six late. The
+decision is the point: sprinting outruns it and is loud enough to refresh the
+belief it is chasing, walking is quiet and loses ground, and a locker is now a
+third option. It still walks at the belief rather than at the player, still turns
+at 0.85 rad/s, still stone in the dark.
+
+### 2. Hiding did nothing
+
+Thirteen locker references across the zones, a `hide:enter` event, a UI prompt,
+an audio cue, a thirty-second Director grace — and `grep -c hidden
+src/entities/Surveyor.js` returned **0**. The one system the verb exists to
+affect had never been told. Climbing into a locker raised your fear by 0.30 and
+changed your odds by nothing.
+
+`player.hidden` is a declared field now, and `hear()` multiplies strength by 0.18
+while it is set — a muffle through the same expression every other cue uses, not
+a mute, because a steel door is not silence. Getting out is loud, and loud after
+the muffle comes off.
+
+### 3. Dying cost twenty seconds
+
+The autosave floor. You now drop what you were carrying, where you fell. The
+cores are the currency, so the cost of dying is the walk back into the room that
+killed you, to pick up what you had already earned. `Inventory.dropCarried` had
+no caller anywhere in the tree and its `item:drop` had no listener, so a dropped
+core would have left the world — both halves are wired, or the run would be
+unwinnable.
+
+### 4. Every run was the same run
+
+The layout seed stays fixed and should: the zones are art-directed and every
+baseline in `docs/captures` is measured against that geometry. `Game.runSeed` is
+a second seed for the Director — first appearance now 18–34 s instead of a
+constant 22 — fixed under `qa=1` so the whole suite stays deterministic with no
+change to any tool.
+
+### And the wayfinding, which is why players leave before any of that matters
+
+74.4 % of an unguided session with nothing in view to steer by. `exitSign` is a
+lit box on the always-live emergency circuit, seven of them in the Intake, one
+pointing down the spine that dead-ends because a building extended badly signs
+itself badly.
+
+| run | cueless | cueless counting signs | time to leave the Intake |
+|---|---|---|---|
+| explore4, before | 74.4 % | 74.4 % | 359 s |
+| explore5, signs, bot ignores them | 77.0 % | **44.3 %** | 241 s |
+| explore6, signs, bot reads them | 73.1 % | 48.5 % | **165 s** |
+
+`explore5` and `explore6` are the same build and the same seed and differ only in
+`--follow-signs`. A walker that reads the signage leaves the starting zone **32 %
+faster**, which is the placement being tested rather than assumed — signs hung
+facing the wrong way would make that number worse.
+
+### Three broken promises, closed
+
+`ENDINGS.DESCENDED` was unreachable for the life of the project; the shaft has a
+floor beneath the Plant now and a dead car can be released onto its brake. The
+pry bar opened nothing in a real run — the only `variant: 'jammed'` in the tree
+is in a demo bench that never ships — so R-207 is `pryable`, at a noise of 16
+against a footstep's 4. `keys_ring` and `card_contractor` had definitions,
+builders, blurbs and a written payoff line, and no spawn site: one is in lost
+property and the other is what you walked in with.
+
+### Everything above is asserted
+
+26 new checks across `surveyor_sim`, `director_sim` and `chain`, each written so
+it fails if its fix is absent, and each verified that way by stashing the change:
+
+| suite | before | after |
+|---|---|---|
+| surveyor | 47 | **55** |
+| director | 10 | **19** |
+| chain | 106 | **122** |
+
+Four of them were wrong first and had to be fixed before they were evidence: a
+speed test that walked the entity into the player and measured CAPTURING; latch
+tests that read a door the harness had already unlocked; lift checks that threw
+instead of failing on an old build. A suite that crashes says less than one that
+names the untrue claim.
+
+`npm run perf`: 179 draw calls of 180, and all six budgets pass — the signage
+cost five calls until it shared `emergencyLight`'s batches, and the first
+response to that was to delete two signs, which measured exactly the same because
+the cost was per batch and not per sign.
+
+### What is still true
+
+The exploration bot completes no objective and reaches two of eight zones.
+Beyond the Service Spine the route needs breakers and cores, which a wanderer
+will not do — a different problem from being lost, and not one signage fixes.
+And nobody has played this. Every judgement above is a measurement or a
+simulation; the next most valuable hour anyone can spend on this project is an
+hour with a headset on.
