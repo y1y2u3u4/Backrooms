@@ -46,7 +46,9 @@ export async function installGameplay(game, {
   const materials = game.materials;
 
   // ---- player-side systems --------------------------------------------------
-  const notes = new NotesLibrary(bus);
+  // The notes carry this run's facts — the open-day date on the poster, and so
+  // the terminal code derived from it. See `runFacts`.
+  const notes = new NotesLibrary(bus, { seed: game.runSeed ?? 0xd12ec7 });
   const inventory = new Inventory({ bus, player });
   // YOUR OWN CARD. `card_contractor`'s blurb reads "Your own. Issued March. It
   // opens less than you were told it would", the card reader carries a written

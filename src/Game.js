@@ -153,6 +153,10 @@ export class Game {
     this.motes = new Motes({ count: this.engine.q.motes ?? 2600 }).addTo(this.engine.scene);
 
     this.ctx = {
+      // Zones read this for anything that should differ between runs while the
+      // geometry stays identical — the terminal code, the open-day date. See
+      // `runFacts` in Notes.js.
+      runSeed: this.runSeed,
       materials: this.materials,
       collision: this.collision,
       rig: this.rig,

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { runFacts } from '../../systems/Notes.js';
 import { KIT, floorSlab, wallRun, doorway, outlet, smokeDetector } from '../Kit.js';
 import {
   makeBuilders, rigProxy, portal, pendant, bulkhead, emergencyLight,
@@ -123,6 +124,9 @@ function cornice(b, rect, y, { key = 'trim' } = {}) {
 
 export function buildResidence(ctx, opts = {}) {
   const { rig, decals } = ctx;
+  // This run's facts — the terminal code and the open-day date the poster
+  // carries. Fixed to the authored 2130 under `qa=1`; see `runFacts`.
+  const RUN = runFacts(ctx.runSeed);
   const seed = opts.seed ?? 6600;
   const rng = makeRng(seed);
   const D = decals || ctx.world?.decals;
@@ -611,7 +615,7 @@ export function buildResidence(ctx, opts = {}) {
       kind: 'keypad', id: 'keypad_r207',
       position: [r207.doorX - 0.72, 1.28, r207.zSide + (r207.north ? -0.08 : 0.08)],
       rotation: r207.north ? Math.PI : 0,
-      code: '2130', label: 'the R-207 keypad', hintNote: 'nb_5', unlocks: 'door_r207',
+      code: RUN.code, label: 'the R-207 keypad', hintNote: 'nb_5', unlocks: 'door_r207',
     });
     // The core, on the middle shelf of the racking inside.
     interactables.push({

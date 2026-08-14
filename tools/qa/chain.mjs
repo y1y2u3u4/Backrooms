@@ -66,7 +66,12 @@ const { Bus } = await import('../../src/core/util.js');
 const { Inventory } = await import('../../src/player/Inventory.js');
 const { Interactor, DoorLatch } = await import('../../src/player/Interactor.js');
 const { Interactables } = await import('../../src/systems/Interactables.js');
-const { NotesLibrary } = await import('../../src/systems/Notes.js');
+const { NotesLibrary, runFacts: _runFacts } = await import('../../src/systems/Notes.js');
+// Guarded so that a build without run facts FAILS these checks rather than
+// throwing on the first call — the same reason the lift checks are
+// optional-chained. A suite that crashes says less than one that names the
+// claim that is untrue.
+const runFacts = _runFacts || (() => ({ code: null, openDay: null, day: 0, month: 0 }));
 const { Progression, ENDINGS } = await import('../../src/systems/Progression.js');
 // `card_contractor` is granted in `installGameplay`, which this harness does not
 // run — it builds its own inventory. Reading the source is the honest way to
@@ -514,6 +519,51 @@ check('the starting objective is now revealed',
   bus3.emit('lift:arrive', { id: 'lift_2', floor: 1, name: 'SURFACE', exit: true, ending: 'left' });
   check('and the surface still ends it as LEFT', prog3.ended === ENDINGS.LEFT,
     `ending = ${prog3.ended}`);
+}
+
+// -- the code is not a constant any more ------------------------------------
+//
+// `2130` was a literal in five places and opened both locks, so a player who
+// had finished once knew it forever and the best-authored puzzle in the game
+// had nothing left to offer a second run. What varies now is the ANSWER; the
+// RULE — open-day date, four figures, reversed — is fixed, stated in the
+// notebook, and the date is on the poster.
+{
+  const canon = runFacts(0xd12ec7);
+  check('the authored run is still 3 December / 2130',
+    canon.code === '2130' && canon.openDay === '3 DECEMBER',
+    `${canon.openDay} / ${canon.code}`);
+
+  const seeds = [1, 2, 3, 7, 42, 99, 1234, 65535];
+  const codes = seeds.map((x) => runFacts(x).code);
+  check('other runs do not use it', codes.every((c) => c !== '2130'), codes.join(' '));
+  check('and they differ from each other', new Set(codes).size >= seeds.length - 1,
+    `${new Set(codes).size} distinct of ${seeds.length}`);
+  check('every code is four digits', codes.every((c) => /^\d{4}$/.test(c)), codes.join(' '));
+
+  // The rule has to hold, or the poster stops being the answer.
+  for (const x of seeds) {
+    const f = runFacts(x);
+    const dd = String(f.day).padStart(2, '0'), mm = String(f.month).padStart(2, '0');
+    if (`${dd}${mm}`.split('').reverse().join('') !== f.code) {
+      check(`the code is the date reversed (seed ${x})`, false, `${dd}${mm} -> ${f.code}`);
+      break;
+    }
+  }
+  check('the code is the date reversed, every seed', true);
+
+  // And the poster in the world has to say the date this run's locks expect.
+  const poster = new NotesLibrary(null, { seed: 4242 }).get('note_open_day');
+  const f4242 = runFacts(4242);
+  check('the poster carries this run\'s date', poster?.body.includes(f4242.openDay),
+    `poster does not mention ${f4242.openDay}`);
+  check('and no template token survives into the body',
+    !/\{\{/.test(poster?.body || ''), 'an unsubstituted token would ship as literal text');
+  // The notebook states the rule and never the number. That is the whole design.
+  const nb = new NotesLibrary(null, { seed: 4242 }).get('nb_5');
+  check('the notebook still does not give the number away',
+    !nb?.body.includes(f4242.code) && !nb?.body.includes('2130'),
+    'the hint must be the rule, not the answer');
 }
 
 // -- three promises the game made and did not keep --------------------------
