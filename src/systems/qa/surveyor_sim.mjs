@@ -466,5 +466,67 @@ console.log('\nSurveyor — headless state machine checks\n');
     `${sDark.speed.toFixed(3)} m/s`);
 }
 
+// 12. Darkness is a delay, not an off switch --------------------------------
+//
+// The Surveyor is blind, hunts by sound and stops below a light threshold, so a
+// player standing still in an unlit room used to be unreachable — permanently,
+// for free, at any moment. Fine in a game about carrying three cores across a
+// building; fatal to anything scored on time, where standing still is the win
+// condition. These assert both halves: the rule the player learns still holds,
+// and it stops being absolute.
+{
+  console.log('darkness delays rather than defeats');
+
+  // 0.35 is inside the band this change actually governs, and the band is
+  // narrow — computed from the two smoothstep curves, a calm Surveyor is stone
+  // below about 0.48 and a hot one below about 0.25. So what moved is the
+  // 0.25–0.48 shelf: gloom that used to be as safe as a sealed room, and now is
+  // only safe while the thing hunting you is still calm. It is a real
+  // tightening and it is NOT a removal of the strategy — see the note on
+  // LIGHT_DEAD_HOT and section 19 of the completion report.
+  const DIM = 0.35;
+  const calm = makeEntity({ light: DIM, playerAt: [200, 200] });
+  calm.s.spawnAt(0, 0, 0, 0);
+  calm.s.aggression = 0;
+  calm.s.confidence = 1;
+  calm.s.lastHeard.set(0, 0, 40);
+  calm.s._setState(STATE.APPROACHING);
+  run(calm.s, 4);
+  ok('a calm one is still stone in a dim room', calm.s.speed < 0.01,
+    `${calm.s.speed.toFixed(3)} m/s at ${DIM} lux-ish`);
+
+  const hot = makeEntity({ light: DIM, playerAt: [200, 200] });
+  hot.s.spawnAt(0, 0, 0, 0);
+  hot.s.aggression = 1;
+  hot.s.confidence = 1;
+  hot.s.lastHeard.set(0, 0, 40);
+  hot.s._setState(STATE.APPROACHING);
+  run(hot.s, 4);
+  ok('one that has been hunting you all night is not', hot.s.speed > 0.02,
+    `${hot.s.speed.toFixed(3)} m/s at the same light`);
+
+  // And the rule the whole design rests on is untouched: pitch black is stone,
+  // at any aggression. If this ever fails, the frozen pose that teaches the
+  // rule without a word of text has stopped being reachable.
+  for (const agg of [0, 0.5, 1]) {
+    const dark = makeEntity({ light: 0, playerAt: [200, 200] });
+    dark.s.spawnAt(0, 0, 0, 0);
+    dark.s.aggression = agg;
+    dark.s.confidence = 1;
+    dark.s.lastHeard.set(0, 0, 40);
+    dark.s._setState(STATE.APPROACHING);
+    run(dark.s, 4);
+    ok(`pitch black still stops it at aggression ${agg}`, dark.s.speed === 0,
+      `${dark.s.speed} m/s`);
+  }
+  const thr = makeEntity({ light: 1, playerAt: [200, 200] });
+  thr.s.spawnAt(0, 0, 0, 0);
+  thr.s.aggression = 0; thr.s._sampleLight();
+  const cold = thr.s.deadBelow;
+  thr.s.aggression = 1; thr.s._sampleLight();
+  ok('the threshold moves the right way', thr.s.deadBelow < cold,
+    `${cold} -> ${thr.s.deadBelow}`);
+}
+
 console.log(`\n${passed} passed, ${failed} failed\n`);
 process.exit(failed ? 1 : 0);

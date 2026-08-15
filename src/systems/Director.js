@@ -508,6 +508,40 @@ export class Director {
     }
   }
 
+  /**
+   * The clock that makes waiting cost something.
+   *
+   * Aggression used to move only on death: +0.12 each time, and nothing else in
+   * the game touched it. So a player who never died faced the same entity in
+   * minute forty as in minute two, and — because the Surveyor is blind, hunts by
+   * sound and freezes below a light threshold — the optimal play against it was
+   * to stop. Stand still somewhere unlit and you are not merely safe, you are
+   * unreachable, indefinitely, for free.
+   *
+   * That is survivable in a game about carrying three cores across a building,
+   * because standing still does not carry anything. It is fatal to anything
+   * scored on time, where standing still IS the win condition.
+   *
+   * So the pressure rises on its own. Thirty-five minutes of session takes
+   * aggression from 0 to 1 by itself, which does three things that are already
+   * wired: it raises the entity's approach speed, it shortens the odds on the
+   * beats that act, and — see `LIGHT_DEAD_HOT` — it lowers the light level that
+   * stops it, so the dark corner that was permanent safety becomes a place you
+   * can rest and not a place you can live.
+   *
+   * Deaths still add their 0.12 on top. Nothing here decays: a run gets harder
+   * and does not get easier, which is the only shape that makes a timer mean
+   * anything.
+   */
+  _pressure(dt) {
+    if (!this.surveyor) return;
+    // 1/2100 per second: zero to full over thirty-five minutes. A complete
+    // playthrough is well short of that, so the main campaign feels this as a
+    // late-game tightening rather than as a difficulty curve.
+    const rate = this.pressureRate ?? (1 / 2100);
+    this.surveyor.aggression = clamp01(this.surveyor.aggression + rate * dt);
+  }
+
   // -- death / respawn ----------------------------------------------------------------
 
   onDeath({ cause = 'unknown' } = {}) {
@@ -699,6 +733,7 @@ export class Director {
     this.time += dt;
     this._computeFear(dt);
     this._ensureSpawned();
+    this._pressure(dt);
 
     if (this.dying > 0) {
       this.dying -= dt;

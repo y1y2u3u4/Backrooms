@@ -64,8 +64,34 @@ const BODY_RADIUS = 0.30;
 const PELVIS_Y = 1.42;
 /** Illumination (in LightRig units) at which it is fully mobile. */
 const LIGHT_FULL = 2.4;
-/** Below this it is stone. */
+/**
+ * Below this it is stone — at rest. It does not stay there.
+ *
+ * THE RULE THE PLAYER LEARNS IS TRUE AND IT IS NOT THE WHOLE TRUTH.
+ *
+ * "It only moves in light" is this game's best idea and it had a consequence
+ * nobody had priced: the Surveyor has no sight, it hunts by sound, and it stops
+ * dead below this threshold. So a player standing still in an unlit room is not
+ * hard to catch, they are IMPOSSIBLE to catch — no light, no movement; no
+ * movement, no noise; no noise, no belief. Total invulnerability, reachable at
+ * any moment, for free. In a game whose objective is to keep moving that is a
+ * fair trade the player rarely wants to take. As the win condition of anything
+ * timed it is the dominant strategy and it ends the mode.
+ *
+ * So darkness stops being an off switch and becomes a delay. At rest aggression
+ * the threshold is the 0.30 it has always been and every existing behaviour is
+ * unchanged; as aggression climbs it falls toward 0.06, and a thing that has
+ * killed you three times can pick its way through a gloom that used to stop it.
+ *
+ * **Pitch black still stops it, always.** `lum` of zero is below every threshold
+ * in this range, so the frozen pose the whole design rests on — the one that
+ * teaches the rule without a word of text — is exactly as reachable as before.
+ * What shrinks is the margin: the dim corridor that used to be as safe as a
+ * sealed room is now only safe for a while.
+ */
 const LIGHT_DEAD = 0.30;
+/** ...and where the threshold goes at full aggression. */
+const LIGHT_DEAD_HOT = 0.06;
 
 const _v = new THREE.Vector3();
 const _v2 = new THREE.Vector3();
@@ -659,7 +685,8 @@ export class Surveyor {
       lum += this.flashlight.illuminationAt(x, yChest, z, true);
     }
     this.illumination = lum;
-    this.lightScale = smoothstep(LIGHT_DEAD, LIGHT_FULL, lum);
+    this.deadBelow = lerp(LIGHT_DEAD, LIGHT_DEAD_HOT, clamp01(this.aggression));
+    this.lightScale = smoothstep(this.deadBelow, LIGHT_FULL, lum);
     return this.lightScale;
   }
 

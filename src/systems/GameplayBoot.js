@@ -10,6 +10,7 @@ import { Attendant } from '../entities/Attendant.js';
 import { Director } from './Director.js';
 import { Decoy } from '../player/Decoy.js';
 import { Setpieces } from './Setpieces.js';
+import { Survival } from './Survival.js';
 import { Progression } from './Progression.js';
 import { NotesLibrary } from './Notes.js';
 
@@ -130,9 +131,26 @@ export async function installGameplay(game, {
 
   if (seedDemo) seedIntakeDemo(ctx, { director, progression, attendant, entity });
 
+  /**
+   * NIGHT WATCH. `?mode=survival` swaps the objective from "get out" to "keep
+   * the lights on until you cannot", and the campaign is untouched when it is
+   * absent — no branch anywhere else, the mode is simply null.
+   */
+  const survival = game.mode === 'survival'
+    ? new Survival({
+      bus,
+      circuits: ['intake', 'service', 'cistern', 'residence', 'plant', 'stack', 'duct'],
+      rng: (() => {
+        let sd = (game.runSeed ?? 0xd12ec7) >>> 0 || 1;
+        return () => { sd ^= sd << 13; sd >>>= 0; sd ^= sd >>> 17; sd ^= sd << 5; sd >>>= 0; return sd / 4294967296; };
+      })(),
+    })
+    : null;
+
   const gameplay = {
     notes, inventory, flashlight, hands, interactor, interactables,
     surveyor: entity, attendant, director, progression, decoy, setpieces, ctx,
+    survival,
     zoneGameplay: null,
 
     /** Build and register a prop. See `Interactables.FACTORIES` for kinds. */
@@ -140,6 +158,7 @@ export async function installGameplay(game, {
 
     /** One logic step. Order matters; see the file header. */
     update(dt, input) {
+      survival?.update(dt);
       flashlight.update(dt, input);
       decoy.update(dt, input);
       interactor.update(dt, input);

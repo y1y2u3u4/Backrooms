@@ -2632,3 +2632,111 @@ will not do — a different problem from being lost, and not one signage fixes.
 And nobody has played this. Every judgement above is a measurement or a
 simulation; the next most valuable hour anyone can spend on this project is an
 hour with a headset on.
+
+---
+
+## 19. Roguelike properties, measured first and then built
+
+Asked whether the game had replay value, I measured it before answering. Forty
+simulated ten-minute sessions across forty run seeds:
+
+```
+distinct first-appearance times:    36 / 40
+distinct beat sequences (first 12):  3 / 40
+world content differing:             none
+```
+
+The run seed added the previous pass varied *when* the Surveyor turned up and
+essentially nothing else. Run two was run one with a different clock, against a
+building with 76 hardcoded prop coordinates, one route and a puzzle code that was
+the literal `2130` in five places and opened both locks. That is not replay
+value; it is a speedrun.
+
+### A — the answer varies, the rule does not
+
+The terminal code is now derived from the run seed by the mechanism the fiction
+already described: open-day date, four figures, reversed. The poster carries the
+date, Kearns' notebook states the rule and never the number, and both locks read
+it. The six objective items — three cores, the warden's card, the penstock key —
+each have three authored sites and use one per run.
+
+They are still *authored*. A random point on a floor rectangle is litter, not
+staging, and scattering would trade the thing this project is best at for the
+appearance of variety. What a returning player keeps is the mechanism; what they
+lose is the answer.
+
+`props.mjs` validates the sites a run did **not** choose — 78 declared props
+became 96 — because a candidate inside a wall would otherwise be a bug that
+appears one run in three and passes every audit.
+
+### B — and the first encounter moved
+
+`firstSpawnRange` was the constant 26 and the spawn headings prefer directly
+behind the player, so every run opened with "it came from behind me, about
+twenty-six metres away". Range is 19–38 m off the seed now and a per-run arc
+varies which shoulder, bounded well short of the front.
+
+### C — the structural problem with a survival mode, and what it actually needs
+
+The obvious way to build "how long can you last" is a clock. **It cannot work in
+this building**, and the reason is the game's best idea. The Surveyor is blind,
+it hunts by sound, and it freezes below a light threshold — so a player standing
+still in an unlit room makes no noise, gives it nothing to walk to, and is
+*unreachable*. Against a scoreboard measured in minutes that is not a tactic, it
+is the solution, available from the first second.
+
+Two things follow.
+
+**The light rule tightens but must not break.** `LIGHT_DEAD` now falls from 0.30
+to 0.06 with aggression, and aggression rises on its own — 0 to 1 over
+thirty-five minutes — instead of only on death. Computing both smoothstep curves,
+what this actually moves is the band from 0.25 to 0.48: gloom that used to be as
+safe as a sealed room is now only safe while the thing hunting you is calm. Pitch
+black still stops it at every aggression, and has to: the frozen pose is how the
+whole rule is taught without a word of text.
+
+**So it narrows the strategy and does not remove it — and the mode must not
+depend on removing it.** Night Watch is therefore a task loop, not a timer. Annex
+7 runs on Distribution Board C, ways trip on their own all night, and a way left
+open long enough takes the plant. The player is not surviving the Surveyor; they
+are keeping the lights on while something walks around, and standing still loses
+— slowly, and because the board does not reset itself. That is also what makes
+the entity frightening rather than avoidable: you have somewhere you have to be,
+and it is between you and there.
+
+`src/systems/Survival.js` is pure logic — no THREE, no scene, no DOM — so
+`survival_sim.mjs` plays whole shifts headlessly. Trips accelerate from a 78 s
+mean to 26 s over fifteen minutes; two open ways burn the margin 2.2x rather than
+2x, which is what turns a bad minute into a lost shift.
+
+| | |
+|---|---|
+| a player who never moves | ends at **117 s**, by the board, having never seen the entity |
+| a player who resets within 11 s | lasts the hour, **31 resets** |
+| trips early vs late | 78 s apart vs **26 s** |
+
+### The suites
+
+| suite | before this pass | after |
+|---|---|---|
+| chain | 122 | **141** |
+| surveyor | 55 | **61** |
+| director | 19 | **24** |
+| survival | — | **19** |
+| props | 78 | **96** |
+
+Four checks were wrong before they were evidence, and each is recorded where it
+sits: a site chooser whose weak low bits sent four of six seeds to the same
+position and looked like it was working; a determinism check that compared the
+score of an idle shift, which is a constant by construction, and reported the
+randomiser broken; a light test run at an unrealistically dark 0.18 where even a
+hot entity is frozen; and `runFacts` deriving the canonical seed like any other
+and giving 3 September rather than the authored 3 December.
+
+### What is still not a roguelike, and should not be
+
+The eight zones are identical every run and that is deliberate. There is no
+permadeath in the campaign, no meta-progression and no build variety. What there
+is now is a building you know and a night you do not, which is the only kind of
+variation that does not throw away authored space. Night Watch is where the
+"one more run" pressure lives, and it shares 95 % of the code.

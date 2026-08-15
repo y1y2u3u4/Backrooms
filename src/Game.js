@@ -91,6 +91,13 @@ export class Game {
      * meaning what it meant, with no change to any of them. `?run=N` pins it by
      * hand for reproducing a specific session.
      */
+    /**
+     * `?mode=survival` — Night Watch. The campaign is the default and is
+     * untouched by this; see `Survival.js` for why the mode is a task loop
+     * rather than a timer.
+     */
+    this.mode = new URLSearchParams(location.search).get('mode') === 'survival'
+      ? 'survival' : 'campaign';
     const runParam = new URLSearchParams(location.search).get('run');
     this.runSeed = this.qa ? 0xd12ec7
       : (runParam ? (parseInt(runParam, 10) >>> 0) : ((Math.random() * 0xffffffff) >>> 0));
