@@ -148,7 +148,29 @@ export class Director {
      * belong to the player, and that has not changed.
      */
     this.firstSpawnAt = 18 + this.rng() * 16;
-    this.firstSpawnRange = 26;
+    /**
+     * HOW FAR AWAY IT STARTS, AND WHICH WAY.
+     *
+     * A constant 26 m put the first encounter at the same distance in every run,
+     * and `placeSurveyorNear` always tries the headings directly behind the
+     * player first — so the first meeting was reliably "it came from behind me,
+     * about twenty-six metres away", every time, forever. That is a jump scare
+     * with a timetable.
+     *
+     * The range now runs 19–38 m off the run seed. At the near end it is close
+     * enough that the first thing a player hears is already in the room with
+     * them; at the far end they get most of a zone to themselves before anything
+     * shares it. `_spawnArc` rotates which side of them it comes from by the
+     * same seed, so "behind" stops meaning "always directly behind".
+     */
+    this.firstSpawnRange = 19 + this.rng() * 19;
+    /**
+     * Rotation applied to the preferred spawn heading, in radians. Kept off the
+     * front: the whole point of the existing heading list is that the player
+     * does not watch it appear, and this varies which shoulder it is over
+     * rather than undoing that.
+     */
+    this._spawnArc = (this.rng() - 0.5) * 2.2;
     /** Where it reappears when the player changes zone. See the `zone:enter`
      *  handler — without this it stays in the room it was first placed in. */
     this.followRange = 30;
@@ -653,7 +675,10 @@ export class Director {
     // exactly the forward vector, and this spawned the Surveyor 20–30 m directly
     // in the player's line of sight at first placement, at every zone change and
     // at every cross-zone respawn. `a = yaw` is the direction behind them.
-    const back = this.player.yaw ?? 0;
+    // `_spawnArc` is this run's bias — which shoulder it prefers to come over.
+    // It is added to every candidate rather than replacing the list, so the
+    // ordering that keeps it out of the player's view is untouched.
+    const back = (this.player.yaw ?? 0) + (this._spawnArc ?? 0);
     const headings = [back, back + 0.8, back - 0.8, back + 1.6, back - 1.6, back + 2.4, back - 2.4, back + Math.PI];
     const col = this.collision || this.player?.collision || this.surveyor?.collision;
     for (const a of headings) {

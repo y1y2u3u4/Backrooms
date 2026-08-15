@@ -345,6 +345,23 @@ console.log('\nDirector — headless pacing checks\n');
     a.firstSpawnAt === a2.firstSpawnAt,
     `${a.firstSpawnAt} vs ${a2.firstSpawnAt}`);
   // The player's opening still belongs to the player, whatever the roll.
+  // Distance and bearing, not just the clock. A first encounter that is always
+  // 26 m directly behind you is a jump scare with a timetable.
+  const ranges = Array.from({ length: 64 }, (_, i) => mk(i * 6151 + 11).firstSpawnRange);
+  ok('the first encounter is not always at the same distance',
+    new Set(ranges.map((r) => r.toFixed(1))).size > 50,
+    `${new Set(ranges.map((r) => r.toFixed(1))).size} distinct of 64`);
+  ok('it never starts close enough to be already on top of you',
+    Math.min(...ranges) >= 19, `nearest ${Math.min(...ranges).toFixed(1)} m`);
+  ok('and never so far it is in another zone', Math.max(...ranges) <= 38,
+    `furthest ${Math.max(...ranges).toFixed(1)} m`);
+  const arcs = Array.from({ length: 64 }, (_, i) => mk(i * 6151 + 11)._spawnArc);
+  ok('and not always over the same shoulder',
+    Math.max(...arcs) > 0.4 && Math.min(...arcs) < -0.4,
+    `arc ${Math.min(...arcs).toFixed(2)} .. ${Math.max(...arcs).toFixed(2)} rad`);
+  ok('but never in front of the player', Math.max(...arcs.map(Math.abs)) < 1.2,
+    `worst ${Math.max(...arcs.map(Math.abs)).toFixed(2)} rad off the back`);
+
   const many = Array.from({ length: 64 }, (_, i) => mk(i * 7919 + 3).firstSpawnAt);
   ok('it never appears in the first eighteen seconds', Math.min(...many) >= 18,
     `earliest ${Math.min(...many).toFixed(1)}s`);
