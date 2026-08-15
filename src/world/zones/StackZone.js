@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { KIT, floorSlab, wallRun, doorway } from '../Kit.js';
 import {
-  makeBuilders, rigProxy, portal, bulkhead, stripLight, highbay, emergencyLight,
+  makeBuilders, rigProxy, portal, bulkhead, stripLight, highbay, emergencyLight, runSite, siteSpec,
   handrail, gantry, steelColumn, iBeam, channel, cagedLadder, stairFlight,
 } from '../ZoneKit.js';
 import { STAMP, roomNumber } from '../Decals.js';
@@ -798,10 +798,21 @@ export function buildStack(ctx, opts = {}) {
   // pushed up to the missing bay of handrail, facing out over the drop. The card
   // is on the deck beside it. Nothing else in the game explains that chair.
   // =========================================================================
+  // Authored alternatives; sites[0] is what every baseline measures.
+  const cardSite = runSite(ctx.runSeed, 'stack_card', [
+    [2.35, 0.03, VOID + 1.45, 0.6],     // on the deck beside the chair
+    [-4.9, 0.03, -(VOID + 1.3), 1.9],   // north face, dropped at the rail
+    [VOID + 1.3, 0.03, 4.4, 2.6],       // east face, against the well wall
+  ]);
+  const coreSite = runSite(ctx.runSeed, 'stack_core', [
+    [5.6, 0.79, -10.2, -0.2],           // the lift lobby desk
+    [-(VOID + 1.2), 0.03, 2.4, 1.2],    // west face deck, at the locker
+    [VOID + 1.1, 0.03, -5.4, -0.7],     // east face, past the gantry
+  ]);
   const interactables = [
-    { kind: 'pickup', item: 'card_warden', position: [2.35, 0.03, VOID + 1.45], rotation: 0.6 },
+    siteSpec(cardSite.pick, { kind: 'pickup', item: 'card_warden' }),
     // The lift lobby's core, on the desk on the north face of this level.
-    { kind: 'pickup', item: 'fuse_core', position: [5.6, 0.79, -10.2], rotation: -0.2 },
+    siteSpec(coreSite.pick, { kind: 'pickup', item: 'fuse_core' }),
     { kind: 'pickup', item: 'note', noteId: 'note_stack_survey', position: [6.4, 0.76, -10.15], rotation: 0.35 },
     { kind: 'pickup', item: 'note', noteId: 'note_floor_indicator', position: [-7.9, 1.24, -10.15], rotation: 0 },
     { kind: 'pickup', item: 'note', noteId: 'nb_3', position: [2.9, 0.03, VOID + 0.75], rotation: 1.7 },
@@ -820,6 +831,10 @@ export function buildStack(ctx, opts = {}) {
   for (const b of builders) { const g = b.finish(); chunks.push(g); root.add(g); }
 
   return {
+    altSites: [
+      ...cardSite.all.map((v) => siteSpec(v, { kind: 'pickup', item: 'card_warden' })),
+      ...coreSite.all.map((v) => siteSpec(v, { kind: 'pickup', item: 'fuse_core' })),
+    ],
     root, chunks, builders, portals, interactables,
     spawn: [-3.2, 0, -OUTER + 1.7],
     spawnYaw: Math.PI,

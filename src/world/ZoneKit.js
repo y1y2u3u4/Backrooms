@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { CANON_SEED } from '../systems/Notes.js';
 import { Builder } from './Builder.js';
 import { attachPalette } from './Palette.js';
 import { KIT } from './Kit.js';
@@ -876,6 +877,60 @@ export function exitSign(b, rig, x, y, z, { yaw = 0, dir = 0, circuit = 'emergen
   f.signKind = 'exit';
   f.signDir = dir;
   return f;
+}
+
+/**
+ * Choose one of several authored positions, per run.
+ *
+ * WHY NOT JUST SCATTER THEM. This building has 76 hardcoded prop coordinates and
+ * they are hardcoded on purpose: a core wedged behind the penstocks, a card on
+ * the deck beside a chair pushed up to a missing bay of handrail, a notebook on
+ * the desk it was written at. Every one of them is a small piece of staging, and
+ * a random point on a floor rectangle is not staging — it is litter. Scattering
+ * would trade the thing this project is best at for the illusion of variety.
+ *
+ * So the sites are still authored, there are just several of them, and which one
+ * this run uses comes from the run seed. A returning player still knows the
+ * Cistern has a core in it and still does not know which corner of the chamber
+ * it is in, which is the difference between remembering a route and running one.
+ *
+ * `sites[0]` IS THE AUTHORED RUN and is what the canonical seed returns, so
+ * every baseline in docs/captures, every shot list and every prop check keeps
+ * measuring the placement it has always measured.
+ *
+ * Returns `{ pick, all }`. Callers push `pick` into the world and `all` into the
+ * zone's `altSites`, because `props.mjs` has to validate the sites this run did
+ * NOT choose as well — a candidate that is inside a wall is a bug that appears
+ * one run in three, which is the worst kind.
+ *
+ * @param {number} runSeed
+ * @param {string} key    stable name for this decision, so two items in one zone
+ *                        do not move together
+ * @param {number[][]} sites  each `[x, y, z, rotation]`
+ */
+export function runSite(runSeed, key, sites) {
+  const all = sites.filter(Boolean);
+  if (!all.length) return { pick: null, all };
+  if ((runSeed >>> 0) === CANON_SEED) return { pick: all[0], all };
+  // FNV over the key, then a full avalanche, then take the HIGH bits. The first
+  // version finished with a xorshift and took `x % n`, and its low bits were
+  // weak enough that four of six sample seeds landed on the same site — a
+  // randomiser that mostly returns the authored position is worse than none,
+  // because it looks like it is working.
+  let x = (runSeed ^ 0x9e3779b1) >>> 0;
+  for (let i = 0; i < key.length; i++) {
+    x = (x ^ key.charCodeAt(i)) >>> 0;
+    x = Math.imul(x, 16777619) >>> 0;
+  }
+  x ^= x >>> 16; x = Math.imul(x, 0x7feb352d) >>> 0;
+  x ^= x >>> 15; x = Math.imul(x, 0x846ca68b) >>> 0;
+  x ^= x >>> 16;
+  return { pick: all[Math.floor((x >>> 8) / 0x1000000 * all.length) % all.length], all };
+}
+
+/** Turn a `[x, y, z, rot]` site into a pickup descriptor. */
+export function siteSpec(site, spec) {
+  return { ...spec, position: [site[0], site[1], site[2]], rotation: site[3] ?? 0 };
 }
 
 // ---------------------------------------------------------------------------

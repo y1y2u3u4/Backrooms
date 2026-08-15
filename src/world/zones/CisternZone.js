@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { KIT, floorSlab, wallRun, doorway, grille } from '../Kit.js';
 import {
-  makeBuilders, rigProxy, portal, bulkhead, emergencyLight, handrail, stairFlight,
+  makeBuilders, rigProxy, portal, bulkhead, emergencyLight, handrail, stairFlight, runSite, siteSpec,
   gantry, boardMarks, cagedLadder, drainChannel, hollowBox, steelColumn,
 } from '../ZoneKit.js';
 import { STAMP, roomNumber } from '../Decals.js';
@@ -518,6 +518,18 @@ export function buildCistern(ctx, opts = {}) {
   // them every reason not to. The padlock on 2 is real — it needs the key from
   // the sump — and turning 2 does nothing but make noise.
   // =========================================================================
+
+  // Authored alternatives. `sites[0]` is the placement every baseline measures.
+  const coreSite = runSite(ctx.runSeed, 'cistern_core', [
+    [12.5, -0.26, -6.3, 0.6],     // wedged behind the penstocks
+    [18.9, -0.26, 5.6, -0.4],     // the far corner, past the pump set
+    [11.4, -0.26, 5.9, 1.1],      // under the gantry stair, in the water
+  ]);
+  const keySite = runSite(ctx.runSeed, 'cistern_key', [
+    [-17.4, -0.50, -4.9, 1.4],    // the sump, where it was dropped
+    [-14.2, -0.50, -5.6, 0.2],    // further into the sump
+    [-9.0, 0.06, 1.5, 2.2],       // dropped in the tunnel on the way out
+  ]);
   const interactables = [
     // Both handwheels stand on the chamber walkway, 1.05 m above its deck.
     {
@@ -531,10 +543,12 @@ export function buildCistern(ctx, opts = {}) {
     },
     // The first core: on the chamber bed, in the deepest and loudest water in the
     // zone, behind the tank. Wading to it is the price if the penstock stays open.
-    { kind: 'pickup', item: 'fuse_core', position: [12.5, -0.26, -6.3], rotation: 0.6 },
+    // THREE PLACES A CORE COULD BE, ALL OF THEM STAGED. The chamber is the room
+    // the notebook points at; which corner of it changes per run. See `runSite`.
+    siteSpec(coreSite.pick, { kind: 'pickup', item: 'fuse_core' }),
     // The padlock key, in the sump, where a thing that has been in water a long
     // time would be.
-    { kind: 'pickup', item: 'key_penstock', position: [-17.4, -0.50, -4.9], rotation: 1.4 },
+    siteSpec(keySite.pick, { kind: 'pickup', item: 'key_penstock' }),
     // The notice that explains the penstocks, cable-tied where you come in.
     { kind: 'pickup', item: 'note', noteId: 'note_cistern_isolation', position: [-24.4, ARRIVE_Y + 0.02, -1.2], rotation: 0.2 },
     { kind: 'pickup', item: 'note', noteId: 'note_wading', position: [-10.0, 1.02, R_TUNNEL[1] + 0.30], rotation: 0 },
@@ -576,6 +590,13 @@ export function buildCistern(ctx, opts = {}) {
 
   return {
     root, chunks, builders, portals, interactables,
+    // Every authored alternative, including the ones this run did not choose.
+    // `props.mjs` validates these too: a candidate site inside a wall is a bug
+    // that appears one run in three, which is the worst kind there is.
+    altSites: [
+      ...coreSite.all.map((v) => siteSpec(v, { kind: 'pickup', item: 'fuse_core' })),
+      ...keySite.all.map((v) => siteSpec(v, { kind: 'pickup', item: 'key_penstock' })),
+    ],
     spawn: [-26.0, ARRIVE_Y, 0],
     spawnYaw: -Math.PI / 2,
     fogProfile: 'cistern',

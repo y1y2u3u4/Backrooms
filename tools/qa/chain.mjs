@@ -61,7 +61,7 @@ import * as THREE from 'three';
 
 const { CollisionWorld } = await import('../../src/player/Physics.js');
 const { FIXTURE_TYPES } = await import('../../src/render/Lighting.js');
-const { ZONE_ORIGIN } = await import('../../src/world/ZoneKit.js');
+const { ZONE_ORIGIN, runSite } = await import('../../src/world/ZoneKit.js');
 const { Bus } = await import('../../src/core/util.js');
 const { Inventory } = await import('../../src/player/Inventory.js');
 const { Interactor, DoorLatch } = await import('../../src/player/Interactor.js');
@@ -564,6 +564,52 @@ check('the starting objective is now revealed',
   check('the notebook still does not give the number away',
     !nb?.body.includes(f4242.code) && !nb?.body.includes('2130'),
     'the hint must be the rule, not the answer');
+}
+
+// -- the objective items are not in the same place every run ----------------
+{
+  const zoneOf = (id) => zones[id] || {};
+  const spawns = (id, item) => [
+    ...(zoneOf(id).interactables || []), ...(zoneOf(id).altSites || []),
+  ].filter((i) => i.item === item);
+
+  // Every zone that holds an objective item offers more than one authored site.
+  for (const [z, item, key] of [
+    ['cistern', 'fuse_core', 'cistern core'],
+    ['stack', 'fuse_core', 'stack core'],
+    ['plant', 'fuse_core', 'plant core'],
+    ['residence', 'fuse_core', 'residence core'],
+    ['stack', 'card_warden', "the warden's card"],
+    ['cistern', 'key_penstock', 'the penstock key'],
+  ]) {
+    check(`${key} has more than one authored site`, spawns(z, item).length >= 2,
+      `${spawns(z, item).length} site(s)`);
+  }
+
+  // Exactly one of them is live in any given run — the rest are alternatives.
+  for (const [z, item, key] of [['cistern', 'fuse_core', 'cistern core'],
+    ['stack', 'card_warden', "the warden's card"]]) {
+    const live = (zoneOf(z).interactables || []).filter((i) => i.item === item);
+    check(`only one ${key} is actually in the world`, live.length === 1,
+      `${live.length} live`);
+  }
+
+  // The chooser has to move, and the authored run has to be site zero.
+  const sites = [[1, 0, 1, 0], [2, 0, 2, 0], [3, 0, 3, 0]];
+  check('the canonical run uses the authored site',
+    runSite(0xd12ec7, 'cistern_core', sites).pick[0] === 1);
+  const counts = [0, 0, 0];
+  for (let sd = 1; sd <= 300; sd++) counts[runSite(sd, 'cistern_core', sites).pick[0] - 1]++;
+  const spread = Math.min(...counts) / Math.max(...counts);
+  check('and the other runs spread across all of them', spread > 0.6,
+    `${counts.join('/')} over 300 seeds`);
+  // Two items in one zone must not move together, or the "variation" is one bit.
+  let together = 0;
+  for (let sd = 1; sd <= 300; sd++) {
+    if (runSite(sd, 'cistern_core', sites).pick[0] === runSite(sd, 'cistern_key', sites).pick[0]) together++;
+  }
+  check('two items in a zone choose independently', together < 300 * 0.5,
+    `${together}/300 chose the same index`);
 }
 
 // -- three promises the game made and did not keep --------------------------

@@ -189,7 +189,16 @@ async function audit(id) {
   };
 
   const out = [];
-  for (const spec of zone.interactables || []) {
+  // ALTERNATIVES ARE CHECKED TOO.
+  //
+  // Item placement varies per run: `runSite` picks one of several authored
+  // positions and only that one becomes an interactable. Checking the zone's
+  // `interactables` alone would validate whichever site the canonical seed
+  // happens to use and ship the other two unexamined — a candidate inside a
+  // wall would then be a bug that appears one run in three and passes every
+  // audit. The zone hands over the full set in `altSites`.
+  const specs = [...(zone.interactables || []), ...(zone.altSites || [])];
+  for (const spec of specs) {
     const kind = spec.kind;
     const rot = spec.rotation || 0;
     const px = spec.position[0] + ox, py = spec.position[1] + oy, pz = spec.position[2] + oz;

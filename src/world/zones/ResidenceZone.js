@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { runFacts } from '../../systems/Notes.js';
 import { KIT, floorSlab, wallRun, doorway, outlet, smokeDetector } from '../Kit.js';
 import {
-  makeBuilders, rigProxy, portal, pendant, bulkhead, emergencyLight,
+  makeBuilders, rigProxy, portal, pendant, bulkhead, emergencyLight, runSite, siteSpec,
   handrail, stairFlight,
 } from '../ZoneKit.js';
 import { STAMP, roomNumber } from '../Decals.js';
@@ -579,6 +579,8 @@ export function buildResidence(ctx, opts = {}) {
   // =========================================================================
   // 7. gameplay — R-207 and the second core
   // =========================================================================
+
+  let coreSite = null;
   const interactables = [];
   if (r207) {
     // The leaf. `requires: card_warden` is the memo's rule made literal: your own
@@ -617,11 +619,14 @@ export function buildResidence(ctx, opts = {}) {
       rotation: r207.north ? Math.PI : 0,
       code: RUN.code, label: 'the R-207 keypad', hintNote: 'nb_5', unlocks: 'door_r207',
     });
-    // The core, on the middle shelf of the racking inside.
-    interactables.push({
-      kind: 'pickup', item: 'fuse_core',
-      position: [r207.x0 + 0.40, 0.94, r207.cz + r207.face * 0.6], rotation: 0.15,
-    });
+    // The core. R-207 is the room the memo is about and that does not change;
+    // where in it the core is does. See `runSite`.
+    coreSite = runSite(ctx.runSeed, 'residence_core', [
+      [r207.x0 + 0.40, 0.94, r207.cz + r207.face * 0.6, 0.15],   // middle shelf
+      [r207.x1 - 0.45, 0.94, r207.cz - r207.face * 0.55, -0.4],  // the far racking
+      [r207.x0 + 0.62, 0.06, r207.cz - r207.face * 0.35, 1.25],  // on the floor
+    ]);
+    interactables.push(siteSpec(coreSite.pick, { kind: 'pickup', item: 'fuse_core' }));
     interactables.push(
       { kind: 'pickup', item: 'note', noteId: 'note_residence_rooms', position: [r207.x1 - 0.40, 0.90, r207.cz - r207.face * 0.5], rotation: -0.3 },
       { kind: 'pickup', item: 'battery_cell', position: [r207.x1 - 0.55, 0.90, r207.cz - r207.face * 0.9], rotation: 1.1 },
@@ -653,6 +658,7 @@ export function buildResidence(ctx, opts = {}) {
   for (const b of builders) { const g = b.finish(); chunks.push(g); root.add(g); }
 
   return {
+    altSites: (coreSite?.all || []).map((v) => siteSpec(v, { kind: 'pickup', item: 'fuse_core' })),
     root, chunks, builders, portals, interactables, attendantFloors,
     spawn: [X0 - 3.4, 0, 0],
     spawnYaw: -Math.PI / 2,

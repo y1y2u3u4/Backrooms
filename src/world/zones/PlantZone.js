@@ -3,7 +3,7 @@ import { KIT, floorSlab, wallRun, doorway, grille, conduit } from '../Kit.js';
 import {
   makeBuilders, rigProxy, portal, stripLight, bulkhead, highbay, emergencyLight,
   handrail, stairFlight, gantry, steelColumn, iBeam, channel, angle, plinth,
-  cagedLadder, ductRun, drainChannel, boardMarks,
+  cagedLadder, ductRun, drainChannel, boardMarks, runSite, siteSpec,
 } from '../ZoneKit.js';
 import { STAMP, roomNumber } from '../Decals.js';
 import * as Props from '../Props.js';
@@ -81,6 +81,12 @@ export function buildPlant(ctx, opts = {}) {
   const fixtures = [];
   const rigFor = (b) => rigProxy(rig, b.origin, fixtures);
   const portals = [];
+
+  const coreSite = runSite(ctx.runSeed, 'plant_core', [
+    [-3.4, FLOOR + 0.06, -7.9, 0.8],    // dropped short of the generator line
+    [13.2, FLOOR + 0.06, -8.6, 1.7],    // by the cable drums, north-east
+    [-14.8, FLOOR + 0.06, 7.2, -0.5],   // the south-west corner, past the tanks
+  ]);
   const interactables = [];
 
   // =========================================================================
@@ -509,7 +515,7 @@ export function buildPlant(ctx, opts = {}) {
     // The core that was dropped on the Plant floor, per the stock card. Four
     // cores exist in the building and the player needs three, which is the
     // slack that keeps a missed one from being unwinnable.
-    { kind: 'pickup', item: 'fuse_core', position: [-3.4, FLOOR + 0.06, -7.9], rotation: 0.8 },
+    siteSpec(coreSite.pick, { kind: 'pickup', item: 'fuse_core' }),
     { kind: 'pickup', item: 'battery_cell', position: [-15.9, FLOOR + 0.78, -2.6], rotation: 1.9 },
     // Under the west stair, next to somebody's camp. The Plant is enormous and
     // loud once the set is running; there has to be somewhere to stop.
@@ -533,6 +539,7 @@ export function buildPlant(ctx, opts = {}) {
   for (const b of builders) { const g = b.finish(); chunks.push(g); root.add(g); }
 
   return {
+    altSites: coreSite.all.map((v) => siteSpec(v, { kind: 'pickup', item: 'fuse_core' })),
     root, chunks, builders, portals, interactables,
     spawn: [HX0 + 2.2, G1, 0],
     spawnYaw: -Math.PI / 2,
