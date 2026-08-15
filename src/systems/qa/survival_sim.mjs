@@ -77,7 +77,7 @@ console.log('\nNight Watch — headless shift checks\n');
       if (pending.length && sv.time % 1 < 1) {
         // 11 s reaction: only clear faults that have been open that long.
         const due = sv.faults.find((f) => f.age > 11);
-        if (due) { sv.clear(due.circuit); pending.splice(pending.indexOf(due.circuit), 1); }
+        if (due) { sv.clear(due.circuit, due.board); pending.splice(pending.indexOf(due.circuit), 1); }
       }
     },
   });
@@ -92,7 +92,7 @@ console.log('\nNight Watch — headless shift checks\n');
   const { s, events } = shift({
     seed: 3,
     seconds: 3600,
-    play: (sv) => { const d = sv.faults.find((f) => f.age > 6); if (d) sv.clear(d.circuit); },
+    play: (sv) => { const d = sv.faults.find((f) => f.age > 6); if (d) sv.clear(d.circuit, d.board); },
   });
   const faults = events.filter((e) => e.t === 'fault').map((e) => e.at);
   const gapsEarly = [], gapsLate = [];
@@ -118,7 +118,7 @@ console.log('\nNight Watch — headless shift checks\n');
     `${marginOne.toFixed(0)} s -> ${one.margin.toFixed(0)} s`);
   ok('and it is worse than merely twice as fast',
     one.margin < marginOne / 2 + 1, `${one.margin.toFixed(1)} vs ${(marginOne / 2).toFixed(1)}`);
-  one.clear('stack');
+  one.clear('stack', one.boardFor('stack'));
   ok('clearing one gives the margin back', one.margin > marginOne * 0.9);
 }
 
@@ -129,12 +129,27 @@ console.log('\nNight Watch — headless shift checks\n');
   const s = new Survival({ bus, circuits: WAYS, rng: rng(4) });
   s.trip('cistern');
   ok('a fault is open', s.faults.length === 1);
-  bus.emit('breaker:set', { way: 'cistern', on: false });
+  // THE REAL EVENT. This used to emit `breaker:set`, which nothing in the game
+  // has ever emitted — the panel emits `light:circuit`. Implementation and test
+  // agreed on an invented name, so the mode's entire reset path was dead in a
+  // real run and this suite passed anyway. A check has to speak the game's
+  // vocabulary or it is only testing that I can spell my own typo twice.
+  bus.emit('light:circuit', { circuit: 'cistern', powered: false, board: 'board_c' });
   ok('switching it OFF does not clear it', s.faults.length === 1);
-  bus.emit('breaker:set', { way: 'cistern', on: true });
+  bus.emit('light:circuit', { circuit: 'cistern', powered: true, board: 'board_c' });
   ok('switching it on does', s.faults.length === 0);
+
+  // And it has to be the right panel.
+  s.trip('plant');
+  ok('a Plant fault names the Plant sub-main', s.faults[0].board === 'board_p',
+    `${s.faults[0].board}`);
+  bus.emit('light:circuit', { circuit: 'plant', powered: true, board: 'board_c' });
+  ok('resetting it at Board C does nothing', s.faults.length === 1,
+    'the sub-mains exist so that the fault decides which zone you cross');
+  bus.emit('light:circuit', { circuit: 'plant', powered: true, board: 'board_p' });
+  ok('resetting it at its own board does', s.faults.length === 0);
   ok('and clearing a way that is not faulted is harmless',
-    s.clear('residence') === false && s.faults.length === 0);
+    s.clear('residence', 'board_r') === false && s.faults.length === 0);
   ok('the emergency circuit is never tripped', !s.circuits.includes('emergency'),
     'the always-live way is what a blackout leaves you; it is not a chore');
 }
@@ -147,7 +162,7 @@ console.log('\nNight Watch — headless shift checks\n');
   // nobody resets anything — the first version of this check compared scores,
   // got 117.3 s from both seeds, and reported the randomiser broken when it was
   // measuring a constant. Play the shift, then compare what actually varies.
-  const keepUp = (sv) => { const d = sv.faults.find((f) => f.age > 8); if (d) sv.clear(d.circuit); };
+  const keepUp = (sv) => { const d = sv.faults.find((f) => f.age > 8); if (d) sv.clear(d.circuit, d.board); };
   const seq = (r) => r.events.filter((e) => e.t === 'fault').map((e) => e.circuit).join(',');
   const a = shift({ seed: 77, seconds: 1200, play: keepUp });
   const b = shift({ seed: 77, seconds: 1200, play: keepUp });

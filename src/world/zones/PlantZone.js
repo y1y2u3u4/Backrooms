@@ -468,6 +468,9 @@ export function buildPlant(ctx, opts = {}) {
   // a lift car can share one coordinate space with the plinth they stand on.
   // =========================================================================
   interactables.push(
+    { kind: 'breaker', id: 'board_p', position: [HX0 + 0.20, FLOOR + 1.35, -3.0], rotation: -Math.PI / 2,
+      maxOn: 1, title: 'PLANT SUB-MAIN',
+      ways: [{ name: 'plant', label: 'PLANT HIGH BAY', amps: '63A', on: true }] },
     // SET No. 2 on the east plinth, front (sockets and panel) facing +Z into
     // the hall so the player works it from the open floor.
     {

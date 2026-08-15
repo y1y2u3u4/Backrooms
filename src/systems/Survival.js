@@ -33,6 +33,14 @@ import { clamp01 } from '../core/util.js';
  * `src/systems/qa/survival_sim.mjs` can play a whole shift headlessly.
  */
 
+/** Human names for the panels, for the line the player actually reads. */
+const BOARD_NAMES = {
+  board_c: 'Board C in the Spine',
+  board_p: 'the Plant sub-main',
+  board_r: 'the Residence landing board',
+  board_k: 'the Stack lobby board',
+};
+
 /** A way that has tripped and is waiting to be reset. */
 class Fault {
   constructor(circuit, at, grace) {
@@ -85,11 +93,34 @@ export class Survival {
     this._next = this.cfg.firstFault;
     this._unsub = [];
 
+    /**
+     * WHICH BOARD A WAY HAS TO BE RESET AT.
+     *
+     * With one panel the loop is "run back to the Service Spine", and after
+     * three trips that is not tension, it is a commute. Sub-mains put the reset
+     * where the load is: a way that has dropped at the Plant's sub-main cannot
+     * be put back in from Board C, so the fault decides which zone you cross
+     * and the thing walking around decides how.
+     *
+     * Anything not listed falls to Board C, which is the main.
+     */
+    this.boards = { plant: 'board_p', residence: 'board_r', stack: 'board_k', ...(config.boards || {}) };
+    this.mainBoard = config.mainBoard || 'board_c';
+
     if (bus) {
-      // The player resetting a way at the board. Same event the campaign uses,
-      // so the mode needs no special-case interactable.
-      this._unsub.push(bus.on('breaker:set', (e) => {
-        if (e?.on) this.clear(e.way ?? e.circuit);
+      /**
+       * THE EVENT NAME WAS WRONG AND THE TEST AGREED WITH IT.
+       *
+       * This listened for `breaker:set`, which nothing in the game emits — the
+       * panel emits `light:circuit`. The mode's entire reset path was dead in a
+       * real run, and `survival_sim` passed anyway because I had written the
+       * test to emit the same invented name. A suite that agrees with the
+       * implementation about a fiction is not evidence of anything; the check
+       * has to speak the game's vocabulary, and it now does.
+       */
+      this._unsub.push(bus.on('light:circuit', (e) => {
+        if (!e?.powered) return;
+        this.clear(e.circuit, e.board);
       }));
     }
   }
@@ -104,6 +135,9 @@ export class Survival {
     return Math.max(0, (this.faults[0].grace - this.faults[0].age) / burn);
   }
 
+  /** Which panel carries a given way. */
+  boardFor(circuit) { return this.boards[circuit] || this.mainBoard; }
+
   /** Trip a way that is not already open. Returns it, or null if none is left. */
   trip(circuit = null) {
     const open = new Set(this.faults.map((f) => f.circuit));
@@ -112,23 +146,38 @@ export class Survival {
     const pick = circuit && avail.includes(circuit)
       ? circuit
       : avail[Math.floor(this.rng() * avail.length) % avail.length];
+    const board = this.boardFor(pick);
     const f = new Fault(pick, this.time, this.cfg.grace);
+    f.board = board;
     this.faults.push(f);
     this.trips++;
-    this.bus?.emit('survival:fault', { circuit: pick, at: this.time, open: this.faults.length });
+    this.bus?.emit('survival:fault', {
+      circuit: pick, board, at: this.time, open: this.faults.length, grace: f.grace,
+    });
     // The whole point of the mode: somewhere you have to be.
-    this.bus?.emit('progress:hint', { text: `Way for ${pick} has dropped. Reset it at Board C.` });
+    this.bus?.emit('progress:hint', {
+      text: `${pick.toUpperCase()} has dropped. Reset it at ${BOARD_NAMES[board] || board}.`,
+    });
     return pick;
   }
 
-  /** The player has put a way back on. */
-  clear(circuit) {
+  /**
+   * A way has come back on. `board` must be the one that carries it: putting
+   * Board C's switch back in does nothing for a way that dropped at a sub-main,
+   * which is the whole reason the sub-mains exist.
+   */
+  clear(circuit, board = null) {
     const i = this.faults.findIndex((f) => f.circuit === circuit);
     if (i < 0) return false;
-    const f = this.faults.splice(i, 1)[0];
+    const f = this.faults[i];
+    if (board && f.board && board !== f.board) {
+      this.bus?.emit('survival:wrong-board', { circuit, at: board, needs: f.board });
+      return false;
+    }
+    this.faults.splice(i, 1);
     this.resets++;
     this.bus?.emit('survival:reset', {
-      circuit, held: +f.age.toFixed(1), open: this.faults.length,
+      circuit, board: f.board, held: +f.age.toFixed(1), open: this.faults.length,
     });
     return true;
   }

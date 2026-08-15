@@ -633,6 +633,9 @@ export function buildResidence(ctx, opts = {}) {
     );
   }
   interactables.push(
+    { kind: 'breaker', id: 'board_r', position: [X0 + 0.9, 1.35, -HW + 0.16], rotation: 0,
+      maxOn: 1, title: 'LANDING SUB-MAIN',
+      ways: [{ name: 'residence', label: 'RESIDENCE LANDING', amps: '10A', on: true }] },
     { kind: 'pickup', item: 'note', noteId: 'note_letter', position: [-4.6, 0.10, 0.3], rotation: 0.3 },
     { kind: 'pickup', item: 'note', noteId: 'note_open_day', position: [-16.0, 1.22, -HW + 0.14], rotation: 0 },
     { kind: 'pickup', item: 'note', noteId: 'nb_2', position: [X0 - 2.2, 0.02, 2.4], rotation: 1.4 },

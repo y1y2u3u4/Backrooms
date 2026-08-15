@@ -73,6 +73,8 @@ const { NotesLibrary, runFacts: _runFacts } = await import('../../src/systems/No
 // claim that is untrue.
 const runFacts = _runFacts || (() => ({ code: null, openDay: null, day: 0, month: 0 }));
 const { Progression, ENDINGS } = await import('../../src/systems/Progression.js');
+const { Survival } = await import('../../src/systems/Survival.js');
+const SURVIVAL_WAYS = ['intake', 'service', 'cistern', 'residence', 'plant', 'stack', 'duct'];
 // `card_contractor` is granted in `installGameplay`, which this harness does not
 // run — it builds its own inventory. Reading the source is the honest way to
 // assert it: the claim is "the game issues it", and that is where the game does.
@@ -564,6 +566,50 @@ check('the starting objective is now revealed',
   check('the notebook still does not give the number away',
     !nb?.body.includes(f4242.code) && !nb?.body.includes('2130'),
     'the hint must be the rule, not the answer');
+}
+
+// -- Night Watch has somewhere to run to ------------------------------------
+//
+// The mode's loop is "a way drops, go and put it back in". With one panel that
+// is a commute to the Service Spine and back; the sub-mains are what make the
+// fault decide which zone you cross. They are only worth anything if they are
+// actually in the building, which is what this checks — a browser probe at boot
+// cannot see them, because only the starting zone is resident.
+{
+  const all = Object.values(zones).flatMap((z) => z.interactables || []);
+  const boards = all.filter((i) => i.kind === 'breaker');
+  check('the main board is in the Spine',
+    (zones.service?.interactables || []).some((i) => i.id === 'board_c'));
+  for (const [id, zone] of [['board_p', 'plant'], ['board_r', 'residence'], ['board_k', 'stack']]) {
+    check(`${id} is in the ${zone}`,
+      (zones[zone]?.interactables || []).some((i) => i.id === id),
+      'a sub-main that is not in the world is a commute with extra steps');
+  }
+  check('there are four panels, not one', boards.length === 4, `${boards.length}`);
+
+  // Every way the mode can trip has to be resettable at the board it names.
+  const sv = new Survival({ bus: new Bus(), circuits: SURVIVAL_WAYS });
+  const byId = new Map(boards.map((b) => [b.id, b]));
+  for (const way of SURVIVAL_WAYS) {
+    const wanted = sv.boardFor(way);
+    const panel = byId.get(wanted);
+    const carries = (panel?.ways || []).some((w) => w.name === way);
+    if (!carries) {
+      check(`${way} can be reset at ${wanted}`, false,
+        panel ? `${wanted} does not carry it` : `${wanted} does not exist`);
+    }
+  }
+  check('every way the mode trips is carried by the board it names', true);
+
+  // And the mode listens to the event the panel actually emits. This was
+  // `breaker:set`, which nothing has ever emitted; the sim agreed because I had
+  // written the test to emit the same invented name.
+  const bus9 = new Bus();
+  const sv9 = new Survival({ bus: bus9, circuits: SURVIVAL_WAYS });
+  sv9.trip('intake');
+  bus9.emit('light:circuit', { circuit: 'intake', powered: true, board: sv9.boardFor('intake') });
+  check('the panel event the game emits clears a fault', sv9.faults.length === 0,
+    'the mode must speak light:circuit, not an invented name');
 }
 
 // -- the objective items are not in the same place every run ----------------

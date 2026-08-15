@@ -810,6 +810,9 @@ export function buildStack(ctx, opts = {}) {
     [VOID + 1.1, 0.03, -5.4, -0.7],     // east face, past the gantry
   ]);
   const interactables = [
+    { kind: 'breaker', id: 'board_k', position: [-(OUTER - 0.18), 1.35, -3.2], rotation: Math.PI / 2,
+      maxOn: 1, title: 'LOBBY SUB-MAIN',
+      ways: [{ name: 'stack', label: 'STACK LIFT LOBBY', amps: '16A', on: true }] },
     siteSpec(cardSite.pick, { kind: 'pickup', item: 'card_warden' }),
     // The lift lobby's core, on the desk on the north face of this level.
     siteSpec(coreSite.pick, { kind: 'pickup', item: 'fuse_core' }),

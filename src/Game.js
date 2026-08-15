@@ -60,6 +60,12 @@ async function optional(name, path) {
   }
 }
 
+/** mm:ss, for the one readout in this game that is allowed to be permanent. */
+function fmtWatch(s) {
+  const t = Math.max(0, Math.floor(s));
+  return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
+}
+
 export class Game {
   constructor({ canvas, uiRoot }) {
     this.bus = new Bus();
@@ -102,6 +108,30 @@ export class Game {
     this.runSeed = this.qa ? 0xd12ec7
       : (runParam ? (parseInt(runParam, 10) >>> 0) : ((Math.random() * 0xffffffff) >>> 0));
     this.subsystems = {};
+  }
+
+  /**
+   * Push the shift onto the screen.
+   *
+   * Once per frame, and it is a read: the mode owns the state and the HUD owns
+   * the pixels, so nothing here can change how long a fault has left. The
+   * labels come from the way names because those are what the boards are
+   * stencilled with, and matching the readout to the panel is the whole
+   * navigation aid the mode gets.
+   */
+  _updateWatch() {
+    const sv = this.gameplay?.survival;
+    const w = this.ui?.watch;
+    if (!w) return;
+    if (!sv) { w.show(false); return; }
+    w.show(this.state === 'play');
+    w.time(sv.time);
+    const burn = sv.faults.length > 1 ? sv.cfg.compound : 1;
+    w.faults(sv.faults.map((f) => ({
+      circuit: f.circuit,
+      label: f.circuit.toUpperCase(),
+      margin: Math.max(0, (f.grace - f.age) / burn),
+    })));
   }
 
   // -------------------------------------------------------------------------
@@ -423,6 +453,27 @@ export class Game {
     // finishing the game after forty minutes showed nothing at all. Both screens
     // exist in `src/ui/EndScreens.js`; the UI harness was the only thing that had
     // ever opened them.
+    // ---- Night Watch -----------------------------------------------------
+    //
+    // The mode is scored on time, so the time is on screen and the score is
+    // kept. Everything here is gated on the mode existing, so the campaign is
+    // untouched: `gameplay.survival` is null unless `?mode=survival`.
+    this.bus.on('survival:end', (e) => {
+      const sv = this.gameplay?.survival;
+      const w = this.ui?.watch;
+      const r = w?.finish?.(e?.seconds ?? sv?.score ?? 0);
+      this.state = 'ended';
+      this.input.exitLock();
+      this.ui?.show?.('end', {
+        title: 'THE PLANT WENT',
+        lines: [
+          `You held Annex 7 for ${fmtWatch(e?.seconds ?? 0)}.`,
+          `${e?.resets ?? 0} ways put back in, ${e?.trips ?? 0} dropped.`,
+          r?.record ? 'A new best.' : `Best: ${fmtWatch(r?.best ?? 0)}.`,
+        ],
+      });
+    });
+
     this.bus.on('game:death', (e) => {
       if (this.state === 'dead' || this.state === 'ended') return;
       this.state = 'dead';
@@ -864,6 +915,7 @@ export class Game {
       this._settleRespawn(dt);
     }
     this.gameplay?.update?.(dt, this.input);
+    this._updateWatch();
     this.world?.update?.(dt, this.player.position);
     this.rig.update(dt, this.engine.camera, this.engine.renderer);
     // After the rig, so a mote lit by a flickering tube flickers with it.

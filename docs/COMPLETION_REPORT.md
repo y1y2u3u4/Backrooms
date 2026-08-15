@@ -2740,3 +2740,98 @@ permadeath in the campaign, no meta-progression and no build variety. What there
 is now is a building you know and a night you do not, which is the only kind of
 variation that does not throw away authored space. Night Watch is where the
 "one more run" pressure lives, and it shares 95 % of the code.
+
+---
+
+## 20. Night Watch, finished — and the event name that nothing emitted
+
+The previous pass built the mode's logic, verified it with nineteen headless
+checks, and shipped something a player could not use: no timer, no score, no
+sound, and one distribution board in the whole building, which makes the loop a
+commute to the Service Spine and back.
+
+### The bug the suite agreed with
+
+`Survival` listened for `breaker:set`. **Nothing in this game has ever emitted
+that event** — the panel emits `light:circuit`. The mode's entire reset path was
+dead in a real run, and `survival_sim` passed anyway, because I had written the
+test to emit the same invented name.
+
+That is a new shape of the pattern this report keeps recording. The earlier ones
+measured something adjacent to the claim; this one measured the claim exactly, in
+a vocabulary that existed only inside my own head. **A suite that agrees with the
+implementation about a fiction is not evidence.** The checks now speak the game's
+own event, and `chain.mjs` — which builds every zone — asserts the panel event
+clears a fault, so the integration is checked where the integration lives rather
+than where I invented it.
+
+### Sub-mains
+
+Three, and they are why the mode has a map rather than a corridor:
+
+| way | reset at | where |
+|---|---|---|
+| plant | `board_p` | the Plant sub-main, west wall |
+| residence | `board_r` | the landing board |
+| stack | `board_k` | the lift-lobby board |
+| everything else | `board_c` | Board C, in the Spine |
+
+A way that dropped at a sub-main **cannot** be put back in from Board C — the
+throw happens and nothing changes, which the audio marks with a deny. So the
+fault decides which zone you cross, and the thing walking around decides how.
+`chain.mjs` checks that every way the mode can trip is carried by the panel it
+names, and that all four panels are in the building; a browser probe at boot
+cannot see them, because only the starting zone is resident.
+
+### The readout
+
+`src/ui/Watch.js`. The one permanent element in this game's UI, permitted
+because it is the objective rather than a decoration of one:
+
+```
+                    On shift
+                       0:45
+                   BEST 11:02
+              INTAKE   1:39
+```
+
+The fault line is the only part that shouts — amber under thirty seconds, red
+under twelve — because the margin is the only number a player has to act on, and
+reading a countdown off a monospace clock in a dark corridor while something
+walks toward you is not a reasonable ask. It names the way and the board; it is
+not a marker, an arrow or a minimap. Finding the board is the game.
+
+Verified in a real browser at `?mode=survival`: the readout is visible, the clock
+reads 0:45 at the first trip, and the fault row reads `INTAKE 1:39`.
+
+That probe was also written badly first — it advanced the shift by rendering
+4 200 frames, which is an hour on a CPU rasteriser and proves nothing the logic
+clock does not. It drives the mode and renders one frame now.
+
+### The voice
+
+Composed entirely from sounds the library already registers, so `audiowiring`
+stays green at 5/5. A way dropping is a relay letting go somewhere else in the
+building and the load arriving as a bang a moment later — `relay.click`,
+`metal.clang` at 280 ms, `elec.arc` at 420 — because that cue is the only warning
+the player gets that they have somewhere to be. Putting the wrong board's switch
+in throws and then denies.
+
+### State
+
+| suite | |
+|---|---|
+| chain | **148** |
+| surveyor | 61 |
+| director | 24 |
+| survival | **22** |
+| props | **99** |
+| bootcheck | 11/11 |
+| perf | all six budgets, 179/180 draw calls |
+
+### Still not verified by a human
+
+Nobody has played a shift. The numbers say an idle player loses at 117 s and an
+attentive one lasts the hour with 31 resets; nothing says whether running the
+Plant sub-main with the Surveyor between you and it is frightening or annoying.
+That is the next hour anyone spends on this project.
