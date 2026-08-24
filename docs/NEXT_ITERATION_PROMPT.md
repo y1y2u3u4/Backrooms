@@ -36,20 +36,28 @@ floorgaps clean, portalgraph 8 zones / 19 doors, geobudget under every budget,
 bootcheck 11/11, light reach 0 % beyond 5 m in six of eight zones and 1 % in the
 other two.
 
-`npm run perf` at the shipping low tier — **every budget passes, for the first
-time in this project's recorded history**: 179 draw calls / 180, 616 k triangles
-/ 1.2 M, 6 active lights / 28, 1 shadow light / 3, 40 shader programs / 140,
-0.2 ms logic / 4.
+`npm run perf` at the shipping low tier, **twelve scenarios across all eight
+zones**: triangles 651 k / 1.2 M, active lights 12 / 28, shadow lights 1 / 3,
+shader programs 51 / 140, logic 0.2 ms / 4 — and **draw calls 268 / 180, which
+fails.**
 
-Two cautions on that line:
+Read the history carefully here. Until this pass `tools/qa/perf-scenarios.json`
+did not exist, so `perf.mjs` fell back to four hardcoded cameras that are all in
+the Intake, and every "worst scenario 179 / 180, all budgets pass" in this
+project's documents meant "the worst of four cameras in one of eight zones". The
+real worst case is the Plant at 268, and the Residence, the Service Spine and a
+fifth Intake camera all exceed 180 as well. Nothing regressed; the tool was
+looking at one room. The scenario file is committed now.
 
-- **Draw calls are one from the ceiling** (179 of 180), and the worst scenario is
-  in the Intake. Anything added there needs measuring, not estimating.
-- **`programs` was failing at 162 and is now 40** because one `customProgramCacheKey`
-  was carrying seven uniform *values*. If you add a material option, put it in a
-  uniform; only put it in the cache key if it changes the generated GLSL. Census
-  it with `tools/qa/programs.mjs`. This is not cosmetic: it took the Intake's
-  shader pre-warm from 68 s to 0.175 s and is why the capture harness is usable.
+Two cautions carried forward:
+
+- **Draw calls are the open technical defect**, at 268 / 180. The Residence's 264
+  at the shipping tier is 487 at high, and it is mostly independent door leaves
+  and pendant fittings.
+- **`programs` fell from 162 to 51** because one `customProgramCacheKey` carried
+  seven uniform *values*. If you add a material option, put it in a uniform; only
+  put it in the cache key if it changes the generated GLSL. Census it with
+  `tools/qa/programs.mjs`.
 
 Three tools were repaired or added in the pass that produced these numbers, and
 each of them changed a conclusion:
