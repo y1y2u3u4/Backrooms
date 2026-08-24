@@ -2835,3 +2835,91 @@ Nobody has played a shift. The numbers say an idle player loses at 117 s and an
 attentive one lasts the hour with 31 resets; nothing says whether running the
 Plant sub-main with the Surveyor between you and it is frightening or annoying.
 That is the next hour anyone spends on this project.
+
+---
+
+## 21. The audio backs off. The player never hears it, because they are walking.
+
+Audio has scored 3/10 for three judge rounds and never moved, and the standing
+complaint was that the ambience beds have no dynamics: `audiodyn`'s own budgets —
+6 LU of spread and a tenth of the running time spent quiet — had never been met.
+
+Three things came out of finally re-rendering from the current build.
+
+### The July numbers were not today's numbers
+
+Everything the judge measured, and everything §9 of this report recorded, came
+from renders dated 31 July. Re-rendered from the current tree:
+
+| | July | today |
+|---|---|---|
+| LRA | 1.3 – 5.8 LU | **5.7 – 14.8** |
+| quiet fraction | 0.000, every zone | 0.000 – 0.166 |
+| over the RMS ceiling | 5 of 8 | **1 of 8** |
+| flagged | 8 of 8 | 6 of 8 |
+
+The bus-fader fix from §9 landed and nobody had re-measured it. That is the
+fourth time in this project a fix has been carried as unproven because the
+artefact directory was older than the code.
+
+### The lull was built to a size that could not pass its own check
+
+`Ambience._breathe` ebbs the whole bus for a few seconds every so often. Its
+numbers were 6–9 s at a depth of 0.18–0.30, and no seed of that can satisfy
+`audiodyn`. The arithmetic needs no render at all:
+
+```
+depth 0.30 = -10.5 dB   does not even count as quiet (the bar is 12 LU down)
+depth 0.18 = -14.9 dB   counts, but only across the plateau
+plateau    = 0.6 x 9 s  = 5.4 s
+a 3 s analysis window fits inside that for 2.4 s
+2.4 / 45 s of bed       = 0.053 — half the budget, on the best possible roll
+```
+
+Four passes of mix work went at the bus, the compressor and the fader. None of
+them could have helped: the shape was too small, not too loud. Resized from the
+requirement instead — 9–13 s at 0.12–0.18, recurring every 34–58 s so a player
+crossing a zone hears more than one.
+
+### And then the decisive measurement
+
+At 150 seconds the resized lull measured **worse**: 8 of 8 flagged, LRA collapsed
+to 1.7–9.7. The breath report said the code had produced three correctly-sized
+lulls in every zone. Code and render disagreed.
+
+`audio-render` writes two sets — `beds/` with the player walking and
+`beds-still/` with the player standing. Same 150 seconds, same three lulls:
+
+| | walking | standing |
+|---|---|---|
+| LRA | 1.7 – 9.7 | **7.7 – 18.1** |
+| quiet | 0.000 – 0.077 | **0.082 – 0.124** |
+| flagged | 8 of 8 | 5 of 8 |
+| over the RMS ceiling | plant | none |
+
+**Footsteps are not on the ambience bus, because they are the player rather than
+the building.** The building ducks seventeen decibels and the boots carry
+straight on and fill every gap the mix makes.
+
+So the mix does back off, and has for some time. A moving player has never heard
+it once.
+
+That is worth stating as a design fact rather than fixing away — *you only hear
+this building when you stop walking* is arguably the point, and standing still to
+listen is already a verb this game has. But it means the two directories answer
+different questions, and for four passes everyone has been pointing the tool at
+the one with a pair of feet in it. `audiodyn` now says so when you do.
+
+### Where it stands
+
+`beds-still`, 150 s, current build: cistern, safe and stack pass outright;
+duct, intake, plant, residence and service sit at 0.082–0.094 against a 0.10 bar,
+all with LRA comfortably over. Five zones a notch short of a budget they were
+three passes away from a week ago.
+
+I have not taken that notch. The lull has already been resized once this session
+on arithmetic alone, and taking a second bite at a number without anyone having
+heard the first one is how a mix ends up tuned to a measurement instead of to a
+room. **The files are in `docs/verification/audio8/beds-still/`. They are 150
+seconds each and they are the first renders in this project's history that
+contain three audible silences.**
