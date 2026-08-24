@@ -2923,3 +2923,95 @@ heard the first one is how a mix ends up tuned to a measurement instead of to a
 room. **The files are in `docs/verification/audio8/beds-still/`. They are 150
 seconds each and they are the first renders in this project's history that
 contain three audible silences.**
+
+---
+
+## 22. The first contact sheet, and what it found
+
+Eleven frames, all eight zones, every circuit live — the first time in this
+project's history that a sheet has been taken with the power on, which is the
+trap §8 documented and which had never actually been avoided in practice.
+
+### Most of it is clean
+
+| | across 11 frames |
+|---|---|
+| banding | **0.000, every frame** |
+| clipping | **0.000, every frame** |
+| speckle | 0.0000 – 0.0008 |
+| high-frequency energy | 0.024 – 0.086, median 0.061 |
+
+Banding, blown highlights, shadow acne and aliasing shimmer are the four defects
+that usually ruin a renderer like this one, and they are absent. The Stack, which
+has been this project's oldest open complaint, measures **0.000 crushed** on an
+ordinary eye-level frame.
+
+### And it found the Ductwork
+
+`09_duct` renders **94.2 % black** with all twenty-five of its fixtures lit.
+
+That is not a new opinion, it is the third independent measurement to say the
+same thing:
+
+| measurement | Ductwork | for comparison |
+|---|---|---|
+| `lightreach --delivered 6` | 93 % under-lit, mean 8.77 | Service Spine 18.13 |
+| `lightProbe` on this frame | `directAtHead` **5.03** | Stack 328.7, Cistern 21.5 |
+| bounce fill on this frame | `fillUp` **0.011** | Cistern 0.300, Stack 0.871 |
+
+Its light-reach numbers have always been perfect — 0 % beyond 5 m, worst case
+1.53 m, twenty-five fittings in a small box — which is exactly why nobody found
+it: the zone is densely lit with feeble lamps and every plan-side metric said so
+approvingly. Its ambient fill is **thirty times lower** than the Cistern's.
+
+One caution before anybody acts on it: this is a single camera placed by
+`lookOpen` from the zone's spawn, and the framing check flagged it. A dark frame
+of a dark crawlway is not proof that the crawlway is wrong. But three
+measurements from three different subsystems now agree, and the fill figure is a
+zone profile constant rather than anything about where the camera was pointing.
+
+`07_plant` (0.431), `06_cistern_chamber` (0.380) and `11_safe` (0.199) also flag
+as crushed. All three are large or deliberately dim volumes with bright fittings
+in them, and all three have healthy dynamic range (0.649, 0.825, 0.749) — which
+is the pattern of a dark room rather than a broken one.
+
+### The performance claim was one zone of eight
+
+While taking the sheet, the per-frame draw calls did not look like the numbers
+this project has been quoting. They were not.
+
+**`tools/qa/perf-scenarios.json` did not exist.** `perf.mjs` falls back to four
+hardcoded camera positions when it is missing, and all four are in the Intake. So
+"worst scenario 179 of 180, all budgets pass" — the sentence this project's
+technical-performance claim rests on, repeated in the brief and in three of these
+sections — was the worst of four cameras in one of eight zones.
+
+Twelve scenarios, all eight zones, same tool, same shipping tier:
+
+| | draw calls |
+|---|---|
+| plant_hall | **268** |
+| residence_landing | **264** |
+| service_spine | **253** |
+| intake_spine_east | **223** |
+| intake_many_lights | 179 ← the old "worst" |
+| cistern_tunnel | 169 |
+| stack_well | 157 |
+| duct_crawl | 141 |
+| safe_room | 114 |
+
+**The real worst case is 268 against a budget of 180 — 49 % over — and four zones
+exceed it.** The Intake holds the fourth-worst view, not the worst. And
+`intake_spine_east` at 223 is a camera *inside the measured zone* that the four
+built-in scenarios never pointed at, so even the sampling of the one zone that
+was covered was missing a worse case than the one it reported.
+
+Nothing here is a regression. The draw calls were always this high; the tool was
+looking at one room. Every "all six budgets pass" in this document from §12
+onward should be read as "all six pass in the Intake", and the scenario file is
+now committed so that it never means that again.
+
+I have not tried to bring 268 down. That is a real optimisation project — the
+Residence's 264 is 487 at the high tier, and it is mostly independent door leaves
+and pendant fittings — and doing it in the same pass that discovered the number
+would mean tuning against a measurement nobody has yet reproduced.
