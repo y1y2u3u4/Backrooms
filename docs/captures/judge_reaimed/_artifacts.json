@@ -1,0 +1,302 @@
+{
+  "dir": "docs/captures/judge_reaimed",
+  "limits": {
+    "crushed": 0.16,
+    "clipped": 0.03,
+    "dynamicRange": 0.22,
+    "banding": 0.055,
+    "speckle": 0.0035,
+    "emptiness": 0.72
+  },
+  "hfMedian": 0.045534435093106757,
+  "rows": [
+    {
+      "file": "01_intake_spine.png",
+      "W": 960,
+      "H": 540,
+      "mean": 0.3232244370761661,
+      "contrast": 0.19013790844669837,
+      "dynamicRange": 0.8058094382286072,
+      "crushed": 0.033478009259259256,
+      "clipped": 0,
+      "banding": 0.00016589506172839507,
+      "highFreq": 0.045534435093106757,
+      "speckle": 0,
+      "emptiness": 0.04710262345679012,
+      "colourCast": 0.4096990262262507
+    },
+    {
+      "file": "02_intake_bay.png",
+      "W": 960,
+      "H": 540,
+      "mean": 0.3124100778102507,
+      "contrast": 0.197221858120257,
+      "dynamicRange": 0.7864847183227539,
+      "crushed": 0.04271026234567901,
+      "clipped": 0,
+      "banding": 0.0002932098765432099,
+      "highFreq": 0.04620149370479965,
+      "speckle": 0,
+      "emptiness": 0.05060956790123457,
+      "colourCast": 0.4170395369134673
+    },
+    {
+      "file": "03_intake_ceiling.png",
+      "W": 960,
+      "H": 540,
+      "mean": 0.30064915763189315,
+      "contrast": 0.16264407402802705,
+      "dynamicRange": 0.8059921683743596,
+      "crushed": 0.011390817901234567,
+      "clipped": 0,
+      "banding": 0.000046296296296296294,
+      "highFreq": 0.07807466087134322,
+      "speckle": 0.00011059285531350164,
+      "emptiness": 0.05574266975308642,
+      "colourCast": 0.4298959872837077
+    },
+    {
+      "file": "04_intake_look_back.png",
+      "W": 960,
+      "H": 540,
+      "mean": 0.3050797102777816,
+      "contrast": 0.19195816953736256,
+      "dynamicRange": 0.7750031352043152,
+      "crushed": 0.04755401234567901,
+      "clipped": 0,
+      "banding": 0.0001234567901234568,
+      "highFreq": 0.04380396698378775,
+      "speckle": 0.000001940225531815818,
+      "emptiness": 0.051863425925925924,
+      "colourCast": 0.4208057491892748
+    },
+    {
+      "file": "05_service_corridor.png",
+      "W": 960,
+      "H": 540,
+      "mean": 0.33263889371905414,
+      "contrast": 0.1394031992340335,
+      "dynamicRange": 0.705592930316925,
+      "crushed": 0.03076195987654321,
+      "clipped": 0,
+      "banding": 0.000023148148148148147,
+      "highFreq": 0.08645962356213553,
+      "speckle": 0.0003298383404086891,
+      "emptiness": 0.055212191358024694,
+      "colourCast": 0.034266728087647656
+    },
+    {
+      "file": "06_cistern_water.png",
+      "W": 960,
+      "H": 540,
+      "mean": 0.0405831686615767,
+      "contrast": 0.10452559861082636,
+      "dynamicRange": 0.4774831235408783,
+      "crushed": 0.8174054783950617,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.040980566814086926,
+      "speckle": 0.0002968545063678202,
+      "emptiness": 0.8189139660493827,
+      "colourCast": 0.24238584288718903
+    },
+    {
+      "file": "07_residence_corridor.png",
+      "W": 960,
+      "H": 540,
+      "mean": 0.31893878806357556,
+      "contrast": 0.1478439536689178,
+      "dynamicRange": 0.5850823512300849,
+      "crushed": 0.012804783950617285,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.056024664431012096,
+      "speckle": 0.00006984811914536946,
+      "emptiness": 0.04821759259259259,
+      "colourCast": 0.5890183832575832
+    },
+    {
+      "file": "08_plant_hall.png",
+      "W": 960,
+      "H": 540,
+      "mean": 0.126993556690699,
+      "contrast": 0.1778595387484471,
+      "dynamicRange": 0.6556031107902527,
+      "crushed": 0.42861689814814813,
+      "clipped": 0,
+      "banding": 0.000046296296296296294,
+      "highFreq": 0.06088544970890496,
+      "speckle": 0.000005820676595447454,
+      "emptiness": 0.4333468364197531,
+      "colourCast": 0.7280027745585957
+    },
+    {
+      "file": "09_plant_wide.png",
+      "W": 960,
+      "H": 540,
+      "mean": 0.09590532153657702,
+      "contrast": 0.13223456850834894,
+      "dynamicRange": 0.5469160676002502,
+      "crushed": 0.4623611111111111,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.054167599353020394,
+      "speckle": 0.00000970112765907909,
+      "emptiness": 0.4671219135802469,
+      "colourCast": 0.9114296211553002
+    },
+    {
+      "file": "10_duct_crawl.png",
+      "W": 960,
+      "H": 540,
+      "mean": 0.008060073242074093,
+      "contrast": 0.03968851149653677,
+      "dynamicRange": 0.2122839242219925,
+      "crushed": 0.9429417438271605,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.022139427946728546,
+      "speckle": 0,
+      "emptiness": 0.9430594135802469,
+      "colourCast": 0.1544146683672029
+    },
+    {
+      "file": "11_stack_shaft.png",
+      "W": 960,
+      "H": 540,
+      "mean": 0.0014958108235934538,
+      "contrast": 0.007288528587549205,
+      "dynamicRange": 0.008090196177363396,
+      "crushed": 0.99109375,
+      "clipped": 0,
+      "banding": 0.0005632716049382716,
+      "highFreq": 0.007455459802335801,
+      "speckle": 0,
+      "emptiness": 0.9915952932098765,
+      "colourCast": 0.10406318374524288
+    },
+    {
+      "file": "12_safe_room.png",
+      "W": 960,
+      "H": 540,
+      "mean": 0.21483184714891648,
+      "contrast": 0.3029627241344108,
+      "dynamicRange": 0.7001270651817322,
+      "crushed": 0.6400675154320987,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.024336900563099617,
+      "speckle": 0,
+      "emptiness": 0.6401736111111112,
+      "colourCast": 0.10756885298183207
+    },
+    {
+      "file": "13_surveyor_mid.png",
+      "W": 960,
+      "H": 540,
+      "mean": 0.36924792553569286,
+      "contrast": 0.3347721596962464,
+      "dynamicRange": 0.7889231443405151,
+      "crushed": 0.3999614197530864,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.03866188885881584,
+      "speckle": 0.00007372857020900109,
+      "emptiness": 0.402025462962963,
+      "colourCast": 0.12816717953123263
+    },
+    {
+      "file": "14_surveyor_close.png",
+      "W": 960,
+      "H": 540,
+      "mean": 0.17378982371802015,
+      "contrast": 0.2777881772390223,
+      "dynamicRange": 0.7897568345069885,
+      "crushed": 0.6409876543209877,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.05528597328518508,
+      "speckle": 0.00006790789361355364,
+      "emptiness": 0.6439293981481482,
+      "colourCast": 0.16306129845674167
+    },
+    {
+      "file": "15_lamp_in_the_dark.png",
+      "W": 960,
+      "H": 540,
+      "mean": 0.006198770711904935,
+      "contrast": 0.026827934353845916,
+      "dynamicRange": 0.05502588301897049,
+      "crushed": 0.9442399691358024,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.023714062000259512,
+      "speckle": 0,
+      "emptiness": 0.9451485339506173,
+      "colourCast": 0.24025896663261861
+    }
+  ],
+  "flagged": [
+    {
+      "file": "06_cistern_water.png",
+      "flags": [
+        "CRUSHED",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "08_plant_hall.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    },
+    {
+      "file": "09_plant_wide.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    },
+    {
+      "file": "10_duct_crawl.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "11_stack_shaft.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "12_safe_room.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    },
+    {
+      "file": "13_surveyor_mid.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    },
+    {
+      "file": "14_surveyor_close.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    },
+    {
+      "file": "15_lamp_in_the_dark.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    }
+  ]
+}

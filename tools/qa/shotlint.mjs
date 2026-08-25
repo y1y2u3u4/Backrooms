@@ -46,10 +46,31 @@ for (const name of (await readdir(DIR)).sort()) {
     if (!src.includes('lookOpen')) continue;
     for (const m of src.matchAll(/g\.lookOpen\s*\(/g)) {
       const before = src.slice(0, m.index).trimEnd();
-      if (CONSUMED.some((c) => before.endsWith(c))) continue;
-      rows.push(`  ✗ ${name} → ${s.name || '?'}: bare g.lookOpen() — the result is dropped, `
-        + 'so this shot is never posed. Use g.lookAtOpen().');
-      bad++;
+      if (!CONSUMED.some((c) => before.endsWith(c))) {
+        rows.push(`  ✗ ${name} → ${s.name || '?'}: bare g.lookOpen() — the result is dropped, `
+          + 'so this shot is never posed. Use g.lookAtOpen().');
+        bad++;
+        continue;
+      }
+      // THE SECOND VARIANT, WHICH THE FIRST PASS OF THIS CHECK LET THROUGH.
+      //
+      // `const o = g.lookOpen(p, y, 0);` and then nothing ever reads `o`. The
+      // assignment makes it look deliberate and it poses exactly as little as
+      // the bare call. Two of the fifteen judge shots were written this way and
+      // survived the sweep that fixed the other 115: `13_surveyor_mid` and
+      // `14_surveyor_close` both said `goto('intake')`, never moved, and were
+      // photographed in the Stack where the previous shot had left the player —
+      // with the Surveyor placed relative to that wrong position too.
+      const decl = /(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*$/.exec(before);
+      if (!decl) continue;
+      const v = decl[1];
+      const after = src.slice(m.index);
+      const reads = [...after.matchAll(new RegExp(`\\b${v}\\b`, 'g'))].length;
+      if (reads <= 1) {
+        rows.push(`  ✗ ${name} → ${s.name || '?'}: g.lookOpen() assigned to \`${v}\`, `
+          + 'which is never read — the shot is not posed. Use g.lookAtOpen().');
+        bad++;
+      }
     }
   }
 }
