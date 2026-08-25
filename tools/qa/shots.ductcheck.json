@@ -1,0 +1,8 @@
+[
+ {
+  "name": "09_duct",
+  "settle": 150,
+  "note": "This setup used to end at `g.lookOpen(r, ...)` with the result dropped — lookOpen is a query, so the shot was never posed and photographed the spawn. The hand-written fix that replaced it was also wrong: g.world.spawn is an ARRAY (lookOpen indexes pos[0]/pos[2]), so `r.x` was undefined and the camera went to NaN. g.lookAtOpen takes either form and poses from the position it actually found.",
+  "setup": "g.world.goto('duct');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();g.lookAtOpen(g.world.spawn,g.world.spawnYaw||0,0.0);"
+ }
+]

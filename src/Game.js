@@ -1152,6 +1152,19 @@ export class Game {
    * lit by a fixture 2.7 m up the inverse square law is merciless.
    */
   look(x, y, z, yaw = 0, pitch = 0) {
+    // A CAMERA SENT TO NaN RENDERS BLACK AND SAYS NOTHING.
+    //
+    // `world.spawn` is an array; a shot setup that wrote `r.x` got undefined,
+    // teleported here, and produced a 100 %-crushed frame that read exactly
+    // like an unlit zone. The probe reported `head NaN` in the status line and
+    // the run carried on. Refuse the pose and say so — the previous pose is at
+    // least somewhere in the building.
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)
+      || !Number.isFinite(yaw) || !Number.isFinite(pitch)) {
+      console.error(`[look] non-finite pose (${x}, ${y}, ${z}, yaw ${yaw}, pitch ${pitch}) `
+        + '— refusing to move the camera. Any frame from this shot is of the previous pose.');
+      return false;
+    }
     const res = this.collision.resolveCapsule(
       x, y, z, this.player.radius + 0.08, this.player.height);
     const floor = this.collision.sampleFloor(res.x, res.z, y + 1.2, 2.5);
@@ -1160,7 +1173,15 @@ export class Game {
     this.player.bobAmount = 0;
     this.player.velocity.set(0, 0, 0);
     this.engine.exposure.reset();
-    this.player.update(1 / 60, null);
+    // SETTLE THE POSTURE, DO NOT STEP IT ONCE.
+    //
+    // `crouchAmt` and `crawlAmt` are damped at 11 and 9, so a single 1/60 step
+    // moves them about 15 % of the way. In a crawlway that leaves the camera
+    // most of a metre above where a player's eye would be — which is above the
+    // duct's roof — and the frame is of the outside of the geometry. Forty
+    // frames is two thirds of a second of simulated time and settles both.
+    for (let i = 0; i < 40; i++) this.player.update(1 / 60, null);
+    return true;
   }
 
   /**
@@ -1176,9 +1197,25 @@ export class Game {
    * @param {number} prefer preferred yaw in radians
    */
   lookOpen(pos, prefer = 0, pitch = 0, {
-    samples = 16, advance = 1.6, maxRange = 24, minClear = 3.0,
+    samples = 16, advance = 1.6, maxRange = 24, minClear = 3.0, headroom = 1.75,
   } = {}) {
     const [x0, y0, z0] = pos;
+    // THE HEADROOM TEST EXCLUDED A WHOLE ZONE, AND THE ZONE WAS THEN JUDGED ON
+    // THE FRAMES IT PRODUCED.
+    //
+    // The Ductwork is a 0.8 m crawl box. Nowhere in it has 1.75 m of headroom,
+    // so every candidate this method tried was rejected, `best` stayed null, and
+    // the camera was left wherever `resolveCapsule` had put it — which is not a
+    // view of anything. Every duct frame this project has ever taken has been of
+    // nothing, and the last one measured 94.2 % black and was read as evidence
+    // that the zone was too dark. It was evidence about the camera. Raising the
+    // zone's fittings by 3.2x and its fill by nearly 3x moved that frame from
+    // 0.942 crushed to 0.943.
+    //
+    // A search that finds nothing has to say so and degrade to the best thing it
+    // did find, rather than silently hand back a camera it never placed. The
+    // retry drops the headroom requirement to something a crawlway can satisfy
+    // and reports which one it used.
 
     /**
      * Best heading from a candidate standing position, and how far it sees.
@@ -1196,8 +1233,17 @@ export class Game {
       // says nothing about the zone. 1.75 m is the standing eye height plus a
       // little; anything less is somewhere the player cannot stand.
       const ceil = this.collision.ceilingAbove(r.x, r.z, fl.y + 0.05);
-      if (ceil != null && ceil - fl.y < 1.75) return null;
-      const ey = fl.y + 1.6;
+      if (ceil != null && ceil - fl.y < headroom) return null;
+      // PROBE FROM THE HEIGHT THE PLAYER'S EYE WILL ACTUALLY BE AT.
+      //
+      // This was a flat `fl.y + 1.6`, the standing eye. The Ductwork is a 0.80 m
+      // crawl box, so every sightline this method traced there started thirty
+      // centimetres above the duct's roof, out in the solid, and scored the
+      // outside of the shell. `Player` already auto-crawls to a 0.52 m eye when
+      // the headroom demands it; the search did not know that, so it was
+      // answering "what can be seen from a point nobody can occupy".
+      const clear = ceil != null ? ceil - fl.y : 99;
+      const ey = fl.y + Math.min(1.6, Math.max(0.45, clear - 0.30));
       let yaw = prefer, score = -1, clearAt = 0;
       for (let i = 0; i < samples; i++) {
         const a = (i / samples) * Math.PI * 2;
@@ -1236,7 +1282,26 @@ export class Game {
         if (best && best.clear >= minClear) break;
       }
     }
-    if (!best) best = { x: x0, z: z0, y: y0, yaw: prefer, score: 0, clear: 0 };
+    // NOTHING PASSED. Rather than hand back a camera this method never placed,
+    // try again with a headroom a crawlway can satisfy. 0.55 m is under the
+    // Ductwork's 0.80 m clear internal, and still excludes a gap under a soffit
+    // that nobody could put their head in.
+    let relaxed = false;
+    if (!best && headroom > 0.55) {
+      relaxed = true;
+      const retry = this.lookOpen(pos, prefer, pitch,
+        { samples, advance, maxRange, minClear, headroom: 0.55 });
+      if (retry && retry.clear > 0) return { ...retry, relaxedHeadroom: true };
+    }
+    if (!best) {
+      // Still nothing, and now say so out loud: a frame taken from here is a
+      // photograph of wherever the body happened to be, and reading it as
+      // evidence about the zone is how the Ductwork got its lighting changed on
+      // the strength of a picture of nothing.
+      console.warn('[lookOpen] no candidate had a sightline; the camera was not placed'
+        + ` (from ${pos.map((v) => v.toFixed(1)).join(', ')})`);
+      best = { x: x0, z: z0, y: y0, yaw: prefer, score: 0, clear: 0 };
+    }
 
     const res = { x: best.x, z: best.z };
     const y = best.y;
@@ -1279,6 +1344,37 @@ export class Game {
       clear: +best.clear.toFixed(1), degenerate: best.clear < 1.5,
       moved: +Math.hypot(cx - pos[0], cz - pos[2]).toFixed(1),
     };
+  }
+
+  /**
+   * Find an open direction AND STAND THERE.
+   *
+   * `lookOpen` is a query. It searches, scores, and returns a position and a
+   * heading; it moves nothing. 115 of the 135 shots in `tools/qa/shots.*.json`
+   * called it as if it were a command — `g.lookOpen(r, yaw, 0);` as a bare
+   * statement, result dropped — and then photographed whatever pose the game
+   * happened to be in after `world.goto`. Frames named `intake_ceiling`,
+   * `stack_up` and `service_spine` were pictures of the zone's spawn, facing
+   * forward, and every judgement made from them was a judgement about a frame
+   * nobody had aimed. The duct one cost four rounds of lighting changes to a
+   * zone that turned out to be the brightest in the building.
+   *
+   * The two calls existing separately is what made that possible, so this pairs
+   * them. `lookOpen` stays pure for the callers that genuinely only want to ask.
+   *
+   * @returns the `lookOpen` result, or null if there was nothing to find.
+   */
+  lookAtOpen(pos, prefer = 0, pitch = 0, opts = {}) {
+    const p = Array.isArray(pos) ? pos : [pos.x, pos.y, pos.z];
+    const o = this.lookOpen(p, prefer, pitch, opts);
+    // Pose from what it FOUND, not from what it was given: lookOpen is allowed
+    // to step the camera off a wall, and `moved` is how far it did.
+    const [x, y, z] = o?.position || p;
+    this.look(x, y, z, o ? o.yaw : prefer, pitch);
+    if (o?.degenerate) {
+      console.warn(`[lookAtOpen] best sightline was only ${o.clear} m — this frame is of a wall, not of the zone`);
+    }
+    return o || null;
   }
 
   walkTo(x, z, seconds = 1) {
@@ -1364,6 +1460,19 @@ export const AMBIENT_PROFILES = {
   cistern:   { sky: 0x5c7885, ground: 0x7d8068, intensity: 1.45, motes: 0.30, moteSize: 1.35 },
   residence: { sky: 0x6e7480, ground: 0x9a8258, intensity: 1.05, motes: 0.75, moteSize: 0.95 },
   plant:     { sky: 0x4c5a6b, ground: 0x74684f, intensity: 0.75, motes: 0.62, moteSize: 1.10, moteExtent: 26 },
+  // THE DUCTWORK HAD THE DARKEST COLOURS AND THE LOWEST INTENSITY IN THE TABLE,
+  // and it is a galvanised box 800 mm across. Zinc sits around 0.55 albedo and
+  // every surface is within arm's reach of every other, so this is the highest
+  // bounce environment in the building and it was carrying a quarter of the
+  // Cistern's fill and an eighth of the Stack's. Measured on the first contact
+  // sheet ever taken with the power on: `fillUp` 0.011 against the Cistern's
+  // 0.300, and a frame 94.2 % black.
+  //
+  // Raising fill is the move this project has been burned by — it is why the
+  // Stack measured well and looked wrong — so the argument here is deliberately
+  // about the material rather than the measurement, and the fittings were raised
+  // in the same pass (see `OUT.bulk` in DuctZone.js) so the light still comes
+  // from the lamps rather than from nowhere.
   duct:      { sky: 0x2e343c, ground: 0x443c2c, intensity: 0.30, motes: 1.45, moteSize: 1.15, moteExtent: 11 },
   stack:     { sky: 0x8e9cb4, ground: 0xb0a48b, intensity: 2.30, motes: 0.90, moteSize: 1.05, moteExtent: 24 },
   safe:      { sky: 0x7e8290, ground: 0xa88a55, intensity: 1.30, motes: 0.60, moteSize: 0.90, moteExtent: 12 },

@@ -1,0 +1,82 @@
+{
+  "quality": "low",
+  "results": [
+    {
+      "name": "plant_hall",
+      "reported": 268,
+      "counted": 268,
+      "top": [
+        {
+          "what": "plant | steelPainted",
+          "calls": 34,
+          "tris": 341424
+        },
+        {
+          "what": "? | (unnamed)",
+          "calls": 30,
+          "tris": 1976
+        },
+        {
+          "what": "plant | doorPaint",
+          "calls": 18,
+          "tris": 23288
+        },
+        {
+          "what": "gen | galvSteel",
+          "calls": 16,
+          "tris": 4392
+        },
+        {
+          "what": "gen | (unnamed)",
+          "calls": 13,
+          "tris": 248
+        },
+        {
+          "what": "plant | (unnamed)",
+          "calls": 12,
+          "tris": 1424
+        },
+        {
+          "what": "gen | steelPainted",
+          "calls": 10,
+          "tris": 5560
+        },
+        {
+          "what": "gen | rustMetal",
+          "calls": 8,
+          "tris": 1656
+        },
+        {
+          "what": "plant | galvSteel",
+          "calls": 8,
+          "tris": 23160
+        },
+        {
+          "what": "plant | concrete",
+          "calls": 8,
+          "tris": 82272
+        },
+        {
+          "what": "lift | (unnamed)",
+          "calls": 8,
+          "tris": 292
+        },
+        {
+          "what": "plant | acousticPanel",
+          "calls": 6,
+          "tris": 22760
+        },
+        {
+          "what": "plant | paper",
+          "calls": 6,
+          "tris": 12208
+        },
+        {
+          "what": "plant | rustMetal",
+          "calls": 6,
+          "tris": 10136
+        }
+      ]
+    }
+  ]
+}

@@ -60,6 +60,28 @@ const WALL = SIZE / 2 - 0.03;   // inside face of a side wall, where a lamp goes
 // the crawl through 0.9 mm of galvanised sheet, which is exactly the "fixture on
 // the far side of a wall lighting a visibly dark room" that the rig's own
 // occlusion test exists to prevent. The crawl gets lit by lamps that are in it.
+/**
+ * Fitting output, as a multiple of rated.
+ *
+ * `bulk` WAS RAISED TO 1.60 HERE AND PUT BACK. The reasoning was that a 0.8 m
+ * galvanised box is the highest-bounce space in the building and half-rated
+ * lamps were starving it, and `lightreach --delivered` agreed: 93 % of the
+ * walkable area under a 10.52 lux floor, mean 8.77.
+ *
+ * It was put back because it does not work, and the measurement that says so is
+ * the render rather than the plan. Standing between two lamps at [788.2, 0, 400]
+ * — 1.6 m from the spawn, which sits in a pool — the frame is 99.2 % crushed.
+ * Multiplying every fitting in the zone by 3.2 at runtime moved mean luminance
+ * from 1.6 to 1.7. Forcing every material double-sided moved it from 1.6 to 1.6.
+ * The lamp power is not the variable and neither is culling.
+ *
+ * What is: these are spots aimed DOWN the crawl (`target` below, and 2.4 m
+ * ahead), which is deliberate — see `ductLamp` — so a player between two of them
+ * is behind one cone and outside the other, and the zone's bounce fill measures
+ * 0.015 at that point. Between pools there is no light to scale up. Fixing it
+ * means changing how the crawl is lit — spread, aim, or a real ambient floor for
+ * the zone — not how hard. Left authored until that decision is made.
+ */
 const OUT = { bulk: 0.50, emerg: 0.85, borrowed: 1.1 };
 
 /** Interior of a straight duct run, with seams, rivets and hanger straps. */

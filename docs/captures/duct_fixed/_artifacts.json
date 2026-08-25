@@ -1,0 +1,38 @@
+{
+  "dir": "docs/captures/duct_fixed",
+  "limits": {
+    "crushed": 0.16,
+    "clipped": 0.03,
+    "dynamicRange": 0.22,
+    "banding": 0.055,
+    "speckle": 0.0035,
+    "emptiness": 0.72
+  },
+  "hfMedian": 0.023582687534300335,
+  "rows": [
+    {
+      "file": "09_duct.png",
+      "W": 960,
+      "H": 540,
+      "mean": 0.010320424166342221,
+      "contrast": 0.049412246979348914,
+      "dynamicRange": 0.31081488728523254,
+      "crushed": 0.9347125771604938,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.023582687534300335,
+      "speckle": 0,
+      "emptiness": 0.9349537037037037,
+      "colourCast": 0.13174067197361236
+    }
+  ],
+  "flagged": [
+    {
+      "file": "09_duct.png",
+      "flags": [
+        "CRUSHED",
+        "EMPTY"
+      ]
+    }
+  ]
+}

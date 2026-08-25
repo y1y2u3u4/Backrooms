@@ -27,6 +27,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { writeFile, mkdir, readFile, readdir, stat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import { ensureFreshBuild } from './freshbuild.mjs';
 
 const args = Object.fromEntries(
   process.argv.slice(2).join(' ').split('--').filter(Boolean)
@@ -80,40 +81,13 @@ async function waitForServer(url, ms = 60000) {
  * A build is one second. There is no reason to ever risk this, so the tool
  * rebuilds whenever any source file is newer than the bundle and says that it
  * did. `--no-build` opts out, for measuring a build you have deliberately kept.
+ *
+ * The check itself now lives in `freshbuild.mjs`, because it lived HERE and only
+ * here — `capture.mjs` went on booting whatever `dist/` happened to contain, and
+ * cost four rounds of reasoning about a zone that was never dark. One copy,
+ * called by every harness that boots the bundle.
  */
-async function newestMtime(entry) {
-  let newest = 0;
-  const walk = async (p) => {
-    let s;
-    try { s = await stat(p); } catch { return; }
-    if (s.isDirectory()) {
-      for (const name of await readdir(p)) {
-        if (name === 'node_modules' || name.startsWith('.')) continue;
-        await walk(path.join(p, name));
-      }
-    } else if (s.mtimeMs > newest) newest = s.mtimeMs;
-  };
-  await walk(entry);
-  return newest;
-}
-
-// Unconditional, and BEFORE the port check. A `vite preview` left listening from
-// an earlier run is the likeliest way to end up measuring last week's bundle, and
-// that is precisely the case a check placed inside the "no server yet" branch
-// would skip.
-if (args['no-build'] !== true) {
-  let src = 0;
-  for (const p of ['src', 'index.html', 'public', 'vite.config.js']) {
-    src = Math.max(src, await newestMtime(p));
-  }
-  const built = existsSync('dist/index.html') ? (await stat('dist/index.html')).mtimeMs : 0;
-  if (src > built) {
-    const age = built ? `${Math.round((src - built) / 1000)} s` : 'no build at all';
-    console.log(`dist is behind src (${age}) — rebuilding before measuring`);
-    const r = spawnSync('npx', ['vite', 'build'], { stdio: 'inherit' });
-    if (r.status !== 0) { console.error('build failed; refusing to measure a stale bundle'); process.exit(1); }
-  }
-}
+await ensureFreshBuild({ skip: args['no-build'] === true, reason: 'measuring' });
 
 const url = `http://127.0.0.1:${PORT}/`;
 let server = null;

@@ -1,15 +1,15 @@
 {
-  "at": "2026-08-12T05:31:37.615Z",
+  "at": "2026-08-25T02:15:07.826Z",
   "zones": {
     "intake": {
       "id": "intake",
       "meshes": 109,
-      "triangles": 665300,
-      "instances": 259,
+      "triangles": 667372,
+      "instances": 266,
       "chunks": 4,
       "colliders": 223,
       "floors": 4,
-      "fixtures": 259,
+      "fixtures": 266,
       "unlit": [],
       "props": 13,
       "portals": 3
@@ -24,7 +24,7 @@
       "floors": 35,
       "fixtures": 74,
       "unlit": [],
-      "props": 11,
+      "props": 12,
       "portals": 7
     },
     "cistern": {
@@ -50,7 +50,7 @@
       "floors": 21,
       "fixtures": 37,
       "unlit": [],
-      "props": 12,
+      "props": 13,
       "portals": 2
     },
     "plant": {
@@ -63,7 +63,7 @@
       "floors": 50,
       "fixtures": 31,
       "unlit": [],
-      "props": 11,
+      "props": 12,
       "portals": 2
     },
     "duct": {
@@ -89,7 +89,7 @@
       "floors": 4,
       "fixtures": 98,
       "unlit": [],
-      "props": 8,
+      "props": 9,
       "portals": 2
     },
     "safe": {

@@ -39,6 +39,7 @@ import { Buffer } from 'node:buffer';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { readdir } from 'node:fs/promises';
+import { ensureFreshBuild } from './freshbuild.mjs';
 
 const args = Object.fromEntries(
   process.argv.slice(2).join(' ').split('--').filter(Boolean)
@@ -98,6 +99,13 @@ async function waitForServer(url, ms = 60000) {
 
 async function main() {
   await mkdir(OUT, { recursive: true });
+
+  // BEFORE the port check, not inside the "no server yet" branch. This tool used
+  // to check only that dist/index.html EXISTED, which is true of a bundle from
+  // any point in history; a duct frame was then photographed four times across
+  // four lighting changes and came back byte-identical every time, because a
+  // preview server from an earlier run was still serving the old bundle.
+  await ensureFreshBuild({ skip: args['no-build'] === true, reason: 'capturing' });
 
   let server = null;
   const url = `http://127.0.0.1:${PORT}/`;
