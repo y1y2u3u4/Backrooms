@@ -1374,7 +1374,45 @@ export class Game {
     if (o?.degenerate) {
       console.warn(`[lookAtOpen] best sightline was only ${o.clear} m — this frame is of a wall, not of the zone`);
     }
+    this.assertCameraInZone('lookAtOpen');
     return o || null;
+  }
+
+  /**
+   * Is the camera actually standing in the zone the game thinks it is in?
+   *
+   * `12_safe_room` reported `[safe lit 5/5 head 15.2]` and rendered 205 draw
+   * calls over 888k triangles — byte-for-byte the workload of `11_stack_shaft`,
+   * the shot before it. The safe room alone renders 119 calls over 66k. The
+   * zone had been streamed in and its ways were live; the CAMERA was still in
+   * the Stack, so the frame was of the Stack with the safe room's electrics.
+   * Every readout in the status line agreed that everything was fine, because
+   * every readout was about the zone rather than about the camera.
+   *
+   * Nothing else in the harness compares those two things, so this does. It is
+   * a warning rather than a throw: a shot deliberately taken from a doorway or
+   * a portal is a legitimate thing to want, and this cannot tell the difference.
+   * What it can do is stop the disagreement being silent.
+   */
+  assertCameraInZone(who = 'camera') {
+    const z = this.world?.zones?.[this.currentZone];
+    const b = z?.bounds;
+    if (!b) return true;
+    const [ox, oy, oz] = z.origin || [0, 0, 0];
+    const p = this.player.position;
+    const lx = p.x - ox, ly = p.y - oy, lz = p.z - oz;
+    const pad = 1.5;   // portals, doorways and thresholds are not a mistake
+    const inside = lx >= b.min.x - pad && lx <= b.max.x + pad
+      && lz >= b.min.z - pad && lz <= b.max.z + pad
+      && ly >= b.min.y - 4 && ly <= b.max.y + 4;
+    if (!inside) {
+      console.warn(`[${who}] the camera is at [${p.x.toFixed(1)}, ${p.y.toFixed(1)}, `
+        + `${p.z.toFixed(1)}] but the current zone is "${this.currentZone}", whose bounds are `
+        + `[${(b.min.x + ox).toFixed(1)}..${(b.max.x + ox).toFixed(1)}, `
+        + `${(b.min.z + oz).toFixed(1)}..${(b.max.z + oz).toFixed(1)}]. `
+        + 'The frame will be of somewhere else with this zone\'s electrics.');
+    }
+    return inside;
   }
 
   walkTo(x, z, seconds = 1) {

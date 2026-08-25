@@ -179,16 +179,16 @@
       "file": "12_safe_room.png",
       "W": 960,
       "H": 540,
-      "mean": 0.21483184714891648,
-      "contrast": 0.3029627241344108,
-      "dynamicRange": 0.7001270651817322,
-      "crushed": 0.6400675154320987,
+      "mean": 0.3168502012245974,
+      "contrast": 0.2619726252524446,
+      "dynamicRange": 0.812951385974884,
+      "crushed": 0.1478587962962963,
       "clipped": 0,
-      "banding": 0,
-      "highFreq": 0.024336900563099617,
-      "speckle": 0,
-      "emptiness": 0.6401736111111112,
-      "colourCast": 0.10756885298183207
+      "banding": 0.00011574074074074075,
+      "highFreq": 0.039240240616926526,
+      "speckle": 0.000023282706381789818,
+      "emptiness": 0.15901041666666665,
+      "colourCast": 0.3905921461467304
     },
     {
       "file": "13_surveyor_mid.png",
@@ -270,12 +270,6 @@
         "CRUSHED",
         "FLAT",
         "EMPTY"
-      ]
-    },
-    {
-      "file": "12_safe_room.png",
-      "flags": [
-        "CRUSHED"
       ]
     },
     {

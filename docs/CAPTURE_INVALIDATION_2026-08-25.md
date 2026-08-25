@@ -114,14 +114,45 @@ the shot: `06_cistern_water` (4 of 24 lit), `10_duct_crawl` (11 of 25),
 building off). Crushed is expected. They are also close to useless as judging
 material, which is worth deciding about separately.
 
+### 12_safe_room: not a rendering fault — the third variant
+
+Called a probable rendering fault when first seen, on the strength of hard-edged
+black rectangles across flat cream wall panels. That was wrong, and the number
+that settled it was the workload rather than the picture:
+
+    in the sheet   12_safe_room   205 calls   888k tris
+    in the sheet   11_stack_shaft 201 calls   885k tris     <- the shot before it
+    on its own     12_safe_room   119 calls    66k tris
+
+In a sheet run the shot rendered the STACK, with the safe room's electrics live
+over the top of it — `[safe lit 5/5 head 15.2]` was true and described a zone the
+camera was not standing in. Captured on its own the same shot gives a correct
+safe room: damask wallpaper, dado rail, filing cabinet, wall lamp, torch pool,
+crush 0.148. An in-page reproduction of the same pose matches it exactly.
+
+Two suspects were eliminated on the way, and both are worth recording because
+both were plausible:
+
+  * the baked AO volume, which turned out to be doing its job. Zeroing
+    `uAOStrength` at runtime took the frame from 0.225 crushed to 0.101 — over
+    half the crushed pixels — but the AO-on picture is the good-looking one, and
+    with `uAOFloor` at 0.35 the term cannot drive indirect below 41.5 % anyway,
+    so it can push a dim pixel under the threshold but cannot make black.
+  * shadow maps, which moved it 0.225 -> 0.211. Not the variable.
+
+`Game.assertCameraInZone()` now compares where the camera is against the bounds
+of the zone the game says it is in, and warns with both. Nothing else in the
+harness compared those two things, which is why three shots could render the
+wrong room while every readout in the status line agreed that all was well. It
+warns rather than throws, because a shot taken from a doorway or a portal is a
+legitimate thing to want and this cannot tell the difference — what it can do is
+stop the disagreement being silent.
+
 ### Still open
 
-`12_safe_room`, crush 0.640, with all five of its fittings lit and 15.1 lux at
-head height, shows flat cream wall panels cut by pure-black rectangles with
-straight edges meeting at right angles and no gradient across them. Shadows do
-not have that shape. This is the one frame in the sheet that looks like a
-rendering fault rather than a dark room, and it has never been seen before
-because this shot was never posed. Not diagnosed.
+Nothing from the judge sheet. The Ductwork's between-pool darkness (see the
+constant in DuctZone.js) and the four zones at roughly 2.4x the draw-call budget
+are the open visual items, and neither came from this sheet.
 
 ### Draw calls, measured per zone for the first time
 
