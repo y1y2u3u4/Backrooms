@@ -83,3 +83,56 @@ they were judged from were aimed at the spawn rather than at what their names
 claim. **Every visual conclusion in the documents listed at the top has to be
 re-derived from re-captured frames before it can be relied on.** That work has
 not been done.
+
+---
+
+## The re-captured sheet (2026-08-25, docs/captures/judge_reaimed)
+
+15 shots, cameras actually posed. Eight are healthy and readable:
+
+| frame | crush | note |
+|---|---|---|
+| 01_intake_spine | 0.033 | ceiling grid, dado, receding corridor |
+| 02_intake_bay | 0.043 | |
+| 03_intake_ceiling | 0.011 | |
+| 04_intake_look_back | 0.048 | |
+| 05_service_corridor | 0.031 | |
+| 07_residence_corridor | 0.013 | pendants, wallpaper, notice board |
+| 13_surveyor_mid | 0.037 | was 0.400 while unposed |
+| 14_surveyor_close | 0.030 | was 0.641; the Surveyor is in frame |
+
+Two are flagged CRUSHED and should not be: `08_plant_hall` 0.429 and
+`09_plant_wide` 0.462. Both are correct pictures of a tall industrial hall lit
+by downward high bays — brick, gantries, pipework, light cones — and what the
+metric is calling crushed is the ceiling void above the bays, which is supposed
+to be black. This is the artifact tool mis-scoring a working frame, not a
+lighting fault.
+
+Four are dark because the shot itself kills the circuits, which is the point of
+the shot: `06_cistern_water` (4 of 24 lit), `10_duct_crawl` (11 of 25),
+`11_stack_shaft` (head 0 lux), `15_lamp_in_the_dark` (`live:none`, the whole
+building off). Crushed is expected. They are also close to useless as judging
+material, which is worth deciding about separately.
+
+### Still open
+
+`12_safe_room`, crush 0.640, with all five of its fittings lit and 15.1 lux at
+head height, shows flat cream wall panels cut by pure-black rectangles with
+straight edges meeting at right angles and no gradient across them. Shadows do
+not have that shape. This is the one frame in the sheet that looks like a
+rendering fault rather than a dark room, and it has never been seen before
+because this shot was never posed. Not diagnosed.
+
+### Draw calls, measured per zone for the first time
+
+The figure carried until now was 268 against a budget of 180, from a scenario
+list that only covered the Intake. The re-aimed sheet reports the real spread:
+
+    07_residence_corridor   457
+    15_lamp_in_the_dark     439
+    05_service_corridor     433
+    08_plant_hall           424
+    13/14_surveyor          327
+    01/02/04_intake         297
+
+Four zones sit at roughly 2.4x budget, not one zone slightly over.

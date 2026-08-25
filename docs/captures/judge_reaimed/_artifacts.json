@@ -8,7 +8,7 @@
     "speckle": 0.0035,
     "emptiness": 0.72
   },
-  "hfMedian": 0.045534435093106757,
+  "hfMedian": 0.04620149370479965,
   "rows": [
     {
       "file": "01_intake_spine.png",
@@ -194,31 +194,31 @@
       "file": "13_surveyor_mid.png",
       "W": 960,
       "H": 540,
-      "mean": 0.36924792553569286,
-      "contrast": 0.3347721596962464,
-      "dynamicRange": 0.7889231443405151,
-      "crushed": 0.3999614197530864,
+      "mean": 0.31558783718601274,
+      "contrast": 0.18861912514535603,
+      "dynamicRange": 0.7985325455665588,
+      "crushed": 0.03693094135802469,
       "clipped": 0,
-      "banding": 0,
-      "highFreq": 0.03866188885881584,
-      "speckle": 0.00007372857020900109,
-      "emptiness": 0.402025462962963,
-      "colourCast": 0.12816717953123263
+      "banding": 0.00009259259259259259,
+      "highFreq": 0.04659853104630855,
+      "speckle": 0,
+      "emptiness": 0.04620563271604938,
+      "colourCast": 0.40635507264649817
     },
     {
       "file": "14_surveyor_close.png",
       "W": 960,
       "H": 540,
-      "mean": 0.17378982371802015,
-      "contrast": 0.2777881772390223,
-      "dynamicRange": 0.7897568345069885,
-      "crushed": 0.6409876543209877,
+      "mean": 0.3193201035103965,
+      "contrast": 0.1869666537766969,
+      "dynamicRange": 0.8142188191413879,
+      "crushed": 0.029621913580246913,
       "clipped": 0,
-      "banding": 0,
-      "highFreq": 0.05528597328518508,
-      "speckle": 0.00006790789361355364,
-      "emptiness": 0.6439293981481482,
-      "colourCast": 0.16306129845674167
+      "banding": 0.00019675925925925926,
+      "highFreq": 0.049122189472256675,
+      "speckle": 0.000001940225531815818,
+      "emptiness": 0.0421508487654321,
+      "colourCast": 0.39615799497723464
     },
     {
       "file": "15_lamp_in_the_dark.png",
@@ -274,18 +274,6 @@
     },
     {
       "file": "12_safe_room.png",
-      "flags": [
-        "CRUSHED"
-      ]
-    },
-    {
-      "file": "13_surveyor_mid.png",
-      "flags": [
-        "CRUSHED"
-      ]
-    },
-    {
-      "file": "14_surveyor_close.png",
       "flags": [
         "CRUSHED"
       ]
