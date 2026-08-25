@@ -804,6 +804,27 @@ export function buildService(ctx, opts = {}) {
     emergencyLight(b, rigFor(b), ex, CEIL - 0.32, ez, { yaw: eyaw, seed: 400 + ex, circuit: 'emergency' });
   }
 
+  /**
+   * AND ONE IN THE BREAKER ROOM.
+   *
+   * The spine above is the escape route and is covered end to end. The room the
+   * blackout SENDS YOU TO was not. `lightreach --blackout --map service` puts a
+   * solid block of no-sightline over the whole of BREAKER, and the nearest point
+   * you can see any emergency fitting from is 7.6 m away — so the room holding
+   * Distribution Board C, which the comment sixty lines below calls the
+   * traversal puzzle of the whole game, is the one place in the Service Spine
+   * you cannot find in the dark. You are sent there BY the dark.
+   *
+   * On the north wall, aimed back at the door, which is where a real one goes:
+   * visible from anywhere in the room and it lights the way out rather than the
+   * wall you are facing.
+   */
+  {
+    const b = byX((BREAKER[0] + BREAKER[2]) / 2);
+    emergencyLight(b, rigFor(b), (BREAKER[0] + BREAKER[2]) / 2, CEIL - 0.32, BREAKER[1] + 0.12,
+      { yaw: 0, seed: 412, circuit: 'emergency' });
+  }
+
   // =========================================================================
   // 10. gameplay — Distribution Board C
   //

@@ -353,6 +353,26 @@ async function audit(id) {
    */
   let blind = 0, blindAt = null, farthestVisible = 0;
   const blindPts = [];
+  /**
+   * HOW FAR IS IT FROM BLIND TO A BEACON.
+   *
+   * `NO SIGHTLINE` on its own conflates two different buildings. The Residence
+   * reported 43 % — the worst in the game — and the plan view showed why: the
+   * corridor, which is the escape route, has complete coverage, and every blind
+   * cell is inside a flat. That is what a real building does; emergency lighting
+   * covers escape routes, not dwellings, and the flats' own fittings are on the
+   * `residence` way and correctly dead.
+   *
+   * So the share of blind AREA is not the player's question. The player's
+   * question is "I cannot see a lamp — how far do I have to feel my way before I
+   * can?" A flat whose doorway is two metres away is atmosphere. A machine deck
+   * eight metres from any sighted spot is a defect. Same 43 %.
+   *
+   * Straight-line between sample points, so it is a LOWER BOUND on the walk —
+   * it does not know about walls between the two. It is reported as a floor,
+   * not as a distance to trust.
+   */
+  const sightedPts = [];
   for (const p of pts) {
     let best = Infinity;
     for (const f of live) {
@@ -382,8 +402,11 @@ async function audit(id) {
       if (!seen) {
         blind++;
         if (!blindAt) blindAt = p;
-        if (MAP) blindPts.push([p[0], p[2]]);
-      } else if (seen > farthestVisible) farthestVisible = seen;
+        blindPts.push([p[0], p[2]]);
+      } else {
+        sightedPts.push([p[0], p[2]]);
+        if (seen > farthestVisible) farthestVisible = seen;
+      }
     }
   }
 
@@ -396,7 +419,29 @@ async function audit(id) {
     worstAt: worstAt ? worstAt.map((v) => +v.toFixed(1)) : null,
     mean: +(sum / pts.length).toFixed(2),
     fracOver5m: +(over5.length / pts.length).toFixed(3),
-    blind: EMERGENCY_ONLY ? { frac: blind / pts.length, at: blindAt, farthest: farthestVisible } : null,
+    blind: EMERGENCY_ONLY ? {
+      frac: blind / pts.length, at: blindAt, farthest: farthestVisible,
+      ...(() => {
+        if (!blindPts.length) return { reach: [], reachP50: 0, reachMax: 0, reachMaxAt: null };
+        if (!sightedPts.length) return { reach: [], reachP50: Infinity, reachMax: Infinity, reachMaxAt: blindAt };
+        const reach = blindPts.map(([bx, bz]) => {
+          let m = Infinity;
+          for (const [sx, sz] of sightedPts) {
+            const d = Math.hypot(sx - bx, sz - bz);
+            if (d < m) m = d;
+          }
+          return m;
+        });
+        const sorted = [...reach].sort((a, b) => a - b);
+        let mi = 0;
+        for (let i = 1; i < reach.length; i++) if (reach[i] > reach[mi]) mi = i;
+        return {
+          reachP50: +sorted[Math.floor(sorted.length * 0.5)].toFixed(2),
+          reachMax: +sorted[sorted.length - 1].toFixed(2),
+          reachMaxAt: blindPts[mi].map((v) => +v.toFixed(1)),
+        };
+      })(),
+    } : null,
     map: MAP ? {
       samples,
       lamps: live.map((f) => [f.group.position.x, f.group.position.z]),
@@ -533,7 +578,7 @@ if (BUDGET > 0) {
     : 'light reach — horizontal distance from a walkable point to the nearest live fixture');
   console.log('');
   console.log(EMERGENCY_ONLY
-    ? 'zone        fixt  live   pts   mean  worst   >5m   NO SIGHTLINE   worst position'
+    ? 'zone        fixt  live   pts   mean  worst   >5m   NO SIGHTLINE   to-beacon p50/max   worst position'
     : 'zone        fixt  live   pts   mean  worst   >5m   worst position');
 }
 for (const r of rows) {
@@ -551,7 +596,9 @@ for (const r of rows) {
     continue;
   }
   const sight = r.blind
-    ? `   ${`${(r.blind.frac * 100).toFixed(0)}%`.padStart(11)}` : '';
+    ? `   ${`${(r.blind.frac * 100).toFixed(0)}%`.padStart(11)}`
+      + `   ${`${r.blind.reachP50.toFixed(1)}/${r.blind.reachMax.toFixed(1)} m`.padStart(15)}`
+    : '';
   console.log(
     `${r.id.padEnd(11)} ${String(r.fixtures).padStart(4)}  ${String(r.live).padStart(4)}`
     + ` ${String(r.points).padStart(5)}  ${r.mean.toFixed(2).padStart(5)}`
@@ -567,7 +614,12 @@ if (BUDGET > 0) {
   process.exit(0);
 } else if (EMERGENCY_ONLY) {
   console.log('In a blackout the bar is different: somewhere to walk TOWARD, not a lit room.');
-  console.log('So NO SIGHTLINE is the column that matters — the share of walkable area from');
+  console.log('to-beacon is the median and worst straight-line hop from a blind point to the')
+console.log('nearest point that CAN see an emergency fitting — "how far do I feel my way".')
+console.log('It ignores walls between the two, so it is a floor on the walk, not the walk.')
+console.log('A few metres is a dark room with a lit doorway; ten is somewhere to be lost.')
+console.log('')
+console.log('So NO SIGHTLINE is the column that matters — the share of walkable area from');
   console.log('which no emergency fitting is visible at eye height, walls and machines taken');
   console.log('into account. The >5m column is the lit-room measure and is expected to be');
   console.log('large here; it is kept only so the two can be compared.');

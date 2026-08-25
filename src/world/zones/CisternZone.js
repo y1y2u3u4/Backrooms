@@ -398,6 +398,30 @@ export function buildCistern(ctx, opts = {}) {
     emergencyLight(b, rigFor(b), ex, ey, ez, { yaw: eyaw, seed: 36 + ex, circuit: 'emergency' });
   }
 
+  /**
+   * AND ONE IN THE GALLERY, WHICH HAD NONE.
+   *
+   * The blackout table read 12 % of the Cistern blind — the second-best number
+   * in the building — and the Residence read 43 %, the worst. Both numbers were
+   * true and the ranking they implied was backwards.
+   *
+   * `NO SIGHTLINE` measures how much AREA cannot see an emergency fitting. It
+   * does not measure how far you have to feel your way to reach somewhere that
+   * can, and those are different buildings. The Residence's 43 % is flats, each
+   * two metres from a lit doorway; its median hop is 2.3 m and its worst 5.3 m,
+   * the shortest in the game, and adding fittings inside dwellings is not what a
+   * real building does anyway. The Cistern's 12 % was this gallery: a 4.4 x 9.7 m
+   * side room off the tunnel whose only fitting is on the `cistern` way and dies
+   * with everything else, so in a blackout the whole of it is blind and the
+   * nearest place you can see a lamp from is 8.2 m away, in water, in the dark.
+   *
+   * One battery unit near the mouth, aimed down the gallery the way the existing
+   * bulkhead is. `lightreach --blackout` grew a `to-beacon` column so this can
+   * never again look like the healthy zone.
+   */
+  emergencyLight(bGallery, rigFor(bGallery), R_GALLERY[0] + 0.14, 2.15, 3.0,
+    { yaw: Math.PI / 2, seed: 37, circuit: 'emergency' });
+
   // =========================================================================
   // 5. silt, tide lines, debris
   // =========================================================================

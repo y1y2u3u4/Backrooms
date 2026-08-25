@@ -1,5 +1,5 @@
 {
-  "at": "2026-08-25T02:15:07.826Z",
+  "at": "2026-08-25T04:58:20.980Z",
   "zones": {
     "intake": {
       "id": "intake",
@@ -17,25 +17,25 @@
     "service": {
       "id": "service",
       "meshes": 107,
-      "triangles": 289732,
-      "instances": 74,
+      "triangles": 290000,
+      "instances": 75,
       "chunks": 3,
       "colliders": 134,
       "floors": 35,
-      "fixtures": 74,
+      "fixtures": 75,
       "unlit": [],
       "props": 12,
       "portals": 7
     },
     "cistern": {
       "id": "cistern",
-      "meshes": 66,
-      "triangles": 107992,
-      "instances": 24,
+      "meshes": 68,
+      "triangles": 108260,
+      "instances": 25,
       "chunks": 4,
       "colliders": 72,
       "floors": 33,
-      "fixtures": 24,
+      "fixtures": 25,
       "unlit": [],
       "props": 10,
       "portals": 2
