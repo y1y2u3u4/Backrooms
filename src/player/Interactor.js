@@ -20,6 +20,26 @@ import { clamp01, damp, lerp, smoothstep } from '../core/util.js';
  */
 
 const MAX_RANGE = 3.2;
+
+/**
+ * THE LAYER THAT IS HIT BUT NOT DRAWN.
+ *
+ * A twelve-key keypad cost fifty draw calls — twenty-six meshes, each with its
+ * own material, and the whole lot drawn a second time by the GTAO normal
+ * prepass. None of those keys move when pressed; they were separate meshes
+ * only because the interactor needs something to raycast at, one target per
+ * key, and it will not consider anything with `visible === false`.
+ *
+ * So the visual is merged into one mesh and the twelve targets become bare
+ * proxy boxes on this layer. The camera renders layer 0, so a proxy is never
+ * submitted to the renderer in any pass; the raycaster is told to include this
+ * layer, so it is still hit. `visible` stays true, which is what keeps the
+ * enabled/disabled path above working unchanged.
+ *
+ * Anything that MOVES, opens, or animates still needs to be its own mesh. This
+ * is only for the parts that are hit and never change.
+ */
+export const PROXY_LAYER = 1;
 const _pw = new THREE.Vector3();
 
 // ---------------------------------------------------------------------------
@@ -290,6 +310,9 @@ export class Interactor {
 
     this.raycaster = new THREE.Raycaster();
     this.raycaster.far = MAX_RANGE;
+    // Layer 0 is everything the camera draws; PROXY_LAYER is hit-only geometry
+    // that the camera never sees. Both have to be raycast.
+    this.raycaster.layers.enable(PROXY_LAYER);
     this.raycaster.near = 0.02;
 
     /**

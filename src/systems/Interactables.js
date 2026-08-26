@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { clamp, clamp01, damp, lerp, smoothstep, makeRng, wobble, TAU } from '../core/util.js';
 import { box, cyl, lathe, merge, worldUV, vertexShade, whiteColors, pipeRun } from '../render/geo.js';
 import { doorway, KIT } from '../world/Kit.js';
-import { DoorLatch } from '../player/Interactor.js';
+import { DoorLatch, PROXY_LAYER } from '../player/Interactor.js';
 
 /**
  * Interactables — the registry, and every machine in the Annex.
@@ -88,6 +88,48 @@ export function textTexture(lines, {
   t.userData.canvas = c;
   t.userData.ctx = g;
   return t;
+}
+
+/**
+ * One texture holding a grid of single characters, and the UV rect for each.
+ *
+ * Twelve keypad keys used to mean twelve 64x64 textures and twelve materials,
+ * which meant twelve draw calls that could never be merged however the geometry
+ * was arranged — `calls == mat` is the signature of that, and it is why the
+ * attribution tool now prints the distinct-material count next to the call
+ * count. One atlas collapses them to one material, and then the geometry merges.
+ *
+ * @param {string[]} chars
+ * @param {object} o
+ * @returns {{texture: THREE.CanvasTexture, uv: (i:number) => [number,number,number,number]}}
+ *   `uv(i)` is `[u0, v0, du, dv]` for cell `i`, in the row-major order of `chars`.
+ */
+export function glyphAtlas(chars, {
+  cell = 64, cols = 4, bg = '#2b2a26', fg = '#ddd8c8',
+  font = '600 30px "Courier New", monospace',
+} = {}) {
+  const rows = Math.ceil(chars.length / cols);
+  const c = document.createElement('canvas');
+  c.width = cols * cell; c.height = rows * cell;
+  const g = c.getContext('2d');
+  g.fillStyle = bg; g.fillRect(0, 0, c.width, c.height);
+  g.font = font; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = fg;
+  for (let i = 0; i < chars.length; i++) {
+    const cx = (i % cols) * cell, cy = Math.floor(i / cols) * cell;
+    g.fillText(chars[i], cx + cell / 2, cy + cell / 2);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  t.needsUpdate = true;
+  return {
+    texture: t,
+    // Canvas y runs down and UV v runs up, so the row is flipped.
+    uv: (i) => {
+      const cxi = i % cols, cyi = Math.floor(i / cols);
+      return [cxi / cols, 1 - (cyi + 1) / rows, 1 / cols, 1 / rows];
+    },
+  };
 }
 
 /** Redraw an existing text texture in place. */
@@ -859,26 +901,63 @@ export function keypad(ctx, {
     });
   };
 
+  /**
+   * TWELVE KEYS, ONE DRAW CALL.
+   *
+   * This was twenty-four meshes and twenty-four materials — a fresh
+   * MeshStandardMaterial and a fresh 64x64 texture per key — which the GTAO
+   * normal prepass then drew all over again: fifty draw calls, three thousand
+   * triangles, for a thing the size of a hand. Nothing here moves when a key is
+   * pressed (`api.press` changes the display and plays a sound; the key itself
+   * never budges), so nothing here needs to be a separate mesh.
+   *
+   * The faces and the caps merge into one geometry against one atlas material.
+   * What the interactor needs — one raycast target per key, so the prompt can
+   * say which key you are looking at — is a bare box on PROXY_LAYER, which the
+   * camera never renders and the raycaster still hits.
+   */
   const keys = '123456789*0#'.split('');
+  const KEY_ATLAS = glyphAtlas(keys, { cols: 4, bg: '#2b2a26', fg: '#ddd8c8' });
+  const keyAt = (i) => [-0.030 + (i % 3) * 0.030, 0.020 - Math.floor(i / 3) * 0.028, 0.020];
+
+  {
+    const caps = [], faces = [];
+    for (let i = 0; i < keys.length; i++) {
+      const [kx, ky, kz] = keyAt(i);
+      const kb = box(0.024, 0.022, 0.008, 0.002, 1);
+      kb.translate(kx, ky, kz);
+      caps.push(kb);
+
+      const fg2 = new THREE.PlaneGeometry(0.020, 0.018);
+      const [u0, v0, du, dv] = KEY_ATLAS.uv(i);
+      const uv = fg2.attributes.uv;
+      for (let v = 0; v < uv.count; v++) {
+        uv.setXY(v, u0 + uv.getX(v) * du, v0 + uv.getY(v) * dv);
+      }
+      uv.needsUpdate = true;
+      fg2.translate(kx, ky, kz + 0.0045);
+      faces.push(fg2);
+    }
+    const capMat = new THREE.MeshStandardMaterial({ color: 0x2b2a26, roughness: 0.55, vertexColors: true });
+    root.add(meshOf(merge(caps), capMat, { uv: 0.05, cast: false }));
+    const faceMat = new THREE.MeshStandardMaterial({ map: KEY_ATLAS.texture, roughness: 0.7 });
+    const faceMesh = new THREE.Mesh(merge(faces), faceMat);
+    faceMesh.castShadow = false;
+    root.add(faceMesh);
+  }
+
   for (let i = 0; i < keys.length; i++) {
-    const col = i % 3, row = Math.floor(i / 3);
-    const kg = new THREE.Group();
-    kg.position.set(-0.030 + col * 0.030, 0.020 - row * 0.028, 0.020);
-    root.add(kg);
-    const kb = box(0.024, 0.022, 0.008, 0.002, 1);
-    const km = new THREE.MeshStandardMaterial({ color: 0x2b2a26, roughness: 0.55, vertexColors: true });
-    kg.add(meshOf(kb, km, { uv: 0.05, cast: false }));
-    const kt = textTexture([keys[i]], {
-      w: 64, h: 64, align: 'center', pad: 16, lineHeight: 30,
-      font: '600 30px "Courier New", monospace', bg: '#2b2a26', fg: '#ddd8c8',
-    });
-    const kl = new THREE.Mesh(new THREE.PlaneGeometry(0.020, 0.018),
-      new THREE.MeshStandardMaterial({ map: kt, roughness: 0.7 }));
-    kl.position.set(0, 0, 0.0045);
-    kg.add(kl);
+    const [kx, ky, kz] = keyAt(i);
+    // Hit-only. Never drawn: the camera renders layer 0 and this is not on it.
+    const proxy = new THREE.Mesh(new THREE.BoxGeometry(0.026, 0.024, 0.012));
+    proxy.position.set(kx, ky, kz);
+    proxy.layers.set(PROXY_LAYER);
+    proxy.castShadow = false; proxy.receiveShadow = false;
+    proxy.name = `keypad:${id}:key${i}`;
+    root.add(proxy);
 
     interactor?.add({
-      id: `${id}_k${i}`, object: kg, kind: 'keypad', verb: 'Press', label: keys[i],
+      id: `${id}_k${i}`, object: proxy, kind: 'keypad', verb: 'Press', label: keys[i],
       range: 1.3,
       refusal: () => (state.unlocked ? 'Already open.' : null),
       onUse: () => api.press(keys[i]),
