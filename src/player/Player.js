@@ -56,6 +56,14 @@ export class Player {
     this.crawling = false;
     this.crawlAmt = 0;
     this.sprinting = false;
+    /**
+     * Inside a locker or cupboard. Set by the hiding places in
+     * `Interactables.js`, read by `Surveyor.hear` to muffle everything this
+     * player emits. Declared here rather than sprung into existence on the
+     * instance so that the one system that has to ask about it can see it in
+     * the class it belongs to.
+     */
+    this.hidden = false;
     this.grounded = true;
     this.groundY = 0;
     // How far below the last solid ground counts as having left the world rather

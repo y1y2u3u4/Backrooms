@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { KIT, floorSlab, wallRun, doorway } from '../Kit.js';
 import {
-  makeBuilders, rigProxy, portal, bulkhead, stripLight, highbay, emergencyLight,
+  makeBuilders, rigProxy, portal, bulkhead, stripLight, highbay, emergencyLight, runSite, siteSpec,
   handrail, gantry, steelColumn, iBeam, channel, cagedLadder, stairFlight,
 } from '../ZoneKit.js';
 import { STAMP, roomNumber } from '../Decals.js';
@@ -597,9 +597,22 @@ export function buildStack(ctx, opts = {}) {
           //
           // Scaled to 0.45 (~150 cd): full output at 340 cd from eight fittings a
           // level would turn the zone into a stadium.
+          //
+          // AND IT HAS TO BE POINTED ACROSS THE WELL, which is the half of this
+          // that was never built. `ZoneKit.highbay` did not set `f.target`, so
+          // it inherited Fixture's default of (0, -3, 0) — straight down — and
+          // these corner fittings lit the gantry beneath themselves, which the
+          // mid-side strips were already doing. The paragraph above is the
+          // argument for crossing the void; nothing crossed it.
+          //
+          // Aimed inward and down from the corner: horizontally toward the
+          // shaft's centreline, dropping roughly a level and a half over the
+          // 14 m diagonal, so the throw lands on the far wall below rather than
+          // on the deck opposite or on nothing.
           highbay(b, rigFor(b), lx, y + LEVEL - 0.16, lz, {
             circuit: 'stack', health, seed: 400 + i * 9 + pi, drop: 0.34,
             cone: dist <= 2, intensityScale: 0.45,
+            aim: [-Math.sign(lx) * 10, -6, -Math.sign(lz) * 10],
           });
         } else {
           // The mid-side strips stay: they are the rhythm that makes the shaft
@@ -607,6 +620,38 @@ export function buildStack(ctx, opts = {}) {
           stripLight(b, rigFor(b), lx, y + LEVEL - 0.10, lz, {
             rotation: rot, circuit: 'stack', health, seed: 100 + i * 5 + lx,
             cage: false, cone: dist <= 1, intensityScale: 2.2,
+          });
+        }
+      }
+      // NOTHING IN THIS ZONE LIT THE SURFACE THE PLAYER IS STANDING NEXT TO.
+      //
+      // Every fitting here either points down at the gantry or across the void:
+      // the strips light the deck underfoot, the corner high-bays are aimed at
+      // the far wall on purpose, and the effect of "aimed at the far wall" is
+      // that no fitting ever illuminates the wall it is mounted on. The office
+      // facade at the back of the ring — the surface within arm's reach for the
+      // whole circuit of the level — receives light from nothing at all.
+      //
+      // Measured, on the four frames in `docs/captures/stack_now`: the two shots
+      // looking along the ring crushed at 0.527 and 0.579, against 0.270 and
+      // 0.295 for the two looking down and up the shaft. The difference between
+      // them is a near-field wall with no fitting facing it, and in the diagonal
+      // frame it is a hard-edged black mass filling half the picture.
+      //
+      // Four vapour-tights on the shaft wall's outer face, throwing back across
+      // the walkway at the facade. Deliberately NOT aimed into the void: the
+      // depth of this shaft is made by the far wall being the brightest thing in
+      // the frame, and adding output to the drop would flatten exactly the
+      // reading this zone has spent four passes trying to earn.
+      if (dist <= 2) {
+        for (const [wx, wz, wyaw] of [
+          [0, -(WALL_OUT + 0.10), 0], [0, WALL_OUT + 0.10, Math.PI],
+          [-(WALL_OUT + 0.10), 0, -Math.PI / 2], [WALL_OUT + 0.10, 0, Math.PI / 2],
+        ]) {
+          bulkhead(b, rigFor(b), wx, y + 2.25, wz, {
+            yaw: wyaw, circuit: 'stack', seed: 500 + i * 11 + wx + wz,
+            health: hash2(i * 13 + wx, wz) < 0.22 ? 'buzz' : 'good',
+            cone: false, intensityScale: 1.6,
           });
         }
       }
@@ -753,10 +798,24 @@ export function buildStack(ctx, opts = {}) {
   // pushed up to the missing bay of handrail, facing out over the drop. The card
   // is on the deck beside it. Nothing else in the game explains that chair.
   // =========================================================================
+  // Authored alternatives; sites[0] is what every baseline measures.
+  const cardSite = runSite(ctx.runSeed, 'stack_card', [
+    [2.35, 0.03, VOID + 1.45, 0.6],     // on the deck beside the chair
+    [-4.9, 0.03, -(VOID + 1.3), 1.9],   // north face, dropped at the rail
+    [VOID + 1.3, 0.03, 4.4, 2.6],       // east face, against the well wall
+  ]);
+  const coreSite = runSite(ctx.runSeed, 'stack_core', [
+    [5.6, 0.79, -10.2, -0.2],           // the lift lobby desk
+    [-(VOID + 1.2), 0.03, 2.4, 1.2],    // west face deck, at the locker
+    [VOID + 1.1, 0.03, -5.4, -0.7],     // east face, past the gantry
+  ]);
   const interactables = [
-    { kind: 'pickup', item: 'card_warden', position: [2.35, 0.03, VOID + 1.45], rotation: 0.6 },
+    { kind: 'breaker', id: 'board_k', position: [-(OUTER - 0.18), 1.35, -3.2], rotation: Math.PI / 2,
+      maxOn: 1, title: 'LOBBY SUB-MAIN',
+      ways: [{ name: 'stack', label: 'STACK LIFT LOBBY', amps: '16A', on: true }] },
+    siteSpec(cardSite.pick, { kind: 'pickup', item: 'card_warden' }),
     // The lift lobby's core, on the desk on the north face of this level.
-    { kind: 'pickup', item: 'fuse_core', position: [5.6, 0.79, -10.2], rotation: -0.2 },
+    siteSpec(coreSite.pick, { kind: 'pickup', item: 'fuse_core' }),
     { kind: 'pickup', item: 'note', noteId: 'note_stack_survey', position: [6.4, 0.76, -10.15], rotation: 0.35 },
     { kind: 'pickup', item: 'note', noteId: 'note_floor_indicator', position: [-7.9, 1.24, -10.15], rotation: 0 },
     { kind: 'pickup', item: 'note', noteId: 'nb_3', position: [2.9, 0.03, VOID + 0.75], rotation: 1.7 },
@@ -775,6 +834,10 @@ export function buildStack(ctx, opts = {}) {
   for (const b of builders) { const g = b.finish(); chunks.push(g); root.add(g); }
 
   return {
+    altSites: [
+      ...cardSite.all.map((v) => siteSpec(v, { kind: 'pickup', item: 'card_warden' })),
+      ...coreSite.all.map((v) => siteSpec(v, { kind: 'pickup', item: 'fuse_core' })),
+    ],
     root, chunks, builders, portals, interactables,
     spawn: [-3.2, 0, -OUTER + 1.7],
     spawnYaw: Math.PI,

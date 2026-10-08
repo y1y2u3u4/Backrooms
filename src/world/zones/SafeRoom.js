@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { runFacts } from '../../systems/Notes.js';
 import { KIT, floorSlab, wallRun, doorway, outlet, smokeDetector } from '../Kit.js';
 import {
   makeBuilders, rigProxy, portal, pendant, emergencyLight,
@@ -31,6 +32,9 @@ let visits = 0;
 
 export function buildSafeRoom(ctx, opts = {}) {
   const { rig, bus, decals } = ctx;
+  // This run's facts — the terminal code and the open-day date the poster
+  // carries. Fixed to the authored 2130 under `qa=1`; see `runFacts`.
+  const RUN = runFacts(ctx.runSeed);
   const seed = opts.seed ?? 1010;
   const rng = makeRng(seed);
   const D = decals || ctx.world?.decals;
@@ -227,15 +231,22 @@ export function buildSafeRoom(ctx, opts = {}) {
   // gameplay
   //
   // The terminal is the only one in the game. Its authorisation code is the
-  // open-day date written as four figures and reversed — 3 December, 0312, 2130 —
-  // which is stated in Kearns' last notebook page and nowhere else, so the last
-  // page is on this desk. Solving it is a discovery, not a gate: nothing on the
-  // critical path needs it.
+  // open-day date written as four figures and reversed — 3 December, 0312, 2130
+  // on the authored run — which is stated in Kearns' last notebook page and
+  // nowhere else, so the last page is on this desk. Solving it is a discovery,
+  // not a gate: nothing on the critical path needs it.
+  //
+  // THE RULE IS FIXED AND THE ANSWER IS NOT. `2130` used to be a literal here,
+  // in the Residence keypad, and in three more places, so a player who had
+  // finished once knew it forever and the best-authored puzzle in the game had
+  // nothing left to give a second run. It now comes from the run's own facts,
+  // which also write the date on the poster in the Residence — go and find the
+  // poster, same as the first time.
   // =========================================================================
   interactables.push(
     {
       kind: 'terminal', id: 'terminal_record', rotation: Math.PI,
-      position: [deskX + 0.42, 0.735, deskZ - 0.18], puzzleCode: '2130', hintNote: 'nb_5',
+      position: [deskX + 0.42, 0.735, deskZ - 0.18], puzzleCode: RUN.code, hintNote: 'nb_5',
     },
     { kind: 'pickup', item: 'note', noteId: 'nb_5', position: [deskX - 0.30, 0.74, deskZ - 0.28], rotation: -0.25 },
     { kind: 'pickup', item: 'note', noteId: 'note_office_of_record', position: [deskX + 0.05, 0.74, deskZ + 0.16], rotation: 0.3 },

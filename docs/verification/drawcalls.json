@@ -1,0 +1,1313 @@
+{
+  "quality": "high",
+  "results": [
+    {
+      "name": "intake_corridor",
+      "reported": 119,
+      "counted": 119,
+      "passes": {
+        "colour": 99,
+        "gtao-normal": 20
+      },
+      "top": [
+        {
+          "what": "<Mesh> | (ShaderMaterial)",
+          "calls": 21,
+          "tris": 160,
+          "mats": 16,
+          "geos": 2
+        },
+        {
+          "what": "intake | (MeshNormalMaterial)",
+          "calls": 19,
+          "tris": 179068,
+          "mats": 1,
+          "geos": 19
+        },
+        {
+          "what": "intake | concrete",
+          "calls": 4,
+          "tris": 78672,
+          "mats": 1,
+          "geos": 4
+        },
+        {
+          "what": "intake | doorPaint",
+          "calls": 3,
+          "tris": 8372,
+          "mats": 3,
+          "geos": 3
+        },
+        {
+          "what": "intake | (MeshBasicMaterial)",
+          "calls": 3,
+          "tris": 264,
+          "mats": 3,
+          "geos": 3
+        },
+        {
+          "what": "intake | galvSteel",
+          "calls": 2,
+          "tris": 15408,
+          "mats": 2,
+          "geos": 2
+        },
+        {
+          "what": "intake | carpet",
+          "calls": 1,
+          "tris": 512,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "intake | ceilingTile",
+          "calls": 1,
+          "tris": 6722,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "intake | wallpaper",
+          "calls": 1,
+          "tris": 9936,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "intake | acousticPanel",
+          "calls": 1,
+          "tris": 6696,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "intake | steelPainted",
+          "calls": 1,
+          "tris": 52416,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "intake | signs",
+          "calls": 1,
+          "tris": 6,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "intake | decals",
+          "calls": 1,
+          "tris": 64,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "motes | (ShaderMaterial)",
+          "calls": 1,
+          "tris": 1267,
+          "mats": 1,
+          "geos": 1
+        }
+      ]
+    },
+    {
+      "name": "intake_open_bay",
+      "reported": 265,
+      "counted": 265,
+      "passes": {
+        "colour": 172,
+        "gtao-normal": 93
+      },
+      "top": [
+        {
+          "what": "intake | (MeshNormalMaterial)",
+          "calls": 74,
+          "tris": 531768,
+          "mats": 1,
+          "geos": 74
+        },
+        {
+          "what": "<Mesh> | (ShaderMaterial)",
+          "calls": 32,
+          "tris": 1700,
+          "mats": 27,
+          "geos": 13
+        },
+        {
+          "what": "intake | doorPaint",
+          "calls": 16,
+          "tris": 29252,
+          "mats": 9,
+          "geos": 16
+        },
+        {
+          "what": "<Mesh> | (MeshNormalMaterial)",
+          "calls": 12,
+          "tris": 1680,
+          "mats": 1,
+          "geos": 12
+        },
+        {
+          "what": "intake | galvSteel",
+          "calls": 10,
+          "tris": 58460,
+          "mats": 3,
+          "geos": 10
+        },
+        {
+          "what": "intake | steelPainted",
+          "calls": 10,
+          "tris": 263356,
+          "mats": 4,
+          "geos": 10
+        },
+        {
+          "what": "intake | (MeshBasicMaterial)",
+          "calls": 7,
+          "tris": 608,
+          "mats": 7,
+          "geos": 7
+        },
+        {
+          "what": "intake | paper",
+          "calls": 6,
+          "tris": 39924,
+          "mats": 2,
+          "geos": 6
+        },
+        {
+          "what": "switch | (MeshNormalMaterial)",
+          "calls": 6,
+          "tris": 528,
+          "mats": 1,
+          "geos": 6
+        },
+        {
+          "what": "intake | carpet",
+          "calls": 4,
+          "tris": 1800,
+          "mats": 1,
+          "geos": 4
+        },
+        {
+          "what": "intake | ceilingTile",
+          "calls": 4,
+          "tris": 27068,
+          "mats": 1,
+          "geos": 4
+        },
+        {
+          "what": "intake | concrete",
+          "calls": 4,
+          "tris": 78672,
+          "mats": 1,
+          "geos": 4
+        },
+        {
+          "what": "intake | acousticPanel",
+          "calls": 4,
+          "tris": 15368,
+          "mats": 2,
+          "geos": 4
+        },
+        {
+          "what": "switch | doorPaint",
+          "calls": 4,
+          "tris": 432,
+          "mats": 1,
+          "geos": 4
+        }
+      ]
+    },
+    {
+      "name": "intake_long_view",
+      "reported": 99,
+      "counted": 99,
+      "passes": {
+        "colour": 89,
+        "gtao-normal": 10
+      },
+      "top": [
+        {
+          "what": "<Mesh> | (ShaderMaterial)",
+          "calls": 20,
+          "tris": 20,
+          "mats": 15,
+          "geos": 1
+        },
+        {
+          "what": "intake | (MeshNormalMaterial)",
+          "calls": 10,
+          "tris": 147786,
+          "mats": 1,
+          "geos": 10
+        },
+        {
+          "what": "intake | concrete",
+          "calls": 2,
+          "tris": 54744,
+          "mats": 1,
+          "geos": 2
+        },
+        {
+          "what": "intake | carpet",
+          "calls": 1,
+          "tris": 512,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "intake | ceilingTile",
+          "calls": 1,
+          "tris": 6722,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "intake | galvSteel",
+          "calls": 1,
+          "tris": 9288,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "intake | wallpaper",
+          "calls": 1,
+          "tris": 9936,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "intake | doorPaint",
+          "calls": 1,
+          "tris": 7380,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "intake | acousticPanel",
+          "calls": 1,
+          "tris": 6696,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "intake | steelPainted",
+          "calls": 1,
+          "tris": 52416,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "intake | (MeshBasicMaterial)",
+          "calls": 1,
+          "tris": 92,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "motes | (ShaderMaterial)",
+          "calls": 1,
+          "tris": 1267,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "_cableClamp | MAT_fastener_steel",
+          "calls": 1,
+          "tris": 44,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "_rearScrews | MAT_fastener_steel",
+          "calls": 1,
+          "tris": 60,
+          "mats": 1,
+          "geos": 1
+        }
+      ]
+    },
+    {
+      "name": "intake_many_lights",
+      "reported": 287,
+      "counted": 287,
+      "passes": {
+        "colour": 183,
+        "gtao-normal": 104
+      },
+      "top": [
+        {
+          "what": "intake | (MeshNormalMaterial)",
+          "calls": 80,
+          "tris": 575140,
+          "mats": 1,
+          "geos": 80
+        },
+        {
+          "what": "<Mesh> | (ShaderMaterial)",
+          "calls": 29,
+          "tris": 1280,
+          "mats": 24,
+          "geos": 10
+        },
+        {
+          "what": "intake | doorPaint",
+          "calls": 18,
+          "tris": 41820,
+          "mats": 9,
+          "geos": 18
+        },
+        {
+          "what": "intake | steelPainted",
+          "calls": 12,
+          "tris": 266608,
+          "mats": 5,
+          "geos": 12
+        },
+        {
+          "what": "intake | galvSteel",
+          "calls": 10,
+          "tris": 60900,
+          "mats": 3,
+          "geos": 10
+        },
+        {
+          "what": "<Mesh> | (MeshNormalMaterial)",
+          "calls": 9,
+          "tris": 1260,
+          "mats": 1,
+          "geos": 9
+        },
+        {
+          "what": "intake | (MeshBasicMaterial)",
+          "calls": 7,
+          "tris": 608,
+          "mats": 7,
+          "geos": 7
+        },
+        {
+          "what": "pickup | (MeshNormalMaterial)",
+          "calls": 7,
+          "tris": 210,
+          "mats": 1,
+          "geos": 7
+        },
+        {
+          "what": "intake | acousticPanel",
+          "calls": 6,
+          "tris": 24792,
+          "mats": 2,
+          "geos": 6
+        },
+        {
+          "what": "switch | (MeshNormalMaterial)",
+          "calls": 6,
+          "tris": 528,
+          "mats": 1,
+          "geos": 6
+        },
+        {
+          "what": "intake | paper",
+          "calls": 5,
+          "tris": 41896,
+          "mats": 2,
+          "geos": 5
+        },
+        {
+          "what": "intake | carpet",
+          "calls": 4,
+          "tris": 1800,
+          "mats": 1,
+          "geos": 4
+        },
+        {
+          "what": "intake | ceilingTile",
+          "calls": 4,
+          "tris": 27068,
+          "mats": 1,
+          "geos": 4
+        },
+        {
+          "what": "intake | concrete",
+          "calls": 4,
+          "tris": 78672,
+          "mats": 1,
+          "geos": 4
+        }
+      ]
+    },
+    {
+      "name": "intake_spine_east",
+      "reported": 375,
+      "counted": 375,
+      "passes": {
+        "colour": 227,
+        "gtao-normal": 148
+      },
+      "top": [
+        {
+          "what": "intake | (MeshNormalMaterial)",
+          "calls": 111,
+          "tris": 609088,
+          "mats": 1,
+          "geos": 111
+        },
+        {
+          "what": "<Mesh> | (ShaderMaterial)",
+          "calls": 40,
+          "tris": 2820,
+          "mats": 35,
+          "geos": 21
+        },
+        {
+          "what": "intake | doorPaint",
+          "calls": 32,
+          "tris": 49424,
+          "mats": 10,
+          "geos": 32
+        },
+        {
+          "what": "<Mesh> | (MeshNormalMaterial)",
+          "calls": 20,
+          "tris": 2800,
+          "mats": 1,
+          "geos": 20
+        },
+        {
+          "what": "intake | steelPainted",
+          "calls": 15,
+          "tris": 275396,
+          "mats": 6,
+          "geos": 15
+        },
+        {
+          "what": "intake | galvSteel",
+          "calls": 14,
+          "tris": 63544,
+          "mats": 3,
+          "geos": 14
+        },
+        {
+          "what": "switch | (MeshNormalMaterial)",
+          "calls": 12,
+          "tris": 1056,
+          "mats": 1,
+          "geos": 12
+        },
+        {
+          "what": "intake | acousticPanel",
+          "calls": 9,
+          "tris": 27206,
+          "mats": 3,
+          "geos": 9
+        },
+        {
+          "what": "switch | doorPaint",
+          "calls": 8,
+          "tris": 864,
+          "mats": 1,
+          "geos": 8
+        },
+        {
+          "what": "intake | paper",
+          "calls": 8,
+          "tris": 53044,
+          "mats": 2,
+          "geos": 8
+        },
+        {
+          "what": "intake | (MeshBasicMaterial)",
+          "calls": 7,
+          "tris": 608,
+          "mats": 7,
+          "geos": 7
+        },
+        {
+          "what": "pickup | (MeshNormalMaterial)",
+          "calls": 5,
+          "tris": 174,
+          "mats": 1,
+          "geos": 5
+        },
+        {
+          "what": "intake | carpet",
+          "calls": 4,
+          "tris": 1800,
+          "mats": 1,
+          "geos": 4
+        },
+        {
+          "what": "intake | ceilingTile",
+          "calls": 4,
+          "tris": 27068,
+          "mats": 1,
+          "geos": 4
+        }
+      ]
+    },
+    {
+      "name": "service_spine",
+      "reported": 435,
+      "counted": 435,
+      "passes": {
+        "colour": 257,
+        "gtao-normal": 178
+      },
+      "top": [
+        {
+          "what": "service | (MeshNormalMaterial)",
+          "calls": 112,
+          "tris": 282026,
+          "mats": 1,
+          "geos": 112
+        },
+        {
+          "what": "service | doorPaint",
+          "calls": 34,
+          "tris": 46052,
+          "mats": 10,
+          "geos": 34
+        },
+        {
+          "what": "<Mesh> | (ShaderMaterial)",
+          "calls": 32,
+          "tris": 1700,
+          "mats": 27,
+          "geos": 13
+        },
+        {
+          "what": "breaker | (MeshNormalMaterial)",
+          "calls": 29,
+          "tris": 3950,
+          "mats": 1,
+          "geos": 29
+        },
+        {
+          "what": "service | steelPainted",
+          "calls": 21,
+          "tris": 112148,
+          "mats": 7,
+          "geos": 21
+        },
+        {
+          "what": "pickup | (MeshNormalMaterial)",
+          "calls": 19,
+          "tris": 704,
+          "mats": 1,
+          "geos": 19
+        },
+        {
+          "what": "breaker | (MeshStandardMaterial)",
+          "calls": 17,
+          "tris": 2418,
+          "mats": 17,
+          "geos": 17
+        },
+        {
+          "what": "service | galvSteel",
+          "calls": 14,
+          "tris": 30376,
+          "mats": 3,
+          "geos": 14
+        },
+        {
+          "what": "<Mesh> | (MeshNormalMaterial)",
+          "calls": 12,
+          "tris": 1680,
+          "mats": 1,
+          "geos": 12
+        },
+        {
+          "what": "breaker | doorPaint",
+          "calls": 9,
+          "tris": 972,
+          "mats": 1,
+          "geos": 9
+        },
+        {
+          "what": "pickup | galvSteel",
+          "calls": 9,
+          "tris": 308,
+          "mats": 1,
+          "geos": 9
+        },
+        {
+          "what": "service | (MeshBasicMaterial)",
+          "calls": 9,
+          "tris": 876,
+          "mats": 9,
+          "geos": 9
+        },
+        {
+          "what": "pickup | paper",
+          "calls": 7,
+          "tris": 156,
+          "mats": 1,
+          "geos": 7
+        },
+        {
+          "what": "service | paper",
+          "calls": 6,
+          "tris": 22196,
+          "mats": 2,
+          "geos": 6
+        }
+      ]
+    },
+    {
+      "name": "cistern_tunnel",
+      "reported": 271,
+      "counted": 271,
+      "passes": {
+        "colour": 175,
+        "gtao-normal": 96
+      },
+      "top": [
+        {
+          "what": "cistern | (MeshNormalMaterial)",
+          "calls": 65,
+          "tris": 90978,
+          "mats": 1,
+          "geos": 65
+        },
+        {
+          "what": "<Mesh> | (ShaderMaterial)",
+          "calls": 27,
+          "tris": 1000,
+          "mats": 22,
+          "geos": 8
+        },
+        {
+          "what": "cistern | steelPainted",
+          "calls": 15,
+          "tris": 35244,
+          "mats": 6,
+          "geos": 15
+        },
+        {
+          "what": "pickup | (MeshNormalMaterial)",
+          "calls": 13,
+          "tris": 584,
+          "mats": 1,
+          "geos": 13
+        },
+        {
+          "what": "cistern | doorPaint",
+          "calls": 9,
+          "tris": 3652,
+          "mats": 4,
+          "geos": 9
+        },
+        {
+          "what": "cistern | concrete",
+          "calls": 8,
+          "tris": 11588,
+          "mats": 2,
+          "geos": 8
+        },
+        {
+          "what": "cistern | (MeshBasicMaterial)",
+          "calls": 8,
+          "tris": 1040,
+          "mats": 8,
+          "geos": 8
+        },
+        {
+          "what": "valve | (MeshNormalMaterial)",
+          "calls": 8,
+          "tris": 3532,
+          "mats": 1,
+          "geos": 8
+        },
+        {
+          "what": "pickup | galvSteel",
+          "calls": 7,
+          "tris": 316,
+          "mats": 1,
+          "geos": 7
+        },
+        {
+          "what": "<Mesh> | (MeshNormalMaterial)",
+          "calls": 7,
+          "tris": 980,
+          "mats": 1,
+          "geos": 7
+        },
+        {
+          "what": "cistern | paper",
+          "calls": 5,
+          "tris": 4264,
+          "mats": 2,
+          "geos": 5
+        },
+        {
+          "what": "cistern | galvSteel",
+          "calls": 4,
+          "tris": 2400,
+          "mats": 2,
+          "geos": 4
+        },
+        {
+          "what": "pickup | paper",
+          "calls": 4,
+          "tris": 96,
+          "mats": 1,
+          "geos": 4
+        },
+        {
+          "what": "cistern | rustMetal",
+          "calls": 4,
+          "tris": 27056,
+          "mats": 2,
+          "geos": 4
+        }
+      ]
+    },
+    {
+      "name": "residence_landing",
+      "reported": 413,
+      "counted": 413,
+      "passes": {
+        "colour": 246,
+        "gtao-normal": 167
+      },
+      "top": [
+        {
+          "what": "residence | (MeshNormalMaterial)",
+          "calls": 125,
+          "tris": 149932,
+          "mats": 1,
+          "geos": 125
+        },
+        {
+          "what": "residence | doorPaint",
+          "calls": 48,
+          "tris": 78300,
+          "mats": 11,
+          "geos": 48
+        },
+        {
+          "what": "<Mesh> | (ShaderMaterial)",
+          "calls": 32,
+          "tris": 1700,
+          "mats": 27,
+          "geos": 13
+        },
+        {
+          "what": "residence | galvSteel",
+          "calls": 23,
+          "tris": 22140,
+          "mats": 1,
+          "geos": 23
+        },
+        {
+          "what": "<Mesh> | (MeshNormalMaterial)",
+          "calls": 15,
+          "tris": 3380,
+          "mats": 1,
+          "geos": 15
+        },
+        {
+          "what": "pickup | (MeshNormalMaterial)",
+          "calls": 11,
+          "tris": 420,
+          "mats": 1,
+          "geos": 11
+        },
+        {
+          "what": "residence | steelPainted",
+          "calls": 9,
+          "tris": 11416,
+          "mats": 4,
+          "geos": 9
+        },
+        {
+          "what": "residence | (MeshBasicMaterial)",
+          "calls": 9,
+          "tris": 2412,
+          "mats": 9,
+          "geos": 9
+        },
+        {
+          "what": "breaker | (MeshNormalMaterial)",
+          "calls": 8,
+          "tris": 1080,
+          "mats": 1,
+          "geos": 8
+        },
+        {
+          "what": "residence | carpet",
+          "calls": 6,
+          "tris": 2198,
+          "mats": 2,
+          "geos": 6
+        },
+        {
+          "what": "residence | paper",
+          "calls": 6,
+          "tris": 5912,
+          "mats": 2,
+          "geos": 6
+        },
+        {
+          "what": "residence | acousticPanel",
+          "calls": 5,
+          "tris": 3556,
+          "mats": 2,
+          "geos": 5
+        },
+        {
+          "what": "pickup | paper",
+          "calls": 5,
+          "tris": 120,
+          "mats": 1,
+          "geos": 5
+        },
+        {
+          "what": "pickup | galvSteel",
+          "calls": 5,
+          "tris": 236,
+          "mats": 1,
+          "geos": 5
+        }
+      ]
+    },
+    {
+      "name": "plant_hall",
+      "reported": 379,
+      "counted": 379,
+      "passes": {
+        "colour": 272,
+        "gtao-normal": 107
+      },
+      "top": [
+        {
+          "what": "plant | (MeshNormalMaterial)",
+          "calls": 57,
+          "tris": 264146,
+          "mats": 1,
+          "geos": 57
+        },
+        {
+          "what": "plant | steelPainted",
+          "calls": 34,
+          "tris": 341424,
+          "mats": 7,
+          "geos": 17
+        },
+        {
+          "what": "<Mesh> | (ShaderMaterial)",
+          "calls": 34,
+          "tris": 1980,
+          "mats": 29,
+          "geos": 15
+        },
+        {
+          "what": "gen | (MeshNormalMaterial)",
+          "calls": 24,
+          "tris": 5952,
+          "mats": 1,
+          "geos": 24
+        },
+        {
+          "what": "plant | doorPaint",
+          "calls": 18,
+          "tris": 23288,
+          "mats": 6,
+          "geos": 9
+        },
+        {
+          "what": "gen | galvSteel",
+          "calls": 16,
+          "tris": 4392,
+          "mats": 2,
+          "geos": 8
+        },
+        {
+          "what": "<Mesh> | (MeshNormalMaterial)",
+          "calls": 14,
+          "tris": 1960,
+          "mats": 1,
+          "geos": 14
+        },
+        {
+          "what": "plant | (MeshBasicMaterial)",
+          "calls": 12,
+          "tris": 1424,
+          "mats": 6,
+          "geos": 6
+        },
+        {
+          "what": "gen | steelPainted",
+          "calls": 10,
+          "tris": 5560,
+          "mats": 1,
+          "geos": 5
+        },
+        {
+          "what": "gen | rustMetal",
+          "calls": 8,
+          "tris": 1656,
+          "mats": 1,
+          "geos": 4
+        },
+        {
+          "what": "plant | galvSteel",
+          "calls": 8,
+          "tris": 23160,
+          "mats": 2,
+          "geos": 4
+        },
+        {
+          "what": "plant | concrete",
+          "calls": 8,
+          "tris": 82272,
+          "mats": 2,
+          "geos": 4
+        },
+        {
+          "what": "lift | (MeshNormalMaterial)",
+          "calls": 8,
+          "tris": 3494,
+          "mats": 1,
+          "geos": 8
+        },
+        {
+          "what": "plant | acousticPanel",
+          "calls": 6,
+          "tris": 22760,
+          "mats": 1,
+          "geos": 3
+        }
+      ]
+    },
+    {
+      "name": "stack_well",
+      "reported": 243,
+      "counted": 243,
+      "passes": {
+        "colour": 161,
+        "gtao-normal": 82
+      },
+      "top": [
+        {
+          "what": "stack | (MeshNormalMaterial)",
+          "calls": 50,
+          "tris": 421272,
+          "mats": 1,
+          "geos": 50
+        },
+        {
+          "what": "<Mesh> | (ShaderMaterial)",
+          "calls": 44,
+          "tris": 3380,
+          "mats": 39,
+          "geos": 25
+        },
+        {
+          "what": "<Mesh> | (MeshNormalMaterial)",
+          "calls": 24,
+          "tris": 3360,
+          "mats": 1,
+          "geos": 24
+        },
+        {
+          "what": "stack | steelPainted",
+          "calls": 13,
+          "tris": 290192,
+          "mats": 6,
+          "geos": 13
+        },
+        {
+          "what": "stack | (MeshBasicMaterial)",
+          "calls": 12,
+          "tris": 21668,
+          "mats": 12,
+          "geos": 12
+        },
+        {
+          "what": "stack | doorPaint",
+          "calls": 7,
+          "tris": 14608,
+          "mats": 5,
+          "geos": 7
+        },
+        {
+          "what": "stack | concrete",
+          "calls": 6,
+          "tris": 85644,
+          "mats": 2,
+          "geos": 6
+        },
+        {
+          "what": "pickup | (MeshNormalMaterial)",
+          "calls": 6,
+          "tris": 230,
+          "mats": 1,
+          "geos": 6
+        },
+        {
+          "what": "stack | acousticPanel",
+          "calls": 3,
+          "tris": 4292,
+          "mats": 1,
+          "geos": 3
+        },
+        {
+          "what": "stack | signs",
+          "calls": 3,
+          "tris": 16,
+          "mats": 1,
+          "geos": 3
+        },
+        {
+          "what": "stack | galvSteel",
+          "calls": 2,
+          "tris": 2200,
+          "mats": 1,
+          "geos": 2
+        },
+        {
+          "what": "hide | steelPainted",
+          "calls": 2,
+          "tris": 1944,
+          "mats": 1,
+          "geos": 2
+        },
+        {
+          "what": "stack | paper",
+          "calls": 2,
+          "tris": 2016,
+          "mats": 2,
+          "geos": 2
+        },
+        {
+          "what": "pickup | paper",
+          "calls": 2,
+          "tris": 30,
+          "mats": 1,
+          "geos": 2
+        }
+      ]
+    },
+    {
+      "name": "duct_crawl",
+      "reported": 181,
+      "counted": 181,
+      "passes": {
+        "colour": 130,
+        "gtao-normal": 51
+      },
+      "top": [
+        {
+          "what": "duct | (MeshNormalMaterial)",
+          "calls": 38,
+          "tris": 65134,
+          "mats": 1,
+          "geos": 38
+        },
+        {
+          "what": "<Mesh> | (ShaderMaterial)",
+          "calls": 23,
+          "tris": 440,
+          "mats": 18,
+          "geos": 4
+        },
+        {
+          "what": "pickup | (MeshNormalMaterial)",
+          "calls": 10,
+          "tris": 392,
+          "mats": 1,
+          "geos": 10
+        },
+        {
+          "what": "duct | doorPaint",
+          "calls": 8,
+          "tris": 4756,
+          "mats": 5,
+          "geos": 8
+        },
+        {
+          "what": "duct | steelPainted",
+          "calls": 7,
+          "tris": 19444,
+          "mats": 4,
+          "geos": 7
+        },
+        {
+          "what": "duct | galvSteel",
+          "calls": 6,
+          "tris": 36424,
+          "mats": 3,
+          "geos": 6
+        },
+        {
+          "what": "pickup | galvSteel",
+          "calls": 5,
+          "tris": 188,
+          "mats": 1,
+          "geos": 5
+        },
+        {
+          "what": "pickup | paper",
+          "calls": 4,
+          "tris": 96,
+          "mats": 1,
+          "geos": 4
+        },
+        {
+          "what": "duct | (MeshBasicMaterial)",
+          "calls": 4,
+          "tris": 520,
+          "mats": 4,
+          "geos": 4
+        },
+        {
+          "what": "<Mesh> | (MeshNormalMaterial)",
+          "calls": 3,
+          "tris": 420,
+          "mats": 1,
+          "geos": 3
+        },
+        {
+          "what": "duct | MAT_fabric",
+          "calls": 2,
+          "tris": 504,
+          "mats": 1,
+          "geos": 2
+        },
+        {
+          "what": "duct | acousticPanel",
+          "calls": 2,
+          "tris": 848,
+          "mats": 2,
+          "geos": 2
+        },
+        {
+          "what": "duct | wallTile",
+          "calls": 2,
+          "tris": 216,
+          "mats": 1,
+          "geos": 2
+        },
+        {
+          "what": "duct | decals",
+          "calls": 2,
+          "tris": 78,
+          "mats": 1,
+          "geos": 2
+        }
+      ]
+    },
+    {
+      "name": "safe_room",
+      "reported": 127,
+      "counted": 127,
+      "passes": {
+        "colour": 103,
+        "gtao-normal": 24
+      },
+      "top": [
+        {
+          "what": "<Mesh> | (ShaderMaterial)",
+          "calls": 23,
+          "tris": 440,
+          "mats": 18,
+          "geos": 4
+        },
+        {
+          "what": "safe | (MeshNormalMaterial)",
+          "calls": 18,
+          "tris": 24836,
+          "mats": 1,
+          "geos": 18
+        },
+        {
+          "what": "safe | doorPaint",
+          "calls": 5,
+          "tris": 6180,
+          "mats": 5,
+          "geos": 5
+        },
+        {
+          "what": "safe | steelPainted",
+          "calls": 3,
+          "tris": 10916,
+          "mats": 3,
+          "geos": 3
+        },
+        {
+          "what": "<Mesh> | (MeshNormalMaterial)",
+          "calls": 3,
+          "tris": 420,
+          "mats": 1,
+          "geos": 3
+        },
+        {
+          "what": "safe | paper",
+          "calls": 2,
+          "tris": 2884,
+          "mats": 2,
+          "geos": 2
+        },
+        {
+          "what": "terminal | (MeshNormalMaterial)",
+          "calls": 2,
+          "tris": 972,
+          "mats": 1,
+          "geos": 2
+        },
+        {
+          "what": "safe | carpet",
+          "calls": 1,
+          "tris": 18,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "safe | galvSteel",
+          "calls": 1,
+          "tris": 1884,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "terminal | doorPaint",
+          "calls": 1,
+          "tris": 900,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "safe | acousticPanel",
+          "calls": 1,
+          "tris": 692,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "pickup | paper",
+          "calls": 1,
+          "tris": 18,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "safe | plaster",
+          "calls": 1,
+          "tris": 18,
+          "mats": 1,
+          "geos": 1
+        },
+        {
+          "what": "safe | wallpaperResidence",
+          "calls": 1,
+          "tris": 1836,
+          "mats": 1,
+          "geos": 1
+        }
+      ]
+    }
+  ]
+}

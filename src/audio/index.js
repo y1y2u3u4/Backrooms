@@ -42,7 +42,9 @@
  *   zone:enter    {zone, from}                     reverb + ambience profile
  *   light:circuit {circuit, powered}               breaker/relay + hum settle
  *   entity:state  {entity, state, position}        the Surveyor / Attendant
- *   entity:heard  {position, radius}               head-plate tick
+ *   entity:heard  {position, radius, from, turn}   head-plate tick, AT `from`
+ *                 `from` is the entity, `position` is the noise; the tick has to
+ *                 come from the thing that turned or a decoy tells you nothing
  *   item:pickup   {id, name}                       pickup one-shot
  *   story:note    {id, title, body}                paper + UI
  *   game:death    {cause}                          full duck, ambience out
@@ -196,6 +198,35 @@ export function createAudio({ bus = null, collision = null, camera = null, rig =
       // `heavy` is the main dropping a way out under load.
       engine.playAt(e?.heavy ? 'metal.clang' : 'switch.click', at(e), { gain: e?.heavy ? 0.85 : 0.7 });
     }));
+    // ---- Night Watch ------------------------------------------------------
+    // Composed entirely from sounds the library already registers. A way
+    // dropping is not a UI beep: it is a relay letting go somewhere else in the
+    // building and the load arriving as a bang a moment later, which is the
+    // only cue the player gets that they have somewhere to be.
+    subs.push(bus.on('survival:fault', () => {
+      if (!engine.available) return;
+      engine.play('relay.click', { gain: 0.9 });
+      engine.play('metal.clang', { gain: 0.55, delay: 0.28 });
+      engine.play('elec.arc', { gain: 0.35, delay: 0.42 });
+    }));
+    subs.push(bus.on('survival:reset', () => {
+      if (!engine.available) return;
+      engine.play('breaker.throw', { gain: 0.9 });
+      engine.play('relay.click', { gain: 0.5, delay: 0.16 });
+    }));
+    // Putting the wrong board's switch back in. It throws, and nothing happens.
+    subs.push(bus.on('survival:wrong-board', () => {
+      if (!engine.available) return;
+      engine.play('breaker.throw', { gain: 0.6 });
+      engine.play('ui.deny', { gain: 0.5, delay: 0.2 });
+    }));
+    subs.push(bus.on('survival:end', () => {
+      if (!engine.available) return;
+      engine.play('metal.clang', { gain: 1.0 });
+      engine.play('relay.click', { gain: 0.8, delay: 0.1 });
+      engine.play('impact.hard', { gain: 0.7, delay: 0.35 });
+    }));
+
     subs.push(bus.on('light:overload', () => {
       if (!engine.available) return;
       engine.play('relay.click', { gain: 0.9 });

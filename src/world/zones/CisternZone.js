@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { KIT, floorSlab, wallRun, doorway, grille } from '../Kit.js';
 import {
-  makeBuilders, rigProxy, portal, bulkhead, emergencyLight, handrail, stairFlight,
+  makeBuilders, rigProxy, portal, bulkhead, emergencyLight, handrail, stairFlight, runSite, siteSpec,
   gantry, boardMarks, cagedLadder, drainChannel, hollowBox, steelColumn,
 } from '../ZoneKit.js';
 import { STAMP, roomNumber } from '../Decals.js';
@@ -239,6 +239,22 @@ export function buildCistern(ctx, opts = {}) {
 
     bulkhead(b, rigFor(b), lx0 + 0.14, ARRIVE_Y + 1.9, 0, { yaw: -Math.PI / 2, circuit: 'cistern', health: 'good', seed: 34 });
     emergencyLight(b, rigFor(b), lx0 + 0.14, ARRIVE_Y + 2.3, 1.4, { yaw: -Math.PI / 2, seed: 35 });
+    // YOU LIGHT A STAIR.
+    //
+    // The hall is 8 x 7.2 m and had exactly one lamp in it, on the door wall at
+    // the far end from the only thing in the room that can hurt you — a flight of
+    // fourteen treads going down into standing water. The head of that stair
+    // measured 7.09 m from a live fitting.
+    //
+    // Two vapour-tights on the side walls, flanking the descent, at the height
+    // the tunnel run uses. They are aimed across the hall rather than down the
+    // stair so the treads read as edges against a lit wall instead of as a lit
+    // strip in the dark.
+    for (const [z, yaw, health] of [[-3.48, 0, 'buzz'], [3.48, Math.PI, 'dying']]) {
+      bulkhead(b, rigFor(b), -20.8, 2.30, z, {
+        yaw, circuit: 'cistern', health, seed: 37 + (z > 0 ? 1 : 0), intensityScale: 3.0,
+      });
+    }
     if (D) {
       D.roomPlate(b, lx0 + 0.10, ARRIVE_Y + 2.28, 0, -Math.PI / 2, roomNumber('C', 2), 'CISTERN');
       D.quad(b, { stamp: STAMP.waterRing, face: 'up', x: -25.6, y: ARRIVE_Y, z: 0, w: 2.0, h: 2.4, strength: 0.7 });
@@ -260,10 +276,28 @@ export function buildCistern(ctx, opts = {}) {
   });
 
   let fs = 1;
-  for (let x = -17.4; x < 9.5; x += 4.2) {
+  const TUNNEL_RUN = [];
+  for (let x = -17.4; x < 9.5; x += 4.2) TUNNEL_RUN.push(x);
+  for (const x of TUNNEL_RUN) {
     const h = hash2(Math.round(x), 3);
     let health = 'good';
     if (h < 0.14) health = 'dead'; else if (h < 0.34) health = 'dying'; else if (h < 0.62) health = 'buzz';
+    // THE ENDS OF A RUN ARE NEVER DEAD.
+    //
+    // The roll killed the westernmost one, which is the fitting at the mouth of
+    // the tunnel where the stair comes down. Its neighbour is 4.2 m further in,
+    // so losing it left the whole west end of the tunnel and the hall behind it
+    // lit by one lamp on a door 9 m away: 7.21 m at the worst walkable point,
+    // measured with `lightreach.mjs --map`, which draws it as a solid block of
+    // '@' running from the stair to the third bulkhead.
+    //
+    // A dead lamp in the middle of a run is a gap between two working ones and
+    // is the point of the wear system. A dead lamp at the END of a run is a stub
+    // of corridor with nothing at all, and there is no seed for which that is
+    // the interesting version.
+    if (health === 'dead' && (x === TUNNEL_RUN[0] || x === TUNNEL_RUN[TUNNEL_RUN.length - 1])) {
+      health = 'dying';
+    }
     const side = (fs % 2) ? R_TUNNEL[3] - 0.10 : R_TUNNEL[1] + 0.10;
     const f = bulkhead(bTunnel, rigFor(bTunnel), x, 2.30, side, {
       yaw: (fs % 2) ? Math.PI : 0, circuit: 'cistern', health, seed: 50 + fs,
@@ -299,6 +333,19 @@ export function buildCistern(ctx, opts = {}) {
     waterFixtures.push(f);
   }
   bulkhead(bGallery, rigFor(bGallery), R_GALLERY[0] + 0.12, 2.05, 7.6, { yaw: Math.PI / 2, circuit: 'cistern', health: 'dying', seed: 90 });
+  // THE SUMP HAD NO FITTING AT ALL.
+  //
+  // A 7 x 4.5 m pocket off the north side of the tunnel, floor 550 mm below the
+  // tunnel's, and nothing over it — not a dead lamp, no fitting. It is the
+  // lowest point in the zone and the place standing water goes, which is the
+  // reason it exists and also the reason somebody has to be able to see into it.
+  // Two on the back wall rather than one in the middle: one at the centre still
+  // leaves both far corners 5.6 m away, measured before this was written.
+  for (const [x, health] of [[-17.2, 'buzz'], [-13.8, 'good']]) {
+    bulkhead(bStair, rigFor(bStair), x, R_SUMP[4] + 2.35, R_SUMP[1] + 0.12, {
+      yaw: 0, circuit: 'cistern', health, seed: 92 + fs++, intensityScale: 3.0,
+    });
+  }
 
   // =========================================================================
   // 4. valve chamber — the sluice, the pumps, the walkway
@@ -350,6 +397,30 @@ export function buildCistern(ctx, opts = {}) {
     const b = ex < -12 ? bStair : ex < 10 ? bTunnel : bChamber;
     emergencyLight(b, rigFor(b), ex, ey, ez, { yaw: eyaw, seed: 36 + ex, circuit: 'emergency' });
   }
+
+  /**
+   * AND ONE IN THE GALLERY, WHICH HAD NONE.
+   *
+   * The blackout table read 12 % of the Cistern blind — the second-best number
+   * in the building — and the Residence read 43 %, the worst. Both numbers were
+   * true and the ranking they implied was backwards.
+   *
+   * `NO SIGHTLINE` measures how much AREA cannot see an emergency fitting. It
+   * does not measure how far you have to feel your way to reach somewhere that
+   * can, and those are different buildings. The Residence's 43 % is flats, each
+   * two metres from a lit doorway; its median hop is 2.3 m and its worst 5.3 m,
+   * the shortest in the game, and adding fittings inside dwellings is not what a
+   * real building does anyway. The Cistern's 12 % was this gallery: a 4.4 x 9.7 m
+   * side room off the tunnel whose only fitting is on the `cistern` way and dies
+   * with everything else, so in a blackout the whole of it is blind and the
+   * nearest place you can see a lamp from is 8.2 m away, in water, in the dark.
+   *
+   * One battery unit near the mouth, aimed down the gallery the way the existing
+   * bulkhead is. `lightreach --blackout` grew a `to-beacon` column so this can
+   * never again look like the healthy zone.
+   */
+  emergencyLight(bGallery, rigFor(bGallery), R_GALLERY[0] + 0.14, 2.15, 3.0,
+    { yaw: Math.PI / 2, seed: 37, circuit: 'emergency' });
 
   // =========================================================================
   // 5. silt, tide lines, debris
@@ -471,6 +542,18 @@ export function buildCistern(ctx, opts = {}) {
   // them every reason not to. The padlock on 2 is real — it needs the key from
   // the sump — and turning 2 does nothing but make noise.
   // =========================================================================
+
+  // Authored alternatives. `sites[0]` is the placement every baseline measures.
+  const coreSite = runSite(ctx.runSeed, 'cistern_core', [
+    [12.5, -0.26, -6.3, 0.6],     // wedged behind the penstocks
+    [18.9, -0.26, 5.6, -0.4],     // the far corner, past the pump set
+    [11.4, -0.26, 5.9, 1.1],      // under the gantry stair, in the water
+  ]);
+  const keySite = runSite(ctx.runSeed, 'cistern_key', [
+    [-17.4, -0.50, -4.9, 1.4],    // the sump, where it was dropped
+    [-14.2, -0.50, -5.6, 0.2],    // further into the sump
+    [-9.0, 0.06, 1.5, 2.2],       // dropped in the tunnel on the way out
+  ]);
   const interactables = [
     // Both handwheels stand on the chamber walkway, 1.05 m above its deck.
     {
@@ -484,10 +567,12 @@ export function buildCistern(ctx, opts = {}) {
     },
     // The first core: on the chamber bed, in the deepest and loudest water in the
     // zone, behind the tank. Wading to it is the price if the penstock stays open.
-    { kind: 'pickup', item: 'fuse_core', position: [12.5, -0.26, -6.3], rotation: 0.6 },
+    // THREE PLACES A CORE COULD BE, ALL OF THEM STAGED. The chamber is the room
+    // the notebook points at; which corner of it changes per run. See `runSite`.
+    siteSpec(coreSite.pick, { kind: 'pickup', item: 'fuse_core' }),
     // The padlock key, in the sump, where a thing that has been in water a long
     // time would be.
-    { kind: 'pickup', item: 'key_penstock', position: [-17.4, -0.50, -4.9], rotation: 1.4 },
+    siteSpec(keySite.pick, { kind: 'pickup', item: 'key_penstock' }),
     // The notice that explains the penstocks, cable-tied where you come in.
     { kind: 'pickup', item: 'note', noteId: 'note_cistern_isolation', position: [-24.4, ARRIVE_Y + 0.02, -1.2], rotation: 0.2 },
     { kind: 'pickup', item: 'note', noteId: 'note_wading', position: [-10.0, 1.02, R_TUNNEL[1] + 0.30], rotation: 0 },
@@ -529,6 +614,13 @@ export function buildCistern(ctx, opts = {}) {
 
   return {
     root, chunks, builders, portals, interactables,
+    // Every authored alternative, including the ones this run did not choose.
+    // `props.mjs` validates these too: a candidate site inside a wall is a bug
+    // that appears one run in three, which is the worst kind there is.
+    altSites: [
+      ...coreSite.all.map((v) => siteSpec(v, { kind: 'pickup', item: 'fuse_core' })),
+      ...keySite.all.map((v) => siteSpec(v, { kind: 'pickup', item: 'key_penstock' })),
+    ],
     spawn: [-26.0, ARRIVE_Y, 0],
     spawnYaw: -Math.PI / 2,
     fogProfile: 'cistern',

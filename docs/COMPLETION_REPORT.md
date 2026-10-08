@@ -1636,3 +1636,1382 @@ with `stack: 1` is a defect, and the evidence now says which.
   not a thing `audiodyn` can answer.
 - The Stack and the Cistern were not reached this pass; the capture evidence
   gathered for them turned out to be measuring an unpowered building.
+
+---
+
+## 10. Fifth pass: six per cent of the Intake was a room
+
+`lightreach.mjs` had been printing `intake 6 %` — six per cent of walkable area
+beyond 5 m from a live fixture — since the tool was written. It sat next to
+`cistern 9 %` and `plant 9 %` in a table that was otherwise zeroes, and it was
+read, every time, as a rounding error: a metre of skirting here, the far side of
+a column there.
+
+It was not. It was a rectangle 30 m by 8 m with **no fitting in it at all**.
+
+### The percentage was not actionable and the worst point was worse than useless
+
+A fraction says how much and not where, and the single worst sample the summary
+prints is actively misleading: drop a lamp on it and the worst point moves three
+metres and reports a small improvement, which is exactly what "raise the fill
+again" felt like from inside. Three previous passes at the dark zones did that.
+
+So `lightreach` gained `--map`: the zone in plan, one character per metre, shaded
+by distance to the nearest live fixture, with fixtures drawn on it. Live fittings
+are `*` and dead ones `x`, because "there is no lamp here" and "there is a lamp
+here and it is dead" have opposite fixes and a map that shows only working lamps
+cannot tell them apart. Cells take the **worst** sample that lands in them, so a
+dark lower deck is not averaged away by a lit walkway above it — the same
+mistake, in miniature, that the first plenum tool made last pass.
+
+The Intake came out like this, with the fixture rows stripped out for width:
+
+```
+z=  -22 |.* .. .: -+ #@ ## +# ++ #+ + ## +- --+ +# +- :.*.: *. .* .: --|
+z=  -21 |.. .: :- +# @@ @@ @@ @@ @@ @ @@ ## ### ## +- :. .: .. :. .: +#|
+z=  -19 |:. :- -+ #@ @@ @@ @@ @@ @@ @ @@ @@ #@@ +- -- -: :: .. :: :- +@|
+z=  -18 |.* .- +# ## @@ @# ## ## @@ @ @@ #+ ++# +: .. :- -: *. :- ++ #@|
+z=  -16 |.. :- ++ ++ +# #+ ++ ++ +# @ @# +- :-- -: .* .- -: .. :: -- +@|
+```
+
+No `*`. No `x`. Nothing had ever been planned there.
+
+### The cause: a fix that assumed the thing it was written to disprove
+
+`planIntake` lays the office out on a 15 x 15 grid of 4.2 m cells. A `WALL` cell
+is not a solid cell — it is a cell with a 160 mm partition through its centre and
+open carpet either side, which an earlier pass had already established, in a
+comment, while fixing the fact that `WALL` cells got no light:
+
+> A WALL cell is a 4.2 m cell containing a 160 mm partition through its centre:
+> 96 % of it is open floor.
+
+That fix then declined to light a side whose neighbouring cell was itself a
+`WALL`, on the reasoning that you cannot step off a partition into another
+partition — which treats a `WALL` cell as solid. It is the exact assumption the
+paragraph above it was written to correct, reintroduced four lines later.
+
+While partition runs stay isolated the difference is invisible. This seed does
+not keep them isolated: rows 1-4, cols 1-5 are a solid block of `WALL`, which the
+geometry pass renders as **four parallel 21 m partitions with three full-length
+4.2 m lanes between them**, and every cell in that block has `WALL` on all four
+sides. Zero fixtures over about 350 m2 of the zone the player starts in.
+
+The rule is now: light the lane too, and the lower-indexed of the two cells that
+form a lane owns it. That is a rule, not a proximity heuristic — the first
+version of this fix used a 2.6 m exclusion radius and **deleted 26 fixtures that
+already existed** while adding the new ones, which the summary line reported as a
+mean improvement. A distance test that can silently remove work is the same shape
+of instrument as the plenum tool that reported "no change" twice last pass.
+
+### And one enclosed room had lost both its lamps
+
+With the lanes lit, the residue was a single block, and it was the interview
+room: the wear roll is per cell and independent, so a two-cell room at this
+damage level has about a one-in-ten chance of losing both fittings, and this seed
+took it. Rooms are, in this file's own words, "where set dressing and narrative
+fragments live" — a room with no light is a room whose contents were authored and
+then hidden. An enclosed room now keeps at least one fitting, at worst a `dying`
+one, which flickers and is worse to stand under than a steady lamp.
+
+### The Cistern and the Plant, same tool, same afternoon
+
+**Cistern.** The sump — a 7 x 4.5 m pocket off the north side of the tunnel,
+floor 550 mm below it, the lowest point in the zone — had no fitting whatsoever.
+The stair hall, 8 x 7.2 m, had one lamp, on the door wall, at the far end from a
+flight of fourteen treads going down into standing water. And the tunnel's
+westernmost bulkhead — the one at the mouth, where the stair arrives — had rolled
+`dead`, leaving the whole west end to the door lamp 9 m away.
+
+Two vapour-tights on the sump's back wall (one in the middle still leaves both
+far corners 5.6 m away, measured), two flanking the descent, and a rule: **the
+ends of a lighting run are never dead.** A dead lamp mid-run is a gap between two
+working ones and is the point of the wear system; a dead lamp at the end of a run
+is a stub of corridor with nothing at all.
+
+**Plant.** Eight roof bays over a 35 x 23 m hall is a 8.4 x 9.8 m grid, so the
+south-east quarter's entire cover was one fitting — and that fitting is the one
+the wear pass kills. Underneath it sits a 4.2 m air handler with no light on it.
+Separately, the bay grid's northern row is at z = −5.6 and the north wall is at
+−11.6, so the 35 m aisle where the cable drums, the ladder and the nest are was
+6 m from a lamp for its whole length. A third low bay over the air handler, four
+wall packs down the north aisle at working height, and one at the south-west
+corner where the gantry run stops 11 m short of the wall.
+
+### What moved
+
+| zone | mean | worst | area beyond 5 m | fixtures |
+|---|---|---|---|---|
+| intake | 2.33 → **2.03** | 8.32 → **7.04** | 6 % → **2 %** | 228 → 254 |
+| cistern | 2.73 → **2.22** | 7.21 → **4.77** | 9 % → **0 %** | 20 → 24 |
+| plant | 2.93 → **2.48** | 6.71 → **5.27** | 9 % → **1 %** | 25 → 31 |
+
+Every other zone was already at 0 % and is unchanged. The Cistern now meets the
+brief's stated bar for it — 0 % of walkable area beyond 5 m from a lamp — without
+the bounce fill moving.
+
+**What is left, stated as it is.** The Intake's residual 2 % is the last 0.7 m
+strip of the plate against the perimeter wall plus a handful of cells the 10 %
+skip roll emptied; the worst of it is the south-east corner at 7.04 m. The
+Plant's 1 % is a sliver of open floor mid-hall at 5.27 m. The 5 m bar is a
+corridor bar and the middle of a 35 x 23 m hall is not a corridor, but the number
+is over it and is reported over it rather than argued down.
+
+### `perf.mjs` was measuring a bundle, not the game
+
+The run made straight after these lighting changes returned **the same 176 draw
+calls, the same 593,350 triangles and the same 222 fixtures** as a run made with
+the changes stashed — every workload number identical across a change that adds
+36 fixtures. Two independent runs agreeing is normally the strongest evidence a
+measurement offers. Here it was the signature of measuring nothing: `perf.mjs`
+serves `dist/` through `vite preview`, and neither run had built.
+
+The recorded baseline in `docs/captures/perf.json` — 170 draw calls, 128
+programs, `pass: true` — turned out to be **six commits old**. A build takes one
+second. The tool now rebuilds whenever any file under `src/`, `index.html`,
+`public/` or `vite.config.js` is newer than `dist/index.html`, says that it did,
+and refuses to measure if the build fails; `--no-build` opts out. When something
+is already listening on the port it prints that it cannot verify what that server
+is serving, rather than implying the numbers belong to the current tree.
+
+With both sides rebuilt, at the shipping low tier:
+
+| | before | after | budget |
+|---|---:|---:|---:|
+| draw calls | 176 | **178** | 180 |
+| triangles | 593,350 | **615,302** | 1,200,000 |
+| active lights | 6 | 6 | 28 |
+| shadow lights | 1 | 1 | 3 |
+| programs | 162 | **161** | 140 |
+| logic ms | 0.3 | 0.2 | 4 |
+
+Thirty-six new fixtures cost **two draw calls** — `EmissiveBatch` is doing its
+job — and 22 k triangles.
+
+**The programs budget fails, and it failed before this pass too.** 162 against a
+budget of 140, not 128 as recorded. It is a load-time cost rather than a
+per-frame one and it is not caused by this change, which took it down by one; it
+is named here because the stale baseline was hiding it and it is now the only
+failing budget in the project.
+
+### No pixels this pass, and why
+
+Three attempts to capture the lanes and the sump through `capture.mjs` did not
+complete in this environment — the run reaches `ANNEX_READY`, then sits in the
+first shot without writing a frame, at full resolution and at 1280x720, with and
+without the shader pre-warm. That is a capture-harness problem rather than a game
+one; `bootcheck` boots the same build, renders, and passes 11/11 in 106 seconds.
+
+The artefact for this pass is therefore `docs/verification/lightreach.md`: the
+plan map of all eight zones, browser-free, regenerable in three seconds. For a
+change whose whole content is "which square metres have a fitting over them", the
+map is a better record than a photograph of one corner of it anyway — but it is
+not a substitute for looking, and nobody has looked at these lanes.
+
+---
+
+## 11. Sixth pass: the capture harness was never hung
+
+Three capture runs were abandoned as hung in the previous pass — at 35, 20 and 15
+minutes, none of them having written a single frame, none of them having printed
+anything past `→ loading`. The completion report recorded that as "a
+capture-harness problem rather than a game one" and moved on. It was a harness
+problem, and this is what it was.
+
+### The blocking bug: waiting on a frame callback for a thing that blocks frames
+
+`capture.mjs` waited for the game with
+
+```js
+page.waitForFunction('window.ANNEX_READY === true || window.ANNEX_ERROR', { timeout: 180000 })
+```
+
+Playwright's default polling for `waitForFunction` is `requestAnimationFrame`.
+The game's boot ends with a synchronous shader pre-warm, and the page says so:
+
+```
+[game] pre-warmed intake shaders in 65751 ms
+THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported.
+```
+
+161 shader permutations, compiled one at a time on the main thread because the
+extension that makes `compileAsync` actually asynchronous is not present on a
+software rasteriser. No frame callback runs while that is happening, so the
+predicate was not merely false — it was never evaluated. The run then failed at
+180 seconds with `Timed out waiting for ANNEX_READY`, which reads like the game
+is broken.
+
+Polling on a timer instead (`polling: 500`) fixes it outright. The timeout is
+also now 600 s, because three minutes was never enough for this boot.
+
+### What the runs actually cost, measured
+
+The reason nobody caught this is that the numbers are genuinely enormous and
+nobody had ever measured them:
+
+| | measured on this machine |
+|---|---|
+| shader pre-warm, one zone | 66 s |
+| steady-state frame, 1600x900 high | 1.28 s |
+| a cross-zone `world.goto` | 453 s |
+| first frames after that goto | 25 s each |
+| one lane shot, 960x540 high | 701 s |
+
+`--prewarm 0` does not avoid the compile cost, it relocates it: boot drops from
+66 s to 2 s and the first `world.goto` inside a shot then takes 453 s instead.
+Compilation is paid either way. The only choice is whether it is paid somewhere
+the tool is watching — which is the same reason `programs 161 / 140` is a budget
+worth caring about even though it is not a per-frame cost.
+
+### And `--gpu` does not get a GPU
+
+The flag drops the SwiftShader launch arguments, on the reasoning that a machine
+with a real GPU should use it. On the Mac this was run on, it produces:
+
+```
+ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0)), SwiftShader driver)
+```
+
+Headless Chromium there has no GPU path and ANGLE falls back silently. Dropping
+the flags is a request, not a guarantee, and a run that believes it measured a
+GPU when it measured a CPU rasteriser is the same class of error as measuring a
+stale bundle. The tool now reads the renderer string out of the page, prints it,
+and says so when `--gpu` did not get one. **The project still has no
+GPU-verified frame rate, and now it can prove that rather than assume it.**
+
+### The three things that made a slow run indistinguishable from a dead one
+
+1. The per-shot progress line printed on **completion**. A run three minutes into
+   its first shot looked exactly like a run that died during boot.
+2. The page's own boot narration — zone builds, AO bakes, the pre-warm and its
+   duration — was buffered into an array and printed only on failure. The one
+   place a slow boot explains itself was the one place nobody could see.
+3. Nothing reported the renderer or the frame cost.
+
+All three are fixed: boot narration is echoed live, each shot prints its name
+before rendering, and a running ETA appears from the mean of completed shots.
+
+### The estimate I added was wrong by three orders of magnitude
+
+The first version of the projection timed ten frames and multiplied by the settle
+count. It printed **`≈ 0.0 min`** for a run that took eleven and a half minutes.
+
+The ten frames re-rendered a view that was already compiled and already settled,
+at about 1 ms each; the shots that followed took 161 s, 138 s, 28 s and 162 s,
+because almost none of a shot's cost is frames — it is compilation triggered when
+the camera moves somewhere that puts new materials on screen, and no amount of
+re-rendering the current view can predict it.
+
+That is the seventh instrument in this project to be confidently wrong in the
+reassuring direction, and it was written *in the commit that exists to catalogue
+the other six*. The steady-state number is now printed as what it is, with the
+sentence "this does NOT predict a shot" next to it, and the projection comes only
+from shots that have actually finished.
+
+### The lever is the programs budget, not the viewport
+
+Worth stating because it is counter-intuitive: **a smaller viewport barely helps.**
+A 960x540 lane shot costs 701 s, of which the 150 settle frames are 0.2 s at
+1.1 ms each. The other 700 seconds are shader compilation, which is
+resolution-independent. Halving the pixels halves nothing that matters.
+
+The thing that would actually make this harness usable is the failing budget:
+**161 shader permutations against 140.** Every one of them is compiled serially
+because `KHR_parallel_shader_compile` is unavailable here, and they are paid
+again on every boot, every zone transition and every camera move that reveals a
+material not yet seen. The programs budget has been read as a load-time nicety.
+It is the reason a four-shot contact sheet takes three quarters of an hour.
+
+### The lanes, finally photographed
+
+`docs/captures/lanes_after/` — four frames of the Intake partition block that
+section 10 lit, taken with the repaired harness at 960x540, quality high, all
+circuits live.
+
+| frame | what it shows | direct light at head |
+|---|---|---|
+| `l1_lane_north.png` | a lane looking east; troffers receding | 20.6 |
+| `l2_lane_middle.png` | the next lane; a lamp washing the partition | 26.5 |
+| `l3_lane_ceiling.png` | the ceiling of a lane, two fittings overhead | 35.5 |
+| `l4_lane_across.png` | **the lens against a wall — see below** | 36.0 |
+
+`l3` is the one that matters. The project's third standing rule is that if it
+glows there is a fixture and the fixture is where the light is, and the lanes had
+been lit by nothing but spill from the next bay over. The frame shows two
+troffers in the near ceiling and a run of them going away down the lane, in a
+ceiling that had no fitting in it at all before this.
+
+`l4` is a wall. It is left in the directory on purpose, because it is what made
+the next check worth writing.
+
+### A frame can be a photograph of nothing, and the manifest already knew
+
+`g.look` puts the camera exactly where it is told; `lookOpen` searches for a
+sightline first but is expensive, so shot lists mix the two. The very first list
+written after repairing the harness put one camera 40 cm from a partition and
+produced a full-frame wash of blown wallpaper — the exact failure `lookOpen` was
+built for, reintroduced by working around its cost.
+
+No new measurement was needed to catch it. The three good frames of that run
+adapted to 0.047, 0.068 and 0.103; the wall adapted to **2.19**, twenty to forty
+times its siblings, because the exposure system was metering a surface at arm's
+length. `capture.mjs` now flags any frame more than 8x off the run's median
+adapted luminance, in either direction — the same test catches a frame that came
+out dark. Verified against the manifest that motivated it: it flags `l4` and
+none of the other three.
+
+A ratio against the family median rather than an absolute bar, because this game
+is deliberately dim in some zones and bright in others and an absolute threshold
+would flag the Cistern for being the Cistern.
+
+---
+
+## 12. Seventh pass: counting fittings is not counting light
+
+Two measurements existed for "is this dark", and both counted fittings. Section
+10 moved every number in the reach table by adding 36 of them, and nothing in the
+project could have said whether a single one of those reached the screen —
+`LightRig` uploads **six** lights at the shipping tier, and the Intake has 192
+live fixtures. A pass that adds thirty lamps to a zone that already had a hundred
+and eighty could improve every published number and change nothing a player sees.
+
+### `--delivered N`: the irradiance the shader is actually given
+
+Browser-free, using the expression the rig itself ranks on (`Lighting.js`,
+`updateRig`):
+
+```
+(rated candela x circuit supply) / (1 + d^2)
+```
+
+summed over the top N by that same ranking, at eye height, per walkable point.
+
+The floor is derived rather than invented — this project has been burned once by
+a budget somebody made up — so **under-lit means "below the dimmest five per cent
+of the Service Spine"**, which works out at 10.52. The reference is printed with
+the table so it can be argued with.
+
+One idealisation, stated in the source: the real rig ranks by distance to the
+*camera* and re-sorts five times a second, so one set serves the whole frame.
+This picks a set per sample point, which is what a player standing exactly there
+would get. Delivered light in the game is never *better* than this table.
+
+### The answer: yes, the fittings deliver
+
+Same tool, same tier, the only difference being `git checkout e5aa898 -- src/world/zones/`:
+
+| zone | under-lit area | mean delivered | 5th percentile |
+|---|---|---|---|
+| intake | 43 % → **34 %** | 11.44 → **12.53** | 3.47 → **5.22** |
+| cistern | 33 % → **16 %** | 14.85 → **18.84** | 2.23 → **6.41** |
+| plant | 38 % → **20 %** | 14.16 → **16.14** | 6.34 → **8.34** |
+
+The under-lit fraction roughly halved in every zone touched and the dim tail —
+the fifth percentile, which is precisely the area the word "under-lit" refers to
+— rose 2.9x in the Cistern. The six-light budget does not swallow them.
+
+### Three things the new column says that the old ones could not
+
+- **The Intake keeps 51 % of its own plan.** Half the light that zone's fittings
+  emit never reaches a shader at the shipping tier. That is not a defect — the
+  nearest six of 192 dominate anyway — but it is the ceiling on what any further
+  fixture work there can buy, and it was invisible before.
+- **The Ductwork is 93 % under-lit** and nobody has ever noticed, because its
+  reach numbers are perfect: 0 % beyond 5 m, worst case 1.53 m, 25 fittings in a
+  small box. It is densely lit with feeble lamps. Whether a 0.8 m galvanised crawl
+  duct *should* deliver half what a corridor does is a design question, and it is
+  now at least a visible one.
+- **The Stack has the highest delivered light in the building** — mean 31.17
+  against the Service Spine's 18.13, 3 % under-lit — and it is still the zone that
+  does not read as a shaft. That is a strong negative result. It rules out
+  quantity of light as the cause and supports what the brief has said for four
+  passes: the Stack needs a different *class* of fitting, aimed at the shaft wall,
+  not more output.
+
+### Blackout was answering the question its own footnote called wrong
+
+`--blackout` has always printed distance to the nearest emergency fitting, under
+a footnote reading: *"In a blackout the bar is different: somewhere to walk
+TOWARD, not a lit room."* Distance to the nearest lamp is the lit-room measure.
+An emergency scheme is not trying to light a 63 m floorplate; it is trying to
+make sure you can always **see** a fitting from wherever you are standing.
+
+So blackout now traces the segment from eye height to every live emergency
+fitting and reports the share of walkable area with a clear line to none of them.
+The two measures disagree, and where they disagree the old one was wrong:
+
+| zone | beyond 5 m | no sightline |
+|---|---|---|
+| plant | 66 % | **6 %** |
+| stack | 53 % | **0 %** |
+| cistern | 57 % | **12 %** |
+| residence | 32 % | **43 %** |
+| intake | 86 % | **30 %** |
+
+The Plant and the Stack are large open volumes: few lamps are near you and you
+can see one from almost anywhere, so the distance measure was alarmist. The
+Residence is the reverse — a corridor of small rooms where lamps are close and
+behind walls. **The distance measure ranked it seventh of eight zones. By the
+measure that matters it is the worst in the building.**
+
+### And it found a real omission
+
+`IntakeZone` has a comment reading "the two spines ARE the escape route", followed
+by emergency fittings along `spineRow` and `spineRow2` — the two that run
+east-west. `spineCol` runs the full 63 m north-south, carries the route to the
+duct hatch and the Service door, and had **no emergency fitting anywhere along
+it**. Three added, at the spacing the other two use, plus two for the partition
+block from section 10, whose 4.2 m lanes can see along themselves and nowhere
+else.
+
+Intake blind area **30 % → 22 %**, and its ordinary reach improved as a side
+effect (2 % → 1 % beyond 5 m, since an emergency fitting is a live fitting).
+
+### Where I stopped, and why
+
+The remaining 22 % of the Intake, the Residence's 43 % and the Service Spine's
+27 % are all the same thing, and the maps say so plainly: **every zone's escape
+route is covered and the rooms and bays off it are not.** That is what a
+partitioned floor plate does to a sightline, and it is what real emergency
+lighting design accepts — luminaires go on escape routes, not in every bay.
+
+I could have driven those numbers down by scattering emergency lamps through the
+bays. I did not, because the target would have been one I invented, and chasing an
+invented target with more fittings is the exact failure this report has documented
+six times. The number is reported, the interpretation is stated, and the honest
+next step for anyone who wants a target is a measure this tool does not implement:
+how far you must walk before a fitting comes into view.
+
+### Cost
+
+Five emergency fittings: draw calls 178 → **179 of 180**. That budget is now one
+call from its ceiling, which is worth knowing before anyone adds anything else to
+the Intake. `programs` still fails at 162 / 140. Everything else in
+`npm run audit` is green.
+
+---
+
+## 13. The Stack, measured for the first time in four passes
+
+The Stack has been the project's oldest open defect since the first completion
+report, on the strength of a sentence — *"the receding floors look like lit
+rectangles suspended in black rather than galleries inside a well"* — and a
+number, **0.925 crushed against a target of 0.85**. Both predate the well
+enclosure and the corner high-bay aiming. Nobody had re-measured, because the
+capture harness did not work.
+
+It works now. Four frames from the deck ring, all circuits live, shipping tier,
+`docs/captures/stack_now/`:
+
+| frame | crushed | dynamic range |
+|---|---|---|
+| across the well | 0.527 | 0.460 |
+| down the drop | **0.270** | 0.412 |
+| up the well | **0.295** | 0.453 |
+| corner, diagonal | 0.579 | 0.512 |
+
+**The brief's target was met some time ago and nobody knew.** 0.27 to 0.58
+against a bar of 0.85. The zone also has, by the measurement built in section 12,
+**the most delivered light in the building** — mean 31.17 against the Service
+Spine's 18.13, 3 % of its area under-lit.
+
+### The one thing genuinely missing, and what fixing it did not do
+
+Every fitting in the Stack points either down at the gantry or across the void.
+That is deliberate and it is what makes the far wall the brightest thing in the
+frame — but its corollary is that **no fitting ever lights the wall it is mounted
+on**. The office facade at the back of the ring, within arm's reach for the whole
+circuit of the level, received light from nothing at all. It shows: the two
+frames looking *along* the ring crush at 0.527 and 0.579, against 0.270 and 0.295
+for the two looking down and up the shaft, and in the diagonal frame the unlit
+facade is a hard-edged black mass filling half the picture.
+
+Four vapour-tights per near level on the shaft wall's outer face, throwing back
+across the walkway — deliberately not into the void, because the depth of this
+shaft is made by the far wall being the brightest thing in frame.
+
+Delivered light moved, and moved properly:
+
+| | before | after |
+|---|---|---|
+| mean delivered | 31.17 | **33.49** |
+| 5th percentile | 10.82 | **13.98** |
+| worst point | 9.16 | **12.53** |
+| under-lit area | 3 % | **0 %** |
+| kept/all | 57 % | 53 % |
+
+**And the crushed-pixel ratio did not move at all**: 0.527 → 0.516, 0.270 →
+0.283, 0.295 → 0.291, 0.579 → 0.558. Twenty fittings, more light delivered at
+every percentile, and the headline number the brief set as the Stack's exit
+criterion is flat.
+
+### Which means the exit criterion was never measuring the thing
+
+The black in these frames is not the walkable ring. It is the shaft's depth — the
+far galleries, the drop, the levels dissolving into fog seven storeys down. No
+amount of light on the deck can change pixels that are eighteen metres away
+through haze, and the only way to drive `crushed` down would be to light the
+void, which this zone's own source says in as many words destroys the reading it
+exists to create.
+
+So: **`crushed < 0.85` is not a test of whether the Stack reads as a shaft.** It
+is satisfied, it was satisfied before this pass, and satisfying it harder would
+make the zone worse. That is the eighth measurement in this project to be
+adjacent to its claim rather than on it, and the first one caught before it drove
+a change rather than after.
+
+The fittings are kept, on the evidence that did move: the dim tail rose 29 %, the
+worst point rose 37 %, under-lit area went to zero, and the across-the-well
+frame's dynamic range went **0.460 → 0.709** — more tonal separation in the same
+darkness, which is what "reads as a well" actually means and what the crushed
+count cannot see.
+
+### What the Stack still needs
+
+A human to look at it. Four frames are in `docs/captures/stack_now/` and
+`docs/captures/stack_wash/`; to my eye the two shots down and up the shaft read as
+a well, and the two along the ring read as a dark walkway with a lit wall
+opposite. That is a judgement, not a measurement, and this report has been wrong
+about the Stack from judgements before.
+
+Cost: 20 fixtures, 10,800 triangles, 4 meshes in the Stack. Draw calls unchanged
+at 179 of 180 — the worst scenario is in the Intake, not here. `npm run audit`
+green; `programs` still fails at 162 / 140.
+
+### And the Cistern, while the harness was warm
+
+The other named lighting target, from §2.2 of the brief: *"Done when: crushed
+below 0.80 and area beyond 5 m at 0 %."*
+
+Area beyond 5 m went to 0 % in section 10. The crushed half had never been
+re-measured since the 0.842 that set the bar. Four frames, shipping tier, all
+twenty-four fittings live, `docs/captures/cistern_now/`:
+
+| frame | crushed | dynamic range | direct light at head |
+|---|---|---|---|
+| tunnel, looking east | **0.090** | 0.661 | 20.9 |
+| stair hall | **0.249** | 0.626 | 14.6 |
+| sump | **0.269** | 0.700 | 23.4 |
+| valve chamber | **0.398** | 0.783 | 16.1 |
+
+Against a bar of 0.80, and against the 0.47 dynamic range recorded when the item
+was written. The tunnel frame at 0.090 crushed is the cleanest in the project.
+
+**Both conditions of §2.2 are satisfied and the item is closed.** What is left in
+the Cistern is dressing density, which is §2.5 and is not a lighting problem.
+
+Two of the brief's three named Priority-1 defects turn out to have been met
+before this pass and unmeasured since — which is its own finding. The cost of a
+broken capture harness was not four missing screenshots; it was two zones carried
+as open defects for four iterations, and a lighting change made against the
+Stack's black pixels that could never have worked.
+
+---
+
+## 14. One line, 125 shader programs down to 33
+
+`programs` was the only failing budget in the project — 162 against 140 — and it
+had been carried as a load-time nicety for as long as it had existed. Section 11
+established that it is not: `KHR_parallel_shader_compile` is unavailable on a
+software rasteriser, so every permutation compiles serially on the main thread
+and is paid again on every boot, every zone transition, and every camera move
+that reveals a material not yet seen. **The permutation count is the capture
+harness's speed.**
+
+A count is not actionable, so `tools/qa/programs.mjs` dumps three.js's own program
+cache keys, works out which of the 56 parameters actually vary across them, and
+ranks the axes by how much they multiply. The widest axis, by a distance, was not
+a three.js parameter at all:
+
+```
+  field   distinct   commonest values
+     54         38   <absent>x14  srgbx6  annex|-0.3|0.4|5|0.4|0x5  annex|-0.4|0.6|4|0.35|x3
+```
+
+`annex|…` is this project's own `customProgramCacheKey`, and it carried the
+**values** of seven material options:
+
+```js
+`annex|${o.dirtBase}|${o.dirtAmount}|${o.detailTile}|${o.detailStrength}|...`
+```
+
+All seven are uniforms, assigned a dozen lines above it in `onBeforeCompile`.
+Every string spliced into the shader source — `VERT_HEAD`, `VERT_BODY`,
+`FRAG_HEAD`, `FRAG_MAP`, `FRAG_ROUGH`, `FRAG_DETAIL_NORMAL`, `AO_VOLUME_APPLY` —
+is a module constant that never reads `o`. **The generated GLSL is byte-identical
+across all thirty-eight of them.** The key was asking the renderer to compile the
+same program thirty-eight times because a dirt amount differed.
+
+The comment above it stated the requirement correctly — *"distinct cache key so
+three does not share a program with an undecorated standard material"* — which
+needs exactly one token. And `rollWidth` was already collapsed to a boolean in
+that same string, so the principle was understood and applied to one option out
+of seven.
+
+```js
+mat.customProgramCacheKey = () => 'annex';
+```
+
+### What it bought
+
+| | before | after |
+|---|---|---|
+| programs, one zone (`programs.mjs`) | 125 | **33** |
+| programs, worst perf scenario | 162 / 140 **FAIL** | **40 / 140 PASS** |
+| Intake shader pre-warm | 68,351 ms | **175 ms** |
+| four-shot Cistern capture | minutes per frame | 46 s, 10 s, 19 s, 15 s |
+
+A **390x** reduction in pre-warm. Every budget in `npm run perf` now passes for
+the first time in this project's recorded history.
+
+### Verified in pixels, because this one could have been silently catastrophic
+
+Sharing a program between materials is exactly the change that, if the reasoning
+about uniforms were wrong, would make every surface in the game look identical —
+and would do it without erroring. So the same four Cistern frames, same shot list,
+same tier, before and after:
+
+| frame | crushed | dynamic range | contrast | high-freq |
+|---|---|---|---|---|
+| tunnel | 0.090 → 0.091 | 0.661 → 0.664 | 0.186 → 0.182 | 0.079 → 0.076 |
+| sump | 0.269 → 0.253 | 0.700 → 0.704 | 0.178 → 0.180 | 0.098 → 0.098 |
+| stair hall | 0.249 → 0.243 | 0.626 → 0.619 | 0.207 → 0.204 | 0.088 → 0.087 |
+| chamber | 0.398 → 0.376 | 0.783 → 0.781 | 0.189 → 0.193 | 0.081 → 0.080 |
+
+High-frequency energy is the one to watch — it is the texture-detail proxy, and
+it is the first thing that would collapse if every material had flattened to one
+appearance. It does not move. Neither does contrast. The frames are in
+`docs/captures/cistern_shared/` next to `cistern_now/`; the concrete is still
+concrete, the rust is still rust, and each wall still carries its own dirt.
+
+`npm run audit` green, `bootcheck` 11/11.
+
+---
+
+## 15. The hands: one bug found and fixed, one attempt measured and reverted
+
+"The hands look weird" — and §2.4 of the brief has said so for four passes, filed
+as a Blender task. It is not a Blender task. `hands_lowpoly.glb` is already in the
+build (`usingGlbHands: true`, 22 meshes, 6,836 vertices per hand) and the
+procedural fallback in `Hands.js` has not been on screen for a long time.
+
+### The bug: the viewmodel's exposure was pinned at maximum everywhere
+
+`Hands._updateLights` exists to make the hands darken with the room. The class
+comment at the top of the file is emphatic about why: *"Hands that stay lit in a
+dark room are the single loudest tell that a game's viewmodel is a sticker."*
+
+It sampled the world and mapped it:
+
+```js
+// The rig's units run roughly 0..7; map that onto a sane exposure.
+const target = clamp01(world / 5.2);
+```
+
+They do not run 0..7, and have not for some time. `illuminationAt` was fixed to
+include `intensityScale` — that fix is documented inside `Lighting.js` and it was
+the right fix — and every fixture output raised since multiplied the same number
+again. From the capture manifests:
+
+| | `directAtHead` | `world / 5.2` | exposure after clamp |
+|---|---|---|---|
+| Cistern stair hall | 13.9 | 2.7 | **1.000** |
+| Cistern tunnel | 20.8 | 4.0 | **1.000** |
+| Intake lane | 26.5 | 5.1 | **1.000** |
+| Stack | 315.8 | 60.7 | **1.000** |
+
+The smallest reading anywhere in the powered building is 2.7x the divisor. **The
+hands were at full exposure in every lit room in the game**, across a 23x spread
+of real illumination, and the entire mechanism did nothing outside a blackout.
+
+Fixed with a square-root curve — this maps to perceived brightness, and the Stack
+is twenty times brighter than the Cistern without looking twenty times brighter —
+referenced so an ordinary corridor lands near 0.8 and the brightest zone is the
+one that clamps. Measured in the game afterwards, recorded per frame:
+
+| frame | `directAtHead` | `handExposure` |
+|---|---|---|
+| Cistern stair hall | 14.3 | **0.580** |
+| Cistern chamber | 16.1 | **0.630** |
+| Cistern tunnel | 20.8 | **0.710** |
+| Cistern sump | 23.4 | **0.750** |
+
+In pixels, the hand region across those four frames is **0.82x** its previous
+brightness, and it now varies between rooms instead of being constant.
+
+`Game.lightProbe()` reports `handExposure` next to `directAtHead` from now on, so
+every capture records whether the two still agree. That is the whole reason this
+sat unnoticed: nothing had ever put them side by side.
+
+### The attempt: a skin texture, measured, and reverted
+
+The other half of "weird" is that **the hands are the only untextured surface in
+this game.** The model ships four materials; `MAT_fabric` (the sleeve) has an
+albedo and a normal map, and `MAT_skin` — fifteen of the twenty-two meshes, every
+pixel of hand a player sees — is a flat `#9c7358` with no maps and one constant
+roughness. Every wall, floor and pipe behind it goes through `TextureForge`.
+
+So: a `skin` recipe in the project's own idiom — pores, subdermal blotching,
+dirt in the creases rather than laid over the top, roughness varying between the
+oily high points and the dry ones — attached to the model's skin material by name.
+
+**It made the hands 2.38x brighter than the flat colour it replaced**, measured
+in the hand region of the same four frames. That is a change of level, not of
+variation, and level is not what the change was for. Isolating the maps showed
+the albedo alone accounts for all of it (2.89x against the exposure-corrected
+baseline); the normal and roughness maps are innocent.
+
+A `LEVEL` constant of 0.50 brought it to 1.43x, and 0.32 would have landed it on
+the target — **and that is where this stopped.** Compensating with an unphysically
+dark albedo for a brightness I could not explain is precisely the move this report
+has documented going wrong seven times. The recipe and its wiring are reverted.
+
+**What is left for whoever picks this up**: the diagnosis is solid and the target
+is measured. `MAT_skin` has no maps; adding them is right; the open question is
+purely why a forged albedo built on `hexLin('#9c7358')` renders 2.9x brighter than
+a material whose `color.getHexString()` returns exactly `9c7358`. That is a colour
+space question with a definite answer, and the harness to check it is four frames
+and ninety seconds.
+
+---
+
+## 16. The 2.9x was `.clone()`, and it took four payloads to see it
+
+Section 15 left an open question: why a forged albedo rendered 2.38x brighter than
+the flat material it replaced, and why a modulation map authored to a mean of 1.0
+— which cannot change a level, by construction — rendered the *same* 2.89x.
+
+The answer is that neither map was the cause.
+
+```
+  forged albedo on hexLin('#9c7358')            2.38x
+  modulation map, mean 1.0                      2.89x
+  map alone, normal and roughness untouched     2.91x
+  roughness 0.74 -> 0.90, no map at all         2.95x
+```
+
+Four completely different payloads, one constant multiplier. The last of those
+touches nothing but a single float, which is what finally made it obvious: the
+payload was never the variable. **Every attempt had `mesh.material.clone()` in
+it.**
+
+`Assets.js` runs `materials.decorate()` over every material in every GLB, which
+installs this project's entire shader injection as an `onBeforeCompile` hook —
+the macro variation, the leak streaks, the detail normal and the **AO volume term
+that attenuates indirect light**. `THREE.Material.prototype.copy` copies a fixed
+list of properties, and `onBeforeCompile` is not on it. A clone silently drops the
+injection, renders perfectly happily, and comes out about three times brighter
+because nothing is darkening its indirect light any more.
+
+Same change, made in place on the shared material instead of on a clone:
+
+| | hand-region mean | vs baseline |
+|---|---|---|
+| exposure fix only | 0.0675 | 1.00x |
+| + vertex tint | 0.0651 | 0.96x |
+| + matte skin, **cloned** | 0.1990 | **2.95x** |
+| + matte skin, **in place** | 0.0672 | **1.00x** |
+
+`Materials.decorate()` now says so in its own docblock. A search of the rest of
+the tree found no other clone of a decorated material — the only two `.clone()`
+calls on materials are in `EmissiveBatch`, on the undecorated `MeshBasicMaterial`
+the emissive path deliberately uses, and in `Materials` itself on textures.
+
+### What the hands actually got
+
+Three changes, each measured, each level-preserving:
+
+1. **Exposure that tracks the room** (§15). Was pinned at 1.0 in every lit space
+   in the game; now 0.58 in the Cistern stair hall and 0.75 in the sump, recorded
+   per frame as `handExposure` beside `directAtHead`.
+2. **Vertex tint.** The model's meshes carry an RGBA colour attribute (0.67–0.94,
+   the asset's baked occlusion) and the material already has `vertexColors: true`,
+   so the working path was already there. Multiplying it in place adds blood
+   toward the fingertips — the strongest single cue that a hand is meat rather
+   than plastic — a ±3 % per-vertex mottle so no facet is uniform, and grime in
+   the lowest quarter of the baked occlusion, where dirt actually collects.
+   Measured at 0.96x: variation added, level held.
+3. **Matte skin.** Roughness 0.74 put a hard specular bead on each fingertip —
+   four white dots in the corner of the frame, and the most plastic thing about
+   the hands at the size they occupy. 0.90 is dry skin. In place, not cloned.
+
+### And the forged skin texture is no longer the obvious next step
+
+The claim in §15 that the hands are "the only untextured surface in the game" is
+not quite right, and finding the clone bug is what showed why: the skin material
+**is** decorated, so it already receives the macro variation, the grounding dirt
+and the detail normal that every wall gets. What it lacks is a base albedo map,
+and with the level bug understood, adding one is now a safe, ordinary change
+rather than a mystery — but it is a smaller gap than it looked, and it was not
+taken in this pass.
+
+What remains genuinely open is the model: fifteen meshes of smooth tapered
+cylinders with visible ring joints, which is a re-sculpt, and the one part of §2.4
+that really is a Blender task.
+
+---
+
+## 17. Where the viewmodel actually is, in numbers
+
+"Why is there always a hand on screen, and why only one?" Both answers turned out
+to be measurable, and the second one is a fact this project did not know.
+
+**The hand you can see is holding the torch.** Pose selection is
+`held === 'lamp' && flashlight.enabled → lamp_R`, which is a closed fist
+(curl 0.86–0.94). What reads as four fingertips is a set of knuckles, and with the
+flashlight left in its real state the torch body is visible between them. The
+viewmodel is only ever hidden by cinematics and hiding places.
+
+Worth recording as a self-inflicted wound: every capture in this project sets
+`flashlight.isOn = false` in its shot setup — inherited from the oldest shot list,
+to stop the beam blowing out the frame — so every frame anyone has looked at shows
+a fist gripping an unlit torch. The hand looked like it was holding nothing
+because of the QA harness, not because of the game.
+
+**The other hand has never been seen.** It is built, sprung, posed and lit every
+frame. Projected to screen space, with the bottom edge at −1.00:
+
+| | NDC y |
+|---|---|
+| right hand, holding the torch | −1.32 |
+| left hand, idle | **−1.43** |
+
+And that is not specific to idle. Every pose in the table, computed as
+`(y / −z) / tan(fov/2)` at the overlay camera's 52°:
+
+```
+reach_R     -0.63   ON SCREEN
+reach_L     -1.06   below frame
+cover_L     -1.09   below frame
+carry_R/L   -1.23   below frame
+lamp_R      -1.32   below frame
+idle_R      -1.34   below frame
+idle_L      -1.43   below frame
+pry_R       -1.54   below frame
+stow_R/L    -3.1    below frame
+```
+
+**Exactly one pose in the game puts a hand's origin inside the frame, and it is
+the one for reaching out to touch something.** The viewmodel is authored to live
+just under the bottom edge, clipping in a few knuckles, and to rise into view only
+when the player acts. That is a coherent design and it has been kept — but it is
+also the answer to why the hands read oddly at a glance: what is on screen is the
+top sixth of a fist in the extreme corner, which the eye cannot resolve into an
+object, and no amount of work on its surface was ever going to fix that.
+
+### Headroom that is not being taken
+
+The left hand costs **22 draw calls and 6,596 triangles every frame**, measured by
+toggling its root and re-reading the renderer's counters, for something that has
+never appeared in a frame. Against a draw-call budget currently sitting at 179 of
+180, that is twelve per cent of the entire budget spent on geometry nobody has
+seen.
+
+It is not being reclaimed here, for a reason worth writing down: `loadModel` sets
+`frustumCulled = false` on every mesh of both hands, which says somebody has
+already been bitten by culling this viewmodel. `cover_L` and `reach_L` sit at
+−1.09 and −1.06, close enough to the edge that a naive "hide the left hand" would
+pop. The correct version tests projected bounds per frame with a margin rather
+than switching on pose name, and that deserves its own pass with its own
+before/after frames.
+
+---
+
+## 18. The four things that were stopping it being frightening
+
+An independent assessment scored this 45/100 and named the reasons. Thirteen days
+later I checked each against current source before touching anything, and the two
+worst were true to the character.
+
+### 1. The monster could not catch anybody
+
+```
+APPROACHING ran at baseSpeed * 1.12 = 1.39 m/s at full aggression
+player walk                            2.15 m/s
+player sprint                          3.62 m/s
+```
+
+It could not close on anybody who kept moving, in any state, ever. The three
+deaths in the last exploration session all happened after the bot had stopped.
+Every hour of atmosphere in this building was being spent on a player who had
+worked that out.
+
+APPROACHING has its own range now — 2.45 m/s at rest aggression to 3.10 at full,
+against a 3.62 sprint that always wins. Committing at 6.5 m and capturing at
+1.15 m makes the closing window eighteen seconds early and under six late. The
+decision is the point: sprinting outruns it and is loud enough to refresh the
+belief it is chasing, walking is quiet and loses ground, and a locker is now a
+third option. It still walks at the belief rather than at the player, still turns
+at 0.85 rad/s, still stone in the dark.
+
+### 2. Hiding did nothing
+
+Thirteen locker references across the zones, a `hide:enter` event, a UI prompt,
+an audio cue, a thirty-second Director grace — and `grep -c hidden
+src/entities/Surveyor.js` returned **0**. The one system the verb exists to
+affect had never been told. Climbing into a locker raised your fear by 0.30 and
+changed your odds by nothing.
+
+`player.hidden` is a declared field now, and `hear()` multiplies strength by 0.18
+while it is set — a muffle through the same expression every other cue uses, not
+a mute, because a steel door is not silence. Getting out is loud, and loud after
+the muffle comes off.
+
+### 3. Dying cost twenty seconds
+
+The autosave floor. You now drop what you were carrying, where you fell. The
+cores are the currency, so the cost of dying is the walk back into the room that
+killed you, to pick up what you had already earned. `Inventory.dropCarried` had
+no caller anywhere in the tree and its `item:drop` had no listener, so a dropped
+core would have left the world — both halves are wired, or the run would be
+unwinnable.
+
+### 4. Every run was the same run
+
+The layout seed stays fixed and should: the zones are art-directed and every
+baseline in `docs/captures` is measured against that geometry. `Game.runSeed` is
+a second seed for the Director — first appearance now 18–34 s instead of a
+constant 22 — fixed under `qa=1` so the whole suite stays deterministic with no
+change to any tool.
+
+### And the wayfinding, which is why players leave before any of that matters
+
+74.4 % of an unguided session with nothing in view to steer by. `exitSign` is a
+lit box on the always-live emergency circuit, seven of them in the Intake, one
+pointing down the spine that dead-ends because a building extended badly signs
+itself badly.
+
+| run | cueless | cueless counting signs | time to leave the Intake |
+|---|---|---|---|
+| explore4, before | 74.4 % | 74.4 % | 359 s |
+| explore5, signs, bot ignores them | 77.0 % | **44.3 %** | 241 s |
+| explore6, signs, bot reads them | 73.1 % | 48.5 % | **165 s** |
+
+`explore5` and `explore6` are the same build and the same seed and differ only in
+`--follow-signs`. A walker that reads the signage leaves the starting zone **32 %
+faster**, which is the placement being tested rather than assumed — signs hung
+facing the wrong way would make that number worse.
+
+### Three broken promises, closed
+
+`ENDINGS.DESCENDED` was unreachable for the life of the project; the shaft has a
+floor beneath the Plant now and a dead car can be released onto its brake. The
+pry bar opened nothing in a real run — the only `variant: 'jammed'` in the tree
+is in a demo bench that never ships — so R-207 is `pryable`, at a noise of 16
+against a footstep's 4. `keys_ring` and `card_contractor` had definitions,
+builders, blurbs and a written payoff line, and no spawn site: one is in lost
+property and the other is what you walked in with.
+
+### Everything above is asserted
+
+26 new checks across `surveyor_sim`, `director_sim` and `chain`, each written so
+it fails if its fix is absent, and each verified that way by stashing the change:
+
+| suite | before | after |
+|---|---|---|
+| surveyor | 47 | **55** |
+| director | 10 | **19** |
+| chain | 106 | **122** |
+
+Four of them were wrong first and had to be fixed before they were evidence: a
+speed test that walked the entity into the player and measured CAPTURING; latch
+tests that read a door the harness had already unlocked; lift checks that threw
+instead of failing on an old build. A suite that crashes says less than one that
+names the untrue claim.
+
+`npm run perf`: 179 draw calls of 180, and all six budgets pass — the signage
+cost five calls until it shared `emergencyLight`'s batches, and the first
+response to that was to delete two signs, which measured exactly the same because
+the cost was per batch and not per sign.
+
+### What is still true
+
+The exploration bot completes no objective and reaches two of eight zones.
+Beyond the Service Spine the route needs breakers and cores, which a wanderer
+will not do — a different problem from being lost, and not one signage fixes.
+And nobody has played this. Every judgement above is a measurement or a
+simulation; the next most valuable hour anyone can spend on this project is an
+hour with a headset on.
+
+---
+
+## 19. Roguelike properties, measured first and then built
+
+Asked whether the game had replay value, I measured it before answering. Forty
+simulated ten-minute sessions across forty run seeds:
+
+```
+distinct first-appearance times:    36 / 40
+distinct beat sequences (first 12):  3 / 40
+world content differing:             none
+```
+
+The run seed added the previous pass varied *when* the Surveyor turned up and
+essentially nothing else. Run two was run one with a different clock, against a
+building with 76 hardcoded prop coordinates, one route and a puzzle code that was
+the literal `2130` in five places and opened both locks. That is not replay
+value; it is a speedrun.
+
+### A — the answer varies, the rule does not
+
+The terminal code is now derived from the run seed by the mechanism the fiction
+already described: open-day date, four figures, reversed. The poster carries the
+date, Kearns' notebook states the rule and never the number, and both locks read
+it. The six objective items — three cores, the warden's card, the penstock key —
+each have three authored sites and use one per run.
+
+They are still *authored*. A random point on a floor rectangle is litter, not
+staging, and scattering would trade the thing this project is best at for the
+appearance of variety. What a returning player keeps is the mechanism; what they
+lose is the answer.
+
+`props.mjs` validates the sites a run did **not** choose — 78 declared props
+became 96 — because a candidate inside a wall would otherwise be a bug that
+appears one run in three and passes every audit.
+
+### B — and the first encounter moved
+
+`firstSpawnRange` was the constant 26 and the spawn headings prefer directly
+behind the player, so every run opened with "it came from behind me, about
+twenty-six metres away". Range is 19–38 m off the seed now and a per-run arc
+varies which shoulder, bounded well short of the front.
+
+### C — the structural problem with a survival mode, and what it actually needs
+
+The obvious way to build "how long can you last" is a clock. **It cannot work in
+this building**, and the reason is the game's best idea. The Surveyor is blind,
+it hunts by sound, and it freezes below a light threshold — so a player standing
+still in an unlit room makes no noise, gives it nothing to walk to, and is
+*unreachable*. Against a scoreboard measured in minutes that is not a tactic, it
+is the solution, available from the first second.
+
+Two things follow.
+
+**The light rule tightens but must not break.** `LIGHT_DEAD` now falls from 0.30
+to 0.06 with aggression, and aggression rises on its own — 0 to 1 over
+thirty-five minutes — instead of only on death. Computing both smoothstep curves,
+what this actually moves is the band from 0.25 to 0.48: gloom that used to be as
+safe as a sealed room is now only safe while the thing hunting you is calm. Pitch
+black still stops it at every aggression, and has to: the frozen pose is how the
+whole rule is taught without a word of text.
+
+**So it narrows the strategy and does not remove it — and the mode must not
+depend on removing it.** Night Watch is therefore a task loop, not a timer. Annex
+7 runs on Distribution Board C, ways trip on their own all night, and a way left
+open long enough takes the plant. The player is not surviving the Surveyor; they
+are keeping the lights on while something walks around, and standing still loses
+— slowly, and because the board does not reset itself. That is also what makes
+the entity frightening rather than avoidable: you have somewhere you have to be,
+and it is between you and there.
+
+`src/systems/Survival.js` is pure logic — no THREE, no scene, no DOM — so
+`survival_sim.mjs` plays whole shifts headlessly. Trips accelerate from a 78 s
+mean to 26 s over fifteen minutes; two open ways burn the margin 2.2x rather than
+2x, which is what turns a bad minute into a lost shift.
+
+| | |
+|---|---|
+| a player who never moves | ends at **117 s**, by the board, having never seen the entity |
+| a player who resets within 11 s | lasts the hour, **31 resets** |
+| trips early vs late | 78 s apart vs **26 s** |
+
+### The suites
+
+| suite | before this pass | after |
+|---|---|---|
+| chain | 122 | **141** |
+| surveyor | 55 | **61** |
+| director | 19 | **24** |
+| survival | — | **19** |
+| props | 78 | **96** |
+
+Four checks were wrong before they were evidence, and each is recorded where it
+sits: a site chooser whose weak low bits sent four of six seeds to the same
+position and looked like it was working; a determinism check that compared the
+score of an idle shift, which is a constant by construction, and reported the
+randomiser broken; a light test run at an unrealistically dark 0.18 where even a
+hot entity is frozen; and `runFacts` deriving the canonical seed like any other
+and giving 3 September rather than the authored 3 December.
+
+### What is still not a roguelike, and should not be
+
+The eight zones are identical every run and that is deliberate. There is no
+permadeath in the campaign, no meta-progression and no build variety. What there
+is now is a building you know and a night you do not, which is the only kind of
+variation that does not throw away authored space. Night Watch is where the
+"one more run" pressure lives, and it shares 95 % of the code.
+
+---
+
+## 20. Night Watch, finished — and the event name that nothing emitted
+
+The previous pass built the mode's logic, verified it with nineteen headless
+checks, and shipped something a player could not use: no timer, no score, no
+sound, and one distribution board in the whole building, which makes the loop a
+commute to the Service Spine and back.
+
+### The bug the suite agreed with
+
+`Survival` listened for `breaker:set`. **Nothing in this game has ever emitted
+that event** — the panel emits `light:circuit`. The mode's entire reset path was
+dead in a real run, and `survival_sim` passed anyway, because I had written the
+test to emit the same invented name.
+
+That is a new shape of the pattern this report keeps recording. The earlier ones
+measured something adjacent to the claim; this one measured the claim exactly, in
+a vocabulary that existed only inside my own head. **A suite that agrees with the
+implementation about a fiction is not evidence.** The checks now speak the game's
+own event, and `chain.mjs` — which builds every zone — asserts the panel event
+clears a fault, so the integration is checked where the integration lives rather
+than where I invented it.
+
+### Sub-mains
+
+Three, and they are why the mode has a map rather than a corridor:
+
+| way | reset at | where |
+|---|---|---|
+| plant | `board_p` | the Plant sub-main, west wall |
+| residence | `board_r` | the landing board |
+| stack | `board_k` | the lift-lobby board |
+| everything else | `board_c` | Board C, in the Spine |
+
+A way that dropped at a sub-main **cannot** be put back in from Board C — the
+throw happens and nothing changes, which the audio marks with a deny. So the
+fault decides which zone you cross, and the thing walking around decides how.
+`chain.mjs` checks that every way the mode can trip is carried by the panel it
+names, and that all four panels are in the building; a browser probe at boot
+cannot see them, because only the starting zone is resident.
+
+### The readout
+
+`src/ui/Watch.js`. The one permanent element in this game's UI, permitted
+because it is the objective rather than a decoration of one:
+
+```
+                    On shift
+                       0:45
+                   BEST 11:02
+              INTAKE   1:39
+```
+
+The fault line is the only part that shouts — amber under thirty seconds, red
+under twelve — because the margin is the only number a player has to act on, and
+reading a countdown off a monospace clock in a dark corridor while something
+walks toward you is not a reasonable ask. It names the way and the board; it is
+not a marker, an arrow or a minimap. Finding the board is the game.
+
+Verified in a real browser at `?mode=survival`: the readout is visible, the clock
+reads 0:45 at the first trip, and the fault row reads `INTAKE 1:39`.
+
+That probe was also written badly first — it advanced the shift by rendering
+4 200 frames, which is an hour on a CPU rasteriser and proves nothing the logic
+clock does not. It drives the mode and renders one frame now.
+
+### The voice
+
+Composed entirely from sounds the library already registers, so `audiowiring`
+stays green at 5/5. A way dropping is a relay letting go somewhere else in the
+building and the load arriving as a bang a moment later — `relay.click`,
+`metal.clang` at 280 ms, `elec.arc` at 420 — because that cue is the only warning
+the player gets that they have somewhere to be. Putting the wrong board's switch
+in throws and then denies.
+
+### State
+
+| suite | |
+|---|---|
+| chain | **148** |
+| surveyor | 61 |
+| director | 24 |
+| survival | **22** |
+| props | **99** |
+| bootcheck | 11/11 |
+| perf | all six budgets, 179/180 draw calls |
+
+### Still not verified by a human
+
+Nobody has played a shift. The numbers say an idle player loses at 117 s and an
+attentive one lasts the hour with 31 resets; nothing says whether running the
+Plant sub-main with the Surveyor between you and it is frightening or annoying.
+That is the next hour anyone spends on this project.
+
+---
+
+## 21. The audio backs off. The player never hears it, because they are walking.
+
+Audio has scored 3/10 for three judge rounds and never moved, and the standing
+complaint was that the ambience beds have no dynamics: `audiodyn`'s own budgets —
+6 LU of spread and a tenth of the running time spent quiet — had never been met.
+
+Three things came out of finally re-rendering from the current build.
+
+### The July numbers were not today's numbers
+
+Everything the judge measured, and everything §9 of this report recorded, came
+from renders dated 31 July. Re-rendered from the current tree:
+
+| | July | today |
+|---|---|---|
+| LRA | 1.3 – 5.8 LU | **5.7 – 14.8** |
+| quiet fraction | 0.000, every zone | 0.000 – 0.166 |
+| over the RMS ceiling | 5 of 8 | **1 of 8** |
+| flagged | 8 of 8 | 6 of 8 |
+
+The bus-fader fix from §9 landed and nobody had re-measured it. That is the
+fourth time in this project a fix has been carried as unproven because the
+artefact directory was older than the code.
+
+### The lull was built to a size that could not pass its own check
+
+`Ambience._breathe` ebbs the whole bus for a few seconds every so often. Its
+numbers were 6–9 s at a depth of 0.18–0.30, and no seed of that can satisfy
+`audiodyn`. The arithmetic needs no render at all:
+
+```
+depth 0.30 = -10.5 dB   does not even count as quiet (the bar is 12 LU down)
+depth 0.18 = -14.9 dB   counts, but only across the plateau
+plateau    = 0.6 x 9 s  = 5.4 s
+a 3 s analysis window fits inside that for 2.4 s
+2.4 / 45 s of bed       = 0.053 — half the budget, on the best possible roll
+```
+
+Four passes of mix work went at the bus, the compressor and the fader. None of
+them could have helped: the shape was too small, not too loud. Resized from the
+requirement instead — 9–13 s at 0.12–0.18, recurring every 34–58 s so a player
+crossing a zone hears more than one.
+
+### And then the decisive measurement
+
+At 150 seconds the resized lull measured **worse**: 8 of 8 flagged, LRA collapsed
+to 1.7–9.7. The breath report said the code had produced three correctly-sized
+lulls in every zone. Code and render disagreed.
+
+`audio-render` writes two sets — `beds/` with the player walking and
+`beds-still/` with the player standing. Same 150 seconds, same three lulls:
+
+| | walking | standing |
+|---|---|---|
+| LRA | 1.7 – 9.7 | **7.7 – 18.1** |
+| quiet | 0.000 – 0.077 | **0.082 – 0.124** |
+| flagged | 8 of 8 | 5 of 8 |
+| over the RMS ceiling | plant | none |
+
+**Footsteps are not on the ambience bus, because they are the player rather than
+the building.** The building ducks seventeen decibels and the boots carry
+straight on and fill every gap the mix makes.
+
+So the mix does back off, and has for some time. A moving player has never heard
+it once.
+
+That is worth stating as a design fact rather than fixing away — *you only hear
+this building when you stop walking* is arguably the point, and standing still to
+listen is already a verb this game has. But it means the two directories answer
+different questions, and for four passes everyone has been pointing the tool at
+the one with a pair of feet in it. `audiodyn` now says so when you do.
+
+### Where it stands
+
+`beds-still`, 150 s, current build: cistern, safe and stack pass outright;
+duct, intake, plant, residence and service sit at 0.082–0.094 against a 0.10 bar,
+all with LRA comfortably over. Five zones a notch short of a budget they were
+three passes away from a week ago.
+
+I have not taken that notch. The lull has already been resized once this session
+on arithmetic alone, and taking a second bite at a number without anyone having
+heard the first one is how a mix ends up tuned to a measurement instead of to a
+room. **The files are in `docs/verification/audio8/beds-still/`. They are 150
+seconds each and they are the first renders in this project's history that
+contain three audible silences.**
+
+---
+
+## 22. The first contact sheet, and what it found
+
+Eleven frames, all eight zones, every circuit live — the first time in this
+project's history that a sheet has been taken with the power on, which is the
+trap §8 documented and which had never actually been avoided in practice.
+
+### Most of it is clean
+
+| | across 11 frames |
+|---|---|
+| banding | **0.000, every frame** |
+| clipping | **0.000, every frame** |
+| speckle | 0.0000 – 0.0008 |
+| high-frequency energy | 0.024 – 0.086, median 0.061 |
+
+Banding, blown highlights, shadow acne and aliasing shimmer are the four defects
+that usually ruin a renderer like this one, and they are absent. The Stack, which
+has been this project's oldest open complaint, measures **0.000 crushed** on an
+ordinary eye-level frame.
+
+### And it found the Ductwork
+
+`09_duct` renders **94.2 % black** with all twenty-five of its fixtures lit.
+
+That is not a new opinion, it is the third independent measurement to say the
+same thing:
+
+| measurement | Ductwork | for comparison |
+|---|---|---|
+| `lightreach --delivered 6` | 93 % under-lit, mean 8.77 | Service Spine 18.13 |
+| `lightProbe` on this frame | `directAtHead` **5.03** | Stack 328.7, Cistern 21.5 |
+| bounce fill on this frame | `fillUp` **0.011** | Cistern 0.300, Stack 0.871 |
+
+Its light-reach numbers have always been perfect — 0 % beyond 5 m, worst case
+1.53 m, twenty-five fittings in a small box — which is exactly why nobody found
+it: the zone is densely lit with feeble lamps and every plan-side metric said so
+approvingly. Its ambient fill is **thirty times lower** than the Cistern's.
+
+One caution before anybody acts on it: this is a single camera placed by
+`lookOpen` from the zone's spawn, and the framing check flagged it. A dark frame
+of a dark crawlway is not proof that the crawlway is wrong. But three
+measurements from three different subsystems now agree, and the fill figure is a
+zone profile constant rather than anything about where the camera was pointing.
+
+`07_plant` (0.431), `06_cistern_chamber` (0.380) and `11_safe` (0.199) also flag
+as crushed. All three are large or deliberately dim volumes with bright fittings
+in them, and all three have healthy dynamic range (0.649, 0.825, 0.749) — which
+is the pattern of a dark room rather than a broken one.
+
+### The performance claim was one zone of eight
+
+While taking the sheet, the per-frame draw calls did not look like the numbers
+this project has been quoting. They were not.
+
+**`tools/qa/perf-scenarios.json` did not exist.** `perf.mjs` falls back to four
+hardcoded camera positions when it is missing, and all four are in the Intake. So
+"worst scenario 179 of 180, all budgets pass" — the sentence this project's
+technical-performance claim rests on, repeated in the brief and in three of these
+sections — was the worst of four cameras in one of eight zones.
+
+Twelve scenarios, all eight zones, same tool, same shipping tier:
+
+| | draw calls |
+|---|---|
+| plant_hall | **268** |
+| residence_landing | **264** |
+| service_spine | **253** |
+| intake_spine_east | **223** |
+| intake_many_lights | 179 ← the old "worst" |
+| cistern_tunnel | 169 |
+| stack_well | 157 |
+| duct_crawl | 141 |
+| safe_room | 114 |
+
+**The real worst case is 268 against a budget of 180 — 49 % over — and four zones
+exceed it.** The Intake holds the fourth-worst view, not the worst. And
+`intake_spine_east` at 223 is a camera *inside the measured zone* that the four
+built-in scenarios never pointed at, so even the sampling of the one zone that
+was covered was missing a worse case than the one it reported.
+
+Nothing here is a regression. The draw calls were always this high; the tool was
+looking at one room. Every "all six budgets pass" in this document from §12
+onward should be read as "all six pass in the Intake", and the scenario file is
+now committed so that it never means that again.
+
+I have not tried to bring 268 down. That is a real optimisation project — the
+Residence's 264 is 487 at the high tier, and it is mostly independent door leaves
+and pendant fittings — and doing it in the same pass that discovered the number
+would mean tuning against a measurement nobody has yet reproduced.

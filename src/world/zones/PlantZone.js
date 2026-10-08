@@ -3,7 +3,7 @@ import { KIT, floorSlab, wallRun, doorway, grille, conduit } from '../Kit.js';
 import {
   makeBuilders, rigProxy, portal, stripLight, bulkhead, highbay, emergencyLight,
   handrail, stairFlight, gantry, steelColumn, iBeam, channel, angle, plinth,
-  cagedLadder, ductRun, drainChannel, boardMarks,
+  cagedLadder, ductRun, drainChannel, boardMarks, runSite, siteSpec,
 } from '../ZoneKit.js';
 import { STAMP, roomNumber } from '../Decals.js';
 import * as Props from '../Props.js';
@@ -81,6 +81,12 @@ export function buildPlant(ctx, opts = {}) {
   const fixtures = [];
   const rigFor = (b) => rigProxy(rig, b.origin, fixtures);
   const portals = [];
+
+  const coreSite = runSite(ctx.runSeed, 'plant_core', [
+    [-3.4, FLOOR + 0.06, -7.9, 0.8],    // dropped short of the generator line
+    [13.2, FLOOR + 0.06, -8.6, 1.7],    // by the cable drums, north-east
+    [-14.8, FLOOR + 0.06, 7.2, -0.5],   // the south-west corner, past the tanks
+  ]);
   const interactables = [];
 
   // =========================================================================
@@ -337,10 +343,31 @@ export function buildPlant(ctx, opts = {}) {
   }
   // Two lower bays hung over the generator line. The roof bays establish the
   // volume; these are what actually model the machines.
-  for (const [x, z, health] of [[-7.4, -4.2, 'good'], [2.6, -4.2, 'buzz']]) {
+  // The third hangs over the air handler at [10.6, 4.0], which is a 4.2 m machine
+  // with nothing on it. Eight roof bays over a 35 x 23 m hall is a 8.4 x 9.8 m
+  // grid, so the south-east quarter's cover was one fitting — and that fitting is
+  // the one the wear pass kills. Measured before this line: 6.71 m worst, a 6 x 6 m
+  // block of '@' sitting exactly under the dead bay, in the quarter of the room
+  // where the route to the lift runs.
+  for (const [x, z, health] of [[-7.4, -4.2, 'good'], [2.6, -4.2, 'buzz'], [10.6, 3.2, 'good']]) {
     const b = x < 0 ? bWest : bEast;
     highbay(b, rigFor(b), x, FLOOR + 6.4, z, { circuit: 'plant', health, seed: 30 + fs++, drop: 0.9 });
   }
+  // Wall packs down the north aisle.
+  //
+  // The bay grid's northernmost row sits at z = -5.6 and the north wall is at
+  // -11.6, so the entire 35 m aisle between the tanks and the wall — where the
+  // cable drums, the ladder and the nest are — was 6 m from the nearest lamp for
+  // its whole length. A plant room lights that aisle from the wall, at working
+  // height, because the bays are 14 m up and the machines shadow them.
+  for (const [x, health] of [[-14.0, 'good'], [-7.0, 'buzz'], [0.0, 'good'], [7.0, 'dying']]) {
+    const b = x < 0 ? bWest : bEast;
+    bulkhead(b, rigFor(b), x, FLOOR + 2.6, HZ0 + 0.14, { yaw: 0, circuit: 'plant', health, seed: 70 + fs++ });
+  }
+  // The south aisle is covered by the gantry bulkheads below, but that run starts
+  // at x = -6 and the wall carries on for another 11 m: the south-west corner of
+  // the hall floor was the last point in this zone over 5 m, at 6.02.
+  bulkhead(bWest, rigFor(bWest), -13.0, FLOOR + 2.6, HZ1 - 0.14, { yaw: Math.PI, circuit: 'plant', health: 'buzz', seed: 70 + fs++ });
   // Walkway lighting so the gantries read as a route.
   for (const [x, z, yaw, health] of [
     [HX0 + 0.35, 0, -Math.PI / 2, 'good'], [HX0 + 0.35, 7.4, -Math.PI / 2, 'buzz'],
@@ -441,6 +468,9 @@ export function buildPlant(ctx, opts = {}) {
   // a lift car can share one coordinate space with the plinth they stand on.
   // =========================================================================
   interactables.push(
+    { kind: 'breaker', id: 'board_p', position: [HX0 + 0.20, FLOOR + 1.35, -3.0], rotation: -Math.PI / 2,
+      maxOn: 1, title: 'PLANT SUB-MAIN',
+      ways: [{ name: 'plant', label: 'PLANT HIGH BAY', amps: '63A', on: true }] },
     // SET No. 2 on the east plinth, front (sockets and panel) facing +Z into
     // the hall so the player works it from the open floor.
     {
@@ -453,10 +483,21 @@ export function buildPlant(ctx, opts = {}) {
       kind: 'lift', id: 'lift_2', rotation: -Math.PI / 2, powered: false,
       position: [HX1 + 0.95, FLOOR, 0],
       width: 2.2, depth: 2.0, height: 2.4,
+      // ORDER MATTERS AND IT IS NOT HEIGHT ORDER: index 0 is where the car
+      // starts. Adding the sub-basement at the top of this list parked the car
+      // at the bottom of the shaft at boot, and `chain.mjs` caught it in one
+      // run — the ending stopped resolving because the ride never happened.
       floors: [
         { name: 'PLANT', y: FLOOR },
         // Up and out. `exit: true` is what Progression reads to end the game.
-        { name: 'SURFACE', y: FLOOR + 9.6, exit: true },
+        { name: 'SURFACE', y: FLOOR + 9.6, exit: true, ending: 'left' },
+        // The bottom of the shaft. Reachable only by releasing the brake on a
+        // dead car — `manualOnly` keeps it off the button panel — and it is why
+        // `ENDINGS.DESCENDED` exists. Until now it could not happen: there was
+        // no floor under the Plant to descend to, and the only thing that made
+        // the lift move at all was starting the set, which is the condition
+        // that produces the other ending.
+        { name: 'SUB', y: FLOOR - 11.4, exit: true, ending: 'descended', manualOnly: true },
       ],
     },
     // The procedure, on the panel end of the set — findable without a hunt,
@@ -477,7 +518,7 @@ export function buildPlant(ctx, opts = {}) {
     // The core that was dropped on the Plant floor, per the stock card. Four
     // cores exist in the building and the player needs three, which is the
     // slack that keeps a missed one from being unwinnable.
-    { kind: 'pickup', item: 'fuse_core', position: [-3.4, FLOOR + 0.06, -7.9], rotation: 0.8 },
+    siteSpec(coreSite.pick, { kind: 'pickup', item: 'fuse_core' }),
     { kind: 'pickup', item: 'battery_cell', position: [-15.9, FLOOR + 0.78, -2.6], rotation: 1.9 },
     // Under the west stair, next to somebody's camp. The Plant is enormous and
     // loud once the set is running; there has to be somewhere to stop.
@@ -501,6 +542,7 @@ export function buildPlant(ctx, opts = {}) {
   for (const b of builders) { const g = b.finish(); chunks.push(g); root.add(g); }
 
   return {
+    altSites: coreSite.all.map((v) => siteSpec(v, { kind: 'pickup', item: 'fuse_core' })),
     root, chunks, builders, portals, interactables,
     spawn: [HX0 + 2.2, G1, 0],
     spawnYaw: -Math.PI / 2,

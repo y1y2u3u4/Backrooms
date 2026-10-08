@@ -1,0 +1,1390 @@
+[
+  {
+    "name": "intake_h0",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('intake');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + 0, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'intake_h0', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'intake',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/intake_h0.png",
+    "stats": {
+      "ms": 0.8916666428248088,
+      "fps": 1121.4953570899434,
+      "p90": 1,
+      "calls": 179,
+      "tris": 482118,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 208,
+        "lit": 149,
+        "active": 12,
+        "tubes": 149,
+        "shadows": 2
+      },
+      "probe": {
+        "zone": "intake",
+        "directAtHead": 37.038,
+        "directAtFloor": 33.93,
+        "fillUp": 0.56,
+        "fillDown": 0.909,
+        "fixtures": {
+          "fixtures": 208,
+          "lit": 149,
+          "active": 12,
+          "tubes": 149,
+          "shadows": 2
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1
+        },
+        "zoneFixtures": {
+          "total": 208,
+          "lit": 149
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -2.9395,
+          "adapted": 0.0529,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "intake_h1",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('intake');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + 2.094, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'intake_h1', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'intake',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/intake_h1.png",
+    "stats": {
+      "ms": 0.8916666865348816,
+      "fps": 1121.4953021135218,
+      "p90": 1,
+      "calls": 179,
+      "tris": 482118,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 208,
+        "lit": 148,
+        "active": 12,
+        "tubes": 149,
+        "shadows": 2
+      },
+      "probe": {
+        "zone": "intake",
+        "directAtHead": 36.323,
+        "directAtFloor": 33.27,
+        "fillUp": 0.56,
+        "fillDown": 0.909,
+        "fixtures": {
+          "fixtures": 208,
+          "lit": 148,
+          "active": 12,
+          "tubes": 149,
+          "shadows": 2
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1
+        },
+        "zoneFixtures": {
+          "total": 208,
+          "lit": 148
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -2.9824,
+          "adapted": 0.0507,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "intake_h2",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('intake');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + -2.094, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'intake_h2', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'intake',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/intake_h2.png",
+    "stats": {
+      "ms": 0.8725000182787578,
+      "fps": 1146.1317811462864,
+      "p90": 1,
+      "calls": 179,
+      "tris": 482118,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 208,
+        "lit": 149,
+        "active": 12,
+        "tubes": 149,
+        "shadows": 2
+      },
+      "probe": {
+        "zone": "intake",
+        "directAtHead": 37.302,
+        "directAtFloor": 34.172,
+        "fillUp": 0.56,
+        "fillDown": 0.909,
+        "fixtures": {
+          "fixtures": 208,
+          "lit": 149,
+          "active": 12,
+          "tubes": 149,
+          "shadows": 2
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1
+        },
+        "zoneFixtures": {
+          "total": 208,
+          "lit": 149
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -2.9746,
+          "adapted": 0.0511,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "service_h0",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('service');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + 0, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'service_h0', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'service',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/service_h0.png",
+    "stats": {
+      "ms": 1.1233333309491476,
+      "fps": 890.2077170229263,
+      "p90": 1.200000286102295,
+      "calls": 247,
+      "tris": 312864,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 302,
+        "lit": 225,
+        "active": 6,
+        "tubes": 225,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "service",
+        "directAtHead": 19.139,
+        "directAtFloor": 15.372,
+        "fillUp": 0.091,
+        "fillDown": 0.128,
+        "fixtures": {
+          "fixtures": 302,
+          "lit": 225,
+          "active": 6,
+          "tubes": 225,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 0,
+          "stack": 0,
+          "residence": 0,
+          "duct": 0,
+          "plant_lift": 0
+        },
+        "zoneFixtures": {
+          "total": 74,
+          "lit": 72
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -2.4707,
+          "adapted": 0.0845,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "service_h1",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('service');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + 2.094, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'service_h1', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'service',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/service_h1.png",
+    "stats": {
+      "ms": 0.6983333269755045,
+      "fps": 1431.98091995841,
+      "p90": 0.8000001907348633,
+      "calls": 99,
+      "tris": 149206,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 302,
+        "lit": 240,
+        "active": 14,
+        "tubes": 240,
+        "shadows": 2
+      },
+      "probe": {
+        "zone": "service",
+        "directAtHead": 13.396,
+        "directAtFloor": 10.873,
+        "fillUp": 0.091,
+        "fillDown": 0.128,
+        "fixtures": {
+          "fixtures": 302,
+          "lit": 240,
+          "active": 14,
+          "tubes": 240,
+          "shadows": 2
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1
+        },
+        "zoneFixtures": {
+          "total": 74,
+          "lit": 72
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -1.6494,
+          "adapted": 0.1922,
+          "autoGain": 0.8
+        }
+      }
+    }
+  },
+  {
+    "name": "service_h2",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('service');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + -2.094, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'service_h2', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'service',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/service_h2.png",
+    "stats": {
+      "ms": 0.6708333373069764,
+      "fps": 1490.6832209836875,
+      "p90": 0.8000001907348633,
+      "calls": 99,
+      "tris": 149206,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 302,
+        "lit": 239,
+        "active": 14,
+        "tubes": 240,
+        "shadows": 2
+      },
+      "probe": {
+        "zone": "service",
+        "directAtHead": 12.481,
+        "directAtFloor": 10.089,
+        "fillUp": 0.091,
+        "fillDown": 0.128,
+        "fixtures": {
+          "fixtures": 302,
+          "lit": 239,
+          "active": 14,
+          "tubes": 240,
+          "shadows": 2
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1
+        },
+        "zoneFixtures": {
+          "total": 74,
+          "lit": 72
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -1.6514,
+          "adapted": 0.1918,
+          "autoGain": 0.8
+        }
+      }
+    }
+  },
+  {
+    "name": "cistern_h0",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('cistern');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + 0, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'cistern_h0', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'cistern',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/cistern_h0.png",
+    "stats": {
+      "ms": 0.9933333357175191,
+      "fps": 1006.7114069796775,
+      "p90": 1,
+      "calls": 195,
+      "tris": 135538,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 302,
+        "lit": 240,
+        "active": 3,
+        "tubes": 240,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "cistern",
+        "directAtHead": 4.213,
+        "directAtFloor": 3.321,
+        "fillUp": 0.296,
+        "fillDown": 0.354,
+        "fixtures": {
+          "fixtures": 302,
+          "lit": 240,
+          "active": 3,
+          "tubes": 240,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1
+        },
+        "zoneFixtures": {
+          "total": 20,
+          "lit": 19
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -5.3516,
+          "adapted": 0.0047,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "cistern_h1",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('cistern');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + 2.094, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'cistern_h1', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'cistern',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/cistern_h1.png",
+    "stats": {
+      "ms": 0.9591666897137959,
+      "fps": 1042.5716517515723,
+      "p90": 1.0999999046325684,
+      "calls": 194,
+      "tris": 135430,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 302,
+        "lit": 239,
+        "active": 4,
+        "tubes": 240,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "cistern",
+        "directAtHead": 3.592,
+        "directAtFloor": 2.954,
+        "fillUp": 0.296,
+        "fillDown": 0.354,
+        "fixtures": {
+          "fixtures": 302,
+          "lit": 239,
+          "active": 4,
+          "tubes": 240,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1
+        },
+        "zoneFixtures": {
+          "total": 20,
+          "lit": 19
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -5.3203,
+          "adapted": 0.0049,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "cistern_h2",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('cistern');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + -2.094, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'cistern_h2', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'cistern',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/cistern_h2.png",
+    "stats": {
+      "ms": 0.9358333428700765,
+      "fps": 1068.5663292709073,
+      "p90": 1,
+      "calls": 194,
+      "tris": 135430,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 302,
+        "lit": 240,
+        "active": 4,
+        "tubes": 240,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "cistern",
+        "directAtHead": 3.573,
+        "directAtFloor": 2.938,
+        "fillUp": 0.296,
+        "fillDown": 0.354,
+        "fixtures": {
+          "fixtures": 302,
+          "lit": 240,
+          "active": 4,
+          "tubes": 240,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1
+        },
+        "zoneFixtures": {
+          "total": 20,
+          "lit": 19
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -5.3164,
+          "adapted": 0.0049,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "residence_h0",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('residence');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + 0, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'residence_h0', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'residence',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/residence_h0.png",
+    "stats": {
+      "ms": 1.1883333444595336,
+      "fps": 841.5147186287282,
+      "p90": 1.299999713897705,
+      "calls": 271,
+      "tris": 191566,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 131,
+        "lit": 128,
+        "active": 6,
+        "tubes": 128,
+        "shadows": 2
+      },
+      "probe": {
+        "zone": "residence",
+        "directAtHead": 10.245,
+        "directAtFloor": 7.451,
+        "fillUp": 0.211,
+        "fillDown": 0.286,
+        "fixtures": {
+          "fixtures": 131,
+          "lit": 128,
+          "active": 6,
+          "tubes": 128,
+          "shadows": 2
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1
+        },
+        "zoneFixtures": {
+          "total": 37,
+          "lit": 37
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -2.5176,
+          "adapted": 0.0807,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "residence_h1",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('residence');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + 2.094, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'residence_h1', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'residence',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/residence_h1.png",
+    "stats": {
+      "ms": 9.075833344459534,
+      "fps": 110.1827195417227,
+      "p90": 0.8000001907348633,
+      "calls": 113,
+      "tris": 82526,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 131,
+        "lit": 128,
+        "active": 0,
+        "tubes": 128,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "residence",
+        "directAtHead": 0,
+        "directAtFloor": 0,
+        "fillUp": 0.211,
+        "fillDown": 0.286,
+        "fixtures": {
+          "fixtures": 131,
+          "lit": 128,
+          "active": 0,
+          "tubes": 128,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 0,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1,
+          "office_lamp": 1
+        },
+        "zoneFixtures": {
+          "total": 37,
+          "lit": 37
+        },
+        "exposure": 0.303,
+        "adaptation": {
+          "logLuminance": -5.5156,
+          "adapted": 0.004,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "residence_h2",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('residence');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + -2.094, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'residence_h2', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'residence',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/residence_h2.png",
+    "stats": {
+      "ms": 0.48749998410542805,
+      "fps": 2051.282118162567,
+      "p90": 0.6999998092651367,
+      "calls": 113,
+      "tris": 82526,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 131,
+        "lit": 128,
+        "active": 0,
+        "tubes": 128,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "residence",
+        "directAtHead": 0,
+        "directAtFloor": 0,
+        "fillUp": 0.211,
+        "fillDown": 0.286,
+        "fixtures": {
+          "fixtures": 131,
+          "lit": 128,
+          "active": 0,
+          "tubes": 128,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 0,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1,
+          "office_lamp": 1
+        },
+        "zoneFixtures": {
+          "total": 37,
+          "lit": 37
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -5.5195,
+          "adapted": 0.004,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "plant_h0",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('plant');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + 0, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'plant_h0', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'plant',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/plant_h0.png",
+    "stats": {
+      "ms": 1.3041666825612386,
+      "fps": 766.7731535942254,
+      "p90": 1.5,
+      "calls": 292,
+      "tris": 583634,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 136,
+        "lit": 133,
+        "active": 6,
+        "tubes": 133,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "plant",
+        "directAtHead": 288.015,
+        "directAtFloor": 277.921,
+        "fillUp": 0.089,
+        "fillDown": 0.127,
+        "fixtures": {
+          "fixtures": 136,
+          "lit": 133,
+          "active": 6,
+          "tubes": 133,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1,
+          "office_lamp": 1
+        },
+        "zoneFixtures": {
+          "total": 25,
+          "lit": 24
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -4.1289,
+          "adapted": 0.0161,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "plant_h1",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('plant');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + 2.094, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'plant_h1', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'plant',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/plant_h1.png",
+    "stats": {
+      "ms": 0.8125000317891439,
+      "fps": 1230.7691826152632,
+      "p90": 0.9000000953674316,
+      "calls": 114,
+      "tris": 177806,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 136,
+        "lit": 133,
+        "active": 15,
+        "tubes": 133,
+        "shadows": 2
+      },
+      "probe": {
+        "zone": "plant",
+        "directAtHead": 264.444,
+        "directAtFloor": 255.332,
+        "fillUp": 0.089,
+        "fillDown": 0.127,
+        "fixtures": {
+          "fixtures": 136,
+          "lit": 133,
+          "active": 15,
+          "tubes": 133,
+          "shadows": 2
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1,
+          "office_lamp": 1
+        },
+        "zoneFixtures": {
+          "total": 25,
+          "lit": 24
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -1.8604,
+          "adapted": 0.1556,
+          "autoGain": 0.868
+        }
+      }
+    }
+  },
+  {
+    "name": "plant_h2",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('plant');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + -2.094, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'plant_h2', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'plant',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/plant_h2.png",
+    "stats": {
+      "ms": 0.734166701634725,
+      "fps": 1362.0884708791068,
+      "p90": 0.8000001907348633,
+      "calls": 116,
+      "tris": 176814,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 136,
+        "lit": 133,
+        "active": 15,
+        "tubes": 133,
+        "shadows": 2
+      },
+      "probe": {
+        "zone": "plant",
+        "directAtHead": 253.43,
+        "directAtFloor": 244.489,
+        "fillUp": 0.089,
+        "fillDown": 0.127,
+        "fixtures": {
+          "fixtures": 136,
+          "lit": 133,
+          "active": 15,
+          "tubes": 133,
+          "shadows": 2
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1,
+          "office_lamp": 1
+        },
+        "zoneFixtures": {
+          "total": 25,
+          "lit": 24
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -0.3354,
+          "adapted": 0.715,
+          "autoGain": 0.8
+        }
+      }
+    }
+  },
+  {
+    "name": "duct_h0",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('duct');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + 0, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'duct_h0', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'duct',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/duct_h0.png",
+    "stats": {
+      "ms": 0.802500049273173,
+      "fps": 1246.1058424927244,
+      "p90": 0.9000000953674316,
+      "calls": 141,
+      "tris": 94374,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 87,
+        "lit": 85,
+        "active": 6,
+        "tubes": 86,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "duct",
+        "directAtHead": 4.872,
+        "directAtFloor": 5.102,
+        "fillUp": 0.011,
+        "fillDown": 0.015,
+        "fixtures": {
+          "fixtures": 87,
+          "lit": 85,
+          "active": 6,
+          "tubes": 86,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1,
+          "office_lamp": 1
+        },
+        "zoneFixtures": {
+          "total": 25,
+          "lit": 24
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -5.8438,
+          "adapted": 0.004,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "duct_h1",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('duct');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + 2.094, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'duct_h1', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'duct',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/duct_h1.png",
+    "stats": {
+      "ms": 11.66083331902822,
+      "fps": 85.75716440163791,
+      "p90": 0.7000002861022949,
+      "calls": 104,
+      "tris": 76916,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 87,
+        "lit": 85,
+        "active": 0,
+        "tubes": 86,
+        "shadows": 2
+      },
+      "probe": {
+        "zone": "duct",
+        "directAtHead": 0,
+        "directAtFloor": 0,
+        "fillUp": 0.011,
+        "fillDown": 0.015,
+        "fixtures": {
+          "fixtures": 87,
+          "lit": 85,
+          "active": 0,
+          "tubes": 86,
+          "shadows": 2
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1,
+          "office_lamp": 1
+        },
+        "zoneFixtures": {
+          "total": 25,
+          "lit": 25
+        },
+        "exposure": 0.303,
+        "adaptation": {
+          "logLuminance": -7.9922,
+          "adapted": 0.004,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "duct_h2",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('duct');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + -2.094, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'duct_h2', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'duct',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/duct_h2.png",
+    "stats": {
+      "ms": 0.39833334684371946,
+      "fps": 2510.4601658980264,
+      "p90": 0.5,
+      "calls": 104,
+      "tris": 76916,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 87,
+        "lit": 86,
+        "active": 0,
+        "tubes": 86,
+        "shadows": 2
+      },
+      "probe": {
+        "zone": "duct",
+        "directAtHead": 0,
+        "directAtFloor": 0,
+        "fillUp": 0.011,
+        "fillDown": 0.015,
+        "fixtures": {
+          "fixtures": 87,
+          "lit": 86,
+          "active": 0,
+          "tubes": 86,
+          "shadows": 2
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 0,
+          "plant": 1,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1,
+          "office_lamp": 1
+        },
+        "zoneFixtures": {
+          "total": 25,
+          "lit": 25
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -7.9961,
+          "adapted": 0.004,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "stack_h0",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('stack');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + 0, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'stack_h0', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'stack',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/stack_h0.png",
+    "stats": {
+      "ms": 4.524999992052714,
+      "fps": 220.99447552625554,
+      "p90": 1,
+      "calls": 113,
+      "tris": 215240,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 311,
+        "lit": 241,
+        "active": 0,
+        "tubes": 241,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "intake",
+        "directAtHead": 0,
+        "directAtFloor": 0,
+        "fillUp": 0.561,
+        "fillDown": 0.909,
+        "fixtures": {
+          "fixtures": 311,
+          "lit": 241,
+          "active": 0,
+          "tubes": 241,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 0,
+          "duct": 1,
+          "plant_lift": 1,
+          "office_lamp": 1
+        },
+        "zoneFixtures": {
+          "total": 208,
+          "lit": 149
+        },
+        "exposure": 0.303,
+        "adaptation": {
+          "logLuminance": -3.3535,
+          "adapted": 0.035,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "stack_h1",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('stack');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + 2.094, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'stack_h1', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'stack',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/stack_h1.png",
+    "stats": {
+      "ms": 0.9216666539510091,
+      "fps": 1084.9909733776205,
+      "p90": 1,
+      "calls": 126,
+      "tris": 184396,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 360,
+        "lit": 288,
+        "active": 6,
+        "tubes": 288,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "service",
+        "directAtHead": 19.73,
+        "directAtFloor": 16.046,
+        "fillUp": 0.091,
+        "fillDown": 0.128,
+        "fixtures": {
+          "fixtures": 360,
+          "lit": 288,
+          "active": 6,
+          "tubes": 288,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1,
+          "office_lamp": 1
+        },
+        "zoneFixtures": {
+          "total": 74,
+          "lit": 72
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -2.2734,
+          "adapted": 0.103,
+          "autoGain": 1.311
+        }
+      }
+    }
+  },
+  {
+    "name": "stack_h2",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('stack');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + -2.094, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'stack_h2', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'stack',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/stack_h2.png",
+    "stats": {
+      "ms": 0.8449999888737997,
+      "fps": 1183.43196824509,
+      "p90": 0.9000000953674316,
+      "calls": 134,
+      "tris": 441772,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 360,
+        "lit": 287,
+        "active": 6,
+        "tubes": 288,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "stack",
+        "directAtHead": 297.061,
+        "directAtFloor": 295.287,
+        "fillUp": 0.993,
+        "fillDown": 1.139,
+        "fixtures": {
+          "fixtures": 360,
+          "lit": 287,
+          "active": 6,
+          "tubes": 288,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1,
+          "office_lamp": 1
+        },
+        "zoneFixtures": {
+          "total": 78,
+          "lit": 67
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -9.1641,
+          "adapted": 0.004,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "safe_h0",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('safe');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + 0, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'safe_h0', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'safe',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/safe_h0.png",
+    "stats": {
+      "ms": 0.6683333516120911,
+      "fps": 1496.2593106986112,
+      "p90": 0.7999997138977051,
+      "calls": 114,
+      "tris": 52578,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 157,
+        "lit": 144,
+        "active": 5,
+        "tubes": 144,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "safe",
+        "directAtHead": 15.108,
+        "directAtFloor": 11.957,
+        "fillUp": 0.333,
+        "fillDown": 0.403,
+        "fixtures": {
+          "fixtures": 157,
+          "lit": 144,
+          "active": 5,
+          "tubes": 144,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1,
+          "office_lamp": 1,
+          "safe": 1
+        },
+        "zoneFixtures": {
+          "total": 5,
+          "lit": 5
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -2.5039,
+          "adapted": 0.0818,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "safe_h1",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('safe');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + 2.094, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'safe_h1', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'safe',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/safe_h1.png",
+    "stats": {
+      "ms": 0.6766666690508525,
+      "fps": 1477.8325071082354,
+      "p90": 0.8000001907348633,
+      "calls": 118,
+      "tris": 51292,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 157,
+        "lit": 144,
+        "active": 5,
+        "tubes": 144,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "safe",
+        "directAtHead": 13.757,
+        "directAtFloor": 10.929,
+        "fillUp": 0.333,
+        "fillDown": 0.403,
+        "fixtures": {
+          "fixtures": 157,
+          "lit": 144,
+          "active": 5,
+          "tubes": 144,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1,
+          "office_lamp": 1,
+          "safe": 1
+        },
+        "zoneFixtures": {
+          "total": 5,
+          "lit": 5
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -3.332,
+          "adapted": 0.0357,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "safe_h2",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('safe');\nif (g.flashlight) { g.flashlight.isOn = false; g.flashlight.on = false; }\n// RUN THE ARRIVAL CINEMATIC OUT FIRST.\n//\n// Entering a zone starts one, and while it is playing the camera belongs to it\n// and the authored exposure is held at 0.303. Three frames in the previous pass\n// were taken inside one: the pose set here was overridden, the player ended up\n// 28 m below the room, and the frames came back 100.0% black. They were read as\n// a lighting defect. They are a harness defect.\nconst cine = g.ui && g.ui.cine;\nlet cineSteps = 0;\nwhile (cine && cine.active && cineSteps < 4000) { g.renderOnce(1/60); cineSteps++; }\nconst p = (r && r.position) || g.world.spawn;\nconst base = (r && r.yaw) || 0;\ng.lookOpen(p, base + -2.094, 0);\nconst y0 = g.player.position.y;\nconst frames = settle(700);\n// Did the player stay where the pose put them? If they are metres below it,\n// this frame is of a fall, not of a room.\nconst fell = +(y0 - g.player.position.y).toFixed(2);\nconst pr = g.lightProbe();\nconsole.log('TOUR ' + JSON.stringify({ shot: 'safe_h2', powered: true,\n  zone: pr.zone, lit: pr.zoneFixtures, head: pr.directAtHead, floor: pr.directAtFloor,\n  fillUp: pr.fillUp, adaptation: pr.adaptation, settleFrames: frames,\n  eye: +g.player.position.y.toFixed(2), fell, cineSteps,\n  authoredExposure: pr.exposure,\n  valid: fell < 1 && pr.exposure > 0.9 && pr.zone === 'safe',\n  live: Object.entries(pr.circuits).filter(([,v]) => v > 0.02).map(([k]) => k) }));\n",
+    "settle": 1,
+    "file": "docs/captures/tour3/safe_h2.png",
+    "stats": {
+      "ms": 0.6166666666666667,
+      "fps": 1621.6216216216214,
+      "p90": 0.7000002861022949,
+      "calls": 108,
+      "tris": 50304,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 157,
+        "lit": 143,
+        "active": 5,
+        "tubes": 144,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "safe",
+        "directAtHead": 13.45,
+        "directAtFloor": 10.872,
+        "fillUp": 0.333,
+        "fillDown": 0.403,
+        "fixtures": {
+          "fixtures": 157,
+          "lit": 143,
+          "active": 5,
+          "tubes": 144,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1,
+          "office_lamp": 1,
+          "safe": 1
+        },
+        "zoneFixtures": {
+          "total": 5,
+          "lit": 5
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -3.7539,
+          "adapted": 0.0234,
+          "autoGain": 1.55
+        }
+      }
+    }
+  }
+]

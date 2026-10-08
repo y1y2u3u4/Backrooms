@@ -137,6 +137,7 @@ import { createJournal, JOURNAL_CSS } from './Journal.js';
 import { createPrompts, PROMPTS_CSS } from './Prompts.js';
 import { createSubtitles, SUBS_CSS } from './Subtitles.js';
 import { createObjective, OBJ_CSS } from './Objective.js';
+import { createWatch, WATCH_CSS } from './Watch.js';
 import { createDeath, createEnding, END_CSS } from './EndScreens.js';
 import { createVitals } from './Vitals.js';
 import { CREDITS_CSS } from './credits.js';
@@ -192,6 +193,9 @@ export function createUI({
   const prompts = createPrompts();
   const subs = createSubtitles({ camera: engine?.camera || null });
   const objective = createObjective();
+  // Night Watch's readout. Built always, shown only in that mode — the campaign
+  // never sees it and the mode needs no branch anywhere else in this file.
+  const watch = createWatch();
   const journal = createJournal({ bus });
   const pause = createPause({ onSelect: (id) => {
     if (id === 'resume') { hide('pause'); emitAction('resume'); }
@@ -227,7 +231,7 @@ export function createUI({
       el('div.ax-skip-bar', el('i'))));
   const skipBar = skipHint.querySelector('.ax-skip-bar i');
 
-  const hud = el('div.ax-layer.ax-hud', subs.node, objective.node, prompts.node);
+  const hud = el('div.ax-layer.ax-hud', subs.node, objective.node, watch.node, prompts.node);
   hud.classList.add('ax-on');
 
   for (const n of [hud, journal.node, pause.node, settings.node, menu.node,
@@ -455,6 +459,7 @@ export function createUI({
   uiFacade.hide = hide;
   uiFacade.subtitle = (cue) => subs.say(cue);
   uiFacade.objective = (m, s) => objective.set(m, s);
+  uiFacade.watch = watch;
   uiFacade.hideHud = (v) => { hudHidden = !!v; syncHud(); };
   uiFacade._cineBegin = (name, skippable) => {
     prompts.set(null);
@@ -546,6 +551,7 @@ export function createUI({
     setPrompt: (spec) => { if (!hudHidden) prompts.set(spec); },
     setHoldProgress: (t) => prompts.hold(t),
     objective: (m, s) => objective.set(m, s),
+    watch,
     recallObjective: () => objective.recall(),
     subtitle: (cue) => subs.say(cue),
     sound: (text, position, opts) => subs.sound(text, position, opts),
@@ -592,7 +598,7 @@ function injectModuleStyles() {
   s.id = 'ax-style-modules';
   s.textContent = [
     MENU_CSS, SETTINGS_CSS, LOADING_CSS, PAUSE_CSS, JOURNAL_CSS,
-    PROMPTS_CSS, SUBS_CSS, OBJ_CSS, END_CSS, CREDITS_CSS, UI_CSS,
+    PROMPTS_CSS, SUBS_CSS, OBJ_CSS, WATCH_CSS, END_CSS, CREDITS_CSS, UI_CSS,
   ].join('\n');
   document.head.appendChild(s);
   modulesInjected = true;

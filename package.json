@@ -9,7 +9,7 @@
     "artifacts": "node tools/qa/artifacts.mjs",
     "audio:render": "node tools/qa/audio-render.mjs --port 5307",
     "audiowiring": "node tools/qa/audiowiring.mjs",
-    "audit": "node tools/qa/aotest.mjs && node tools/qa/props.mjs && node tools/qa/chain.mjs && node tools/qa/audiowiring.mjs && node tools/qa/floorgaps.mjs && node tools/qa/portalgraph.mjs && node tools/qa/geobudget.mjs && node tools/qa/lightreach.mjs",
+    "audit": "node tools/qa/aotest.mjs && node tools/qa/props.mjs && node tools/qa/chain.mjs && node src/systems/qa/surveyor_sim.mjs && node src/systems/qa/director_sim.mjs && node src/systems/qa/survival_sim.mjs && node tools/qa/audiowiring.mjs && node tools/qa/floorgaps.mjs && node tools/qa/portalgraph.mjs && node tools/qa/geobudget.mjs && node tools/qa/shotlint.mjs && node tools/qa/lightreach.mjs",
     "audit:browser": "node tools/qa/bootcheck.mjs",
     "blackout": "node tools/qa/lightreach.mjs --blackout",
     "bootcheck": "node tools/qa/bootcheck.mjs",
@@ -26,7 +26,8 @@
     "playthrough": "node tools/qa/playthrough.mjs",
     "portalgraph": "node tools/qa/portalgraph.mjs",
     "preview": "vite preview --host 0.0.0.0 --port 4173",
-    "props": "node tools/qa/props.mjs"
+    "props": "node tools/qa/props.mjs",
+    "shotlint": "node tools/qa/shotlint.mjs"
   },
   "dependencies": {
     "three": "0.185.1"

@@ -304,7 +304,7 @@ Dennis
 MERIDIAN FACILITIES MANAGEMENT
 FAMILY OPEN DAY
 
-SATURDAY 3 DECEMBER  —  ANNEX 7  —  10:00 to 15:00
+{{OPEN_DAY}}  —  ANNEX 7  —  10:00 to 15:00
 
   * See where we work!
   * Refreshments in the Records Bay
@@ -495,7 +495,7 @@ date on the open-day poster, written as four figures, and then reversed. I set
 it. I am sorry about the open day.
 
 Do not come and look for me. I am fine. I am simply not finished.
-`, { tags: ['core', 'notebook'], code: '2130' }),
+`, { tags: ['core', 'notebook'], code: '{{CODE}}' }),
 
   // ---------------------------------------------------------- discovery --
   N('note_office_of_record', 'Office of Record — Card on the desk', 'note', 'safe', `
@@ -670,16 +670,90 @@ for (const t of TAPES) byId.set(t.id, t);
  * on the player having actually read the document that carries the code, so
  * that nobody can brute-force a keypad they were never told about.
  */
+/**
+ * Facts that are true of THIS run and not of the building.
+ *
+ * The terminal's authorisation code was the literal `2130` in five places, and
+ * the same four digits opened the R-207 keypad. A player who finished once knew
+ * them forever — and the code is the single best-authored puzzle in the game, so
+ * it was also the single biggest thing a second run had nothing left to offer.
+ *
+ * What varies is the ANSWER. What does not vary is the RULE: the code is the
+ * open-day date written as four figures and then reversed, the poster in the
+ * Residence carries the date, and Kearns' last notebook page states the rule and
+ * never the number. Somebody who has played before still knows to go and find
+ * the poster, and still has to go and find it. That is the kind of variation
+ * worth having — knowledge of the mechanism transfers, knowledge of the answer
+ * does not.
+ *
+ * Derived from the run seed, which `Game` fixes under `qa=1`, so every tool and
+ * every recorded number keeps landing on 3 December and 2130 exactly as before.
+ */
+const MONTHS = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY',
+  'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+
+/**
+ * The authored run. 3 December, 0312, reversed 2130 — the number in Kearns'
+ * notebook, in `SafeRoom.js`'s comment, in this project's documentation and in
+ * every test that has ever driven the terminal. `Game` fixes the run seed to
+ * this value under `qa=1`, so the whole suite and every recorded figure keeps
+ * landing exactly where it did. It is a named constant rather than a value the
+ * hash happens to produce, because tuning a hash until it hits a number you
+ * wanted is not a derivation.
+ */
+export const CANON_SEED = 0xd12ec7;
+const CANON = { day: 3, month: 12, code: '2130', openDay: '3 DECEMBER' };
+
+export function runFacts(seed = CANON_SEED) {
+  if ((seed >>> 0) === CANON_SEED) return { seed: CANON_SEED, ...CANON };
+  // A small deterministic hash, not `makeRng`, so this can be called from
+  // anywhere without threading a generator through and without consuming from
+  // somebody else's stream.
+  const h = (n) => {
+    let x = (seed ^ (n * 0x9e3779b1)) >>> 0;
+    x ^= x << 13; x >>>= 0; x ^= x >>> 17; x ^= x << 5; x >>>= 0;
+    return x;
+  };
+  // Day 1-28 keeps every month legal and keeps the reversal four digits long.
+  // The poster names a weekday and this does not check it against a calendar;
+  // the year is never stated anywhere in the game, so there is nothing to check
+  // it against.
+  const day = 1 + (h(1) % 28);
+  const month = 1 + (h(2) % 12);
+  const dd = String(day).padStart(2, '0');
+  const mm = String(month).padStart(2, '0');
+  // 3 December -> 0312 -> reversed 2130. The rule, applied.
+  const code = `${dd}${mm}`.split('').reverse().join('');
+  return { seed, day, month, code, openDay: `${day} ${MONTHS[month - 1]}` };
+}
+
+/** Substitute this run's facts into a note body. */
+function fill(text, facts) {
+  return String(text)
+    .replace(/\{\{OPEN_DAY\}\}/g, facts.openDay)
+    .replace(/\{\{CODE\}\}/g, facts.code);
+}
+
 export class NotesLibrary {
-  constructor(bus = null) {
+  constructor(bus = null, { seed = 0xd12ec7 } = {}) {
     this.bus = bus;
     this.read = new Set();
     this.collected = new Set();
     this.order = [];
+    this.facts = runFacts(seed);
+    // Notes are a module-level constant shared by every system that reads them,
+    // so the run's facts are baked in ONCE here rather than substituted at every
+    // read site — a half-substituted library is how a poster and a terminal end
+    // up disagreeing about the date.
+    this._notes = NOTES.map((n) => (
+      /\{\{/.test(n.body) || /\{\{/.test(n.code || '')
+        ? { ...n, body: fill(n.body, this.facts), code: n.code ? fill(n.code, this.facts) : n.code }
+        : n));
+    this._byId = new Map(this._notes.map((n) => [n.id, n]));
   }
 
-  get(id) { return byId.get(id) || null; }
-  all() { return NOTES; }
+  get(id) { return this._byId.get(id) || byId.get(id) || null; }
+  all() { return this._notes; }
   tapes() { return TAPES; }
 
   /** Everything the player has picked up, newest first — the journal's list. */

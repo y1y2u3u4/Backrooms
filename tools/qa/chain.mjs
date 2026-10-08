@@ -61,13 +61,25 @@ import * as THREE from 'three';
 
 const { CollisionWorld } = await import('../../src/player/Physics.js');
 const { FIXTURE_TYPES } = await import('../../src/render/Lighting.js');
-const { ZONE_ORIGIN } = await import('../../src/world/ZoneKit.js');
+const { ZONE_ORIGIN, runSite } = await import('../../src/world/ZoneKit.js');
 const { Bus } = await import('../../src/core/util.js');
 const { Inventory } = await import('../../src/player/Inventory.js');
-const { Interactor } = await import('../../src/player/Interactor.js');
+const { Interactor, DoorLatch } = await import('../../src/player/Interactor.js');
 const { Interactables } = await import('../../src/systems/Interactables.js');
-const { NotesLibrary } = await import('../../src/systems/Notes.js');
+const { NotesLibrary, runFacts: _runFacts } = await import('../../src/systems/Notes.js');
+// Guarded so that a build without run facts FAILS these checks rather than
+// throwing on the first call — the same reason the lift checks are
+// optional-chained. A suite that crashes says less than one that names the
+// claim that is untrue.
+const runFacts = _runFacts || (() => ({ code: null, openDay: null, day: 0, month: 0 }));
 const { Progression, ENDINGS } = await import('../../src/systems/Progression.js');
+const { Survival } = await import('../../src/systems/Survival.js');
+const SURVIVAL_WAYS = ['intake', 'service', 'cistern', 'residence', 'plant', 'stack', 'duct'];
+// `card_contractor` is granted in `installGameplay`, which this harness does not
+// run — it builds its own inventory. Reading the source is the honest way to
+// assert it: the claim is "the game issues it", and that is where the game does.
+const bootSource = await (await import('node:fs/promises')).readFile('src/systems/GameplayBoot.js', 'utf8');
+const { Setpieces, SETPIECE_IDS } = await import('../../src/systems/Setpieces.js');
 const { ZoneGameplay } = await import('../../src/systems/ZoneGameplay.js');
 const SaveGame = await import('../../src/systems/SaveGame.js');
 
@@ -120,10 +132,13 @@ function makeRig() {
         setHealth(h) { this.health = h; },
       };
       fixtures.push(f);
-      if (!circuits.has(f.circuit)) circuits.set(f.circuit, { powered: true, level: 1 });
+      // `target` as well as `level`: the real LightRig damps `level` toward
+      // `target`, and anything that reads circuit state — lightSwitch does —
+      // reads the target. A stub missing it reports every way as off.
+      if (!circuits.has(f.circuit)) circuits.set(f.circuit, { powered: true, level: 1, target: 1 });
       return f;
     },
-    setCircuit(name, powered) { circuits.set(name, { powered: !!powered, level: powered ? 1 : 0 }); },
+    setCircuit(name, powered) { circuits.set(name, { powered: !!powered, level: powered ? 1 : 0, target: powered ? 1 : 0 }); },
     isPowered: (n) => !!circuits.get(n)?.powered,
     circuitLevel: (n) => (circuits.get(n)?.level ?? 0),
     invalidateShadows() {}, requestShadowRefresh() {}, setLightBudget() {},
@@ -186,6 +201,11 @@ const director = {
 const progression = new Progression({
   bus, inventory, notes, interactables, interactor, director, player,
 });
+// Six authored moments hang off progression events. They are content, so they
+// need the same treatment as content: something that fails when they stop
+// firing. This walks the real critical path, so it triggers them the way a
+// player does rather than by calling `fire` directly.
+const setpieces = new Setpieces({ bus, player, rig, director, surveyor: null, attendant: null });
 
 const world = {
   zones,
@@ -381,6 +401,13 @@ enter('cistern');
   if (core) check('the Cistern core can be taken', use(core.id) === null);
 }
 
+// -- the Office of Record --------------------------------------------------
+// Not a detour. `note_induction`, the first thing the player reads, says
+// "Report to Room 7/G-004 at the start and end of every shift", and the Office
+// is the safe room the respawn depends on. Walking it here also means the two
+// setpieces that hang off optional content are exercised rather than assumed.
+enter('safe');
+
 enter('plant');
 check('the second core fits', use('set_2_socket1') === null);
 
@@ -435,6 +462,249 @@ check('the starting objective is now revealed',
   const docket = interactor.get('docket_0000');
   check('Docket 0000 is on the desk', !!docket);
   check('the docket is not consumed by reading it', docket?.once === false);
+}
+
+// -- the third ending, which could not happen ------------------------------
+//
+// `ENDINGS.DESCENDED` was unreachable for the life of the project: the only
+// `setPower(true)` fires inside `gen:running`, which sets `setRunning` in the
+// same handler, so the resolver's `setRunning ? LEFT : DESCENDED` could only
+// ever yield LEFT. One of three endings, and nothing in the suite noticed —
+// because the suite drove the one path that works.
+//
+// Three properties, each of which the old build fails.
+{
+  // 1. There is somewhere to descend TO, it is below the plant floor, and it is
+  //    not on the button panel.
+  const liftSpec = (zones.plant?.interactables || []).find((i) => i.id === 'lift_2');
+  const fl = liftSpec?.floors || [];
+  const plant = fl.find((f) => f.name === 'PLANT');
+  const sub = fl.find((f) => f.ending === 'descended');
+  check('the shaft has a floor below the plant floor', !!sub && !!plant && sub.y < plant.y,
+    sub ? `${sub.name} at ${sub.y} vs PLANT at ${plant?.y}` : 'no floor names the descended ending');
+  check('that floor is an exit', !!sub?.exit);
+  check('and it is not callable from the panel', sub?.manualOnly === true,
+    'a player who started the set could otherwise call it and get the wrong ending');
+  check('the car still starts at the plant floor', fl[0]?.name === 'PLANT',
+    `index 0 is ${fl[0]?.name}`);
+
+  // 2. A dead car can be released, and a live one cannot — the verb is the
+  //    consequence of having no power, not an extra button.
+  // Optional-chained on purpose: on a build without the release the checks have
+  // to FAIL, not throw. A suite that crashes tells you less than one that says
+  // which claim is untrue.
+  const lift = interactables.get('lift_2');
+  const powered = lift?.api?.state?.().power;
+  check('a powered lift offers no brake release', powered === true && lift?.api?.canRelease?.() === false,
+    typeof lift?.api?.canRelease !== 'function' ? 'the lift has no canRelease at all' : '');
+  lift?.api?.setPower?.(false);
+  check('a dead lift does offer one', lift?.api?.canRelease?.() === true,
+    typeof lift?.api?.release !== 'function' ? 'the lift has no release at all' : '');
+  lift?.api?.setPower?.(powered);
+
+  // 3. The resolver produces DESCENDED for that floor even though the set is
+  //    running — which is the exact substitution the old code could not make.
+  const bus2 = new Bus();
+  const prog2 = new Progression({
+    bus: bus2, inventory, notes, interactables, interactor, director, player,
+  });
+  prog2.setRunning = true;
+  bus2.emit('lift:arrive', { id: 'lift_2', floor: 2, name: 'SUB', exit: true, ending: 'descended' });
+  check('arriving at the bottom of the shaft ends the game as DESCENDED',
+    prog2.ended === ENDINGS.DESCENDED, `ending = ${prog2.ended}`);
+
+  const bus3 = new Bus();
+  const prog3 = new Progression({
+    bus: bus3, inventory, notes, interactables, interactor, director, player,
+  });
+  prog3.setRunning = true;
+  bus3.emit('lift:arrive', { id: 'lift_2', floor: 1, name: 'SURFACE', exit: true, ending: 'left' });
+  check('and the surface still ends it as LEFT', prog3.ended === ENDINGS.LEFT,
+    `ending = ${prog3.ended}`);
+}
+
+// -- the code is not a constant any more ------------------------------------
+//
+// `2130` was a literal in five places and opened both locks, so a player who
+// had finished once knew it forever and the best-authored puzzle in the game
+// had nothing left to offer a second run. What varies now is the ANSWER; the
+// RULE — open-day date, four figures, reversed — is fixed, stated in the
+// notebook, and the date is on the poster.
+{
+  const canon = runFacts(0xd12ec7);
+  check('the authored run is still 3 December / 2130',
+    canon.code === '2130' && canon.openDay === '3 DECEMBER',
+    `${canon.openDay} / ${canon.code}`);
+
+  const seeds = [1, 2, 3, 7, 42, 99, 1234, 65535];
+  const codes = seeds.map((x) => runFacts(x).code);
+  check('other runs do not use it', codes.every((c) => c !== '2130'), codes.join(' '));
+  check('and they differ from each other', new Set(codes).size >= seeds.length - 1,
+    `${new Set(codes).size} distinct of ${seeds.length}`);
+  check('every code is four digits', codes.every((c) => /^\d{4}$/.test(c)), codes.join(' '));
+
+  // The rule has to hold, or the poster stops being the answer.
+  for (const x of seeds) {
+    const f = runFacts(x);
+    const dd = String(f.day).padStart(2, '0'), mm = String(f.month).padStart(2, '0');
+    if (`${dd}${mm}`.split('').reverse().join('') !== f.code) {
+      check(`the code is the date reversed (seed ${x})`, false, `${dd}${mm} -> ${f.code}`);
+      break;
+    }
+  }
+  check('the code is the date reversed, every seed', true);
+
+  // And the poster in the world has to say the date this run's locks expect.
+  const poster = new NotesLibrary(null, { seed: 4242 }).get('note_open_day');
+  const f4242 = runFacts(4242);
+  check('the poster carries this run\'s date', poster?.body.includes(f4242.openDay),
+    `poster does not mention ${f4242.openDay}`);
+  check('and no template token survives into the body',
+    !/\{\{/.test(poster?.body || ''), 'an unsubstituted token would ship as literal text');
+  // The notebook states the rule and never the number. That is the whole design.
+  const nb = new NotesLibrary(null, { seed: 4242 }).get('nb_5');
+  check('the notebook still does not give the number away',
+    !nb?.body.includes(f4242.code) && !nb?.body.includes('2130'),
+    'the hint must be the rule, not the answer');
+}
+
+// -- Night Watch has somewhere to run to ------------------------------------
+//
+// The mode's loop is "a way drops, go and put it back in". With one panel that
+// is a commute to the Service Spine and back; the sub-mains are what make the
+// fault decide which zone you cross. They are only worth anything if they are
+// actually in the building, which is what this checks — a browser probe at boot
+// cannot see them, because only the starting zone is resident.
+{
+  const all = Object.values(zones).flatMap((z) => z.interactables || []);
+  const boards = all.filter((i) => i.kind === 'breaker');
+  check('the main board is in the Spine',
+    (zones.service?.interactables || []).some((i) => i.id === 'board_c'));
+  for (const [id, zone] of [['board_p', 'plant'], ['board_r', 'residence'], ['board_k', 'stack']]) {
+    check(`${id} is in the ${zone}`,
+      (zones[zone]?.interactables || []).some((i) => i.id === id),
+      'a sub-main that is not in the world is a commute with extra steps');
+  }
+  check('there are four panels, not one', boards.length === 4, `${boards.length}`);
+
+  // Every way the mode can trip has to be resettable at the board it names.
+  const sv = new Survival({ bus: new Bus(), circuits: SURVIVAL_WAYS });
+  const byId = new Map(boards.map((b) => [b.id, b]));
+  for (const way of SURVIVAL_WAYS) {
+    const wanted = sv.boardFor(way);
+    const panel = byId.get(wanted);
+    const carries = (panel?.ways || []).some((w) => w.name === way);
+    if (!carries) {
+      check(`${way} can be reset at ${wanted}`, false,
+        panel ? `${wanted} does not carry it` : `${wanted} does not exist`);
+    }
+  }
+  check('every way the mode trips is carried by the board it names', true);
+
+  // And the mode listens to the event the panel actually emits. This was
+  // `breaker:set`, which nothing has ever emitted; the sim agreed because I had
+  // written the test to emit the same invented name.
+  const bus9 = new Bus();
+  const sv9 = new Survival({ bus: bus9, circuits: SURVIVAL_WAYS });
+  sv9.trip('intake');
+  bus9.emit('light:circuit', { circuit: 'intake', powered: true, board: sv9.boardFor('intake') });
+  check('the panel event the game emits clears a fault', sv9.faults.length === 0,
+    'the mode must speak light:circuit, not an invented name');
+}
+
+// -- the objective items are not in the same place every run ----------------
+{
+  const zoneOf = (id) => zones[id] || {};
+  const spawns = (id, item) => [
+    ...(zoneOf(id).interactables || []), ...(zoneOf(id).altSites || []),
+  ].filter((i) => i.item === item);
+
+  // Every zone that holds an objective item offers more than one authored site.
+  for (const [z, item, key] of [
+    ['cistern', 'fuse_core', 'cistern core'],
+    ['stack', 'fuse_core', 'stack core'],
+    ['plant', 'fuse_core', 'plant core'],
+    ['residence', 'fuse_core', 'residence core'],
+    ['stack', 'card_warden', "the warden's card"],
+    ['cistern', 'key_penstock', 'the penstock key'],
+  ]) {
+    check(`${key} has more than one authored site`, spawns(z, item).length >= 2,
+      `${spawns(z, item).length} site(s)`);
+  }
+
+  // Exactly one of them is live in any given run — the rest are alternatives.
+  for (const [z, item, key] of [['cistern', 'fuse_core', 'cistern core'],
+    ['stack', 'card_warden', "the warden's card"]]) {
+    const live = (zoneOf(z).interactables || []).filter((i) => i.item === item);
+    check(`only one ${key} is actually in the world`, live.length === 1,
+      `${live.length} live`);
+  }
+
+  // The chooser has to move, and the authored run has to be site zero.
+  const sites = [[1, 0, 1, 0], [2, 0, 2, 0], [3, 0, 3, 0]];
+  check('the canonical run uses the authored site',
+    runSite(0xd12ec7, 'cistern_core', sites).pick[0] === 1);
+  const counts = [0, 0, 0];
+  for (let sd = 1; sd <= 300; sd++) counts[runSite(sd, 'cistern_core', sites).pick[0] - 1]++;
+  const spread = Math.min(...counts) / Math.max(...counts);
+  check('and the other runs spread across all of them', spread > 0.6,
+    `${counts.join('/')} over 300 seeds`);
+  // Two items in one zone must not move together, or the "variation" is one bit.
+  let together = 0;
+  for (let sd = 1; sd <= 300; sd++) {
+    if (runSite(sd, 'cistern_core', sites).pick[0] === runSite(sd, 'cistern_key', sites).pick[0]) together++;
+  }
+  check('two items in a zone choose independently', together < 300 * 0.5,
+    `${together}/300 chose the same index`);
+}
+
+// -- three promises the game made and did not keep --------------------------
+//
+// A tool with nothing to use it on, an item with a written payoff and no spawn
+// site, and a second item the same. All three had definitions, builders and
+// notes pointing at them; none of them existed in a run.
+{
+  // The pry bar opens something. `variant: 'jammed'` appears in exactly one
+  // place in the tree and it is `seedIntakeDemo`, which `Game.js` runs only
+  // when there is no world — so in a real game the bar opened nothing at all.
+  // The zone's declaration, and a FRESH latch built from it. The first version
+  // of this read `interactor.door('door_r207')` — which by this point in the
+  // file has been unlocked by the playthrough above, so the refusal checks were
+  // interrogating an open door and reported the fix missing. A latch test has to
+  // own its latch.
+  const r207spec = (zones.residence?.interactables || []).find((i) => i.id === 'door_r207');
+  check('R-207 is declared pryable', r207spec?.pryable === true,
+    'the pry bar needs a door somewhere in the shipping build');
+  check('R-207 still needs the warden card by default', r207spec?.requires === 'card_warden');
+
+  const fresh = () => new DoorLatch(new THREE.Group(), {
+    id: 'probe_r207', locked: true, requires: 'card_warden', pryable: true,
+  });
+  const noBar = { has: () => false, def: () => null };
+  const withBar = { has: (i) => i === 'pry_bar', def: () => null };
+  const withCard = { has: (i) => i === 'card_warden', def: () => null };
+  check('a locked pryable door refuses an empty-handed player',
+    typeof fresh().refusal(noBar) === 'string', `refusal = ${fresh().refusal(noBar)}`);
+  check('the card opens it', fresh().refusal(withCard) === null);
+  check('and so does the bar', fresh().refusal(withBar) === null,
+    `refusal = ${JSON.stringify(fresh().refusal(withBar))}`);
+
+  // Prying is the loud route or it is not a trade. A footstep is 4.
+  let pryNoise = 0;
+  const loudPlayer = {
+    position: new THREE.Vector3(0, 0, 0),
+    makeNoise: (n) => { pryNoise = Math.max(pryNoise, n); }, kick() {},
+  };
+  fresh().use(loudPlayer, withBar);
+  check('prying is much louder than walking', pryNoise >= 12, `noise ${pryNoise}`);
+
+  // Both orphan items have somewhere to be found.
+  const allSpawns = Object.values(zones).flatMap((z) => z.interactables || []);
+  check('keys_ring has a spawn site', allSpawns.some((i) => i.item === 'keys_ring'),
+    'defined, built and blurbed, but in no zone');
+  check('card_contractor is issued rather than found',
+    /inventory\.add\('card_contractor'/.test(bootSource),
+    'the reader carries a refusal written for a card no player ever held');
 }
 
 // -- reading ---------------------------------------------------------------
@@ -563,6 +833,266 @@ check('the starting objective is now revealed',
     } live portals checked`);
 }
 
+// -- the light switch actually cuts the light -------------------------------
+//
+// The playthrough's "killing the lights froze the Surveyor" check passes
+// vacuously whenever the scripted route does not happen to put a switch in
+// reach during an encounter, which is a routing accident and not evidence. The
+// causal chain the mechanic rests on is: switch -> circuit target 0 -> fixtures
+// below `level 0.02` -> `illuminationAt` skips them -> `_moveToward` freezes.
+// The last two links are covered by src/systems/qa/surveyor_sim.mjs's light
+// rule. These are the first two, and they are exactly the ones a level edit or
+// a circuit rename would break.
+{
+  const sw = (interactor.items || []).find((i) => i.kind === 'switch');
+  check('the Intake has a light switch a player can reach', !!sw, sw ? sw.id : 'none registered');
+  if (sw) {
+    const circuit = 'intake';
+    const on = () => (rig.circuits.get(circuit)?.level ?? 0) > 0.05;
+    rig.setCircuit(circuit, true);
+    const before = on();
+    use(sw.id);
+    const afterOff = on();
+    use(sw.id);
+    const afterOn = on();
+    check('flipping the switch cuts the general lighting',
+      before === true && afterOff === false,
+      `before ${before}, after ${afterOff}`);
+    check('flipping it back restores the way', afterOn === true, `after second flip ${afterOn}`);
+    // And it must not be able to close a way the distribution board has opened,
+    // or it short-circuits the breaker puzzle.
+    rig.setCircuit(circuit, false);
+    rig.circuits.get(circuit).powered = false;
+    const refused = use(sw.id);
+    check('a switch cannot supply a way the board has opened',
+      typeof refused === 'string' && /board/i.test(refused),
+      refused === null ? 'it closed a dead way' : String(refused));
+    rig.circuits.get(circuit).powered = true;
+    rig.setCircuit(circuit, true);
+  }
+}
+
+// -- the rooms a zone declares are the rooms it builds ----------------------
+//
+// IntakeZone declares five enclosed rooms — copy, store, interview, breakout,
+// records — and its own header calls them "where set dressing and narrative
+// fragments live". It built ONE. Room placement ran after 190 partition-wall
+// attempts and a wall run only refused to cross a spine, so the grid was full
+// before the rooms were tried; the dressing code then hid it behind
+// `rooms.find(store) || rooms.find(records) || rooms[0]`.
+//
+// Nothing measured it. props.mjs counts what was declared, geobudget counts
+// triangles, and both were green while four fifths of the opening zone's
+// authored interiors did not exist.
+{
+  const declared = 5;   // roomSpecs in planIntake
+  const built = (zones.intake?.plan?.rooms || []).length;
+  check('the Intake builds every room it plans',
+    built >= declared, `${built} of ${declared} placed`);
+  // And a room the player cannot get into is not a room.
+  const doored = (zones.intake?.plan?.rooms || []).filter((r) => r._door).length;
+  check('every Intake room has a doorway', doored === built, `${doored} of ${built} have one`);
+}
+
+// -- the authored moments actually happen -----------------------------------
+//
+// `Director` is systemic and after this pass it works, but every instant it
+// produces is a sample from one distribution — a player has nothing they would
+// describe to somebody afterwards. `Setpieces` is six things that happen once
+// each, hung off progression rather than a clock. Content with no check rots
+// silently: an event renamed in Progression.js would unhook one of these and
+// nothing else in the suite would notice.
+{
+  const fired = setpieces.debugState().fired;
+  const missed = SETPIECE_IDS.filter((id) => !fired.includes(id));
+  // `the_stack_goes_out` and `something_in_the_water` need their zones entered,
+  // which this file does; `the_kettle` needs the office discovery. All six are
+  // reachable on the path walked above.
+  check('every authored setpiece fires somewhere on the critical path',
+    missed.length === 0,
+    missed.length ? `never fired: ${missed.join(', ')}` : `${fired.length}: ${fired.join(', ')}`);
+  check('no setpiece fires twice',
+    setpieces.log.length === new Set(setpieces.log.map((l) => l.id)).size,
+    `${setpieces.log.length} firings, ${new Set(setpieces.log.map((l) => l.id)).size} distinct`);
+}
+
+// -- every zone grids to a walkable area a coverage metric can divide by ----
+//
+// `tools/qa/explore.mjs` measures how much of a zone an unguided player has
+// stood in. Its denominator came from taking the centre of each 2 m grid cell
+// and discarding it if it fell outside the floor rectangle — so a rectangle
+// narrower than the grid contributed NOTHING. The Ductwork is built from 1.8 m
+// spines and gridded to **zero cells**, which made its coverage a division by
+// zero and let its visited cells inflate the overall figure with no denominator
+// of their own.
+//
+// The exploration bot cannot catch this: it has never reached the Ductwork in
+// any session, which is exactly why the defect survived. This file builds all
+// eight zones with a real CollisionWorld and no browser, so it can.
+{
+  const CELL = 2.0;
+  const empty = [];
+  const counts = [];
+  for (const [zid, zone] of Object.entries(zones)) {
+    const o = ZONE_ORIGIN[zid] || [0, 0, 0];
+    const cand = new Map();
+    for (const f of collision.floors) {
+      const cx = (f.minX + f.maxX) / 2, cz = (f.minZ + f.maxZ) / 2;
+      // Zones are 400 m apart, so nearest-origin is an exact zone test.
+      let best = null, bd = Infinity;
+      for (const [k, oo] of Object.entries(ZONE_ORIGIN)) {
+        const d = (cx - oo[0]) ** 2 + (cz - oo[2]) ** 2;
+        if (d < bd) { bd = d; best = k; }
+      }
+      if (best !== zid) continue;
+      const i0 = Math.floor(f.minX / CELL), i1 = Math.floor(f.maxX / CELL);
+      const j0 = Math.floor(f.minZ / CELL), j1 = Math.floor(f.maxZ / CELL);
+      if ((i1 - i0 + 1) * (j1 - j0 + 1) > 60000) continue;
+      for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+        const x = Math.min(Math.max((i + 0.5) * CELL, f.minX + 0.02), f.maxX - 0.02);
+        const z = Math.min(Math.max((j + 0.5) * CELL, f.minZ + 0.02), f.maxZ - 0.02);
+        if (!(x >= f.minX && x <= f.maxX && z >= f.minZ && z <= f.maxZ)) continue;
+        cand.set(`${i}|${j}|${Math.round(f.y / 3)}`, { x, z, y: f.y });
+      }
+    }
+    let n = 0;
+    for (const c of cand.values()) {
+      const top = collision.sampleFloor(c.x, c.z, c.y + 0.3, 0.4);
+      if (!top) continue;
+      // Crawl height — the Ductwork's soffit is 800 mm and is a corridor.
+      if (collision.resolveCapsule(c.x, top.y + 0.1, c.z, 0.29, 0.62).hit) continue;
+      n++;
+    }
+    counts.push(`${zid}:${n}`);
+    if (n === 0) empty.push(zid);
+    void o;
+  }
+  check('every zone grids to a non-zero walkable area',
+    empty.length === 0,
+    empty.length ? `no walkable cells at all in: ${empty.join(', ')}` : counts.join('  '));
+}
+
+// -- every bound key is on the screen that lists the keys --------------------
+//
+// `Input.ACTIONS` binds `cover` (V), `swapCell` (B) and `throwDecoy` (T). None
+// of the three was on the pause screen's control list — and `Input.js`'s own
+// comment calls `cover` "the single most important key in the game after WASD,
+// which is why it is a hold rather than a toggle", because the Surveyor hears
+// the lamp's switch click and does not hear a palm over the lens.
+//
+// A player cannot deduce a keybinding. Nothing in the project compared the two
+// lists, so a key could be bound and unlisted forever, which is what happened.
+{
+  const { ACTIONS: BOUND } = await import('../../src/core/Input.js');
+  const { CONTROLS } = await import('../../src/ui/Pause.js');
+  // The listing is player-facing prose, so match on the key names it prints
+  // rather than on the action ids: 'Ctrl / C', 'Q · R', 'Tab / J' are one row
+  // covering several codes.
+  const listed = CONTROLS.map(([k]) => k.toUpperCase()).join(' ');
+  // Actions a player never presses deliberately, or that the UI owns.
+  const EXEMPT = new Set(['forward', 'back', 'left', 'right', 'cancel', 'confirm', 'peek']);
+  const CODE_TO_LABEL = {
+    KeyW: 'W', KeyA: 'A', KeyS: 'S', KeyD: 'D', KeyE: 'E', KeyF: 'F', KeyG: 'G',
+    KeyQ: 'Q', KeyR: 'R', KeyV: 'V', KeyB: 'B', KeyT: 'T', KeyC: 'C', KeyJ: 'J',
+    KeyO: 'O', Tab: 'TAB', Escape: 'ESC', ShiftLeft: 'SHIFT', ControlLeft: 'CTRL',
+  };
+  const missing = [];
+  for (const [action, codes] of Object.entries(BOUND)) {
+    if (EXEMPT.has(action)) continue;
+    const labels = codes.map((c) => CODE_TO_LABEL[c]).filter(Boolean);
+    if (!labels.length) continue;                       // arrow keys etc.
+    if (!labels.some((l) => new RegExp(`(^| |/|·)${l}( |$|/|·)`).test(listed))) {
+      missing.push(`${action} (${labels.join('/')})`);
+    }
+  }
+  check('every bound key appears on the pause screen\'s control list',
+    missing.length === 0,
+    missing.length ? `not listed: ${missing.join(', ')}` : `${CONTROLS.length} rows cover every bound action`);
+}
+
+// -- a shut door must not shut every door that shares its name ---------------
+//
+// A PORTAL ID IS NOT UNIQUE. `to_plant` names the Service Spine's lobby door
+// (open, critical path), the Ductwork's hatch (open) and the Cistern's ladder
+// hatch, which its zone file authors `locked: true`. `to_service`, `to_intake`
+// and `to_residence` are likewise declared in more than one place.
+//
+// Two different bugs have lived in that fact. The registry was keyed by bare id,
+// so the last zone built silently overwrote the others; re-keying it to
+// `zone:id` fixed that and replaced it with a worse one, because `isGated` then
+// answered with a UNION over homonyms — and one authored-shut hatch in the
+// Cistern reported every route into the Plant as locked, permanently, with
+// nothing able to open them. `World._preload` builds the Cistern from 14 m away,
+// so it did not even need the player to go there.
+//
+// Neither version failed a single existing check: the critical path walks the
+// interactor, and the portal graph reads the zone files rather than the gate
+// state. This is the check that fails for both.
+{
+  const byId = new Map();
+  for (const [zid, zone] of Object.entries(zones)) {
+    for (const p of zone.portals || []) {
+      if (!p.target?.zone) continue;
+      if (!byId.has(p.id)) byId.set(p.id, []);
+      byId.get(p.id).push({ zid, p });
+    }
+  }
+  const shared = [...byId].filter(([, l]) => l.length > 1);
+
+  // THE INVARIANT, and it is the one both bugs broke: what the world is told
+  // about a door must be what that door's own registration says.
+  //
+  // Anything softer than this has no teeth. The first version of this check
+  // skipped a portal its zone authored `locked: true` (correct scenery) and
+  // skipped a portal that belongs to a gate group (correct gating) — which
+  // between them skipped every portal involved, and the check passed with the
+  // union bug restored. Comparing the answer to the registration cannot be
+  // skipped away: under the union, `isGated('to_plant', 'service')` is true
+  // while `portals.get('service:to_plant').locked` is false, and that is the
+  // whole defect in one line.
+  const bled = [];
+  for (const [id, list] of shared) {
+    for (const { zid } of list) {
+      const own = progression.portals.get(`${zid}:${id}`);
+      if (!own) { bled.push(`${zid}/${id} (never registered)`); continue; }
+      const said = progression.isGated(id, zid);
+      if (said !== !!own.locked) {
+        bled.push(`${zid}/${id} reads ${said ? 'locked' : 'open'} but is registered ${own.locked ? 'locked' : 'open'}`);
+      }
+    }
+    // AND THE PATH THE BUG ACTUALLY SHIPPED THROUGH.
+    //
+    // The comparison above is a tautology against the current implementation:
+    // `isGated(id, zone)` with a truthy zone IS `portals.get(zone:id).locked`,
+    // so it reduces to `x !== x`. It fails on the two historical implementations
+    // — verified — and it would not notice the way the defect reached players in
+    // the first place, which was `World.update` calling `isGated(p.id)` with no
+    // zone at all. Drop that one argument and the Plant reseals with this file
+    // still reporting every check green.
+    //
+    // So exercise the bare-id form too. For an id that names doors in several
+    // zones, it must never answer "locked" on behalf of a door somewhere else.
+    // Asserting on `isGated(id)`'s answer is not enough: with an arbitrary
+    // `_byId(id)[0]` fallback the answer depends on which zone happened to build
+    // first, and in this file's build order that happens to be an open door — so
+    // the check would pass by luck. Assert the invariant instead. An ambiguous
+    // bare id with no current zone must resolve to NOTHING, because a door
+    // nobody can identify must not be allowed to shut the building.
+    const here = progression.player?.game?.currentZone ?? progression.director?.zone ?? null;
+    const r = progression._resolve(id);
+    if (r && r.zone !== here) {
+      bled.push(`_resolve('${id}') answered with ${r.zone}/${id} while the player is in ${here ?? 'no zone'}`
+        + ` — one of ${list.length} doors with that name`);
+    }
+  }
+  check('a door authored shut does not shut every door sharing its name',
+    bled.length === 0,
+    bled.length
+      ? bled.join('; ')
+      : `${shared.length} id(s) declared in more than one zone: ${shared.map(([k, l]) => `${k}x${l.length}`).join(', ')}`);
+
+}
+
 // -- doors ----------------------------------------------------------------
 // The reason every door in the building is now a `DoorLatch` is not that doors
 // are fun: it is that `Kit.doorway` leaves the wall opening walkable on purpose
@@ -611,6 +1141,6 @@ const failed = results.filter((r) => !r.ok);
 for (const r of failed) console.log(`  FAIL  ${r.name}${r.detail ? `  — ${r.detail}` : ''}`);
 console.log(`${results.length - failed.length}/${results.length} checks passed`);
 console.log(failed.length === 0
-  ? 'The game can be finished. Arrival lift to goods lift, three cores, one ending.'
+  ? 'The game can be finished. Arrival lift to goods lift, three cores, and both lift endings reachable.'
   : `${failed.length} check(s) FAILED`);
 process.exit(failed.length === 0 ? 0 : 1);

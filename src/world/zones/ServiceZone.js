@@ -804,6 +804,27 @@ export function buildService(ctx, opts = {}) {
     emergencyLight(b, rigFor(b), ex, CEIL - 0.32, ez, { yaw: eyaw, seed: 400 + ex, circuit: 'emergency' });
   }
 
+  /**
+   * AND ONE IN THE BREAKER ROOM.
+   *
+   * The spine above is the escape route and is covered end to end. The room the
+   * blackout SENDS YOU TO was not. `lightreach --blackout --map service` puts a
+   * solid block of no-sightline over the whole of BREAKER, and the nearest point
+   * you can see any emergency fitting from is 7.6 m away — so the room holding
+   * Distribution Board C, which the comment sixty lines below calls the
+   * traversal puzzle of the whole game, is the one place in the Service Spine
+   * you cannot find in the dark. You are sent there BY the dark.
+   *
+   * On the north wall, aimed back at the door, which is where a real one goes:
+   * visible from anywhere in the room and it lights the way out rather than the
+   * wall you are facing.
+   */
+  {
+    const b = byX((BREAKER[0] + BREAKER[2]) / 2);
+    emergencyLight(b, rigFor(b), (BREAKER[0] + BREAKER[2]) / 2, CEIL - 0.32, BREAKER[1] + 0.12,
+      { yaw: 0, seed: 412, circuit: 'emergency' });
+  }
+
   // =========================================================================
   // 10. gameplay — Distribution Board C
   //
@@ -843,6 +864,11 @@ export function buildService(ctx, opts = {}) {
     { kind: 'pickup', item: 'pry_bar', position: [-11.7, 0.02, 4.3], rotation: 0.7 },
     { kind: 'pickup', item: 'battery_cell', position: [-13.2, 1.02, 3.2], rotation: 1.5 },
     { kind: 'pickup', item: 'note', noteId: 'note_lost_property', position: [-11.9, 0.02, 2.2], rotation: -0.8 },
+    // The ring of keys, in lost property, under the note about lost property.
+    // It had a definition, a builder and a blurb ("Eleven keys, four labelled,
+    // none of them labelled usefully") and no spawn site in any zone, so it
+    // existed everywhere except in the game.
+    { kind: 'pickup', item: 'keys_ring', position: [-12.3, 0.02, 2.05], rotation: 1.1 },
     { kind: 'pickup', item: 'note', noteId: 'note_12d_blank', position: [-11.2, 0.02, 2.6], rotation: 0.4 },
     // A locker against the store's back wall — the safest place in the Spine that
     // is not the Office of Record.

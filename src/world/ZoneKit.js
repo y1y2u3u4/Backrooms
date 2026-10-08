@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { CANON_SEED } from '../systems/Notes.js';
 import { Builder } from './Builder.js';
 import { attachPalette } from './Palette.js';
 import { KIT } from './Kit.js';
@@ -559,9 +560,16 @@ export function stripLight(b, rig, x, y, z, { rotation = 0, circuit = 'service',
   b.add('fixtureBodyStrip', hg, () => bodyMat);
 
   const f = rig.add({ type: 'strip', position: [x, y, z], rotation, circuit, health, seed, intensityScale });
+  // THE TUBE HANGS UNDER THE GEAR TRAY.
+  //
+  // It used to sit at +0.002 while the body box spans [0.0005, 0.0755], so the
+  // top 55% of a 38 mm tube was inside sheet steel and what reached the frame
+  // was a 17 mm sliver. On a batten fitting the lamp is *below* the tray — that
+  // is the whole point of the form — and the Service Spine is built out of these.
+  // See the pan note in Kit.troffer for the measurement that started this.
   f.tube = b.tube('strip', () => {
     const t = new THREE.CylinderGeometry(0.019, 0.019, 1.44, 8, 1);
-    t.rotateZ(Math.PI / 2); t.translate(0, 0.002, 0);
+    t.rotateZ(Math.PI / 2); t.translate(0, -0.024, 0);
     return t;
   }, 0xdfeaff, [x, y, z], rotation);
   if (cone) {
@@ -615,7 +623,7 @@ export function bulkhead(b, rig, x, y, z, { yaw = 0, circuit = 'service', health
 }
 
 /** High-bay sodium lamp on a drop rod — the Plant's ceiling. */
-export function highbay(b, rig, x, y, z, { circuit = 'plant', health = 'good', seed = 1, drop = 0.7, cone = true, intensityScale = 1 } = {}) {
+export function highbay(b, rig, x, y, z, { circuit = 'plant', health = 'good', seed = 1, drop = 0.7, cone = true, intensityScale = 1, aim = null } = {}) {
   const mat = b.mat('highbayBody', () => b.materials.get('steelPainted', {
     repeat: [1.4, 1.4], color: 0x6f6b60, metalness: 0.8, roughness: 0.55,
     dirtAmount: 0.65, dirtBase: -1, detailStrength: 0.3, envMapIntensity: 0.7,
@@ -647,6 +655,35 @@ export function highbay(b, rig, x, y, z, { circuit = 'plant', health = 'good', s
   f.tube = b.tube('highbay',
     () => lathe([[0, 0], [0.045, -0.03], [0.05, -0.10], [0.03, -0.15], [0, -0.16]], 12),
     0xffca80, [x, y - 0.10, z]);
+  // AIMING A HIGH BAY SOMEWHERE OTHER THAN STRAIGHT DOWN.
+  //
+  // `Fixture` defaults its target to (0, -3, 0) and this function never touched
+  // it, so every high bay in the game threw vertically. That is right over a
+  // plant floor and wrong in the Stack, where StackZone's own comment says the
+  // corner high bays exist because "only a fitting whose throw actually crosses
+  // the well can light the wall opposite, which is what makes a shaft read as a
+  // shaft rather than as floors floating in black" — and then aimed them at the
+  // gantry under their own feet. Measured in the Stack with every circuit live:
+  // 297 units of direct light at head height and 95.1% of the frame at pure
+  // black, with the eye adaptation pinned against both of its clamps.
+  //
+  // `aim` is a direction in the fixture's local frame, not a position.
+  if (aim) {
+    const [ax, ay, az] = aim;
+    f.target.position.set(ax, ay, az);
+    if (cone) {
+      // The volumetric cone has to follow the light or the beam is drawn in one
+      // direction and cast in another, which reads worse than having no cone.
+      const horiz = Math.hypot(ax, az);
+      const cn = makeLightCone(9.5, 4.6, 0xffb45c);
+      cn.position.set(0, -0.25, 0);
+      cn.rotation.order = 'YXZ';
+      cn.rotation.y = Math.atan2(ax, az);
+      cn.rotation.x = -Math.atan2(horiz, Math.max(1e-4, -ay));
+      f.group.add(cn); f.coneMesh = cn;
+    }
+    return f;
+  }
   if (cone) {
     const cn = makeLightCone(9.5, 4.6, 0xffb45c);
     cn.position.set(0, -0.25, 0);
@@ -682,10 +719,48 @@ export function pendant(b, rig, x, y, z, { circuit = 'residence', health = 'good
   b.add('pendantBody', hg, () => mat);
 
   const f = rig.add({ type: 'pendant', position: [x, y - drop - 0.08, z], circuit, health, seed, intensityScale });
+  // THE SHADE IS THE LIGHT, AND IT WAS PAINTED STEEL WITH THE BULB SEALED IN.
+  //
+  // This is the troffer defect (`Kit.troffer`) in a second fitting, and the
+  // geometry proves it without a screenshot. The bulb is a 33 mm sphere sitting
+  // at the shade's mid-height; the cone shade opens downward with a half-angle
+  // of about 30 degrees from vertical, and the globe encloses the bulb outright.
+  // A player 2.5 m from a pendant hung at 2.17 m stands 0.54 m below it, which
+  // is 77.5 degrees off the shade's axis — outside the cone's cut-off and behind
+  // the globe. Measured with tools/qa/emissive.mjs standing where a player can
+  // actually stand, the four Residence pendants came back at delta -18, -6, +2
+  // and +3 against a threshold of 24: the fitting was exactly as bright as the
+  // ceiling around it, which is what "no visible source" measures as.
+  //
+  // A domestic pendant of this period is opal glass, not sheet steel, and the
+  // shade is what the eye reads as the lamp. So the shade joins the emissive
+  // instance, one size larger than the painted one, and covers it when lit —
+  // the painted shade stays in the static body so an unpowered pendant is still
+  // an object hanging from a ceiling rather than a bare flex.
+  //
   // `drop` varies per pendant, so it goes through the instance position rather
   // than the geometry — otherwise every distinct drop would need its own batch.
-  f.tube = b.tube('pendant', () => new THREE.SphereGeometry(0.033, 10, 8),
-    0xffd08a, [x, y - drop - 0.09, z]);
+  // `shade` changes the geometry, so it has to be in the key.
+  f.tube = b.tube(`pendant:${shade}`, () => {
+    const bulb = new THREE.SphereGeometry(0.033, 10, 8);
+    let glow;
+    if (shade === 'cone') {
+      // The same profile 4% out, so it sits just proud of the painted shade.
+      // The mouth stays open: from directly below you see the bulb through it,
+      // which is the one angle a coolie shade is meant to show its lamp from.
+      glow = lathe([[0.031, 0], [0.057, -0.021], [0.151, -0.198], [0.156, -0.208],
+        [0.146, -0.208], [0.050, -0.021], [0.027, 0]], 16);
+      glow.translate(0, 0.07, 0);
+    } else {
+      glow = new THREE.SphereGeometry(0.119, 14, 10);
+      glow.scale(1, 0.85, 1);
+      glow.translate(0, -0.01, 0);
+    }
+    // Light that has been through glass, not the filament itself. 0.86 is a
+    // starting value; emissive.mjs is what decides whether it is the right one.
+    vertexShade(glow, () => 0.86);
+    return merge([bulb, glow]);
+  }, 0xffd08a, [x, y - drop - 0.09, z]);
   if (cone) {
     const cn = makeLightCone(2.4, 1.25, 0xffb964);
     cn.position.set(0, -drop - 0.14, 0);
@@ -721,6 +796,141 @@ export function emergencyLight(b, rig, x, y, z, { yaw = 0, circuit = 'emergency'
   })), 0x9dffbe, [x, y, z], yaw);
   f.target.position.set(0, -0.8, 2.5);
   return f;
+}
+
+/**
+ * Illuminated running-man exit sign, on the always-live emergency circuit.
+ *
+ * WHY THIS EXISTS. An exploration bot given no route, no zone list and no
+ * objectives spent **74.4 %** of a nine-minute session with nothing in view it
+ * could steer by, completed no objective at all, and reached two of the eight
+ * zones. Wayfinding was the worst-scoring dimension in the last independent
+ * assessment, at 3 out of 10, and it is the reason a player quits before the
+ * building has had a chance to frighten them: being lost with nothing to aim at
+ * is not tension, it is boredom wearing tension's coat.
+ *
+ * This is what a real building does about it, and this building already has the
+ * fiction for it — an emergency circuit that is live when everything else is
+ * dead. A sign is not a marker floating in space or a quest arrow: it is a
+ * 300 x 150 box screwed over a door, lit from inside, green because that is what
+ * the regulations say, and pointing the way somebody decided you should run
+ * thirty years ago. It reads at forty metres down a spine and it reads in a
+ * blackout, which is the one time the player most needs it and the one time this
+ * building offered nothing at all.
+ *
+ * `dir` is -1 for an arrow to the left, +1 to the right, 0 for straight through.
+ */
+export function exitSign(b, rig, x, y, z, { yaw = 0, dir = 0, circuit = 'emergency', seed = 1, health = 'good' } = {}) {
+  // SHARES THE EMERGENCY FITTING'S BATCHES ON PURPOSE.
+  //
+  // A distinct `exitBody` material key and a distinct `exitSign` tube key cost
+  // **five draw calls** — one body batch per chunk plus one emissive batch —
+  // and that was five whether there were seven signs or five, because the cost
+  // is per batch and not per sign. It took `npm run perf` from 179 to 184
+  // against a budget of 180. These are painted-metal boxes with a green lit
+  // face screwed to a soffit, which is precisely what `emergencyLight` already
+  // is, so they merge into its batches and cost nothing at all.
+  const mat = b.mat('emergBody', () => b.materials.get('doorPaint', {
+    repeat: [2.5, 2.5], color: 0xcfcabb, metalness: 0, roughness: 0.5,
+    dirtAmount: 0.5, detailStrength: 0.2, envMapIntensity: 0.5,
+  }));
+  const W = 0.30, H = 0.15, D = 0.055;
+  const parts = [];
+  // Housing, and the stem that hangs it off the soffit.
+  const body = box(W, H, D, 0.006, 1);
+  parts.push(body);
+  const stem = box(0.02, 0.09, 0.02, 0.003, 1);
+  stem.translate(0, H / 2 + 0.045, 0);
+  parts.push(stem);
+  const hg = merge(parts);
+  hg.rotateY(yaw); hg.translate(x, y, z);
+  worldUV(hg, 0.25); whiteColors(hg);
+  b.add('emergBody', hg, () => mat);
+
+  const f = rig.add({ type: 'emergency', position: [x, y, z], rotation: yaw, circuit, health, seed });
+  // The lit face, both sides, so the sign reads from either direction along a
+  // corridor. A sign you can only see from one side is half a sign.
+  f.tube = b.tube('emergency', () => {
+    const faces = [];
+    for (const sz of [-1, 1]) {
+      const panel = box(W - 0.03, H - 0.03, 0.004, 0.002, 1);
+      panel.translate(0, 0, sz * (D / 2 + 0.002));
+      faces.push(panel);
+      // The arrow, as a solid chevron block offset to one side of the panel.
+      // At the size this occupies on screen the direction is all that survives,
+      // so it is carried by position rather than by a glyph.
+      if (dir !== 0) {
+        const chev = box(0.055, H - 0.06, 0.006, 0.002, 1);
+        chev.translate(dir * (W * 0.30) * (sz > 0 ? 1 : -1), 0, sz * (D / 2 + 0.004));
+        faces.push(chev);
+      }
+    }
+    return merge(faces);
+  }, 0x9dffbe, [x, y, z], yaw);
+  // It washes the soffit and the head of the doorway under it rather than the
+  // floor: an exit sign is a beacon, not a downlight.
+  f.target.position.set(0, -0.35, 1.6);
+  f.intensityScale = 0.55;
+  // Tagged after construction because `Fixture` destructures a fixed option
+  // list and drops anything else. QA reads this: a sign is a navigational cue
+  // and an emergency bulkhead is not, and nothing could tell them apart.
+  f.signKind = 'exit';
+  f.signDir = dir;
+  return f;
+}
+
+/**
+ * Choose one of several authored positions, per run.
+ *
+ * WHY NOT JUST SCATTER THEM. This building has 76 hardcoded prop coordinates and
+ * they are hardcoded on purpose: a core wedged behind the penstocks, a card on
+ * the deck beside a chair pushed up to a missing bay of handrail, a notebook on
+ * the desk it was written at. Every one of them is a small piece of staging, and
+ * a random point on a floor rectangle is not staging — it is litter. Scattering
+ * would trade the thing this project is best at for the illusion of variety.
+ *
+ * So the sites are still authored, there are just several of them, and which one
+ * this run uses comes from the run seed. A returning player still knows the
+ * Cistern has a core in it and still does not know which corner of the chamber
+ * it is in, which is the difference between remembering a route and running one.
+ *
+ * `sites[0]` IS THE AUTHORED RUN and is what the canonical seed returns, so
+ * every baseline in docs/captures, every shot list and every prop check keeps
+ * measuring the placement it has always measured.
+ *
+ * Returns `{ pick, all }`. Callers push `pick` into the world and `all` into the
+ * zone's `altSites`, because `props.mjs` has to validate the sites this run did
+ * NOT choose as well — a candidate that is inside a wall is a bug that appears
+ * one run in three, which is the worst kind.
+ *
+ * @param {number} runSeed
+ * @param {string} key    stable name for this decision, so two items in one zone
+ *                        do not move together
+ * @param {number[][]} sites  each `[x, y, z, rotation]`
+ */
+export function runSite(runSeed, key, sites) {
+  const all = sites.filter(Boolean);
+  if (!all.length) return { pick: null, all };
+  if ((runSeed >>> 0) === CANON_SEED) return { pick: all[0], all };
+  // FNV over the key, then a full avalanche, then take the HIGH bits. The first
+  // version finished with a xorshift and took `x % n`, and its low bits were
+  // weak enough that four of six sample seeds landed on the same site — a
+  // randomiser that mostly returns the authored position is worse than none,
+  // because it looks like it is working.
+  let x = (runSeed ^ 0x9e3779b1) >>> 0;
+  for (let i = 0; i < key.length; i++) {
+    x = (x ^ key.charCodeAt(i)) >>> 0;
+    x = Math.imul(x, 16777619) >>> 0;
+  }
+  x ^= x >>> 16; x = Math.imul(x, 0x7feb352d) >>> 0;
+  x ^= x >>> 15; x = Math.imul(x, 0x846ca68b) >>> 0;
+  x ^= x >>> 16;
+  return { pick: all[Math.floor((x >>> 8) / 0x1000000 * all.length) % all.length], all };
+}
+
+/** Turn a `[x, y, z, rot]` site into a pickup descriptor. */
+export function siteSpec(site, spec) {
+  return { ...spec, position: [site[0], site[1], site[2]], rotation: site[3] ?? 0 };
 }
 
 // ---------------------------------------------------------------------------

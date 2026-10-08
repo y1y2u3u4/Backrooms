@@ -20,6 +20,26 @@ import { clamp01, damp, lerp, smoothstep } from '../core/util.js';
  */
 
 const MAX_RANGE = 3.2;
+
+/**
+ * THE LAYER THAT IS HIT BUT NOT DRAWN.
+ *
+ * A twelve-key keypad cost fifty draw calls — twenty-six meshes, each with its
+ * own material, and the whole lot drawn a second time by the GTAO normal
+ * prepass. None of those keys move when pressed; they were separate meshes
+ * only because the interactor needs something to raycast at, one target per
+ * key, and it will not consider anything with `visible === false`.
+ *
+ * So the visual is merged into one mesh and the twelve targets become bare
+ * proxy boxes on this layer. The camera renders layer 0, so a proxy is never
+ * submitted to the renderer in any pass; the raycaster is told to include this
+ * layer, so it is still hit. `visible` stays true, which is what keeps the
+ * enabled/disabled path above working unchanged.
+ *
+ * Anything that MOVES, opens, or animates still needs to be its own mesh. This
+ * is only for the parts that are hit and never change.
+ */
+export const PROXY_LAYER = 1;
 const _pw = new THREE.Vector3();
 
 // ---------------------------------------------------------------------------
@@ -38,7 +58,7 @@ export class DoorLatch {
    */
   constructor(grp, {
     id = 'door', bus = null, rig = null, collision = null,
-    locked = false, jammed = false, chained = false, welded = false,
+    locked = false, jammed = false, chained = false, welded = false, pryable = false,
     oneWay = 0,                    // 0 = both ways; ±1 = only opens toward that local-Z side
     requires = null,               // inventory id that unlocks it
     requiresTool = null,           // 'pry_bar' for jammed doors
@@ -55,6 +75,7 @@ export class DoorLatch {
     this.door = grp.userData.door;
     this.locked = locked;
     this.jammed = jammed;
+    this.pryable = pryable;
     this.chained = chained;
     this.welded = welded;
     this.oneWay = oneWay;
@@ -101,9 +122,20 @@ export class DoorLatch {
     }
     if (this.locked) {
       if (this.requires && inventory?.has(this.requires)) return null;
+      // A LOCKED DOOR IS NOT AN ARGUMENT AGAINST A CROWBAR.
+      //
+      // `pryable` is the quiet route's alternative: the lock is still the
+      // intended way through and finding the card is still the reward, but a
+      // player who has the bar can take the door apart instead. It costs a
+      // noise of 16 against a footstep's 4 — the loudest thing in the game —
+      // which turns "I could not find the card" into a decision with a price
+      // rather than a wall. Doors that must hold (portals, the welded and
+      // chained set-dressing) simply do not carry the flag.
+      if (this.pryable && inventory?.has(this.requiresTool || 'pry_bar')) return null;
       if (!this.requires) return 'Locked. No keyway on this side.';
       const name = inventory?.def?.(this.requires)?.name || this.requires;
-      return `Locked. Needs ${name}.`;
+      const bar = this.pryable ? ' The frame is timber.' : '';
+      return `Locked. Needs ${name}.${bar}`;
     }
     return null;
   }
@@ -123,7 +155,11 @@ export class DoorLatch {
       this.bus?.emit('door:refused', { id: this.id, reason, position: this.worldPosition() });
       return { ok: false, reason };
     }
-    if (this.jammed && inventory?.has(this.requiresTool || 'pry_bar')) {
+    // Prying covers both cases: a door jammed in its frame, and a locked one
+    // being opened the wrong way by somebody who could not find the key.
+    const prying = inventory?.has(this.requiresTool || 'pry_bar')
+      && (this.jammed || (this.locked && this.pryable && !(this.requires && inventory?.has(this.requires))));
+    if (prying) {
       this.jammed = false;
       this.bus?.emit('door:pried', { id: this.id, position: this.worldPosition() });
       player?.makeNoise?.(16);           // a pry bar in a steel frame is enormous
@@ -274,6 +310,9 @@ export class Interactor {
 
     this.raycaster = new THREE.Raycaster();
     this.raycaster.far = MAX_RANGE;
+    // Layer 0 is everything the camera draws; PROXY_LAYER is hit-only geometry
+    // that the camera never sees. Both have to be raycast.
+    this.raycaster.layers.enable(PROXY_LAYER);
     this.raycaster.near = 0.02;
 
     /**

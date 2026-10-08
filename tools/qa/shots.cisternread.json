@@ -1,0 +1,22 @@
+[
+  {
+    "name": "c1_tunnel_east",
+    "settle": 200,
+    "setup": "g.world.goto('cistern');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();if(g.flashlight){g.flashlight.isOn=false;g.flashlight.on=false;}g.look(785.0,0,0,-1.5708,0.0);"
+  },
+  {
+    "name": "c2_sump",
+    "settle": 200,
+    "setup": "g.world.goto('cistern');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();if(g.flashlight){g.flashlight.isOn=false;g.flashlight.on=false;}g.look(784.5,0,-4.0,0.0,0.02);"
+  },
+  {
+    "name": "c3_stairhall",
+    "settle": 200,
+    "setup": "g.world.goto('cistern');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();if(g.flashlight){g.flashlight.isOn=false;g.flashlight.on=false;}g.look(778.0,0,0,-1.5708,0.05);"
+  },
+  {
+    "name": "c4_chamber",
+    "settle": 200,
+    "setup": "g.world.goto('cistern');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();if(g.flashlight){g.flashlight.isOn=false;g.flashlight.on=false;}g.look(813.0,0,0,-1.5708,0.02);"
+  }
+]

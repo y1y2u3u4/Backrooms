@@ -1,0 +1,22 @@
+[
+  {
+    "name": "s1_across_the_well",
+    "settle": 200,
+    "setup": "g.world.goto('stack');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();if(g.flashlight){g.flashlight.isOn=false;g.flashlight.on=false;}g.look(0,0,789.8,3.1416,0.0);"
+  },
+  {
+    "name": "s2_down_the_drop",
+    "settle": 200,
+    "setup": "g.world.goto('stack');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();if(g.flashlight){g.flashlight.isOn=false;g.flashlight.on=false;}g.look(0,0,789.8,3.1416,-0.50);"
+  },
+  {
+    "name": "s3_up_the_well",
+    "settle": 200,
+    "setup": "g.world.goto('stack');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();if(g.flashlight){g.flashlight.isOn=false;g.flashlight.on=false;}g.look(0,0,789.8,3.1416,0.50);"
+  },
+  {
+    "name": "s4_corner_diagonal",
+    "settle": 200,
+    "setup": "g.world.goto('stack');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();if(g.flashlight){g.flashlight.isOn=false;g.flashlight.on=false;}g.look(-10.2,0,789.8,-2.356,-0.10);"
+  }
+]

@@ -429,7 +429,22 @@ export class MaterialLibrary {
     return mat;
   }
 
-  /** Apply the Annex shader injections to any MeshStandardMaterial. */
+  /**
+   * Apply the Annex shader injections to any MeshStandardMaterial.
+   *
+   * **DO NOT `.clone()` A DECORATED MATERIAL.** The injection lives on
+   * `onBeforeCompile`, and `THREE.Material.prototype.copy` copies a fixed list of
+   * properties that does not include it. A clone therefore drops the dirt, the
+   * detail normal and the AO volume term, keeps rendering perfectly happily, and
+   * comes out about three times brighter because nothing is attenuating its
+   * indirect light any more. Measured on the viewmodel: 2.95x, from a change that
+   * touched nothing but `roughness`.
+   *
+   * `Assets.js` decorates every material in every GLB, so this applies to loaded
+   * assets and not only to surfaces built here. If you need per-mesh variation on
+   * a decorated material, either mutate the shared instance or build a fresh one
+   * through this library — never clone.
+   */
   decorate(mat, opts = {}) {
     const o = { ...DEFAULTS, ...opts };
     mat.userData.annex = true;
@@ -456,10 +471,34 @@ export class MaterialLibrary {
         .replace('#include <lights_fragment_end>', '#include <lights_fragment_end>\n' + AO_VOLUME_APPLY);
       mat.userData.shader = shader;
     };
-    // Distinct cache key so three does not share a program with an
-    // undecorated standard material.
-    mat.customProgramCacheKey = () =>
-      `annex|${o.dirtBase}|${o.dirtAmount}|${o.detailTile}|${o.detailStrength}|${o.tintAmount}|${o.stochastic}|${o.rollWidth > 0 ? 1 : 0}`;
+    // Distinct cache key so three does not share a program with an undecorated
+    // standard material. ONE TOKEN, because that is the entire requirement.
+    //
+    // This key used to carry the VALUES of seven options —
+    //
+    //   `annex|${o.dirtBase}|${o.dirtAmount}|${o.detailTile}|...`
+    //
+    // — and every distinct combination of those numbers compiled its own shader
+    // program. All seven are uniforms, set a dozen lines above this in
+    // `onBeforeCompile`; every string spliced into the source (`VERT_HEAD`,
+    // `FRAG_MAP`, `FRAG_ROUGH`, `FRAG_DETAIL_NORMAL`, `AO_VOLUME_APPLY`) is a
+    // module constant that does not read `o` at all. **The generated GLSL is
+    // byte-identical across all of them.** The key was asking the renderer to
+    // compile the same program 38 times because a dirt amount differed.
+    //
+    // `rollWidth` was already collapsed to a boolean here, which shows the
+    // principle was understood and then applied to one option out of seven.
+    //
+    // This is not a load-time nicety. `KHR_parallel_shader_compile` is
+    // unavailable on a software rasteriser, so these compile serially on the
+    // main thread and are paid again on every boot, every zone transition and
+    // every camera move that reveals an unseen material — 66 s of pre-warm for
+    // one zone, 453 s for a cross-zone `goto`, 700 s for one capture frame.
+    // Measure it with `tools/qa/programs.mjs`, which is what found this.
+    //
+    // If a future option ever changes the generated source rather than a
+    // uniform, it — and only it — belongs in this string.
+    mat.customProgramCacheKey = () => 'annex';
     this.all.add(mat);
     return mat;
   }

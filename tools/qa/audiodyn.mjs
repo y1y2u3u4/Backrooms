@@ -304,6 +304,38 @@ for (const r of rows) {
 
 console.log('');
 console.log(`budgets: LRA >= ${LIMITS.lra} LU, quiet fraction >= ${LIMITS.quietFrac}, RMS <= ${LIMITS.rms} dBFS`);
+/**
+ * WHICH BED YOU POINT THIS AT DECIDES THE ANSWER, AND THAT IS NOT A TOOL BUG.
+ *
+ * `audio-render` writes two sets: `beds/` with the player walking, and
+ * `beds-still/` with the player standing. Same code, same 150 seconds, same
+ * three lulls in the breath report — and they measure completely differently:
+ *
+ *              walking        standing
+ *   LRA        1.7 - 9.7      7.7 - 18.1
+ *   quiet      0.000 - 0.077  0.082 - 0.124
+ *   flagged    8 of 8         5 of 8
+ *
+ * Footsteps are not on the ambience bus, because they are the player rather
+ * than the building. So when the building ducks seventeen decibels, the boots
+ * carry straight on and fill every gap the mix makes. No amount of work on the
+ * bed can change that number while the player is moving; four passes of mixing
+ * went at the bus, the compressor and the fader without anyone noticing that
+ * the file being judged had a pair of feet in it.
+ *
+ * That is worth stating as a design fact rather than fixing away: **you only
+ * hear this building when you stop walking.** It is arguably the point. But it
+ * means "does the mix ever back off" is a question about `beds-still`, and
+ * "what does a moving player actually hear" is a different question with a
+ * different and much worse answer.
+ */
+if (/beds-still/.test(process.argv.join(' ')) === false && /beds/.test(process.argv.join(' '))) {
+  console.log('');
+  console.log('NOTE: `beds/` has the player walking, and footsteps are not on the ambience');
+  console.log('bus — they fill the lulls the building makes. For the mix\'s own dynamics');
+  console.log('measure `--only beds-still`. Both numbers are real and they answer');
+  console.log('different questions; see the note above this line in the source.');
+}
 console.log('LRA here is R128 in shape, not in letter — no K-weighting. It is a spread,');
 console.log('and a spread is what the question "does this mix ever back off" needs.');
 console.log('');

@@ -8,6 +8,9 @@ import { ZoneGameplay } from './ZoneGameplay.js';
 import { Surveyor, STATE as SURVEYOR_STATE } from '../entities/Surveyor.js';
 import { Attendant } from '../entities/Attendant.js';
 import { Director } from './Director.js';
+import { Decoy } from '../player/Decoy.js';
+import { Setpieces } from './Setpieces.js';
+import { Survival } from './Survival.js';
 import { Progression } from './Progression.js';
 import { NotesLibrary } from './Notes.js';
 
@@ -44,8 +47,17 @@ export async function installGameplay(game, {
   const materials = game.materials;
 
   // ---- player-side systems --------------------------------------------------
-  const notes = new NotesLibrary(bus);
+  // The notes carry this run's facts — the open-day date on the poster, and so
+  // the terminal code derived from it. See `runFacts`.
+  const notes = new NotesLibrary(bus, { seed: game.runSeed ?? 0xd12ec7 });
   const inventory = new Inventory({ bus, player });
+  // YOUR OWN CARD. `card_contractor`'s blurb reads "Your own. Issued March. It
+  // opens less than you were told it would", the card reader carries a written
+  // refusal for it — "Reader rejects it. Your card was issued in March." — and
+  // three notes build to that moment. It had no spawn site anywhere in the
+  // game, so no player ever held it and that refusal line had never once
+  // fired. It is not a pickup: it is the thing you walked in with.
+  inventory.add('card_contractor', 1);
   const flashlight = new Flashlight({
     scene, camera, player, inventory, collision, bus,
     castShadow: quality === 'high',
@@ -72,10 +84,19 @@ export async function installGameplay(game, {
 
   const director = new Director({
     player, rig, bus, surveyor: entity, attendant, flashlight, inventory, interactor,
+    // The run seed. `Game` fixes it under `qa=1` so the whole suite stays
+    // deterministic, and rolls it otherwise — see the long note there. The
+    // building is the same building every night; what is wrong with it is not.
+    seed: game.runSeed ?? 0xd12ec7,
   });
   const progression = new Progression({
     bus, inventory, notes, interactables, interactor, director, player,
   });
+  // The only verb that puts a signal somewhere the player is not. See Decoy.js.
+  const decoy = new Decoy({ player, inventory, bus, collision });
+  // Six things that happen exactly once, on progression rather than a clock.
+  // The Director carries the minute-to-minute; these are what gets remembered.
+  const setpieces = new Setpieces({ bus, player, rig, director, surveyor: entity, attendant });
 
   // Blender hero assets are optional at every step.
   if (assets) {
@@ -86,11 +107,50 @@ export async function installGameplay(game, {
     ]);
   }
 
+  // A DROPPED THING HAS TO STILL BE THERE.
+  //
+  // `Inventory.dropCarried` emits `item:drop` and nothing in the tree listened,
+  // so anything dropped left the player's hands and left the world at the same
+  // time. It had no callers either, so nobody had found out — until dying while
+  // carrying a fuse core became the cost of dying, at which point a silently
+  // vanishing core would make the run unwinnable and the save would carry the
+  // loss forward.
+  //
+  // Put it back where it fell, as a real pickup with a real collider, slightly
+  // off the exact death spot so it is never inside the respawning player.
+  bus.on('item:drop', (e) => {
+    const p = e?.position;
+    if (!p || !e?.id) return;
+    interactables.spawn('pickup', {
+      id: `${e.id}_dropped_${Math.round(p.x * 10)}_${Math.round(p.z * 10)}`,
+      item: e.id,
+      position: [p.x, Math.max(0, (p.y ?? 0)) + 0.02, p.z],
+      rotation: Math.atan2(p.x, p.z),
+    });
+  });
+
   if (seedDemo) seedIntakeDemo(ctx, { director, progression, attendant, entity });
+
+  /**
+   * NIGHT WATCH. `?mode=survival` swaps the objective from "get out" to "keep
+   * the lights on until you cannot", and the campaign is untouched when it is
+   * absent — no branch anywhere else, the mode is simply null.
+   */
+  const survival = game.mode === 'survival'
+    ? new Survival({
+      bus,
+      circuits: ['intake', 'service', 'cistern', 'residence', 'plant', 'stack', 'duct'],
+      rng: (() => {
+        let sd = (game.runSeed ?? 0xd12ec7) >>> 0 || 1;
+        return () => { sd ^= sd << 13; sd >>>= 0; sd ^= sd >>> 17; sd ^= sd << 5; sd >>>= 0; return sd / 4294967296; };
+      })(),
+    })
+    : null;
 
   const gameplay = {
     notes, inventory, flashlight, hands, interactor, interactables,
-    surveyor: entity, attendant, director, progression, ctx,
+    surveyor: entity, attendant, director, progression, decoy, setpieces, ctx,
+    survival,
     zoneGameplay: null,
 
     /** Build and register a prop. See `Interactables.FACTORIES` for kinds. */
@@ -98,7 +158,9 @@ export async function installGameplay(game, {
 
     /** One logic step. Order matters; see the file header. */
     update(dt, input) {
+      survival?.update(dt);
       flashlight.update(dt, input);
+      decoy.update(dt, input);
       interactor.update(dt, input);
       interactables.update(dt);
       if (entity) entity.update(dt);
@@ -117,6 +179,8 @@ export async function installGameplay(game, {
         progression: progression.debugState(),
         interactor: interactor.debugState(),
         flashlight: flashlight.debugState(),
+        decoy: decoy.debugState(),
+        setpieces: setpieces.debugState(),
         hands: hands.debugState(),
         inventory: inventory.snapshot(),
       };

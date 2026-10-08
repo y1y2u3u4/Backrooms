@@ -246,11 +246,57 @@ console.log('\nSurveyor — headless state machine checks\n');
   s.hear(new THREE.Vector3(-6, 0, 6), 30);
   run(s, 4);
   run(s, 70);
-  ok('does not tunnel through the divider', Math.abs(s.position.z) > 0.15 || true);
+  // `|| true` made this unfailable, and it survived three independent reviews
+  // being pointed at it. The claim is that the entity does not end up inside the
+  // divider slab: the wall spans z in [-0.15, 0.15] everywhere except the
+  // doorway at |x| < 1, so being in the slab AND outside the doorway is the
+  // failure. Standing in the doorway is not.
+  ok('does not tunnel through the divider',
+    Math.abs(s.position.z) > 0.15 || Math.abs(s.position.x) < 1.2,
+    `at (${s.position.x.toFixed(2)}, ${s.position.z.toFixed(2)})`);
   ok('makes progress rather than jamming on the wall',
     s.position.distanceTo(new THREE.Vector3(-6, 0, -6)) > 3,
     `moved ${s.position.distanceTo(new THREE.Vector3(-6, 0, -6)).toFixed(2)} m`);
   if (VERBOSE) console.log('   ', JSON.stringify(s.debugState()));
+}
+
+// 7b. It can kill more than once ---------------------------------------------
+//
+// THE BUG THIS EXISTS FOR. `_killed` was set true on the first completed capture
+// and reset nowhere in the file; `captureT` was initialised in the constructor
+// and only ever incremented. Neither `despawn()` nor `spawnAt()` cleared them,
+// so after one kill the guard at the bottom of STATE.CAPTURING could never pass
+// again: `game:death` was emitted once per page load, and CAPTURING — which had
+// no exit of its own — simply never ended. A delivered session recorded five
+// threat episodes, two of them reaching CAPTURING, and one death.
+//
+// Every other test in this file builds a fresh entity, which is exactly why the
+// whole harness was structurally blind to it. This one reuses ONE entity across
+// two captures, which is the only shape that can fail.
+{
+  console.log('it can kill more than once');
+  const { s, bus } = makeEntity({ light: 4 });
+  let deaths = 0;
+  bus.on('game:death', () => deaths++);
+
+  const capture = () => {
+    s.spawnAt(0, 0, 1.2, 0);
+    s.rouse(new THREE.Vector3(0, 0, 0), 0);
+    s._setState(STATE.CAPTURING);
+    run(s, 2.0);
+  };
+
+  capture();
+  ok('the first capture kills', deaths === 1, `deaths=${deaths}`);
+  capture();
+  ok('the second capture also kills', deaths === 2, `deaths=${deaths}`);
+
+  // And a capture that nothing resolves must not latch the state machine.
+  s.spawnAt(0, 0, 1.2, 0);
+  s._setState(STATE.CAPTURING);
+  run(s, 8.0);
+  ok('an unresolved capture lets go instead of latching',
+    s.state !== STATE.CAPTURING, `state=${s.state}`);
 }
 
 // 8. Debug contract ---------------------------------------------------------
@@ -263,6 +309,223 @@ console.log('\nSurveyor — headless state machine checks\n');
     ok(`debugState().${k} present`, d[k] !== undefined);
   }
   ok('position is a 3-tuple', Array.isArray(d.position) && d.position.length === 3);
+}
+
+// 9. Can the player tell it turned? ------------------------------------------
+//
+// The Surveyor is blind and the player is not told anything; the only channel
+// carrying "your decoy worked" is the head-plate tick on `entity:heard`. For the
+// whole life of this file that event carried the NOISE's position and nothing
+// else, so the tick was played at the thrown cell — thirty metres away, where
+// the player already knew a sound had happened. They heard their own can land
+// and learned nothing about the thing they threw it to move.
+//
+// Two properties are required and neither is implied by the belief moving:
+//   * `from` is the entity, so the sound's direction is the entity's direction;
+//   * `turn` reports the angle between the bearing it was working on and the one
+//     it now believes, so a redirect is audibly different from a correction.
+{
+  console.log('the player can hear it turn');
+  const { s, bus } = makeEntity({ light: 3, playerAt: [0, -8] });
+  const heard = [];
+  bus.on('entity:heard', (e) => heard.push(e));
+
+  s.spawnAt(0, 0, 8, 0.5);
+  s._setState(STATE.SEEKING);
+  // It is working on a bearing due north of itself.
+  s.lastHeard.set(0, 0, 18);
+  s.confidence = 0.8;
+
+  // A decoy lands hard the other way — behind it and to one side.
+  s.hear(new THREE.Vector3(-6, 0, 2), 16);
+
+  ok('a belief change is announced at all', heard.length === 1, `${heard.length} events`);
+  const e = heard[heard.length - 1];
+  ok('the event carries the entity\'s own position, not the noise\'s',
+    !!e?.from && e.from.distanceTo(s.position) < 0.01,
+    `from=${e?.from ? [e.from.x, e.from.z].map((v) => v.toFixed(1)).join(',') : 'absent'}`
+    + ` entity=${[s.position.x, s.position.z].map((v) => v.toFixed(1)).join(',')}`);
+  ok('`from` is NOT the noise position — that was the defect',
+    !!e?.from && e.from.distanceTo(new THREE.Vector3(-6, 0, 2)) > 1,
+    `from=${e?.from ? [e.from.x, e.from.z].map((v) => v.toFixed(1)).join(',') : 'absent'}`);
+  ok('a decoy the other way reports a large turn',
+    (e?.turn ?? 0) > 1.5, `turn=${(e?.turn ?? 0).toFixed(2)} rad`);
+
+  // And a correction of half a metre must NOT read the same, or the gain the
+  // audio rides on this value tells the player nothing.
+  const { s: s2, bus: b2 } = makeEntity({ light: 3, playerAt: [0, -8] });
+  const heard2 = [];
+  b2.on('entity:heard', (e2) => heard2.push(e2));
+  s2.spawnAt(0, 0, 8, 0.5);
+  s2._setState(STATE.SEEKING);
+  s2.lastHeard.set(0, 0, 18);
+  s2.confidence = 0.8;
+  s2.hear(new THREE.Vector3(0.3, 0, 18.2), 3);
+  const e2 = heard2[heard2.length - 1];
+  ok('a small correction reports a small turn',
+    heard2.length === 0 || (e2?.turn ?? 9) < 0.5,
+    e2?.turn === undefined ? 'no `turn` on the event at all' : `turn=${e2.turn.toFixed(2)} rad`);
+
+  // Waking up is not turning. A DORMANT entity's belief can be in another zone
+  // four hundred metres away, and counting that as a swing would let the check
+  // pass on exactly the case it exists to catch.
+  const { s: s3, bus: b3 } = makeEntity({ light: 3, playerAt: [0, -8] });
+  const heard3 = [];
+  b3.on('entity:heard', (e3) => heard3.push(e3));
+  s3.spawnAt(0, 0, 8, 0.5);
+  s3._setState(STATE.DORMANT);
+  s3.lastHeard.set(0, 0, 400);
+  s3.confidence = 0.9;
+  s3.hear(new THREE.Vector3(-6, 0, 2), 16);
+  const e3 = heard3[heard3.length - 1];
+  ok('waking from dormant does not count as a turn',
+    heard3.length === 0 || (e3?.turn ?? 9) < 0.01,
+    e3?.turn === undefined ? 'no `turn` on the event at all' : `turn=${e3.turn.toFixed(2)} rad`);
+}
+
+// 11. Hiding, and whether the threat can arrive ------------------------------
+//
+// Two behaviours that the game shipped without for the whole of its history, so
+// these are written to fail loudly if either is ever unwired again.
+{
+  console.log('hiding muffles the player');
+
+  // Same noise, same distance, hidden and not. The hearing model is one
+  // expression, so a single multiplier is the whole difference — which is
+  // exactly why it has to be asserted rather than assumed.
+  const { s: sOpen, player: pOpen } = makeEntity({ light: 3, playerAt: [0, 6] });
+  sOpen.spawnAt(0, 0, 0, 0);
+  pOpen.hidden = false;
+  const openStrength = sOpen.hear(new THREE.Vector3(0, 0, 6), 6);
+
+  const { s: sHid, player: pHid } = makeEntity({ light: 3, playerAt: [0, 6] });
+  sHid.spawnAt(0, 0, 0, 0);
+  pHid.hidden = true;
+  const hidStrength = sHid.hear(new THREE.Vector3(0, 0, 6), 6);
+
+  ok('an unhidden noise is heard at all', openStrength > 0.06,
+    `strength ${openStrength.toFixed(3)}`);
+  ok('hiding cuts the same noise down', hidStrength < openStrength * 0.5,
+    `open ${openStrength.toFixed(3)} -> hidden ${hidStrength.toFixed(3)}`);
+  ok('hiding is a muffle, not a mute', hidStrength >= 0 && hidStrength < openStrength,
+    'a locker is a steel box, not silence');
+
+  // The consequence, not just the number: the same cue that rouses an entity
+  // from across a room must fail to rouse it through a locker door.
+  const { s: sR, player: pR } = makeEntity({ light: 3, playerAt: [0, 11] });
+  sR.spawnAt(0, 0, 0, 0);
+  pR.hidden = true;
+  sR.hear(new THREE.Vector3(0, 0, 11), 5);
+  run(sR, 1);
+  ok('a hidden player does not rouse it from across the room',
+    sR.state === STATE.DORMANT, `state ${sR.state}`);
+}
+{
+  console.log('the threat can actually arrive');
+
+  // Player walk is 2.15 m/s and sprint is 3.62 m/s (Player.js). An APPROACHING
+  // Surveyor that cannot exceed the first is scenery; one that exceeds the
+  // second removes the counterplay. Both bounds are asserted, because the whole
+  // design of the encounter lives between them.
+  const WALK = 2.15, SPRINT = 3.62;
+  // The player is parked far off the entity's line. The first version of this
+  // put them at (0, 4) with the belief at (0, 40), so the entity walked THROUGH
+  // them, tripped `playerDist < 1.15`, entered CAPTURING and damped to a stop —
+  // and the check read 0.20 m/s and called the fix absent. The measurement was
+  // wrong, not the change; a speed test has to measure a state the entity is
+  // still in.
+  const topSpeed = (aggression) => {
+    const { s } = makeEntity({ light: 5, playerAt: [200, 200] });
+    s.spawnAt(0, 0, 0, 0);
+    s.aggression = aggression;
+    s.confidence = 1;
+    s.lastHeard.set(0, 0, 40);
+    s._setState(STATE.APPROACHING);
+    // Long enough for the speed damp and the turn penalty to settle.
+    run(s, 6);
+    if (s.state !== STATE.APPROACHING) return NaN;   // measured the wrong state
+    return s.speed;
+  };
+  const slow = topSpeed(0), fast = topSpeed(1);
+  ok('at rest aggression it still gains on a walking player', slow > WALK,
+    `${slow.toFixed(2)} m/s vs a ${WALK} m/s walk`);
+  ok('at full aggression it is faster still', fast > slow,
+    `${slow.toFixed(2)} -> ${fast.toFixed(2)} m/s`);
+  ok('a sprinting player always outruns it', fast < SPRINT,
+    `${fast.toFixed(2)} m/s vs a ${SPRINT} m/s sprint`);
+
+  // And none of it applies in the dark. The light rule outranks the chase.
+  const { s: sDark } = makeEntity({ light: 0, playerAt: [200, 200] });
+  sDark.spawnAt(0, 0, 0, 0);
+  sDark.aggression = 1;
+  sDark.confidence = 1;
+  sDark.lastHeard.set(0, 0, 40);
+  sDark._setState(STATE.APPROACHING);
+  run(sDark, 4);
+  ok('an approach in darkness still goes nowhere', sDark.speed < 0.01,
+    `${sDark.speed.toFixed(3)} m/s`);
+}
+
+// 12. Darkness is a delay, not an off switch --------------------------------
+//
+// The Surveyor is blind, hunts by sound and stops below a light threshold, so a
+// player standing still in an unlit room used to be unreachable — permanently,
+// for free, at any moment. Fine in a game about carrying three cores across a
+// building; fatal to anything scored on time, where standing still is the win
+// condition. These assert both halves: the rule the player learns still holds,
+// and it stops being absolute.
+{
+  console.log('darkness delays rather than defeats');
+
+  // 0.35 is inside the band this change actually governs, and the band is
+  // narrow — computed from the two smoothstep curves, a calm Surveyor is stone
+  // below about 0.48 and a hot one below about 0.25. So what moved is the
+  // 0.25–0.48 shelf: gloom that used to be as safe as a sealed room, and now is
+  // only safe while the thing hunting you is still calm. It is a real
+  // tightening and it is NOT a removal of the strategy — see the note on
+  // LIGHT_DEAD_HOT and section 19 of the completion report.
+  const DIM = 0.35;
+  const calm = makeEntity({ light: DIM, playerAt: [200, 200] });
+  calm.s.spawnAt(0, 0, 0, 0);
+  calm.s.aggression = 0;
+  calm.s.confidence = 1;
+  calm.s.lastHeard.set(0, 0, 40);
+  calm.s._setState(STATE.APPROACHING);
+  run(calm.s, 4);
+  ok('a calm one is still stone in a dim room', calm.s.speed < 0.01,
+    `${calm.s.speed.toFixed(3)} m/s at ${DIM} lux-ish`);
+
+  const hot = makeEntity({ light: DIM, playerAt: [200, 200] });
+  hot.s.spawnAt(0, 0, 0, 0);
+  hot.s.aggression = 1;
+  hot.s.confidence = 1;
+  hot.s.lastHeard.set(0, 0, 40);
+  hot.s._setState(STATE.APPROACHING);
+  run(hot.s, 4);
+  ok('one that has been hunting you all night is not', hot.s.speed > 0.02,
+    `${hot.s.speed.toFixed(3)} m/s at the same light`);
+
+  // And the rule the whole design rests on is untouched: pitch black is stone,
+  // at any aggression. If this ever fails, the frozen pose that teaches the
+  // rule without a word of text has stopped being reachable.
+  for (const agg of [0, 0.5, 1]) {
+    const dark = makeEntity({ light: 0, playerAt: [200, 200] });
+    dark.s.spawnAt(0, 0, 0, 0);
+    dark.s.aggression = agg;
+    dark.s.confidence = 1;
+    dark.s.lastHeard.set(0, 0, 40);
+    dark.s._setState(STATE.APPROACHING);
+    run(dark.s, 4);
+    ok(`pitch black still stops it at aggression ${agg}`, dark.s.speed === 0,
+      `${dark.s.speed} m/s`);
+  }
+  const thr = makeEntity({ light: 1, playerAt: [200, 200] });
+  thr.s.spawnAt(0, 0, 0, 0);
+  thr.s.aggression = 0; thr.s._sampleLight();
+  const cold = thr.s.deadBelow;
+  thr.s.aggression = 1; thr.s._sampleLight();
+  ok('the threshold moves the right way', thr.s.deadBelow < cold,
+    `${cold} -> ${thr.s.deadBelow}`);
 }
 
 console.log(`\n${passed} passed, ${failed} failed\n`);

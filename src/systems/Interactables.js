@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { clamp, clamp01, damp, lerp, smoothstep, makeRng, wobble, TAU } from '../core/util.js';
 import { box, cyl, lathe, merge, worldUV, vertexShade, whiteColors, pipeRun } from '../render/geo.js';
 import { doorway, KIT } from '../world/Kit.js';
-import { DoorLatch } from '../player/Interactor.js';
+import { DoorLatch, PROXY_LAYER } from '../player/Interactor.js';
 
 /**
  * Interactables — the registry, and every machine in the Annex.
@@ -88,6 +88,48 @@ export function textTexture(lines, {
   t.userData.canvas = c;
   t.userData.ctx = g;
   return t;
+}
+
+/**
+ * One texture holding a grid of single characters, and the UV rect for each.
+ *
+ * Twelve keypad keys used to mean twelve 64x64 textures and twelve materials,
+ * which meant twelve draw calls that could never be merged however the geometry
+ * was arranged — `calls == mat` is the signature of that, and it is why the
+ * attribution tool now prints the distinct-material count next to the call
+ * count. One atlas collapses them to one material, and then the geometry merges.
+ *
+ * @param {string[]} chars
+ * @param {object} o
+ * @returns {{texture: THREE.CanvasTexture, uv: (i:number) => [number,number,number,number]}}
+ *   `uv(i)` is `[u0, v0, du, dv]` for cell `i`, in the row-major order of `chars`.
+ */
+export function glyphAtlas(chars, {
+  cell = 64, cols = 4, bg = '#2b2a26', fg = '#ddd8c8',
+  font = '600 30px "Courier New", monospace',
+} = {}) {
+  const rows = Math.ceil(chars.length / cols);
+  const c = document.createElement('canvas');
+  c.width = cols * cell; c.height = rows * cell;
+  const g = c.getContext('2d');
+  g.fillStyle = bg; g.fillRect(0, 0, c.width, c.height);
+  g.font = font; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = fg;
+  for (let i = 0; i < chars.length; i++) {
+    const cx = (i % cols) * cell, cy = Math.floor(i / cols) * cell;
+    g.fillText(chars[i], cx + cell / 2, cy + cell / 2);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  t.needsUpdate = true;
+  return {
+    texture: t,
+    // Canvas y runs down and UV v runs up, so the row is flipped.
+    uv: (i) => {
+      const cxi = i % cols, cyi = Math.floor(i / cols);
+      return [cxi / cols, 1 - (cyi + 1) / rows, 1 / cols, 1 / rows];
+    },
+  };
 }
 
 /** Redraw an existing text texture in place. */
@@ -677,9 +719,24 @@ export function goodsLift(ctx, {
 
   interactor?.add({
     id: `${id}_call`, object: callGrp, kind: 'button',
-    verb: 'Call', label: 'the goods lift', range: 1.9,
-    refusal: () => (state.power ? null : 'Dead. Three-phase is out.'),
-    onUse: () => api.call(),
+    // AN UNPOWERED GOODS LIFT IS NOT A LOCKED DOOR.
+    //
+    // This used to refuse with "Dead. Three-phase is out." and that was the end
+    // of it — which made `ENDINGS.DESCENDED` unreachable, because the only
+    // `setPower(true)` in the game fires inside `gen:running`, which sets
+    // `setRunning` in the same breath. One of the game's three endings could not
+    // be arrived at by any sequence of player actions, in any run, ever.
+    //
+    // The ending's own text has always said what it should be: "Never started
+    // the set and rode the lift anyway. It only goes down." A goods lift with no
+    // three-phase still has a brake, and a brake can be released; the car goes
+    // down under its own weight and it does not come back up. So the dead lift
+    // offers exactly one thing, it is the wrong thing, and taking it is a
+    // decision the player makes with the indicator telling them the truth.
+    verb: () => (state.power ? 'Call' : 'Release the brake on'),
+    label: 'the goods lift', range: 1.9,
+    refusal: () => (state.power || api.canRelease() ? null : 'Dead. Three-phase is out.'),
+    onUse: () => (state.power ? api.call() : api.release()),
   });
 
   const carFloor = collision?.addFloor(
@@ -702,12 +759,39 @@ export function goodsLift(ctx, {
     },
     callTo(i) {
       if (!state.power || state.moving || i === state.floor) return false;
+      // A floor you can only fall to is not on the panel. Without this, a player
+      // who had started the set could call the bottom of the shaft and get the
+      // ending for never having started it.
+      if (floors[i].manualOnly) return false;
       state.targetFloor = i;
       state.gateTarget = 0;
       state.moving = true;
       state.trips++;
       bus?.emit('lift:travel', { id, from: state.floor, to: i, floors });
       bus?.emit('player:noise', { position: root.getWorldPosition(new THREE.Vector3()), radius: 26 });
+      return true;
+    },
+    /** Is there anywhere below to fall to, and is the car dead enough to fall? */
+    canRelease() {
+      if (state.power || state.moving) return false;
+      return floors.some((f, i) => i !== state.floor && f.y < floors[state.floor].y);
+    },
+    /**
+     * Let the car down on its brake. No power, no return trip: it goes to the
+     * lowest floor it can reach and stops there.
+     */
+    release() {
+      if (!api.canRelease()) return false;
+      let lowest = state.floor;
+      floors.forEach((f, i) => { if (f.y < floors[lowest].y) lowest = i; });
+      state.targetFloor = lowest;
+      state.gateTarget = 0;
+      state.moving = true;
+      state.freewheel = true;
+      state.trips++;
+      bus?.emit('lift:travel', { id, from: state.floor, to: lowest, floors, freewheel: true });
+      // Louder than a called trip. Nothing about this is controlled.
+      bus?.emit('player:noise', { position: root.getWorldPosition(new THREE.Vector3()), radius: 34 });
       return true;
     },
     state: () => ({ ...state, floorName: floors[state.floor]?.name }),
@@ -730,7 +814,10 @@ export function goodsLift(ctx, {
       if (state.moving && state.gate <= 0.02) {
         const targetY = floors[state.targetFloor].y;
         const dy = targetY - state.y;
-        const step = Math.sign(dy) * Math.min(Math.abs(dy), 0.55 * dt);
+        // 0.55 m/s is the motor. A released brake is gravity against a worn
+        // shoe: half as fast again, and it only ever goes one way.
+        const rate = state.freewheel ? 0.85 : 0.55;
+        const step = Math.sign(dy) * Math.min(Math.abs(dy), rate * dt);
         state.y += step;
 
         // Ride: if the player is standing in the car, move them with it.
@@ -758,9 +845,14 @@ export function goodsLift(ctx, {
             font: '600 28px "Courier New", monospace', bg: '#141310', fg: '#ff9a3c', glow: '#ff7a10',
           });
           player?.kick(0.03, 0, 0.02, 0.04);
+          state.freewheel = false;
           bus?.emit('lift:arrive', {
             id, floor: state.floor, name: floors[state.floor].name,
             exit: !!floors[state.floor].exit,
+            // A floor may name the ending it produces. Without this the only
+            // signal Progression had was `setRunning`, which is why the bottom
+            // of the shaft and the surface were indistinguishable to it.
+            ending: floors[state.floor].ending || null,
           });
           bus?.emit('player:noise', { position: root.getWorldPosition(new THREE.Vector3()), radius: 18 });
         }
@@ -809,26 +901,63 @@ export function keypad(ctx, {
     });
   };
 
+  /**
+   * TWELVE KEYS, ONE DRAW CALL.
+   *
+   * This was twenty-four meshes and twenty-four materials — a fresh
+   * MeshStandardMaterial and a fresh 64x64 texture per key — which the GTAO
+   * normal prepass then drew all over again: fifty draw calls, three thousand
+   * triangles, for a thing the size of a hand. Nothing here moves when a key is
+   * pressed (`api.press` changes the display and plays a sound; the key itself
+   * never budges), so nothing here needs to be a separate mesh.
+   *
+   * The faces and the caps merge into one geometry against one atlas material.
+   * What the interactor needs — one raycast target per key, so the prompt can
+   * say which key you are looking at — is a bare box on PROXY_LAYER, which the
+   * camera never renders and the raycaster still hits.
+   */
   const keys = '123456789*0#'.split('');
+  const KEY_ATLAS = glyphAtlas(keys, { cols: 4, bg: '#2b2a26', fg: '#ddd8c8' });
+  const keyAt = (i) => [-0.030 + (i % 3) * 0.030, 0.020 - Math.floor(i / 3) * 0.028, 0.020];
+
+  {
+    const caps = [], faces = [];
+    for (let i = 0; i < keys.length; i++) {
+      const [kx, ky, kz] = keyAt(i);
+      const kb = box(0.024, 0.022, 0.008, 0.002, 1);
+      kb.translate(kx, ky, kz);
+      caps.push(kb);
+
+      const fg2 = new THREE.PlaneGeometry(0.020, 0.018);
+      const [u0, v0, du, dv] = KEY_ATLAS.uv(i);
+      const uv = fg2.attributes.uv;
+      for (let v = 0; v < uv.count; v++) {
+        uv.setXY(v, u0 + uv.getX(v) * du, v0 + uv.getY(v) * dv);
+      }
+      uv.needsUpdate = true;
+      fg2.translate(kx, ky, kz + 0.0045);
+      faces.push(fg2);
+    }
+    const capMat = new THREE.MeshStandardMaterial({ color: 0x2b2a26, roughness: 0.55, vertexColors: true });
+    root.add(meshOf(merge(caps), capMat, { uv: 0.05, cast: false }));
+    const faceMat = new THREE.MeshStandardMaterial({ map: KEY_ATLAS.texture, roughness: 0.7 });
+    const faceMesh = new THREE.Mesh(merge(faces), faceMat);
+    faceMesh.castShadow = false;
+    root.add(faceMesh);
+  }
+
   for (let i = 0; i < keys.length; i++) {
-    const col = i % 3, row = Math.floor(i / 3);
-    const kg = new THREE.Group();
-    kg.position.set(-0.030 + col * 0.030, 0.020 - row * 0.028, 0.020);
-    root.add(kg);
-    const kb = box(0.024, 0.022, 0.008, 0.002, 1);
-    const km = new THREE.MeshStandardMaterial({ color: 0x2b2a26, roughness: 0.55, vertexColors: true });
-    kg.add(meshOf(kb, km, { uv: 0.05, cast: false }));
-    const kt = textTexture([keys[i]], {
-      w: 64, h: 64, align: 'center', pad: 16, lineHeight: 30,
-      font: '600 30px "Courier New", monospace', bg: '#2b2a26', fg: '#ddd8c8',
-    });
-    const kl = new THREE.Mesh(new THREE.PlaneGeometry(0.020, 0.018),
-      new THREE.MeshStandardMaterial({ map: kt, roughness: 0.7 }));
-    kl.position.set(0, 0, 0.0045);
-    kg.add(kl);
+    const [kx, ky, kz] = keyAt(i);
+    // Hit-only. Never drawn: the camera renders layer 0 and this is not on it.
+    const proxy = new THREE.Mesh(new THREE.BoxGeometry(0.026, 0.024, 0.012));
+    proxy.position.set(kx, ky, kz);
+    proxy.layers.set(PROXY_LAYER);
+    proxy.castShadow = false; proxy.receiveShadow = false;
+    proxy.name = `keypad:${id}:key${i}`;
+    root.add(proxy);
 
     interactor?.add({
-      id: `${id}_k${i}`, object: kg, kind: 'keypad', verb: 'Press', label: keys[i],
+      id: `${id}_k${i}`, object: proxy, kind: 'keypad', verb: 'Press', label: keys[i],
       range: 1.3,
       refusal: () => (state.unlocked ? 'Already open.' : null),
       onUse: () => api.press(keys[i]),
@@ -1672,7 +1801,7 @@ export function generator(ctx, {
  */
 export function annexDoor(ctx, {
   id = 'door', position = [0, 0, 0], rotation = 0, variant = 'plain',
-  requires = null, width = 0.96, height = 2.06, hinge = 1, open = 0,
+  requires = null, pryable = false, width = 0.96, height = 2.06, hinge = 1, open = 0,
   label = 'the door', parent = null, builder = null, autoClose = 0, oneWaySide = 1,
 } = {}) {
   const { bus, interactor, collision, rig, player, inventory } = ctx;
@@ -1707,6 +1836,7 @@ export function annexDoor(ctx, {
     id, bus, rig, collision,
     locked: variant === 'locked',
     jammed: variant === 'jammed',
+    pryable,
     chained: variant === 'chained',
     welded: variant === 'welded',
     oneWay: variant === 'oneway' ? oneWaySide : 0,
@@ -2003,6 +2133,9 @@ export function hidingPlace(ctx, {
       if (col) col.enabled = false;
       state.doorTarget = 0;
       hands?.setVisible(false);
+      // The flag the Surveyor reads. It lived only on the Director until now,
+      // which is why the entity never knew: `Surveyor.hear` had no way to ask.
+      player.hidden = true;
       bus?.emit('hide:enter', { id, kind, position: p.clone() });
       return true;
     },
@@ -2021,6 +2154,10 @@ export function hidingPlace(ctx, {
         p.z + Math.cos(rotation) * (D / 2 + 0.55), rotation);
       state.doorTarget = 0.6;
       hands?.setVisible(true);
+      player.hidden = false;
+      // Getting out is loud, and it is loud AFTER the muffle comes off — which
+      // is the whole risk of a locker: you are safe in it and exposed the
+      // moment you leave.
       player.makeNoise(7);
       bus?.emit('hide:exit', { id, kind });
       return true;
@@ -2081,7 +2218,119 @@ export function hidingPlace(ctx, {
 
 // ---------------------------------------------------------------------------
 
+/**
+ * A LIGHT SWITCH BY THE DOOR — the counter-verb the fiction already promised.
+ *
+ * `Surveyor._moveToward` freezes the entity outright below `LIGHT_DEAD` (0.30),
+ * `_sampleLight` sums the fixed rig and the player's own lamp, and `nb_1` — the
+ * page the player is handed in the first room — states the rule in plain prose:
+ * "It moves when there is light on it… In the dark it does not move at all. Not
+ * slowly. At all."
+ *
+ * The player could not act on it. In a dark zone, lamp off is the whole answer
+ * and it works. In a LIT zone — which is where every recorded encounter has
+ * happened; the Intake runs 37 units at head height — the player has no way to
+ * make it dark. The rule was trivia.
+ *
+ * Breaker boards exist, but a `breakerPanel` is a resource puzzle with a
+ * `maxOn` limit and it lives in one room. A wall switch by a door is what a
+ * 1970s facility actually has, it is where a person would look for one, and it
+ * turns nb_1 from a fact into a decision: kill the lights and the thing stops,
+ * but so does your ability to see — and the lamp you reach for is the thing
+ * that feeds it.
+ *
+ * IT CANNOT SUPPLY A DEAD CIRCUIT. A local switch downstream of an open breaker
+ * does nothing, which is both electrically true and the thing that stops this
+ * from short-circuiting the distribution-board puzzle: it can only interrupt a
+ * way the board has already closed.
+ */
+/**
+ * Ways a light switch has opened, as opposed to ways the distribution board has.
+ *
+ * `LightRig.setCircuit` sets `powered` AND `target` together — it models the
+ * breaker, which is the only thing that used to touch a circuit. A wall switch
+ * is downstream of that, and using the same call meant a switch that turned the
+ * lights off then read its own handiwork as "the board is open" and refused to
+ * turn them back on. It could darken a room permanently, which is a trap rather
+ * than a mechanic.
+ *
+ * Module scope rather than per-switch, so two switches on one way can undo each
+ * other — which is what a corridor with a switch at each end does.
+ */
+const SWITCHED_OFF = new Set();
+
+export function lightSwitch(ctx, {
+  id = 'sw_1', position = [0, 1.15, 0], rotation = 0,
+  circuit = 'intake', label = 'the light switch', parent = null,
+} = {}) {
+  const { bus, interactor, rig } = ctx;
+  const root = placed(position, rotation, `switch:${id}`);
+  (parent || ctx.scene).add(root);
+
+  const steel = M(ctx, 'machinePaint');
+  const plastic = M(ctx, 'plasticWhite');
+  // A 86 x 86 backplate with a single rocker, the standard plate of the period.
+  const plate = box(0.086, 0.086, 0.010, 0.003, 1);
+  root.add(meshOf(plate, plastic, { uv: 0.12, shade: () => 0.82 }));
+  const rocker = box(0.034, 0.050, 0.009, 0.002, 1);
+  rocker.translate(0, 0, 0.009);
+  const rockerMesh = meshOf(rocker, plastic, { uv: 0.1, shade: () => 0.92 });
+  root.add(rockerMesh);
+  const screwGeo = [];
+  for (const sy of [-1, 1]) {
+    const sc = cyl(0.0035, 0.0035, 0.004, 6);
+    sc.rotateX(Math.PI / 2); sc.translate(0, sy * 0.033, 0.006);
+    screwGeo.push(sc);
+  }
+  root.add(meshOf(merge(screwGeo), steel, { uv: 0.06, shade: () => 0.6 }));
+
+  const live = () => {
+    const c = rig?.circuits?.get(circuit);
+    if (!c) return false;
+    // `powered` is the breaker. A way this switch (or its twin down the
+    // corridor) opened is still LIVE — the board has not moved.
+    return !!c.powered || SWITCHED_OFF.has(circuit);
+  };
+  const on = () => (rig?.circuits?.get(circuit)?.target ?? 0) > 0.05;
+
+  const handle = {
+    id, root,
+    state: () => ({ on: on(), live: live() }),
+    update() {
+      // The rocker sits down when the way is off. Cheap, and it is the only
+      // feedback the player gets in a room that is already dark.
+      rockerMesh.position.y = on() ? 0.004 : -0.004;
+    },
+  };
+
+  interactor?.add({
+    id: `${id}_flip`, object: root, kind: 'switch',
+    verb: 'Lights', label, range: 1.5,
+    refusal: () => (live() ? null : 'Nothing on this way. The board is open.'),
+    onUse: () => {
+      const next = !on();
+      if (next) SWITCHED_OFF.delete(circuit); else SWITCHED_OFF.add(circuit);
+      rig?.setCircuit?.(circuit, next);
+      rig?.invalidateShadows?.();
+      bus?.emit('light:circuit', { circuit, powered: next, cause: 'player' });
+      // `sfx:breaker` without `heavy` is already wired to `switch.click` at 0.7
+      // (src/audio/index.js) — which is precisely what a wall rocker is. Inventing
+      // `sfx:switch` for it emitted an event nothing answered, and audiowiring's
+      // "nothing the player does in the world goes unanswered" caught it.
+      bus?.emit('sfx:breaker', { id, position: root.position.clone() });
+      // A switch clicks, and the Surveyor hears clicks — the same fact `nb_2`
+      // teaches about the lamp. Reaching for the lights is not free.
+      ctx.player?.makeNoise?.(4.5);
+      return true;
+    },
+  });
+
+  return handle;
+}
+
 export const FACTORIES = {
+  lightSwitch,
+  switch: lightSwitch,
   breaker: breakerPanel,
   breakerPanel,
   valve,

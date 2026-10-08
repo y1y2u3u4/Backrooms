@@ -1,0 +1,100 @@
+{
+  "dir": "docs/captures/stack_wash",
+  "limits": {
+    "crushed": 0.16,
+    "clipped": 0.03,
+    "dynamicRange": 0.22,
+    "banding": 0.055,
+    "speckle": 0.0035,
+    "emptiness": 0.72
+  },
+  "hfMedian": 0.09863868268036448,
+  "rows": [
+    {
+      "file": "s1_across_the_well.png",
+      "W": 595,
+      "H": 334,
+      "mean": 0.05998860774494396,
+      "contrast": 0.10675363494396642,
+      "dynamicRange": 0.7087882161140442,
+      "crushed": 0.5156040859457556,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.07353442087496109,
+      "speckle": 0.000020317357118186065,
+      "emptiness": 0.5332209530518794,
+      "colourCast": 0.5670638936348136
+    },
+    {
+      "file": "s2_down_the_drop.png",
+      "W": 595,
+      "H": 334,
+      "mean": 0.10135334249700766,
+      "contrast": 0.10937473796129152,
+      "dynamicRange": 0.35093724727630615,
+      "crushed": 0.28294167966587835,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.09863868268036448,
+      "speckle": 0.00022349092830004674,
+      "emptiness": 0.29713681879937603,
+      "colourCast": 0.7162578651884974
+    },
+    {
+      "file": "s3_up_the_well.png",
+      "W": 595,
+      "H": 334,
+      "mean": 0.12031874443994192,
+      "contrast": 0.12306830524227894,
+      "dynamicRange": 0.4232078492641449,
+      "crushed": 0.29098274040154987,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.1284983044929715,
+      "speckle": 0.0001828562140636746,
+      "emptiness": 0.29866150052835505,
+      "colourCast": 0.4862484819175241
+    },
+    {
+      "file": "s4_corner_diagonal.png",
+      "W": 595,
+      "H": 334,
+      "mean": 0.06518142750363164,
+      "contrast": 0.11536939545959249,
+      "dynamicRange": 0.4984729290008545,
+      "crushed": 0.5582549187339606,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.05553252408645803,
+      "speckle": 0.00017269753550458157,
+      "emptiness": 0.5641272077693352,
+      "colourCast": 0.9268051099990513
+    }
+  ],
+  "flagged": [
+    {
+      "file": "s1_across_the_well.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    },
+    {
+      "file": "s2_down_the_drop.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    },
+    {
+      "file": "s3_up_the_well.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    },
+    {
+      "file": "s4_corner_diagonal.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    }
+  ]
+}

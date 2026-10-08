@@ -1,0 +1,14 @@
+[
+ {"name":"intake_corridor","setup":"g.world.goto('intake');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.look(-27.0,0,-4.2,1.5708,0)"},
+ {"name":"intake_open_bay","setup":"g.world.goto('intake');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.look(0,0,10.5,0.9,-0.05)"},
+ {"name":"intake_long_view","setup":"g.world.goto('intake');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.look(-29.0,0,-29.0,0.785,0)"},
+ {"name":"intake_many_lights","setup":"g.world.goto('intake');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.look(6.3,0,-4.2,3.1416,0.02)"},
+ {"name":"intake_spine_east","setup":"g.world.goto('intake');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.look(-28.0,0,-8.4,-1.5708,0)"},
+ {"name":"service_spine","setup":"g.world.goto('service');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);const r=g.world.spawn;g.lookOpen(r,g.world.spawnYaw||0,0)"},
+ {"name":"cistern_tunnel","setup":"g.world.goto('cistern');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.look(785.0,0,0,-1.5708,0)"},
+ {"name":"residence_landing","setup":"g.world.goto('residence');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);const r=g.world.spawn;g.lookOpen(r,g.world.spawnYaw||0,0)"},
+ {"name":"plant_hall","setup":"g.world.goto('plant');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);const r=g.world.spawn;g.lookOpen(r,g.world.spawnYaw||0,-0.05)"},
+ {"name":"stack_well","setup":"g.world.goto('stack');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.look(0,0,789.8,3.1416,-0.10)"},
+ {"name":"duct_crawl","setup":"g.world.goto('duct');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);const r=g.world.spawn;g.lookOpen(r,g.world.spawnYaw||0,0)"},
+ {"name":"safe_room","setup":"g.world.goto('safe');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);const r=g.world.spawn;g.lookOpen(r,g.world.spawnYaw||0,0)"}
+]

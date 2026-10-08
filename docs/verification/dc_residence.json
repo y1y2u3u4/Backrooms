@@ -1,0 +1,110 @@
+{
+  "quality": "high",
+  "results": [
+    {
+      "name": "residence_landing",
+      "reported": 413,
+      "counted": 413,
+      "top": [
+        {
+          "what": "residence | (MeshNormalMaterial)",
+          "calls": 125,
+          "tris": 149932,
+          "mats": 1,
+          "geos": 125
+        },
+        {
+          "what": "residence | doorPaint",
+          "calls": 48,
+          "tris": 78300,
+          "mats": 11,
+          "geos": 48
+        },
+        {
+          "what": "<Mesh> | (ShaderMaterial)",
+          "calls": 32,
+          "tris": 1700,
+          "mats": 27,
+          "geos": 13
+        },
+        {
+          "what": "residence | galvSteel",
+          "calls": 23,
+          "tris": 22140,
+          "mats": 1,
+          "geos": 23
+        },
+        {
+          "what": "<Mesh> | (MeshNormalMaterial)",
+          "calls": 15,
+          "tris": 3380,
+          "mats": 1,
+          "geos": 15
+        },
+        {
+          "what": "pickup | (MeshNormalMaterial)",
+          "calls": 11,
+          "tris": 420,
+          "mats": 1,
+          "geos": 11
+        },
+        {
+          "what": "residence | steelPainted",
+          "calls": 9,
+          "tris": 11416,
+          "mats": 4,
+          "geos": 9
+        },
+        {
+          "what": "residence | (MeshBasicMaterial)",
+          "calls": 9,
+          "tris": 2412,
+          "mats": 9,
+          "geos": 9
+        },
+        {
+          "what": "breaker | (MeshNormalMaterial)",
+          "calls": 8,
+          "tris": 1080,
+          "mats": 1,
+          "geos": 8
+        },
+        {
+          "what": "residence | carpet",
+          "calls": 6,
+          "tris": 2198,
+          "mats": 2,
+          "geos": 6
+        },
+        {
+          "what": "residence | paper",
+          "calls": 6,
+          "tris": 5912,
+          "mats": 2,
+          "geos": 6
+        },
+        {
+          "what": "residence | acousticPanel",
+          "calls": 5,
+          "tris": 3556,
+          "mats": 2,
+          "geos": 5
+        },
+        {
+          "what": "pickup | paper",
+          "calls": 5,
+          "tris": 120,
+          "mats": 1,
+          "geos": 5
+        },
+        {
+          "what": "pickup | galvSteel",
+          "calls": 5,
+          "tris": 236,
+          "mats": 1,
+          "geos": 5
+        }
+      ]
+    }
+  ]
+}

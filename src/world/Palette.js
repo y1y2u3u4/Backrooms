@@ -80,8 +80,15 @@ export function buildPalette(materials) {
       // A real plenum is a concrete soffit that catches a little of the room
       // light. Too dark and a missing tile reads as a hole in the mesh rather
       // than a void with services in it.
+      //
+      // envMapIntensity was 0.10, and the environment is the ONLY light this
+      // surface has: every fixture in the building hangs below the ceiling
+      // plane and throws downward, so nothing direct reaches into the void. At
+      // 0.10 the comment above described an intent the number did not deliver —
+      // the missing tiles rendered as flat black rectangles with hard straight
+      // edges, which is what a hole in the mesh looks like.
       repeat: [1.5, 1.5], roughness: 1, metalness: 0, dirtAmount: 0, dirtBase: -99,
-      detailStrength: 0.25, envMapIntensity: 0.10, color: 0x6a655c,
+      detailStrength: 0.25, envMapIntensity: 0.45, color: 0x7d776c,
     }),
 
     // ---- Trim and metalwork ---------------------------------------------

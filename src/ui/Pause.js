@@ -12,13 +12,28 @@
 
 import { el, field, interactive, meridianMark } from './theme.js';
 
-const CONTROLS = [
+// THREE KEYS WERE BOUND AND NEVER LISTED, AND ONE OF THEM IS THE GAME.
+//
+// `Input.js` calls `cover` "the single most important key in the game after
+// WASD, which is why it is a hold rather than a toggle" — the Surveyor hears the
+// lamp's switch click and does not hear a palm over the lens — and it was not on
+// this list. Neither was the cell swap, which is the only way to refill a lamp
+// that runs about seven minutes. Neither was the decoy, which was added in this
+// pass and is the only verb that puts a noise somewhere the player is not.
+//
+// A player cannot deduce a keybinding. `nb_2` teaches cover-don't-click in
+// prose, in a note in the Residence, most of the way through the game; this is
+// the screen they open in the first minute.
+export const CONTROLS = [
   ['W A S D', 'Move'],
   ['Shift', 'Run — loud'],
   ['Ctrl / C', 'Crouch — near silent'],
   ['Q · R', 'Lean left · right'],
   ['E', 'Interact · hold where shown'],
   ['F', 'Lamp'],
+  ['V', 'Cover the lens — silent. The switch clicks; your hand does not'],
+  ['B', 'Fit a fresh cell'],
+  ['T', 'Throw a cell — a noise where you are not'],
   ['Tab / J', 'Journal'],
   ['O', 'Recall task'],
   ['G', 'Set down carried item'],

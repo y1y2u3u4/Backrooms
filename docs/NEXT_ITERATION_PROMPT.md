@@ -31,9 +31,43 @@ re-derive the project.
   path, audio wiring, floor coverage, portal graph, geometry census, light reach;
   plus `bootcheck`, `perf`, `playthrough`, `capture`, `lightreach`, `blackout`.
 
-Current verification state, all green: props 70/70, chain 95/95, audiowiring 5/5,
+Current verification state: props 77/77, chain 106/106, audiowiring 5/5,
 floorgaps clean, portalgraph 8 zones / 19 doors, geobudget under every budget,
-bootcheck 11/11, perf passing every budget (worst scenario 170 draw calls / 180).
+bootcheck 11/11, light reach 0 % beyond 5 m in six of eight zones and 1 % in the
+other two.
+
+`npm run perf` at the shipping low tier, **twelve scenarios across all eight
+zones**: triangles 651 k / 1.2 M, active lights 12 / 28, shadow lights 1 / 3,
+shader programs 51 / 140, logic 0.2 ms / 4 — and **draw calls 268 / 180, which
+fails.**
+
+Read the history carefully here. Until this pass `tools/qa/perf-scenarios.json`
+did not exist, so `perf.mjs` fell back to four hardcoded cameras that are all in
+the Intake, and every "worst scenario 179 / 180, all budgets pass" in this
+project's documents meant "the worst of four cameras in one of eight zones". The
+real worst case is the Plant at 268, and the Residence, the Service Spine and a
+fifth Intake camera all exceed 180 as well. Nothing regressed; the tool was
+looking at one room. The scenario file is committed now.
+
+Two cautions carried forward:
+
+- **Draw calls are the open technical defect**, at 268 / 180. The Residence's 264
+  at the shipping tier is 487 at high, and it is mostly independent door leaves
+  and pendant fittings.
+- **`programs` fell from 162 to 51** because one `customProgramCacheKey` carried
+  seven uniform *values*. If you add a material option, put it in a uniform; only
+  put it in the cache key if it changes the generated GLSL. Census it with
+  `tools/qa/programs.mjs`.
+
+Three tools were repaired or added in the pass that produced these numbers, and
+each of them changed a conclusion:
+
+- `perf.mjs` rebuilds before measuring (it was serving a six-commit-old bundle).
+- `capture.mjs` polls on a timer rather than a frame callback, prints the renderer
+  it actually got, and streams progress. It was never hung.
+- `lightreach.mjs --delivered N` measures light that reaches the shader rather
+  than fittings that exist, `--map` draws the plan, and `--blackout` now asks
+  whether an emergency fitting is *visible* rather than how far away it is.
 
 ---
 
@@ -64,28 +98,49 @@ bootcheck 11/11, perf passing every budget (worst scenario 170 draw calls / 180)
 Each of these is already diagnosed. The measurement is given so you cannot declare
 it fixed without moving the number.
 
-### 2.1 The Stack does not read as a shaft
+### 2.1 The Stack — SUPERSEDED, see section 13 of the completion report
 
-The single oldest open defect. Everything measurable about it has improved —
-light reach 10.66 m → 4.99 m worst case, area beyond 5 m from a lamp 39 % → 0 %,
-an enclosing shaft wall added (124 colliders, 22 322 triangles facing into the
-well), fill raised, fixture output tripled, crushed pixels 0.934 → 0.925 — and it
-**still does not read**. The receding floors look like lit rectangles suspended in
-black rather than galleries inside a well.
+Everything below this line was written before the well enclosure, before the
+corner high-bays were aimed across the void, and before the capture harness
+worked. It has now been re-measured and most of it is out of date.
 
-The cause is understood and is not a number: a strip fitting under a gallery soffit
-over an 18 m void throws most of its output into the void, and with no global
-illumination nothing brings it back. **The fix is a lighting design decision — a
-different class of fitting (high-bay or wall-washer aimed at the shaft wall rather
-than down into the drop), and probably a change to what the shaft wall is made of
-so it has something to catch light with.**
+**The stated exit criterion is met and has been for some time.** Crushed at the
+shipping tier measures 0.270 (down the drop), 0.295 (up the well), 0.527 (across)
+and 0.579 (corner diagonal), against a bar of 0.85. Frames are in
+`docs/captures/stack_now/`. The zone also has the highest delivered light in the
+building — mean 31.17 against the Service Spine's 18.13, 0 % of its area under-lit
+(`lightreach --delivered 6`).
 
-Do not raise fill again. That has been tried and it is why the zone now measures
-well while looking wrong.
+**And the criterion was measuring the wrong thing.** Twenty wall-washers added to
+the ring raised delivered light at every percentile and moved crushed by nothing
+(0.527 → 0.516, 0.270 → 0.283). The black in these frames is the shaft's depth —
+seven storeys dissolving into fog — and the only way to drive `crushed` down is to
+light the void, which destroys the reading the zone exists to create. Do not chase
+that number. Dynamic range is the one that moved with the improvement
+(0.460 → 0.709 across the well).
 
-**Done when**: a well-exposed capture of the Stack reads as a vertical space with
-walls, and crushed-pixel ratio at the shipping tier drops below 0.85 without the
-fill going up.
+Do not raise fill. That has been tried and it is why the zone measures well.
+
+**What is actually left**: a human judgement on whether it reads. My reading of
+the four frames is that down and up the shaft read as a well, and along the ring
+reads as a dark walkway with a lit wall opposite. That is a judgement, and this
+project has been wrong about the Stack from judgements before.
+
+### 2.2 The Cistern is dim rather than unreadable
+
+**Area beyond 5 m from a lamp is now 0 %** (was 9 %) without the fill moving —
+the sump had no fitting at all and the stair hall had one, at the far end from a
+flight of fourteen treads going down into standing water. See section 10 of the
+completion report.
+
+**The crushed target is met too, and comfortably.** Re-measured at the shipping
+tier with all four fittings live: 0.090 in the tunnel, 0.249 in the stair hall,
+0.269 in the sump, 0.398 in the valve chamber, against a bar of 0.80 — and dynamic
+range 0.626 to 0.783 against the 0.47 that was recorded. Frames are in
+`docs/captures/cistern_now/`.
+
+**This item is closed.** Both stated conditions are satisfied. Anything further
+in this zone is dressing density (§2.5), not lighting.
 
 ### 2.2 The Cistern is dim rather than unreadable
 

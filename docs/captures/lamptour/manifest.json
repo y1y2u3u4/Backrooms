@@ -1,0 +1,664 @@
+[
+  {
+    "name": "duct_h0_lampon",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('duct');\nconst p = (r && r.position) || g.world.spawn;\ng.lookOpen(p, ((r && r.yaw) || 0) + 0, 0);\nif (g.flashlight) {\n  g.flashlight.enabled = true;\n  g.flashlight.isOn = true;\n  g.flashlight.battery = 1;\n  // beamStrength ramps at ~24/s toward the target; settle() runs long enough,\n  // but seed it so the first frames are not a fade-in.\n  g.flashlight.beamStrength = 1;\n}\nconst frames = settle(700);\nconst pr = g.lightProbe();\nconsole.log('LAMP ' + JSON.stringify({ shot: 'duct_h0_on',\n  lamp: true, beam: g.flashlight ? +g.flashlight.beamStrength.toFixed(2) : null,\n  zone: pr.zone, head: pr.directAtHead, fillUp: pr.fillUp,\n  adaptation: pr.adaptation, settleFrames: frames, eye: +g.player.position.y.toFixed(2) }));\n",
+    "settle": 1,
+    "file": "docs/captures/lamptour/duct_h0_lampon.png",
+    "stats": {
+      "ms": 0.6958333134651185,
+      "fps": 1437.1257895374238,
+      "p90": 0.8000001907348633,
+      "calls": 126,
+      "tris": 84694,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 233,
+        "lit": 174,
+        "active": 6,
+        "tubes": 174,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "duct",
+        "directAtHead": 4.727,
+        "directAtFloor": 4.952,
+        "fillUp": 0.011,
+        "fillDown": 0.015,
+        "fixtures": {
+          "fixtures": 233,
+          "lit": 174,
+          "active": 6,
+          "tubes": 174,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "duct": 1
+        },
+        "zoneFixtures": {
+          "total": 25,
+          "lit": 25
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -5.0234,
+          "adapted": 0.0066,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "duct_h1_lampon",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('duct');\nconst p = (r && r.position) || g.world.spawn;\ng.lookOpen(p, ((r && r.yaw) || 0) + 2.094, 0);\nif (g.flashlight) {\n  g.flashlight.enabled = true;\n  g.flashlight.isOn = true;\n  g.flashlight.battery = 1;\n  // beamStrength ramps at ~24/s toward the target; settle() runs long enough,\n  // but seed it so the first frames are not a fade-in.\n  g.flashlight.beamStrength = 1;\n}\nconst frames = settle(700);\nconst pr = g.lightProbe();\nconsole.log('LAMP ' + JSON.stringify({ shot: 'duct_h1_on',\n  lamp: true, beam: g.flashlight ? +g.flashlight.beamStrength.toFixed(2) : null,\n  zone: pr.zone, head: pr.directAtHead, fillUp: pr.fillUp,\n  adaptation: pr.adaptation, settleFrames: frames, eye: +g.player.position.y.toFixed(2) }));\n",
+    "settle": 1,
+    "file": "docs/captures/lamptour/duct_h1_lampon.png",
+    "stats": {
+      "ms": 13.635000018278758,
+      "fps": 73.34066730175458,
+      "p90": 0.5999999046325684,
+      "calls": 104,
+      "tris": 76916,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 233,
+        "lit": 33,
+        "active": 0,
+        "tubes": 33,
+        "shadows": 2
+      },
+      "probe": {
+        "zone": "duct",
+        "directAtHead": 0,
+        "directAtFloor": 0,
+        "fillUp": 0.011,
+        "fillDown": 0.015,
+        "fixtures": {
+          "fixtures": 233,
+          "lit": 33,
+          "active": 0,
+          "tubes": 33,
+          "shadows": 2
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 0,
+          "duct": 1,
+          "office_lamp": 1
+        },
+        "zoneFixtures": {
+          "total": 25,
+          "lit": 25
+        },
+        "exposure": 0.303,
+        "adaptation": {
+          "logLuminance": -7.9844,
+          "adapted": 0.004,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "duct_h2_lampon",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('duct');\nconst p = (r && r.position) || g.world.spawn;\ng.lookOpen(p, ((r && r.yaw) || 0) + -2.094, 0);\nif (g.flashlight) {\n  g.flashlight.enabled = true;\n  g.flashlight.isOn = true;\n  g.flashlight.battery = 1;\n  // beamStrength ramps at ~24/s toward the target; settle() runs long enough,\n  // but seed it so the first frames are not a fade-in.\n  g.flashlight.beamStrength = 1;\n}\nconst frames = settle(700);\nconst pr = g.lightProbe();\nconsole.log('LAMP ' + JSON.stringify({ shot: 'duct_h2_on',\n  lamp: true, beam: g.flashlight ? +g.flashlight.beamStrength.toFixed(2) : null,\n  zone: pr.zone, head: pr.directAtHead, fillUp: pr.fillUp,\n  adaptation: pr.adaptation, settleFrames: frames, eye: +g.player.position.y.toFixed(2) }));\n",
+    "settle": 1,
+    "file": "docs/captures/lamptour/duct_h2_lampon.png",
+    "stats": {
+      "ms": 0.40249996185302733,
+      "fps": 2484.472285155519,
+      "p90": 0.5,
+      "calls": 103,
+      "tris": 76592,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 233,
+        "lit": 174,
+        "active": 11,
+        "tubes": 174,
+        "shadows": 2
+      },
+      "probe": {
+        "zone": "duct",
+        "directAtHead": 2.979,
+        "directAtFloor": 3.086,
+        "fillUp": 0.011,
+        "fillDown": 0.015,
+        "fixtures": {
+          "fixtures": 233,
+          "lit": 174,
+          "active": 11,
+          "tubes": 174,
+          "shadows": 2
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "duct": 1,
+          "office_lamp": 1
+        },
+        "zoneFixtures": {
+          "total": 25,
+          "lit": 25
+        },
+        "exposure": 0.917,
+        "adaptation": {
+          "logLuminance": -7.1523,
+          "adapted": 0.004,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "cistern_h0_lampon",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('cistern');\nconst p = (r && r.position) || g.world.spawn;\ng.lookOpen(p, ((r && r.yaw) || 0) + 0, 0);\nif (g.flashlight) {\n  g.flashlight.enabled = true;\n  g.flashlight.isOn = true;\n  g.flashlight.battery = 1;\n  // beamStrength ramps at ~24/s toward the target; settle() runs long enough,\n  // but seed it so the first frames are not a fade-in.\n  g.flashlight.beamStrength = 1;\n}\nconst frames = settle(700);\nconst pr = g.lightProbe();\nconsole.log('LAMP ' + JSON.stringify({ shot: 'cistern_h0_on',\n  lamp: true, beam: g.flashlight ? +g.flashlight.beamStrength.toFixed(2) : null,\n  zone: pr.zone, head: pr.directAtHead, fillUp: pr.fillUp,\n  adaptation: pr.adaptation, settleFrames: frames, eye: +g.player.position.y.toFixed(2) }));\n",
+    "settle": 1,
+    "file": "docs/captures/lamptour/cistern_h0_lampon.png",
+    "stats": {
+      "ms": 0.4983333468437195,
+      "fps": 2006.6889088070727,
+      "p90": 0.5,
+      "calls": 114,
+      "tris": 84044,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 253,
+        "lit": 193,
+        "active": 6,
+        "tubes": 193,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "duct",
+        "directAtHead": 3.128,
+        "directAtFloor": 3.33,
+        "fillUp": 0.019,
+        "fillDown": 0.026,
+        "fixtures": {
+          "fixtures": 253,
+          "lit": 193,
+          "active": 6,
+          "tubes": 193,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "duct": 1,
+          "office_lamp": 1,
+          "cistern": 1
+        },
+        "zoneFixtures": {
+          "total": 25,
+          "lit": 25
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -8.625,
+          "adapted": 0.004,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "cistern_h1_lampon",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('cistern');\nconst p = (r && r.position) || g.world.spawn;\ng.lookOpen(p, ((r && r.yaw) || 0) + 2.094, 0);\nif (g.flashlight) {\n  g.flashlight.enabled = true;\n  g.flashlight.isOn = true;\n  g.flashlight.battery = 1;\n  // beamStrength ramps at ~24/s toward the target; settle() runs long enough,\n  // but seed it so the first frames are not a fade-in.\n  g.flashlight.beamStrength = 1;\n}\nconst frames = settle(700);\nconst pr = g.lightProbe();\nconsole.log('LAMP ' + JSON.stringify({ shot: 'cistern_h1_on',\n  lamp: true, beam: g.flashlight ? +g.flashlight.beamStrength.toFixed(2) : null,\n  zone: pr.zone, head: pr.directAtHead, fillUp: pr.fillUp,\n  adaptation: pr.adaptation, settleFrames: frames, eye: +g.player.position.y.toFixed(2) }));\n",
+    "settle": 1,
+    "file": "docs/captures/lamptour/cistern_h1_lampon.png",
+    "stats": {
+      "ms": 0.7191666841506958,
+      "fps": 1390.498228072058,
+      "p90": 0.8000001907348633,
+      "calls": 136,
+      "tris": 94172,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 253,
+        "lit": 193,
+        "active": 6,
+        "tubes": 193,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "duct",
+        "directAtHead": 3.719,
+        "directAtFloor": 3.969,
+        "fillUp": 0.011,
+        "fillDown": 0.015,
+        "fixtures": {
+          "fixtures": 253,
+          "lit": 193,
+          "active": 6,
+          "tubes": 193,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "duct": 1,
+          "office_lamp": 1,
+          "cistern": 1
+        },
+        "zoneFixtures": {
+          "total": 25,
+          "lit": 25
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -1.2168,
+          "adapted": 0.2962,
+          "autoGain": 0.8
+        }
+      }
+    }
+  },
+  {
+    "name": "cistern_h2_lampon",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('cistern');\nconst p = (r && r.position) || g.world.spawn;\ng.lookOpen(p, ((r && r.yaw) || 0) + -2.094, 0);\nif (g.flashlight) {\n  g.flashlight.enabled = true;\n  g.flashlight.isOn = true;\n  g.flashlight.battery = 1;\n  // beamStrength ramps at ~24/s toward the target; settle() runs long enough,\n  // but seed it so the first frames are not a fade-in.\n  g.flashlight.beamStrength = 1;\n}\nconst frames = settle(700);\nconst pr = g.lightProbe();\nconsole.log('LAMP ' + JSON.stringify({ shot: 'cistern_h2_on',\n  lamp: true, beam: g.flashlight ? +g.flashlight.beamStrength.toFixed(2) : null,\n  zone: pr.zone, head: pr.directAtHead, fillUp: pr.fillUp,\n  adaptation: pr.adaptation, settleFrames: frames, eye: +g.player.position.y.toFixed(2) }));\n",
+    "settle": 1,
+    "file": "docs/captures/lamptour/cistern_h2_lampon.png",
+    "stats": {
+      "ms": 0.8958333492279053,
+      "fps": 1116.2790499615505,
+      "p90": 1,
+      "calls": 194,
+      "tris": 135430,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 253,
+        "lit": 193,
+        "active": 4,
+        "tubes": 193,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "cistern",
+        "directAtHead": 3.599,
+        "directAtFloor": 2.956,
+        "fillUp": 0.296,
+        "fillDown": 0.354,
+        "fixtures": {
+          "fixtures": 253,
+          "lit": 193,
+          "active": 4,
+          "tubes": 193,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "duct": 1,
+          "office_lamp": 1,
+          "cistern": 1
+        },
+        "zoneFixtures": {
+          "total": 20,
+          "lit": 19
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -4.8633,
+          "adapted": 0.0077,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "stack_h0_lampon",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('stack');\nconst p = (r && r.position) || g.world.spawn;\ng.lookOpen(p, ((r && r.yaw) || 0) + 0, 0);\nif (g.flashlight) {\n  g.flashlight.enabled = true;\n  g.flashlight.isOn = true;\n  g.flashlight.battery = 1;\n  // beamStrength ramps at ~24/s toward the target; settle() runs long enough,\n  // but seed it so the first frames are not a fade-in.\n  g.flashlight.beamStrength = 1;\n}\nconst frames = settle(700);\nconst pr = g.lightProbe();\nconsole.log('LAMP ' + JSON.stringify({ shot: 'stack_h0_on',\n  lamp: true, beam: g.flashlight ? +g.flashlight.beamStrength.toFixed(2) : null,\n  zone: pr.zone, head: pr.directAtHead, fillUp: pr.fillUp,\n  adaptation: pr.adaptation, settleFrames: frames, eye: +g.player.position.y.toFixed(2) }));\n",
+    "settle": 1,
+    "file": "docs/captures/lamptour/stack_h0_lampon.png",
+    "stats": {
+      "ms": 1.396666685740153,
+      "fps": 715.9904436827442,
+      "p90": 0.8000001907348633,
+      "calls": 134,
+      "tris": 441880,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 123,
+        "lit": 96,
+        "active": 6,
+        "tubes": 96,
+        "shadows": 2
+      },
+      "probe": {
+        "zone": "stack",
+        "directAtHead": 76.378,
+        "directAtFloor": 65.412,
+        "fillUp": 0.993,
+        "fillDown": 1.139,
+        "fixtures": {
+          "fixtures": 123,
+          "lit": 96,
+          "active": 6,
+          "tubes": 96,
+          "shadows": 2
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "duct": 1,
+          "office_lamp": 1,
+          "cistern": 0,
+          "stack": 1
+        },
+        "zoneFixtures": {
+          "total": 78,
+          "lit": 67
+        },
+        "exposure": 0.303,
+        "adaptation": {
+          "logLuminance": -3.8906,
+          "adapted": 0.0204,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "stack_h1_lampon",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('stack');\nconst p = (r && r.position) || g.world.spawn;\ng.lookOpen(p, ((r && r.yaw) || 0) + 2.094, 0);\nif (g.flashlight) {\n  g.flashlight.enabled = true;\n  g.flashlight.isOn = true;\n  g.flashlight.battery = 1;\n  // beamStrength ramps at ~24/s toward the target; settle() runs long enough,\n  // but seed it so the first frames are not a fade-in.\n  g.flashlight.beamStrength = 1;\n}\nconst frames = settle(700);\nconst pr = g.lightProbe();\nconsole.log('LAMP ' + JSON.stringify({ shot: 'stack_h1_on',\n  lamp: true, beam: g.flashlight ? +g.flashlight.beamStrength.toFixed(2) : null,\n  zone: pr.zone, head: pr.directAtHead, fillUp: pr.fillUp,\n  adaptation: pr.adaptation, settleFrames: frames, eye: +g.player.position.y.toFixed(2) }));\n",
+    "settle": 1,
+    "file": "docs/captures/lamptour/stack_h1_lampon.png",
+    "stats": {
+      "ms": 0.7024999539057414,
+      "fps": 1423.487637885562,
+      "p90": 0.7999997138977051,
+      "calls": 139,
+      "tris": 443724,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 123,
+        "lit": 111,
+        "active": 14,
+        "tubes": 111,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "stack",
+        "directAtHead": 300.84,
+        "directAtFloor": 299.011,
+        "fillUp": 0.993,
+        "fillDown": 1.139,
+        "fixtures": {
+          "fixtures": 123,
+          "lit": 111,
+          "active": 14,
+          "tubes": 111,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "duct": 1,
+          "office_lamp": 1,
+          "cistern": 1,
+          "stack": 1
+        },
+        "zoneFixtures": {
+          "total": 78,
+          "lit": 67
+        },
+        "exposure": 0.917,
+        "adaptation": {
+          "logLuminance": -3.7559,
+          "adapted": 0.0234,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "stack_h2_lampon",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('stack');\nconst p = (r && r.position) || g.world.spawn;\ng.lookOpen(p, ((r && r.yaw) || 0) + -2.094, 0);\nif (g.flashlight) {\n  g.flashlight.enabled = true;\n  g.flashlight.isOn = true;\n  g.flashlight.battery = 1;\n  // beamStrength ramps at ~24/s toward the target; settle() runs long enough,\n  // but seed it so the first frames are not a fade-in.\n  g.flashlight.beamStrength = 1;\n}\nconst frames = settle(700);\nconst pr = g.lightProbe();\nconsole.log('LAMP ' + JSON.stringify({ shot: 'stack_h2_on',\n  lamp: true, beam: g.flashlight ? +g.flashlight.beamStrength.toFixed(2) : null,\n  zone: pr.zone, head: pr.directAtHead, fillUp: pr.fillUp,\n  adaptation: pr.adaptation, settleFrames: frames, eye: +g.player.position.y.toFixed(2) }));\n",
+    "settle": 1,
+    "file": "docs/captures/lamptour/stack_h2_lampon.png",
+    "stats": {
+      "ms": 0.6858333269755046,
+      "fps": 1458.080207927423,
+      "p90": 0.8000001907348633,
+      "calls": 139,
+      "tris": 443724,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 123,
+        "lit": 111,
+        "active": 14,
+        "tubes": 111,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "stack",
+        "directAtHead": 317.283,
+        "directAtFloor": 315.422,
+        "fillUp": 0.993,
+        "fillDown": 1.139,
+        "fixtures": {
+          "fixtures": 123,
+          "lit": 111,
+          "active": 14,
+          "tubes": 111,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "duct": 1,
+          "office_lamp": 1,
+          "cistern": 1,
+          "stack": 1
+        },
+        "zoneFixtures": {
+          "total": 78,
+          "lit": 67
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -3.1934,
+          "adapted": 0.041,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "residence_h0_lampon",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('residence');\nconst p = (r && r.position) || g.world.spawn;\ng.lookOpen(p, ((r && r.yaw) || 0) + 0, 0);\nif (g.flashlight) {\n  g.flashlight.enabled = true;\n  g.flashlight.isOn = true;\n  g.flashlight.battery = 1;\n  // beamStrength ramps at ~24/s toward the target; settle() runs long enough,\n  // but seed it so the first frames are not a fade-in.\n  g.flashlight.beamStrength = 1;\n}\nconst frames = settle(700);\nconst pr = g.lightProbe();\nconsole.log('LAMP ' + JSON.stringify({ shot: 'residence_h0_on',\n  lamp: true, beam: g.flashlight ? +g.flashlight.beamStrength.toFixed(2) : null,\n  zone: pr.zone, head: pr.directAtHead, fillUp: pr.fillUp,\n  adaptation: pr.adaptation, settleFrames: frames, eye: +g.player.position.y.toFixed(2) }));\n",
+    "settle": 1,
+    "file": "docs/captures/lamptour/residence_h0_lampon.png",
+    "stats": {
+      "ms": 0.7991666714350383,
+      "fps": 1251.3034336183362,
+      "p90": 0.9000000953674316,
+      "calls": 139,
+      "tris": 443724,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 189,
+        "lit": 176,
+        "active": 6,
+        "tubes": 176,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "stack",
+        "directAtHead": 314.78,
+        "directAtFloor": 312.858,
+        "fillUp": 0.993,
+        "fillDown": 1.139,
+        "fixtures": {
+          "fixtures": 189,
+          "lit": 176,
+          "active": 6,
+          "tubes": 176,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "duct": 1,
+          "office_lamp": 1,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 1,
+          "service": 1,
+          "plant": 1,
+          "plant_lift": 0
+        },
+        "zoneFixtures": {
+          "total": 78,
+          "lit": 67
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -3.1621,
+          "adapted": 0.0423,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "residence_h1_lampon",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('residence');\nconst p = (r && r.position) || g.world.spawn;\ng.lookOpen(p, ((r && r.yaw) || 0) + 2.094, 0);\nif (g.flashlight) {\n  g.flashlight.enabled = true;\n  g.flashlight.isOn = true;\n  g.flashlight.battery = 1;\n  // beamStrength ramps at ~24/s toward the target; settle() runs long enough,\n  // but seed it so the first frames are not a fade-in.\n  g.flashlight.beamStrength = 1;\n}\nconst frames = settle(700);\nconst pr = g.lightProbe();\nconsole.log('LAMP ' + JSON.stringify({ shot: 'residence_h1_on',\n  lamp: true, beam: g.flashlight ? +g.flashlight.beamStrength.toFixed(2) : null,\n  zone: pr.zone, head: pr.directAtHead, fillUp: pr.fillUp,\n  adaptation: pr.adaptation, settleFrames: frames, eye: +g.player.position.y.toFixed(2) }));\n",
+    "settle": 1,
+    "file": "docs/captures/lamptour/residence_h1_lampon.png",
+    "stats": {
+      "ms": 3.7266666452089945,
+      "fps": 268.3363163929891,
+      "p90": 0.7999997138977051,
+      "calls": 113,
+      "tris": 82526,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 189,
+        "lit": 176,
+        "active": 0,
+        "tubes": 176,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "residence",
+        "directAtHead": 0,
+        "directAtFloor": 0,
+        "fillUp": 0.211,
+        "fillDown": 0.286,
+        "fixtures": {
+          "fixtures": 189,
+          "lit": 176,
+          "active": 0,
+          "tubes": 176,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "duct": 0,
+          "office_lamp": 1,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 1,
+          "service": 1,
+          "plant": 1,
+          "plant_lift": 1
+        },
+        "zoneFixtures": {
+          "total": 37,
+          "lit": 37
+        },
+        "exposure": 0.303,
+        "adaptation": {
+          "logLuminance": -5.5078,
+          "adapted": 0.0041,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "residence_h2_lampon",
+    "setup": "\nconst settle = (max) => {\n  let last = -1, stable = 0;\n  for (let i = 0; i < max; i++) {\n    g.renderOnce(1/60);\n    const a = g.lightProbe().adaptation;\n    const e = a ? a.autoGain : 0;\n    if (i > 150 && Math.abs(e - last) < 2e-3) { if (++stable > 20) return i; } else stable = 0;\n    last = e;\n  }\n  return max;\n};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality = false;\nconst r = g.world.goto('residence');\nconst p = (r && r.position) || g.world.spawn;\ng.lookOpen(p, ((r && r.yaw) || 0) + -2.094, 0);\nif (g.flashlight) {\n  g.flashlight.enabled = true;\n  g.flashlight.isOn = true;\n  g.flashlight.battery = 1;\n  // beamStrength ramps at ~24/s toward the target; settle() runs long enough,\n  // but seed it so the first frames are not a fade-in.\n  g.flashlight.beamStrength = 1;\n}\nconst frames = settle(700);\nconst pr = g.lightProbe();\nconsole.log('LAMP ' + JSON.stringify({ shot: 'residence_h2_on',\n  lamp: true, beam: g.flashlight ? +g.flashlight.beamStrength.toFixed(2) : null,\n  zone: pr.zone, head: pr.directAtHead, fillUp: pr.fillUp,\n  adaptation: pr.adaptation, settleFrames: frames, eye: +g.player.position.y.toFixed(2) }));\n",
+    "settle": 1,
+    "file": "docs/captures/lamptour/residence_h2_lampon.png",
+    "stats": {
+      "ms": 0.7641666531562805,
+      "fps": 1308.615072209241,
+      "p90": 0.9000000953674316,
+      "calls": 112,
+      "tris": 79314,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 189,
+        "lit": 175,
+        "active": 10,
+        "tubes": 176,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "residence",
+        "directAtHead": 4.925,
+        "directAtFloor": 3.557,
+        "fillUp": 0.211,
+        "fillDown": 0.286,
+        "fixtures": {
+          "fixtures": 189,
+          "lit": 175,
+          "active": 10,
+          "tubes": 176,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "duct": 1,
+          "office_lamp": 1,
+          "cistern": 1,
+          "stack": 1,
+          "residence": 1,
+          "service": 1,
+          "plant": 1,
+          "plant_lift": 1
+        },
+        "zoneFixtures": {
+          "total": 37,
+          "lit": 37
+        },
+        "exposure": 0.914,
+        "adaptation": {
+          "logLuminance": -3.0742,
+          "adapted": 0.0462,
+          "autoGain": 1.55
+        }
+      }
+    }
+  }
+]

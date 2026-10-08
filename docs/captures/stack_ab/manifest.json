@@ -1,0 +1,234 @@
+[
+  {
+    "name": "stack_a_DOWN",
+    "setup": "\nconst settle=(max)=>{let last=-1,st=0;for(let i=0;i<max;i++){g.renderOnce(1/60);const a=g.lightProbe().adaptation;const e=a?a.autoGain:0;if(i>150&&Math.abs(e-last)<2e-3){if(++st>20)return i;}else st=0;last=e;}return max;};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality=false;\nconst r=g.world.goto('stack');\nif(g.flashlight){g.flashlight.isOn=false;g.flashlight.on=false;}\nconst zf=new Set((g.world.zones['stack']||{})._fixtures||[]);\nconst hb=g.rig.fixtures.filter(f=>f.type==='highbay'&&zf.has(f));\nfor(const f of hb){\n  const sx=Math.sign(f.group.position.x)||1, sz=Math.sign(f.group.position.z)||1;\n  if(false) f.target.position.set(-sx*10,-6,-sz*10); else f.target.position.set(0,-3,0);\n}\nconst p=(r&&r.position)||g.world.spawn;\ng.look(p[0],p[1],p[2],((r&&r.yaw)||0)+0,0);\nconst y0=g.player.position.y;\nconst fr=settle(700);\nconst pr=g.lightProbe();\nconsole.log('STK2 '+JSON.stringify({aimed:false, yaw:0,\n  head:pr.directAtHead, adaptation:pr.adaptation,\n  fell:+(y0-g.player.position.y).toFixed(2), authExp:pr.exposure, state:g.state,\n  zone:pr.zone, settle:fr, valid:(y0-g.player.position.y)<1 && pr.exposure>0.9 && pr.zone==='stack'}));\n",
+    "settle": 1,
+    "file": "docs/captures/stack_ab/stack_a_DOWN.png",
+    "stats": {
+      "ms": 0.9508333325386047,
+      "fps": 1051.7090280481927,
+      "p90": 1,
+      "calls": 152,
+      "tris": 439574,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 360,
+        "lit": 288,
+        "active": 6,
+        "tubes": 288,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "stack",
+        "directAtHead": 311.478,
+        "directAtFloor": 309.845,
+        "fillUp": 0.993,
+        "fillDown": 1.139,
+        "fixtures": {
+          "fixtures": 360,
+          "lit": 288,
+          "active": 6,
+          "tubes": 288,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "stack": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 0,
+          "residence": 0,
+          "duct": 0,
+          "plant_lift": 0
+        },
+        "zoneFixtures": {
+          "total": 78,
+          "lit": 67
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -3.7754,
+          "adapted": 0.0229,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "stack_a_ACROSS",
+    "setup": "\nconst settle=(max)=>{let last=-1,st=0;for(let i=0;i<max;i++){g.renderOnce(1/60);const a=g.lightProbe().adaptation;const e=a?a.autoGain:0;if(i>150&&Math.abs(e-last)<2e-3){if(++st>20)return i;}else st=0;last=e;}return max;};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality=false;\nconst r=g.world.goto('stack');\nif(g.flashlight){g.flashlight.isOn=false;g.flashlight.on=false;}\nconst zf=new Set((g.world.zones['stack']||{})._fixtures||[]);\nconst hb=g.rig.fixtures.filter(f=>f.type==='highbay'&&zf.has(f));\nfor(const f of hb){\n  const sx=Math.sign(f.group.position.x)||1, sz=Math.sign(f.group.position.z)||1;\n  if(true) f.target.position.set(-sx*10,-6,-sz*10); else f.target.position.set(0,-3,0);\n}\nconst p=(r&&r.position)||g.world.spawn;\ng.look(p[0],p[1],p[2],((r&&r.yaw)||0)+0,0);\nconst y0=g.player.position.y;\nconst fr=settle(700);\nconst pr=g.lightProbe();\nconsole.log('STK2 '+JSON.stringify({aimed:true, yaw:0,\n  head:pr.directAtHead, adaptation:pr.adaptation,\n  fell:+(y0-g.player.position.y).toFixed(2), authExp:pr.exposure, state:g.state,\n  zone:pr.zone, settle:fr, valid:(y0-g.player.position.y)<1 && pr.exposure>0.9 && pr.zone==='stack'}));\n",
+    "settle": 1,
+    "file": "docs/captures/stack_ab/stack_a_ACROSS.png",
+    "stats": {
+      "ms": 0.9866666674613953,
+      "fps": 1013.5135126971605,
+      "p90": 1.0999999046325684,
+      "calls": 152,
+      "tris": 439574,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 360,
+        "lit": 286,
+        "active": 14,
+        "tubes": 288,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "stack",
+        "directAtHead": 317.825,
+        "directAtFloor": 315.751,
+        "fillUp": 0.993,
+        "fillDown": 1.139,
+        "fixtures": {
+          "fixtures": 360,
+          "lit": 286,
+          "active": 14,
+          "tubes": 288,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "stack": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1
+        },
+        "zoneFixtures": {
+          "total": 78,
+          "lit": 67
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -3.5918,
+          "adapted": 0.0275,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "stack_b_DOWN",
+    "setup": "\nconst settle=(max)=>{let last=-1,st=0;for(let i=0;i<max;i++){g.renderOnce(1/60);const a=g.lightProbe().adaptation;const e=a?a.autoGain:0;if(i>150&&Math.abs(e-last)<2e-3){if(++st>20)return i;}else st=0;last=e;}return max;};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality=false;\nconst r=g.world.goto('stack');\nif(g.flashlight){g.flashlight.isOn=false;g.flashlight.on=false;}\nconst zf=new Set((g.world.zones['stack']||{})._fixtures||[]);\nconst hb=g.rig.fixtures.filter(f=>f.type==='highbay'&&zf.has(f));\nfor(const f of hb){\n  const sx=Math.sign(f.group.position.x)||1, sz=Math.sign(f.group.position.z)||1;\n  if(false) f.target.position.set(-sx*10,-6,-sz*10); else f.target.position.set(0,-3,0);\n}\nconst p=(r&&r.position)||g.world.spawn;\ng.look(p[0],p[1],p[2],((r&&r.yaw)||0)+1.57,0);\nconst y0=g.player.position.y;\nconst fr=settle(700);\nconst pr=g.lightProbe();\nconsole.log('STK2 '+JSON.stringify({aimed:false, yaw:1.57,\n  head:pr.directAtHead, adaptation:pr.adaptation,\n  fell:+(y0-g.player.position.y).toFixed(2), authExp:pr.exposure, state:g.state,\n  zone:pr.zone, settle:fr, valid:(y0-g.player.position.y)<1 && pr.exposure>0.9 && pr.zone==='stack'}));\n",
+    "settle": 1,
+    "file": "docs/captures/stack_ab/stack_b_DOWN.png",
+    "stats": {
+      "ms": 1.0016666650772095,
+      "fps": 998.336108073357,
+      "p90": 1.1000003814697266,
+      "calls": 145,
+      "tris": 437330,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 360,
+        "lit": 288,
+        "active": 14,
+        "tubes": 288,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "stack",
+        "directAtHead": 310.343,
+        "directAtFloor": 308.852,
+        "fillUp": 0.993,
+        "fillDown": 1.139,
+        "fixtures": {
+          "fixtures": 360,
+          "lit": 288,
+          "active": 14,
+          "tubes": 288,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "stack": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1
+        },
+        "zoneFixtures": {
+          "total": 78,
+          "lit": 67
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -3.584,
+          "adapted": 0.0278,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "stack_b_ACROSS",
+    "setup": "\nconst settle=(max)=>{let last=-1,st=0;for(let i=0;i<max;i++){g.renderOnce(1/60);const a=g.lightProbe().adaptation;const e=a?a.autoGain:0;if(i>150&&Math.abs(e-last)<2e-3){if(++st>20)return i;}else st=0;last=e;}return max;};\nfor (const c of g.rig.circuits.keys()) g.rig.setCircuit(c, true);\ng.engine.autoQuality=false;\nconst r=g.world.goto('stack');\nif(g.flashlight){g.flashlight.isOn=false;g.flashlight.on=false;}\nconst zf=new Set((g.world.zones['stack']||{})._fixtures||[]);\nconst hb=g.rig.fixtures.filter(f=>f.type==='highbay'&&zf.has(f));\nfor(const f of hb){\n  const sx=Math.sign(f.group.position.x)||1, sz=Math.sign(f.group.position.z)||1;\n  if(true) f.target.position.set(-sx*10,-6,-sz*10); else f.target.position.set(0,-3,0);\n}\nconst p=(r&&r.position)||g.world.spawn;\ng.look(p[0],p[1],p[2],((r&&r.yaw)||0)+1.57,0);\nconst y0=g.player.position.y;\nconst fr=settle(700);\nconst pr=g.lightProbe();\nconsole.log('STK2 '+JSON.stringify({aimed:true, yaw:1.57,\n  head:pr.directAtHead, adaptation:pr.adaptation,\n  fell:+(y0-g.player.position.y).toFixed(2), authExp:pr.exposure, state:g.state,\n  zone:pr.zone, settle:fr, valid:(y0-g.player.position.y)<1 && pr.exposure>0.9 && pr.zone==='stack'}));\n",
+    "settle": 1,
+    "file": "docs/captures/stack_ab/stack_b_ACROSS.png",
+    "stats": {
+      "ms": 1.003333294391632,
+      "fps": 996.6777795471712,
+      "p90": 1.0999999046325684,
+      "calls": 145,
+      "tris": 437330,
+      "quality": "low",
+      "res": "496x279",
+      "lights": {
+        "fixtures": 360,
+        "lit": 288,
+        "active": 14,
+        "tubes": 288,
+        "shadows": 1
+      },
+      "probe": {
+        "zone": "stack",
+        "directAtHead": 313.665,
+        "directAtFloor": 311.827,
+        "fillUp": 0.993,
+        "fillDown": 1.139,
+        "fixtures": {
+          "fixtures": 360,
+          "lit": 288,
+          "active": 14,
+          "tubes": 288,
+          "shadows": 1
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "stack": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 1,
+          "residence": 1,
+          "duct": 1,
+          "plant_lift": 1
+        },
+        "zoneFixtures": {
+          "total": 78,
+          "lit": 67
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -2.5527,
+          "adapted": 0.0779,
+          "autoGain": 1.55
+        }
+      }
+    }
+  }
+]

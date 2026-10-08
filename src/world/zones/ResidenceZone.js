@@ -1,7 +1,8 @@
 import * as THREE from 'three';
+import { runFacts } from '../../systems/Notes.js';
 import { KIT, floorSlab, wallRun, doorway, outlet, smokeDetector } from '../Kit.js';
 import {
-  makeBuilders, rigProxy, portal, pendant, bulkhead, emergencyLight,
+  makeBuilders, rigProxy, portal, pendant, bulkhead, emergencyLight, runSite, siteSpec,
   handrail, stairFlight,
 } from '../ZoneKit.js';
 import { STAMP, roomNumber } from '../Decals.js';
@@ -123,6 +124,9 @@ function cornice(b, rect, y, { key = 'trim' } = {}) {
 
 export function buildResidence(ctx, opts = {}) {
   const { rig, decals } = ctx;
+  // This run's facts — the terminal code and the open-day date the poster
+  // carries. Fixed to the authored 2130 under `qa=1`; see `runFacts`.
+  const RUN = runFacts(ctx.runSeed);
   const seed = opts.seed ?? 6600;
   const rng = makeRng(seed);
   const D = decals || ctx.world?.decals;
@@ -575,6 +579,8 @@ export function buildResidence(ctx, opts = {}) {
   // =========================================================================
   // 7. gameplay — R-207 and the second core
   // =========================================================================
+
+  let coreSite = null;
   const interactables = [];
   if (r207) {
     // The leaf. `requires: card_warden` is the memo's rule made literal: your own
@@ -584,6 +590,17 @@ export function buildResidence(ctx, opts = {}) {
       position: [r207.doorX, 0, r207.zSide], rotation: r207.north ? 0 : Math.PI,
       variant: 'locked', requires: 'card_warden', width: 0.94, height: 2.00,
       hinge: 1, label: 'R-207', autoClose: 0,
+      // AND THE OTHER WAY IN. The pry bar sits in the Service store under a note
+      // that says two doors in the building are jammed and this is the only
+      // thing that opens them — and no zone declared a single one, so the tool
+      // opened nothing in a real run. (The only `variant: 'jammed'` in the tree
+      // is in `seedIntakeDemo`, which `Game.js` runs only when there is no world
+      // at all.) This is a domestic flat door in a timber frame: it holds
+      // against a shoulder and it does not hold against 600 mm of hexagon
+      // stock. Taking it that way costs a noise of 16 — four times a footstep,
+      // the loudest thing a player can do — so the card is still the route you
+      // want and the bar is the route you take when you could not find it.
+      pryable: true,
     });
     // The reader, on the corridor side of the jamb.
     interactables.push({
@@ -600,19 +617,25 @@ export function buildResidence(ctx, opts = {}) {
       kind: 'keypad', id: 'keypad_r207',
       position: [r207.doorX - 0.72, 1.28, r207.zSide + (r207.north ? -0.08 : 0.08)],
       rotation: r207.north ? Math.PI : 0,
-      code: '2130', label: 'the R-207 keypad', hintNote: 'nb_5', unlocks: 'door_r207',
+      code: RUN.code, label: 'the R-207 keypad', hintNote: 'nb_5', unlocks: 'door_r207',
     });
-    // The core, on the middle shelf of the racking inside.
-    interactables.push({
-      kind: 'pickup', item: 'fuse_core',
-      position: [r207.x0 + 0.40, 0.94, r207.cz + r207.face * 0.6], rotation: 0.15,
-    });
+    // The core. R-207 is the room the memo is about and that does not change;
+    // where in it the core is does. See `runSite`.
+    coreSite = runSite(ctx.runSeed, 'residence_core', [
+      [r207.x0 + 0.40, 0.94, r207.cz + r207.face * 0.6, 0.15],   // middle shelf
+      [r207.x1 - 0.45, 0.94, r207.cz - r207.face * 0.55, -0.4],  // the far racking
+      [r207.x0 + 0.62, 0.06, r207.cz - r207.face * 0.35, 1.25],  // on the floor
+    ]);
+    interactables.push(siteSpec(coreSite.pick, { kind: 'pickup', item: 'fuse_core' }));
     interactables.push(
       { kind: 'pickup', item: 'note', noteId: 'note_residence_rooms', position: [r207.x1 - 0.40, 0.90, r207.cz - r207.face * 0.5], rotation: -0.3 },
       { kind: 'pickup', item: 'battery_cell', position: [r207.x1 - 0.55, 0.90, r207.cz - r207.face * 0.9], rotation: 1.1 },
     );
   }
   interactables.push(
+    { kind: 'breaker', id: 'board_r', position: [X0 + 0.9, 1.35, -HW + 0.16], rotation: 0,
+      maxOn: 1, title: 'LANDING SUB-MAIN',
+      ways: [{ name: 'residence', label: 'RESIDENCE LANDING', amps: '10A', on: true }] },
     { kind: 'pickup', item: 'note', noteId: 'note_letter', position: [-4.6, 0.10, 0.3], rotation: 0.3 },
     { kind: 'pickup', item: 'note', noteId: 'note_open_day', position: [-16.0, 1.22, -HW + 0.14], rotation: 0 },
     { kind: 'pickup', item: 'note', noteId: 'nb_2', position: [X0 - 2.2, 0.02, 2.4], rotation: 1.4 },
@@ -638,6 +661,7 @@ export function buildResidence(ctx, opts = {}) {
   for (const b of builders) { const g = b.finish(); chunks.push(g); root.add(g); }
 
   return {
+    altSites: (coreSite?.all || []).map((v) => siteSpec(v, { kind: 'pickup', item: 'fuse_core' })),
     root, chunks, builders, portals, interactables, attendantFloors,
     spawn: [X0 - 3.4, 0, 0],
     spawnYaw: -Math.PI / 2,

@@ -1,18 +1,18 @@
 [
-  {
-    "name": "e1_safe_goto",
-    "setup": "g.setMSAA(0); const r=g.world.goto?g.world.goto('safe'):null; window.__P=(r&&r.position)||g.world.spawn; window.__Y=(r&&r.yaw)||0; g.lookOpen(window.__P,window.__Y,-0.15)"
-  },
-  {
-    "name": "e2_safe_lamp",
-    "setup": "g.setMSAA(0); g.lookOpen(window.__P,window.__Y+0.9,-0.25); console.info('FS '+JSON.stringify(g.fixtureReport(5)))"
-  },
-  {
-    "name": "e3_plant_goto",
-    "setup": "g.setMSAA(0); const r=g.world.goto?g.world.goto('plant'):null; window.__P=(r&&r.position)||g.world.spawn; window.__Y=(r&&r.yaw)||0; g.lookOpen(window.__P,window.__Y,0.1)"
-  },
-  {
-    "name": "e4_plant_highbay",
-    "setup": "g.setMSAA(0); g.lookOpen(window.__P,window.__Y,0.42); console.info('FP '+JSON.stringify(g.fixtureReport(5)))"
-  }
+ {
+  "name": "e1_safe_goto",
+  "setup": "g.setMSAA(0); const r=g.world.goto?g.world.goto('safe'):null; window.__P=(r&&r.position)||g.world.spawn; window.__Y=(r&&r.yaw)||0; g.lookAtOpen(window.__P,window.__Y,-0.15)"
+ },
+ {
+  "name": "e2_safe_lamp",
+  "setup": "g.setMSAA(0); g.lookAtOpen(window.__P,window.__Y+0.9,-0.25); console.info('FS '+JSON.stringify(g.fixtureReport(5)))"
+ },
+ {
+  "name": "e3_plant_goto",
+  "setup": "g.setMSAA(0); const r=g.world.goto?g.world.goto('plant'):null; window.__P=(r&&r.position)||g.world.spawn; window.__Y=(r&&r.yaw)||0; g.lookAtOpen(window.__P,window.__Y,0.1)"
+ },
+ {
+  "name": "e4_plant_highbay",
+  "setup": "g.setMSAA(0); g.lookAtOpen(window.__P,window.__Y,0.42); console.info('FP '+JSON.stringify(g.fixtureReport(5)))"
+ }
 ]

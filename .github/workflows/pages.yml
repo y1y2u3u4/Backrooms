@@ -1,0 +1,58 @@
+# Deploy the built game to GitHub Pages.
+#
+# The whole project is a static bundle — every texture, every mesh and all 75
+# sounds are synthesised in the browser at load, so there is nothing to host but
+# `dist/`. `vite.config.js` already sets `base: './'`, which is what makes the
+# same build work unchanged at a repo subpath (Pages) and at a domain root
+# (Vercel, or anything else).
+#
+# ONE MANUAL STEP, once: Settings -> Pages -> Build and deployment -> Source ->
+# "GitHub Actions". A workflow cannot switch that on for you.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [claude/measured-honestly-9s3q1k, claude/backrooms-horror-game-9s3q1k]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a queued run supersedes a pending one rather than
+# cancelling a deploy that is already publishing.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      # `npm ci` needs the lockfile, which is committed.
+      - run: npm ci
+      - run: npm run build
+      # The browser-free half of the QA suite runs in about six seconds and
+      # covers the critical path, so a build that cannot be finished never
+      # reaches the page.
+      - run: node tools/qa/chain.mjs
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

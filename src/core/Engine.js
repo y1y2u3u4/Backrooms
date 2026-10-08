@@ -27,11 +27,41 @@ import { Rolling, clamp } from './util.js';
 export const QUALITY = {
   low:    { scale: 0.62, ao: false, aoScale: 0.5, bloom: true,  bloomDiv: 4, shadowMap: 512,  maxShadows: 1, aniso: 4,  textureQuality: 0.5,  lights: 6,  stochastic: 0.0,  aoVolume: 0.85, aoCell: 0.85, motes: 900,  moteScale: 0.85, msaa: 0 },
   medium: { scale: 0.80, ao: true,  aoScale: 0.5, bloom: true,  bloomDiv: 3, shadowMap: 1024, maxShadows: 2, aniso: 8,  textureQuality: 0.75, lights: 10, stochastic: 0.45, aoVolume: 0.90, aoCell: 0.60, motes: 2200, moteScale: 1.00, msaa: 2 },
-  high:   { scale: 1.00, ao: true,  aoScale: 1.0, bloom: true,  bloomDiv: 2, shadowMap: 1536, maxShadows: 3, aniso: 16, textureQuality: 1,    lights: 14, stochastic: 0.62, aoVolume: 0.90, aoCell: 0.45, motes: 3800, moteScale: 1.00, msaa: 4 },
+  high:   { scale: 1.00, ao: true,  aoScale: 0.5, bloom: true,  bloomDiv: 2, shadowMap: 1536, maxShadows: 3, aniso: 16, textureQuality: 1,    lights: 14, stochastic: 0.62, aoVolume: 0.90, aoCell: 0.45, motes: 3800, moteScale: 1.00, msaa: 2 },
 };
 
+/**
+ * WHAT THE HIGH TIER USED TO COST, MEASURED ON A GPU.
+ *
+ * Every performance number this project had came from SwiftShader, a CPU
+ * rasteriser, and the completion report says so. Measured instead on an Apple
+ * M4 through ANGLE/Metal, at 1920x1080, with the camera fixed and the
+ * configurations interleaved over four rounds so drift could not favour one:
+ *
+ *   msaa 4, ao 1.0   34.6 ms   28.9 fps   <- what shipped
+ *   msaa 4, ao 0.5   31.2 ms   32.1 fps
+ *   msaa 2, ao 0.5   26.0 ms   38.5 fps   <- this
+ *   msaa 0, ao 0.5   19.6 ms   51.0 fps
+ *
+ * A sweep of eight headings in each of the three zones the player spends most
+ * of the game in gave 19-34 fps at the old high tier and 46-81 at medium. The
+ * brief asks for a stable 60 and no zone reached it, so the two settings that
+ * were buying the least per millisecond come down a tier.
+ *
+ * GTAO at half resolution is the cheap one: ambient occlusion is a
+ * low-frequency signal and the pass already runs at 0.5 on medium. 4x MSAA to
+ * 2x is the one with a visible cost — this building is made of thin
+ * high-contrast edges and that is why MSAA is here at all (see _buildComposer)
+ * — but 2x still resolves the speckling that 0x does not, at 5.2 ms less than
+ * 4x on a half-float 1080p target.
+ *
+ * These are one machine's numbers. They are not a claim about every machine;
+ * they are a claim that the tier as shipped did not hit its own target on a
+ * current Apple GPU, which had never been checked.
+ */
+
 export class Engine {
-  constructor(canvas, { quality = 'high', maxPixelRatio = 1.5 } = {}) {
+  constructor(canvas, { quality = 'high', maxPixelRatio = 1.5, readback = false } = {}) {
     installAtmosphereFog();
 
     this.canvas = canvas;
@@ -47,7 +77,10 @@ export class Engine {
       stencil: false,
       depth: true,
       alpha: false,
-      preserveDrawingBuffer: true, // QA capture needs readable frames
+      // QA capture reads the frame back out of the canvas and needs this; a
+      // player does not, and it costs a back-buffer copy every presented frame.
+      // `?qa=1` turns it on — see Game.boot.
+      preserveDrawingBuffer: readback,
     });
     this.renderer.debug.checkShaderErrors = true;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -329,13 +362,34 @@ export class Engine {
     this.renderer.setRenderTarget(null);
   }
 
-  /** Drop a tier if we sustain a bad frame time; never climb back automatically. */
+  /**
+   * Drop a tier under sustained load, and climb back when the load goes away.
+   *
+   * The ladder used to be one-way, with `low` latched behind a 999-second
+   * cooldown. That is a defensible choice when a drop means the machine cannot
+   * cope, and the wrong one here, because the drop is usually the room: the
+   * Plant and the Service Spine run fourteen dynamic lights and the Cistern
+   * runs one, and the same GPU measures 26 fps in the first and 49 in the
+   * second. Thirty seconds in the Plant used to cost a player the rest of the
+   * session at 1190x670 with no ambient occlusion — measured at 100-185 fps on
+   * an M4, i.e. throwing away most of the machine to pay for a corridor it left
+   * ten minutes ago.
+   *
+   * Climbing is deliberately harder than dropping: twice the dwell, a margin
+   * well inside the tier below's trigger so the two cannot oscillate, and the
+   * requirement that the whole window is comfortable rather than its average.
+   */
   _autoQuality(dt) {
     this._qualityCooldown -= dt;
     if (this._qualityCooldown > 0 || this.frameTime.buf.length < 90) return;
     const p90 = this.frameTime.percentile(0.9);
     if (p90 > 26 && this.qualityName === 'high') { this.setQuality('medium'); this._qualityCooldown = 6; }
-    else if (p90 > 30 && this.qualityName === 'medium') { this.setQuality('low'); this._qualityCooldown = 999; }
+    else if (p90 > 30 && this.qualityName === 'medium') { this.setQuality('low'); this._qualityCooldown = 8; }
+    // Climb only from a p90 that would still be comfortable after the step up.
+    // The gap between the tiers is roughly 2x, so 11 ms here lands around 22 ms
+    // there — under the 26 ms that would send it straight back down.
+    else if (p90 < 11 && this.qualityName === 'low') { this.setQuality('medium'); this._qualityCooldown = 12; }
+    else if (p90 < 11 && this.qualityName === 'medium') { this.setQuality('high'); this._qualityCooldown = 12; }
   }
 
   get stats() {

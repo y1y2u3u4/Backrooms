@@ -1,0 +1,486 @@
+{
+  "dir": "docs/captures/tour3",
+  "limits": {
+    "crushed": 0.16,
+    "clipped": 0.03,
+    "dynamicRange": 0.22,
+    "banding": 0.055,
+    "speckle": 0.0035,
+    "emptiness": 0.72
+  },
+  "hfMedian": 0.04306975112827381,
+  "rows": [
+    {
+      "file": "cistern_h0.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.00592710919374068,
+      "contrast": 0.025674894174280566,
+      "dynamicRange": 0.040018822997808456,
+      "crushed": 0.9470314487223956,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.023757172373016878,
+      "speckle": 0,
+      "emptiness": 0.9471976529078506,
+      "colourCast": 0.23150635232341582
+    },
+    {
+      "file": "cistern_h1.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.007165248292916381,
+      "contrast": 0.03331978068029821,
+      "dynamicRange": 0.1521098017692566,
+      "crushed": 0.9428040813966932,
+      "clipped": 0.000007226268932824604,
+      "banding": 0,
+      "highFreq": 0.024945097585101498,
+      "speckle": 0.000007307911545038659,
+      "emptiness": 0.9429702855821482,
+      "colourCast": 0.2794174002615338
+    },
+    {
+      "file": "cistern_h2.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.007051510461932271,
+      "contrast": 0.032491589505623926,
+      "dynamicRange": 0.14674745500087738,
+      "crushed": 0.9429991906578795,
+      "clipped": 0.000007226268932824604,
+      "banding": 0,
+      "highFreq": 0.024872564239070322,
+      "speckle": 0,
+      "emptiness": 0.9432159787258643,
+      "colourCast": 0.27813396170358656
+    },
+    {
+      "file": "duct_h0.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.005101213238168382,
+      "contrast": 0.02155241024356816,
+      "dynamicRange": 0.01568627543747425,
+      "crushed": 0.9528485952133194,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.022448168687611937,
+      "speckle": 0,
+      "emptiness": 0.9529064053647821,
+      "colourCast": 0.1495888275025131
+    },
+    {
+      "file": "duct_h1.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0,
+      "contrast": 0,
+      "dynamicRange": 0,
+      "crushed": 1,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0,
+      "speckle": 0,
+      "emptiness": 1,
+      "colourCast": 1
+    },
+    {
+      "file": "duct_h2.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.0037820855875642847,
+      "contrast": 0.005065420249505484,
+      "dynamicRange": 0.01568627543747425,
+      "crushed": 0.9558691756272402,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.021507872596282018,
+      "speckle": 0,
+      "emptiness": 0.956165452653486,
+      "colourCast": 0.03180441958488552
+    },
+    {
+      "file": "intake_h0.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.18326480691087907,
+      "contrast": 0.09806696316863482,
+      "dynamicRange": 0.4481043219566345,
+      "crushed": 0.0410885651520407,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.07069584820708551,
+      "speckle": 0.00029231646180154637,
+      "emptiness": 0.1420901260261302,
+      "colourCast": 0.8539730274999565
+    },
+    {
+      "file": "intake_h1.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.18017344193720664,
+      "contrast": 0.09560294006253571,
+      "dynamicRange": 0.4374721646308899,
+      "crushed": 0.041977396230778126,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.07138475375792439,
+      "speckle": 0.0003873193118870489,
+      "emptiness": 0.1405364782055729,
+      "colourCast": 0.867750325429152
+    },
+    {
+      "file": "intake_h2.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.1815095768667019,
+      "contrast": 0.09734746909913039,
+      "dynamicRange": 0.44389960169792175,
+      "crushed": 0.04234593594635218,
+      "clipped": 0,
+      "banding": 0.00008671522719389525,
+      "highFreq": 0.07189800981335145,
+      "speckle": 0.0002850085502565077,
+      "emptiness": 0.14130968898138513,
+      "colourCast": 0.8604026378652128
+    },
+    {
+      "file": "plant_h0.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.04936501003760455,
+      "contrast": 0.08446801153512494,
+      "dynamicRange": 0.3547278344631195,
+      "crushed": 0.5773716614637531,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.04946443058152233,
+      "speckle": 0.000014615823090077318,
+      "emptiness": 0.5830659613828189,
+      "colourCast": 1.1522404288060069
+    },
+    {
+      "file": "plant_h1.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.31157273975185673,
+      "contrast": 0.1561418304977786,
+      "dynamicRange": 0.7913011498749256,
+      "crushed": 0.00337466759162909,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.09076063889807993,
+      "speckle": 0.000029231646180154637,
+      "emptiness": 0.08489420742282344,
+      "colourCast": 0.4945122108706989
+    },
+    {
+      "file": "plant_h2.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.6460256533138147,
+      "contrast": 0.14126022144336634,
+      "dynamicRange": 0.5485678017139435,
+      "crushed": 0.002095617990519135,
+      "clipped": 0.00007226268932824603,
+      "banding": 0.0001734304543877905,
+      "highFreq": 0.03455165084820119,
+      "speckle": 0,
+      "emptiness": 0.045756734882645395,
+      "colourCast": 0.20614209167493186
+    },
+    {
+      "file": "residence_h0.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.28942235542626327,
+      "contrast": 0.134453785261619,
+      "dynamicRange": 0.538727848790586,
+      "crushed": 0.012378598681928546,
+      "clipped": 0,
+      "banding": 0.00008671522719389525,
+      "highFreq": 0.06759744500280417,
+      "speckle": 0.0002338531694412371,
+      "emptiness": 0.0552448259914441,
+      "colourCast": 0.7350952262485282
+    },
+    {
+      "file": "residence_h1.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0,
+      "contrast": 0,
+      "dynamicRange": 0,
+      "crushed": 1,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0,
+      "speckle": 0,
+      "emptiness": 1,
+      "colourCast": 1
+    },
+    {
+      "file": "residence_h2.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.003864417790280882,
+      "contrast": 0.00539801768570859,
+      "dynamicRange": 0.01568627543747425,
+      "crushed": 0.9537085212163255,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.021521235456305434,
+      "speckle": 0,
+      "emptiness": 0.9539036304775118,
+      "colourCast": 0.09805070942266249
+    },
+    {
+      "file": "safe_h0.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.2939868153255465,
+      "contrast": 0.20087496978151742,
+      "dynamicRange": 0.6232627164572477,
+      "crushed": 0.00009394149612671985,
+      "clipped": 0,
+      "banding": 0.00008671522719389525,
+      "highFreq": 0.042375950690561395,
+      "speckle": 0,
+      "emptiness": 0.11488322349404556,
+      "colourCast": 0.6464818186375693
+    },
+    {
+      "file": "safe_h1.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.12187046211940035,
+      "contrast": 0.15311335621865438,
+      "dynamicRange": 0.49561646580696106,
+      "crushed": 0.37873598103827033,
+      "clipped": 0,
+      "banding": 0.00008671522719389525,
+      "highFreq": 0.043928209422934364,
+      "speckle": 0.00010961867317557989,
+      "emptiness": 0.38620794311481094,
+      "colourCast": 0.8500354190642306
+    },
+    {
+      "file": "safe_h2.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.07939825616628605,
+      "contrast": 0.11054422001228842,
+      "dynamicRange": 0.393860399723053,
+      "crushed": 0.45554399352526304,
+      "clipped": 0.00003613134466412302,
+      "banding": 0,
+      "highFreq": 0.04306975112827381,
+      "speckle": 0.000007307911545038659,
+      "emptiness": 0.4626835472308937,
+      "colourCast": 0.8677241783360627
+    },
+    {
+      "file": "service_h0.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.316742900913286,
+      "contrast": 0.14549961915698575,
+      "dynamicRange": 0.6221498250961304,
+      "crushed": 0.021368077234362355,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.1216259222712615,
+      "speckle": 0.001929288647890206,
+      "emptiness": 0.04632761012833854,
+      "colourCast": 0.09674067498319938
+    },
+    {
+      "file": "service_h1.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.3558404421884099,
+      "contrast": 0.12678432508787738,
+      "dynamicRange": 0.7072745356708765,
+      "crushed": 0.003887732685859637,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.06590612314647472,
+      "speckle": 0,
+      "emptiness": 0.07194473349520175,
+      "colourCast": 0.4578963874974958
+    },
+    {
+      "file": "service_h2.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.35326096168030235,
+      "contrast": 0.12797364323218136,
+      "dynamicRange": 0.7142478358000517,
+      "crushed": 0.005296855127760435,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.06713280828708965,
+      "speckle": 0,
+      "emptiness": 0.07146057347670251,
+      "colourCast": 0.46374761699732214
+    },
+    {
+      "file": "stack_h0.png",
+      "W": 496,
+      "H": 279,
+      "mean": 4.819779734787624e-8,
+      "contrast": 0.000007087125139950961,
+      "dynamicRange": 0,
+      "crushed": 1,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 3.8993870054742136e-7,
+      "speckle": 0,
+      "emptiness": 1,
+      "colourCast": 1.9999999999999996
+    },
+    {
+      "file": "stack_h1.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.31315970280389505,
+      "contrast": 0.14700936804944462,
+      "dynamicRange": 0.564643144607544,
+      "crushed": 0.06130043935715111,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.12677890761791943,
+      "speckle": 0.0001973136117160438,
+      "emptiness": 0.0670525494276795,
+      "colourCast": 0.2514607865248445
+    },
+    {
+      "file": "stack_h2.png",
+      "W": 496,
+      "H": 279,
+      "mean": 0.005746846998426373,
+      "contrast": 0.027543884342628194,
+      "dynamicRange": 0.01568627543747425,
+      "crushed": 0.95146837784715,
+      "clipped": 0,
+      "banding": 0,
+      "highFreq": 0.022392595601173442,
+      "speckle": 0,
+      "emptiness": 0.95146837784715,
+      "colourCast": 0.16625916870421806
+    }
+  ],
+  "flagged": [
+    {
+      "file": "cistern_h0.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "cistern_h1.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "cistern_h2.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "duct_h0.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "duct_h1.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "duct_h2.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "plant_h0.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    },
+    {
+      "file": "residence_h1.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "residence_h2.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "safe_h1.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    },
+    {
+      "file": "safe_h2.png",
+      "flags": [
+        "CRUSHED"
+      ]
+    },
+    {
+      "file": "service_h0.png",
+      "flags": [
+        "ALIASING"
+      ]
+    },
+    {
+      "file": "stack_h0.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    },
+    {
+      "file": "stack_h1.png",
+      "flags": [
+        "ALIASING"
+      ]
+    },
+    {
+      "file": "stack_h2.png",
+      "flags": [
+        "CRUSHED",
+        "FLAT",
+        "EMPTY"
+      ]
+    }
+  ]
+}

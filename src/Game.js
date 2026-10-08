@@ -60,6 +60,12 @@ async function optional(name, path) {
   }
 }
 
+/** mm:ss, for the one readout in this game that is allowed to be permanent. */
+function fmtWatch(s) {
+  const t = Math.max(0, Math.floor(s));
+  return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
+}
+
 export class Game {
   constructor({ canvas, uiRoot }) {
     this.bus = new Bus();
@@ -72,7 +78,60 @@ export class Game {
     this.ready = false;
     this.state = 'boot';        // boot | menu | play | cine | dead | ended
     this.qa = new URLSearchParams(location.search).get('qa') === '1';
+    /**
+     * THE RUN SEED. Not the layout seed.
+     *
+     * `World` builds from a fixed 20240607 and it stays fixed: the eight zones
+     * are art-directed, every QA baseline in `docs/captures` is measured against
+     * that geometry, and re-rolling it would throw away the thing this project is
+     * good at in exchange for the thing it is worst at. The building is the same
+     * building every night.
+     *
+     * What is different every night is what is wrong with it. This seed drives
+     * the Director — when the Surveyor first appears, where it is put, which
+     * beats fire and in what order, how long it measures for — so two runs
+     * through identical architecture are not the same run.
+     *
+     * **Fixed under `qa=1`.** Every tool in `tools/qa` boots with that flag, so
+     * the whole suite stays deterministic and every recorded number keeps
+     * meaning what it meant, with no change to any of them. `?run=N` pins it by
+     * hand for reproducing a specific session.
+     */
+    /**
+     * `?mode=survival` — Night Watch. The campaign is the default and is
+     * untouched by this; see `Survival.js` for why the mode is a task loop
+     * rather than a timer.
+     */
+    this.mode = new URLSearchParams(location.search).get('mode') === 'survival'
+      ? 'survival' : 'campaign';
+    const runParam = new URLSearchParams(location.search).get('run');
+    this.runSeed = this.qa ? 0xd12ec7
+      : (runParam ? (parseInt(runParam, 10) >>> 0) : ((Math.random() * 0xffffffff) >>> 0));
     this.subsystems = {};
+  }
+
+  /**
+   * Push the shift onto the screen.
+   *
+   * Once per frame, and it is a read: the mode owns the state and the HUD owns
+   * the pixels, so nothing here can change how long a fault has left. The
+   * labels come from the way names because those are what the boards are
+   * stencilled with, and matching the readout to the panel is the whole
+   * navigation aid the mode gets.
+   */
+  _updateWatch() {
+    const sv = this.gameplay?.survival;
+    const w = this.ui?.watch;
+    if (!w) return;
+    if (!sv) { w.show(false); return; }
+    w.show(this.state === 'play');
+    w.time(sv.time);
+    const burn = sv.faults.length > 1 ? sv.cfg.compound : 1;
+    w.faults(sv.faults.map((f) => ({
+      circuit: f.circuit,
+      label: f.circuit.toUpperCase(),
+      margin: Math.max(0, (f.grace - f.age) / burn),
+    })));
   }
 
   // -------------------------------------------------------------------------
@@ -81,28 +140,44 @@ export class Game {
     const P = (v, m) => onProgress(v, m);
 
     P(0.02, 'initialising renderer');
-    this.engine = new Engine(this.canvas, { quality: detectQuality() });
+    // `readback` is only wanted by the QA harnesses, which pull frames out of
+    // the canvas with toDataURL. It maps to preserveDrawingBuffer, which asks
+    // the driver to keep the back buffer alive after presentation and costs a
+    // full-frame copy on tile-based GPUs. Players do not need it.
+    this.engine = new Engine(this.canvas, { quality: detectQuality(), readback: this.qa });
     this.input = new Input(this.canvas);
 
-    P(0.05, 'forging surfaces');
+    // THE BAR WAS WEIGHTED BY GUESS, AND THE GUESS WAS BACKWARDS.
+    //
+    // Texture synthesis was allotted half the bar. Timed on the deployed build
+    // at the high tier: the fourteen surfaces take **0.85 s of a 9.5 s boot**,
+    // about 9%, while the two phases that actually dominate — the hero assets
+    // at 2.4 s and raising the first zone at 2.9 s — were given 10% and 16%
+    // between them. A player watched the bar rush to 55% and then sit there for
+    // most of the wait, which is the shape that reads as "it has hung".
+    //
+    // The weights below are the measured proportions, rounded. They are a
+    // measurement and they will drift; `tools/qa/boot.mjs` is how to re-take
+    // them rather than re-guess.
+    P(0.04, 'forging surfaces');
     this.forge = new TextureForge({ quality: this.engine.q.textureQuality });
-    await this.forge.forgeAll((p, name) => P(0.05 + p * 0.50, `forging ${name}`));
+    await this.forge.forgeAll((p, name) => P(0.04 + p * 0.10, `forging ${name}`));
 
-    P(0.56, 'mixing materials');
+    P(0.15, 'mixing materials');
     this.materials = new MaterialLibrary(this.forge, { envMap: this.engine.envMap });
     materialGlobals.uStochastic.value = this.engine.q.stochastic;
     this.palette = buildPalette(this.materials);
 
-    P(0.58, 'unpacking assets');
+    P(0.17, 'unpacking assets');
     this.assets = new Assets({ materials: this.materials, palette: this.palette });
     await this.assets.loadManifest();
     const manifestNames = (this.assets.manifest?.assets || []).map((a) =>
       (a.file || a.name || '').replace(/\.glb$/, '')).filter(Boolean);
     if (manifestNames.length) {
-      await this.assets.loadAll(manifestNames, (p, n) => P(0.58 + p * 0.10, `loading ${n}`));
+      await this.assets.loadAll(manifestNames, (p, n) => P(0.17 + p * 0.24, `loading ${n}`));
     }
 
-    P(0.69, 'raising structure');
+    P(0.42, 'raising structure');
     this.collision = new CollisionWorld();
     this.rig = new LightRig(this.engine.scene, {
       maxShadows: this.engine.q.maxShadows,
@@ -115,6 +190,10 @@ export class Game {
     this.motes = new Motes({ count: this.engine.q.motes ?? 2600 }).addTo(this.engine.scene);
 
     this.ctx = {
+      // Zones read this for anything that should differ between runs while the
+      // geometry stays identical — the terminal code, the open-day date. See
+      // `runFacts` in Notes.js.
+      runSeed: this.runSeed,
       materials: this.materials,
       collision: this.collision,
       rig: this.rig,
@@ -177,7 +256,7 @@ export class Game {
       // A half-finished world must not take the whole build down with it.
       try {
         this.world = worldMod.createWorld(this.ctx);
-        await this.world.boot?.((p, m) => P(0.69 + p * 0.16, m));
+        await this.world.boot?.((p, m) => P(0.42 + p * 0.42, m));
         this.subsystems.world = true;
       } catch (e) {
         console.error('[game] world failed to build; falling back to Intake', e);
@@ -191,7 +270,7 @@ export class Game {
       this.engine.scene.add(intake.root);
       this.world = makeSingleZoneWorld(intake, this.engine);
     }
-    P(0.86, 'settling dust');
+    P(0.85, 'settling dust');
 
     // ---- player -----------------------------------------------------------
     this.player = new Player({
@@ -331,6 +410,36 @@ export class Game {
     // last safe point was.
     this.bus.on('player:fell', (e) => {
       console.warn(`[game] player left the world (${(e?.drop ?? 0).toFixed(1)} m); respawning`);
+      // FALLING TWICE IN A ROW MEANS THE RESPAWN POINT IS THE PROBLEM.
+      //
+      // Measured: a free-roaming bot fell through a hole in the Service Spine,
+      // respawned onto a point that was itself in the void, fell again six
+      // seconds later, and repeated it for the remaining 106 s of the session
+      // with `controlEnabled` false the whole time. Retrying the same coordinates
+      // is not a recovery, it is a loop, and the player is a spectator to it.
+      const t = this._now ?? 0;
+      // A hard floor on how often this can run at all. `teleport` re-arms the
+      // fall detector, so without a cooldown a destination that does not hold
+      // turns the recovery into a per-frame loop instead of a recovery.
+      if (t - (this._lastRecoverAt ?? -99) < 0.75) return;
+      this._lastRecoverAt = t;
+      const repeat = t - (this._lastFellAt ?? -99) < 12;
+      this._lastFellAt = t;
+      if (repeat) {
+        const p = this._anyFloorNear(this.player.position.x, this.player.position.z);
+        if (p) {
+          console.warn('[game] fell again straight after a respawn; placing on the nearest built floor');
+          this.player.teleport(p[0], p[1], p[2], this.player.yaw);
+          this.player.controlEnabled = true;
+          this.player.lookEnabled = true;
+          this.player.frozen = false;
+          this.state = 'play';
+          this.ui?.show?.(null);
+          this._respawnSettle = 0;
+          this._respawnAt = null;
+          return;
+        }
+      }
       this.respawn();
     });
 
@@ -344,6 +453,27 @@ export class Game {
     // finishing the game after forty minutes showed nothing at all. Both screens
     // exist in `src/ui/EndScreens.js`; the UI harness was the only thing that had
     // ever opened them.
+    // ---- Night Watch -----------------------------------------------------
+    //
+    // The mode is scored on time, so the time is on screen and the score is
+    // kept. Everything here is gated on the mode existing, so the campaign is
+    // untouched: `gameplay.survival` is null unless `?mode=survival`.
+    this.bus.on('survival:end', (e) => {
+      const sv = this.gameplay?.survival;
+      const w = this.ui?.watch;
+      const r = w?.finish?.(e?.seconds ?? sv?.score ?? 0);
+      this.state = 'ended';
+      this.input.exitLock();
+      this.ui?.show?.('end', {
+        title: 'THE PLANT WENT',
+        lines: [
+          `You held Annex 7 for ${fmtWatch(e?.seconds ?? 0)}.`,
+          `${e?.resets ?? 0} ways put back in, ${e?.trips ?? 0} dropped.`,
+          r?.record ? 'A new best.' : `Best: ${fmtWatch(r?.best ?? 0)}.`,
+        ],
+      });
+    });
+
     this.bus.on('game:death', (e) => {
       if (this.state === 'dead' || this.state === 'ended') return;
       this.state = 'dead';
@@ -468,11 +598,41 @@ export class Game {
   }
 
   /** Death -> respawn. The world is expected to have shifted slightly. */
+  /**
+   * Put the player back at the last safe point.
+   *
+   * TWO THINGS THIS DID NOT DO, AND A SESSION THAT ENDED BECAUSE OF IT.
+   *
+   * The safe point is `{id, position, yaw, zone}` and this read three of those
+   * four fields. Zones are 400 m apart and streamed, so respawning into a zone
+   * that is not resident teleports the player to the right coordinates in an
+   * empty world — no floor, no colliders. And `teleport` was given the stored Y
+   * verbatim with no floor snap, where every other placement path in this file
+   * goes through `collision.sampleFloor` first.
+   *
+   * Observed: the player fell out of the Service Spine, the `player:fell` net
+   * called this, this dropped them into the Safe Room at y = -28.04, they fell
+   * again, and it looped — seven falls and fifteen respawns, `controlEnabled`
+   * false for the last minute of the session. The net that exists to catch a
+   * fall was the thing causing them.
+   */
   respawn() {
     this.progression?.respawn?.();
+    const safe = this.gameplay?.director?.lastSafe || null;
     const point = this.progression?.lastSafePoint?.() || this.world?.spawn || [0, 0, 0];
     const yaw = this.progression?.lastSafeYaw?.() ?? this.world?.spawnYaw ?? 0;
-    this.player.teleport(point[0], point[1], point[2], yaw);
+
+    // The zone has to be resident before the coordinates in it mean anything.
+    if (safe?.zone && this.world?.goto && this.currentZone !== safe.zone) {
+      try { this.world.goto(safe.zone); } catch { /* streaming will catch up */ }
+    }
+
+    const y = this._floorYAt(point[0], point[2], point[1]);
+    this.player.teleport(point[0], y ?? point[1], point[2], yaw);
+    // No floor yet — the zone is still building. Hold the body and keep trying
+    // rather than letting gravity have it. See `_settleRespawn`.
+    this._respawnSettle = y === null ? 2.0 : 0;
+    this._respawnAt = [point[0], point[2], point[1]];
     this.player.controlEnabled = true;
     this.player.lookEnabled = true;
     this.player.frozen = false;
@@ -480,6 +640,97 @@ export class Game {
     this.state = 'play';
     this.ui?.show?.(null);
     if (this.sequencer?.play) this.sequencer.play('respawn');
+  }
+
+  /** Highest floor at (x,z) at or below `fromY` plus a generous reach, or null. */
+  _floorYAt(x, z, fromY) {
+    const fl = this.collision?.sampleFloor?.(x, z, (fromY ?? 0) + 2.5, 6);
+    return fl ? fl.y : null;
+  }
+
+  /**
+   * Finish a respawn that landed before its zone had colliders. Runs from
+   * `step`; holds the body still and re-places it the moment a floor appears.
+   */
+  _settleRespawn(dt) {
+    if (!(this._respawnSettle > 0) || !this._respawnAt) return;
+    this._respawnSettle -= dt;
+    const [x, z, y0] = this._respawnAt;
+    const y = this._floorYAt(x, z, y0);
+    if (y !== null) {
+      this.player.teleport(x, y, z, this.player.yaw);
+      this._respawnSettle = 0;
+      this._respawnAt = null;
+      return;
+    }
+    // Still nothing under it. Do not let it accelerate into the void while we
+    // wait, and if the wait runs out put it on any floor that actually exists.
+    this.player.position.y = y0;
+    if (this.player.velocity) this.player.velocity.y = 0;
+    if (this._respawnSettle <= 0) {
+      const p = this._anyFloorNear(x, z) || this._anyFloorNear(...(this.world?.spawn || [0, 0, 0]));
+      if (p) {
+        this.player.teleport(p[0], p[1], p[2], this.player.yaw);
+        console.warn('[game] respawn point had no floor; placed on the nearest built floor instead');
+      } else {
+        console.error('[game] respawn found no floor anywhere in the resident world');
+      }
+      this._respawnAt = null;
+    }
+  }
+
+  /**
+   * The centre of the nearest floor rectangle a body fits on, anywhere in the
+   * resident world. The last-resort respawn.
+   *
+   * THIS EXISTS BECAUSE THE SAFETY NET HAD NO NET UNDER IT. An exploration bot
+   * walked through `service_door3` into a hole in the Service Spine, fell, and
+   * then respawned into somewhere with no floor — and did it again every six
+   * seconds for the remaining 106 seconds of the session, `controlEnabled` false
+   * throughout. `Director.respawn` teleports to `lastSafe`, `Game.respawn`
+   * teleports to the same point with a floor snap, and the previous fallback
+   * from here was `world.spawn` — which is the INTAKE's spawn, and the Intake is
+   * not resident when you are in the Service Spine, so it had no floor either.
+   * Three fallbacks, all of which could be in a zone that is not loaded.
+   *
+   * `collision.floors` is the set of rectangles the streamer has actually built.
+   * If that is empty there is no game to respawn into; if it is not, this cannot
+   * fail.
+   */
+  _anyFloorNear(x, z) {
+    const col = this.collision;
+    const floors = col?.floors;
+    if (!floors?.length) return null;
+    // Nearest first, then PROVE each candidate before handing it back.
+    //
+    // The first version returned a rectangle's centre and trusted it. It does
+    // not follow that a body fits there: a rect centre can be under a machine,
+    // inside a wall return, or on a lip the capsule gets pushed off. Handing
+    // back an unstandable point is worse than handing back nothing, because
+    // `Player.teleport` sets `_fellOut = false` — it re-arms the fall detector —
+    // so a bad destination makes `player:fell` fire again next frame, and the
+    // recovery becomes a 60 Hz loop. Measured: 5 992 `player:fell` events in one
+    // 106 s stretch.
+    const cands = [];
+    for (const f of floors) {
+      if (f.tag === 'void' || (f.water ?? 0) > 0.8) continue;
+      if (f.maxX - f.minX < 1.2 || f.maxZ - f.minZ < 1.2) continue;
+      const cx = (f.minX + f.maxX) / 2, cz = (f.minZ + f.maxZ) / 2;
+      cands.push({ d: (cx - x) ** 2 + (cz - z) ** 2, cx, cz, y: f.y });
+    }
+    cands.sort((a, b) => a.d - b.d);
+    const r = this.player?.radius ?? 0.29;
+    const h = this.player?.height ?? 1.74;
+    for (const c of cands.slice(0, 40)) {
+      const fl = col.sampleFloor?.(c.cx, c.cz, c.y + 0.5, 1.0);
+      if (!fl) continue;
+      const res = col.resolveCapsule?.(c.cx, fl.y, c.cz, r, h);
+      if (res && (res.hit || Math.hypot(res.x - c.cx, res.z - c.cz) > 0.25)) continue;
+      const head = col.ceilingAbove?.(c.cx, c.cz, fl.y + 0.05, r);
+      if (Number.isFinite(head) && head - fl.y < h) continue;
+      return [c.cx, fl.y, c.cz];
+    }
+    return null;
   }
 
   // -------------------------------------------------------------------------
@@ -640,6 +891,8 @@ export class Game {
 
   /** One logic step. Split out so the QA harness can advance deterministically. */
   step(dt) {
+    /** Seconds of simulated time since boot. Only the fall-loop guard reads it. */
+    this._now = (this._now ?? 0) + dt;
     updateMaterialGlobals(dt);
 
     // Order is load-bearing and is asserted by the gameplay and UI layers:
@@ -657,8 +910,12 @@ export class Game {
       this.menuCamera.update(dt);
     } else {
       this.player.update(dt, this.input);
+      // Immediately after integration, so a respawn that landed before its zone
+      // had colliders cannot accumulate a frame of fall.
+      this._settleRespawn(dt);
     }
     this.gameplay?.update?.(dt, this.input);
+    this._updateWatch();
     this.world?.update?.(dt, this.player.position);
     this.rig.update(dt, this.engine.camera, this.engine.renderer);
     // After the rig, so a mote lit by a flickering tube flickers with it.
@@ -820,6 +1077,16 @@ export class Game {
       zone: this.currentZone,
       directAtHead: +this.rig.illuminationAt(p.x, p.y + 1.6, p.z).toFixed(3),
       directAtFloor: +this.rig.illuminationAt(p.x, p.y + 0.1, p.z).toFixed(3),
+      // THE VIEWMODEL'S OWN EXPOSURE, next to the light it is supposed to track.
+      //
+      // `Hands._updateLights` claims the hands darken with the room. It samples
+      // exactly the number on the line above and maps it to 0..1, and for as long
+      // as nothing recorded the two side by side there was no way to notice that
+      // the mapping had stopped working: it divided by 5.2 against a comment
+      // reading "the rig's units run roughly 0..7", while the smallest reading
+      // anywhere in the powered building is 13.9. Pinned at 1.0 everywhere, in a
+      // game whose zones span a 23x range of illumination.
+      handExposure: +(this.hands?.debugState?.().exposure ?? -1),
       fillUp: +(skyL * this.rig.ambient.intensity).toFixed(3),
       fillDown: +(grL * this.rig.ambient.intensity).toFixed(3),
       fixtures: this.rig.stats,
@@ -837,7 +1104,15 @@ export class Game {
         const list = z?._fixtures || [];
         return { total: list.length, lit: list.filter((f) => f.level > 0.05).length };
       })(),
+      // The AUTHORED exposure multiplier — a constant, and named badly enough
+      // that three harnesses waited on it for an eye adaptation it has nothing
+      // to do with. Kept under its old name so nothing that reads it breaks.
       exposure: +this.engine.grade.uniforms.uExposure.value.toFixed(3),
+      // What the eye has actually adapted to. `adaptation.autoGain` is the
+      // multiplier the grade applies, clamped by AUTO_EXPOSURE to about 1.6
+      // stops end to end — so a room four stops darker than the one before it
+      // stays four stops darker, by design. This is the number to settle on.
+      adaptation: this.engine.exposure?.read?.() ?? null,
     };
   }
 
@@ -877,6 +1152,19 @@ export class Game {
    * lit by a fixture 2.7 m up the inverse square law is merciless.
    */
   look(x, y, z, yaw = 0, pitch = 0) {
+    // A CAMERA SENT TO NaN RENDERS BLACK AND SAYS NOTHING.
+    //
+    // `world.spawn` is an array; a shot setup that wrote `r.x` got undefined,
+    // teleported here, and produced a 100 %-crushed frame that read exactly
+    // like an unlit zone. The probe reported `head NaN` in the status line and
+    // the run carried on. Refuse the pose and say so — the previous pose is at
+    // least somewhere in the building.
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)
+      || !Number.isFinite(yaw) || !Number.isFinite(pitch)) {
+      console.error(`[look] non-finite pose (${x}, ${y}, ${z}, yaw ${yaw}, pitch ${pitch}) `
+        + '— refusing to move the camera. Any frame from this shot is of the previous pose.');
+      return false;
+    }
     const res = this.collision.resolveCapsule(
       x, y, z, this.player.radius + 0.08, this.player.height);
     const floor = this.collision.sampleFloor(res.x, res.z, y + 1.2, 2.5);
@@ -885,7 +1173,15 @@ export class Game {
     this.player.bobAmount = 0;
     this.player.velocity.set(0, 0, 0);
     this.engine.exposure.reset();
-    this.player.update(1 / 60, null);
+    // SETTLE THE POSTURE, DO NOT STEP IT ONCE.
+    //
+    // `crouchAmt` and `crawlAmt` are damped at 11 and 9, so a single 1/60 step
+    // moves them about 15 % of the way. In a crawlway that leaves the camera
+    // most of a metre above where a player's eye would be — which is above the
+    // duct's roof — and the frame is of the outside of the geometry. Forty
+    // frames is two thirds of a second of simulated time and settles both.
+    for (let i = 0; i < 40; i++) this.player.update(1 / 60, null);
+    return true;
   }
 
   /**
@@ -901,9 +1197,25 @@ export class Game {
    * @param {number} prefer preferred yaw in radians
    */
   lookOpen(pos, prefer = 0, pitch = 0, {
-    samples = 16, advance = 1.6, maxRange = 24, minClear = 3.0,
+    samples = 16, advance = 1.6, maxRange = 24, minClear = 3.0, headroom = 1.75,
   } = {}) {
     const [x0, y0, z0] = pos;
+    // THE HEADROOM TEST EXCLUDED A WHOLE ZONE, AND THE ZONE WAS THEN JUDGED ON
+    // THE FRAMES IT PRODUCED.
+    //
+    // The Ductwork is a 0.8 m crawl box. Nowhere in it has 1.75 m of headroom,
+    // so every candidate this method tried was rejected, `best` stayed null, and
+    // the camera was left wherever `resolveCapsule` had put it — which is not a
+    // view of anything. Every duct frame this project has ever taken has been of
+    // nothing, and the last one measured 94.2 % black and was read as evidence
+    // that the zone was too dark. It was evidence about the camera. Raising the
+    // zone's fittings by 3.2x and its fill by nearly 3x moved that frame from
+    // 0.942 crushed to 0.943.
+    //
+    // A search that finds nothing has to say so and degrade to the best thing it
+    // did find, rather than silently hand back a camera it never placed. The
+    // retry drops the headroom requirement to something a crawlway can satisfy
+    // and reports which one it used.
 
     /**
      * Best heading from a candidate standing position, and how far it sees.
@@ -921,8 +1233,17 @@ export class Game {
       // says nothing about the zone. 1.75 m is the standing eye height plus a
       // little; anything less is somewhere the player cannot stand.
       const ceil = this.collision.ceilingAbove(r.x, r.z, fl.y + 0.05);
-      if (ceil != null && ceil - fl.y < 1.75) return null;
-      const ey = fl.y + 1.6;
+      if (ceil != null && ceil - fl.y < headroom) return null;
+      // PROBE FROM THE HEIGHT THE PLAYER'S EYE WILL ACTUALLY BE AT.
+      //
+      // This was a flat `fl.y + 1.6`, the standing eye. The Ductwork is a 0.80 m
+      // crawl box, so every sightline this method traced there started thirty
+      // centimetres above the duct's roof, out in the solid, and scored the
+      // outside of the shell. `Player` already auto-crawls to a 0.52 m eye when
+      // the headroom demands it; the search did not know that, so it was
+      // answering "what can be seen from a point nobody can occupy".
+      const clear = ceil != null ? ceil - fl.y : 99;
+      const ey = fl.y + Math.min(1.6, Math.max(0.45, clear - 0.30));
       let yaw = prefer, score = -1, clearAt = 0;
       for (let i = 0; i < samples; i++) {
         const a = (i / samples) * Math.PI * 2;
@@ -961,7 +1282,26 @@ export class Game {
         if (best && best.clear >= minClear) break;
       }
     }
-    if (!best) best = { x: x0, z: z0, y: y0, yaw: prefer, score: 0, clear: 0 };
+    // NOTHING PASSED. Rather than hand back a camera this method never placed,
+    // try again with a headroom a crawlway can satisfy. 0.55 m is under the
+    // Ductwork's 0.80 m clear internal, and still excludes a gap under a soffit
+    // that nobody could put their head in.
+    let relaxed = false;
+    if (!best && headroom > 0.55) {
+      relaxed = true;
+      const retry = this.lookOpen(pos, prefer, pitch,
+        { samples, advance, maxRange, minClear, headroom: 0.55 });
+      if (retry && retry.clear > 0) return { ...retry, relaxedHeadroom: true };
+    }
+    if (!best) {
+      // Still nothing, and now say so out loud: a frame taken from here is a
+      // photograph of wherever the body happened to be, and reading it as
+      // evidence about the zone is how the Ductwork got its lighting changed on
+      // the strength of a picture of nothing.
+      console.warn('[lookOpen] no candidate had a sightline; the camera was not placed'
+        + ` (from ${pos.map((v) => v.toFixed(1)).join(', ')})`);
+      best = { x: x0, z: z0, y: y0, yaw: prefer, score: 0, clear: 0 };
+    }
 
     const res = { x: best.x, z: best.z };
     const y = best.y;
@@ -1004,6 +1344,75 @@ export class Game {
       clear: +best.clear.toFixed(1), degenerate: best.clear < 1.5,
       moved: +Math.hypot(cx - pos[0], cz - pos[2]).toFixed(1),
     };
+  }
+
+  /**
+   * Find an open direction AND STAND THERE.
+   *
+   * `lookOpen` is a query. It searches, scores, and returns a position and a
+   * heading; it moves nothing. 115 of the 135 shots in `tools/qa/shots.*.json`
+   * called it as if it were a command — `g.lookOpen(r, yaw, 0);` as a bare
+   * statement, result dropped — and then photographed whatever pose the game
+   * happened to be in after `world.goto`. Frames named `intake_ceiling`,
+   * `stack_up` and `service_spine` were pictures of the zone's spawn, facing
+   * forward, and every judgement made from them was a judgement about a frame
+   * nobody had aimed. The duct one cost four rounds of lighting changes to a
+   * zone that turned out to be the brightest in the building.
+   *
+   * The two calls existing separately is what made that possible, so this pairs
+   * them. `lookOpen` stays pure for the callers that genuinely only want to ask.
+   *
+   * @returns the `lookOpen` result, or null if there was nothing to find.
+   */
+  lookAtOpen(pos, prefer = 0, pitch = 0, opts = {}) {
+    const p = Array.isArray(pos) ? pos : [pos.x, pos.y, pos.z];
+    const o = this.lookOpen(p, prefer, pitch, opts);
+    // Pose from what it FOUND, not from what it was given: lookOpen is allowed
+    // to step the camera off a wall, and `moved` is how far it did.
+    const [x, y, z] = o?.position || p;
+    this.look(x, y, z, o ? o.yaw : prefer, pitch);
+    if (o?.degenerate) {
+      console.warn(`[lookAtOpen] best sightline was only ${o.clear} m — this frame is of a wall, not of the zone`);
+    }
+    this.assertCameraInZone('lookAtOpen');
+    return o || null;
+  }
+
+  /**
+   * Is the camera actually standing in the zone the game thinks it is in?
+   *
+   * `12_safe_room` reported `[safe lit 5/5 head 15.2]` and rendered 205 draw
+   * calls over 888k triangles — byte-for-byte the workload of `11_stack_shaft`,
+   * the shot before it. The safe room alone renders 119 calls over 66k. The
+   * zone had been streamed in and its ways were live; the CAMERA was still in
+   * the Stack, so the frame was of the Stack with the safe room's electrics.
+   * Every readout in the status line agreed that everything was fine, because
+   * every readout was about the zone rather than about the camera.
+   *
+   * Nothing else in the harness compares those two things, so this does. It is
+   * a warning rather than a throw: a shot deliberately taken from a doorway or
+   * a portal is a legitimate thing to want, and this cannot tell the difference.
+   * What it can do is stop the disagreement being silent.
+   */
+  assertCameraInZone(who = 'camera') {
+    const z = this.world?.zones?.[this.currentZone];
+    const b = z?.bounds;
+    if (!b) return true;
+    const [ox, oy, oz] = z.origin || [0, 0, 0];
+    const p = this.player.position;
+    const lx = p.x - ox, ly = p.y - oy, lz = p.z - oz;
+    const pad = 1.5;   // portals, doorways and thresholds are not a mistake
+    const inside = lx >= b.min.x - pad && lx <= b.max.x + pad
+      && lz >= b.min.z - pad && lz <= b.max.z + pad
+      && ly >= b.min.y - 4 && ly <= b.max.y + 4;
+    if (!inside) {
+      console.warn(`[${who}] the camera is at [${p.x.toFixed(1)}, ${p.y.toFixed(1)}, `
+        + `${p.z.toFixed(1)}] but the current zone is "${this.currentZone}", whose bounds are `
+        + `[${(b.min.x + ox).toFixed(1)}..${(b.max.x + ox).toFixed(1)}, `
+        + `${(b.min.z + oz).toFixed(1)}..${(b.max.z + oz).toFixed(1)}]. `
+        + 'The frame will be of somewhere else with this zone\'s electrics.');
+    }
+    return inside;
   }
 
   walkTo(x, z, seconds = 1) {
@@ -1089,6 +1498,19 @@ export const AMBIENT_PROFILES = {
   cistern:   { sky: 0x5c7885, ground: 0x7d8068, intensity: 1.45, motes: 0.30, moteSize: 1.35 },
   residence: { sky: 0x6e7480, ground: 0x9a8258, intensity: 1.05, motes: 0.75, moteSize: 0.95 },
   plant:     { sky: 0x4c5a6b, ground: 0x74684f, intensity: 0.75, motes: 0.62, moteSize: 1.10, moteExtent: 26 },
+  // THE DUCTWORK HAD THE DARKEST COLOURS AND THE LOWEST INTENSITY IN THE TABLE,
+  // and it is a galvanised box 800 mm across. Zinc sits around 0.55 albedo and
+  // every surface is within arm's reach of every other, so this is the highest
+  // bounce environment in the building and it was carrying a quarter of the
+  // Cistern's fill and an eighth of the Stack's. Measured on the first contact
+  // sheet ever taken with the power on: `fillUp` 0.011 against the Cistern's
+  // 0.300, and a frame 94.2 % black.
+  //
+  // Raising fill is the move this project has been burned by — it is why the
+  // Stack measured well and looked wrong — so the argument here is deliberately
+  // about the material rather than the measurement, and the fittings were raised
+  // in the same pass (see `OUT.bulk` in DuctZone.js) so the light still comes
+  // from the lamps rather than from nowhere.
   duct:      { sky: 0x2e343c, ground: 0x443c2c, intensity: 0.30, motes: 1.45, moteSize: 1.15, moteExtent: 11 },
   stack:     { sky: 0x8e9cb4, ground: 0xb0a48b, intensity: 2.30, motes: 0.90, moteSize: 1.05, moteExtent: 24 },
   safe:      { sky: 0x7e8290, ground: 0xa88a55, intensity: 1.30, motes: 0.60, moteSize: 0.90, moteExtent: 12 },

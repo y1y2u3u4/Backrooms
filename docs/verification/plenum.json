@@ -1,0 +1,48 @@
+{
+  "before": "docs/captures/ceil_before",
+  "after": "docs/captures/ceil_after",
+  "frames": [
+    {
+      "frame": "c1_ceiling_up.png",
+      "darkPixels": 43561,
+      "darkPctOfRegion": 8.63,
+      "darkMeanBefore": 9.53,
+      "darkMeanAfter": 14.32,
+      "darkMovedPct": 63.63,
+      "structureBeforePct": 82.53,
+      "structureAfterPct": 83.18,
+      "pureBlackBeforePct": 1.97,
+      "pureBlackAfterPct": 1.87,
+      "meanBefore": 57.37,
+      "meanAfter": 57.73
+    },
+    {
+      "frame": "c2_ceiling_up_spine.png",
+      "darkPixels": 82795,
+      "darkPctOfRegion": 16.4,
+      "darkMeanBefore": 10.36,
+      "darkMeanAfter": 10.79,
+      "darkMovedPct": 28.53,
+      "structureBeforePct": 81.44,
+      "structureAfterPct": 81.94,
+      "pureBlackBeforePct": 0.06,
+      "pureBlackAfterPct": 0.09,
+      "meanBefore": 73.82,
+      "meanAfter": 73.19
+    },
+    {
+      "frame": "c3_ceiling_walking.png",
+      "darkPixels": 33506,
+      "darkPctOfRegion": 6.64,
+      "darkMeanBefore": 10.77,
+      "darkMeanAfter": 21.53,
+      "darkMovedPct": 90.97,
+      "structureBeforePct": 92.43,
+      "structureAfterPct": 94.48,
+      "pureBlackBeforePct": 0.95,
+      "pureBlackAfterPct": 0.65,
+      "meanBefore": 65.87,
+      "meanAfter": 66.45
+    }
+  ]
+}

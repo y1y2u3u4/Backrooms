@@ -64,8 +64,34 @@ const BODY_RADIUS = 0.30;
 const PELVIS_Y = 1.42;
 /** Illumination (in LightRig units) at which it is fully mobile. */
 const LIGHT_FULL = 2.4;
-/** Below this it is stone. */
+/**
+ * Below this it is stone — at rest. It does not stay there.
+ *
+ * THE RULE THE PLAYER LEARNS IS TRUE AND IT IS NOT THE WHOLE TRUTH.
+ *
+ * "It only moves in light" is this game's best idea and it had a consequence
+ * nobody had priced: the Surveyor has no sight, it hunts by sound, and it stops
+ * dead below this threshold. So a player standing still in an unlit room is not
+ * hard to catch, they are IMPOSSIBLE to catch — no light, no movement; no
+ * movement, no noise; no noise, no belief. Total invulnerability, reachable at
+ * any moment, for free. In a game whose objective is to keep moving that is a
+ * fair trade the player rarely wants to take. As the win condition of anything
+ * timed it is the dominant strategy and it ends the mode.
+ *
+ * So darkness stops being an off switch and becomes a delay. At rest aggression
+ * the threshold is the 0.30 it has always been and every existing behaviour is
+ * unchanged; as aggression climbs it falls toward 0.06, and a thing that has
+ * killed you three times can pick its way through a gloom that used to stop it.
+ *
+ * **Pitch black still stops it, always.** `lum` of zero is below every threshold
+ * in this range, so the frozen pose the whole design rests on — the one that
+ * teaches the rule without a word of text — is exactly as reachable as before.
+ * What shrinks is the margin: the dim corridor that used to be as safe as a
+ * sealed room is now only safe for a while.
+ */
 const LIGHT_DEAD = 0.30;
+/** ...and where the threshold goes at full aggression. */
+const LIGHT_DEAD_HOT = 0.06;
 
 const _v = new THREE.Vector3();
 const _v2 = new THREE.Vector3();
@@ -403,6 +429,12 @@ export class Surveyor {
     this.illumination = 0;
     this.lightScale = 0;          // 0..1 movement multiplier from light
 
+    // ---- idle patrol (see STATE.DORMANT) ----
+    /** Roughly how far from the player it is willing to drift while dormant. */
+    this.wanderRadius = 26;
+    this._wanderGoal = null;
+    this._wanderT = 0;
+
     // ---- decision ----
     this.state = STATE.DORMANT;
     this.stateTime = 0;
@@ -558,13 +590,35 @@ export class Surveyor {
         this.position.x, this.position.y + 1.5, this.position.z,
         position.x, position.y + 1.0, position.z);
     }
-    const strength = clamp01(1 - dist / audible) * lerp(1, 0.34, occl);
+    // HIDING MUFFLES YOU, AND UNTIL NOW IT DID NOTHING AT ALL.
+    //
+    // There are thirteen locker and cupboard references across the zones, a
+    // `hide:enter` event, a UI prompt, an audio cue and a thirty-second Director
+    // grace. `grep -c hidden src/entities/Surveyor.js` returned **0**: the one
+    // system the whole verb exists to affect had never been told. The measured
+    // consequence was that climbing into a locker raised the player's fear by
+    // 0.30 and changed their odds by nothing.
+    //
+    // A steel door is not silence, so this is a muffle rather than a mute: 0.18
+    // multiplies through the same `strength` every other cue uses, which keeps
+    // the whole hearing model in one place. Loud noises made from inside a
+    // locker — slamming its door, a dropped core — can still just be heard, and
+    // that is the correct amount of not-safe.
+    const strength = clamp01(1 - dist / audible)
+      * lerp(1, 0.34, occl)
+      * (this.player?.hidden ? 0.18 : 1);
     if (strength < 0.06) return 0;
 
     // Localisation error grows with distance and with occlusion.
     const err = lerp(0.35, 2.6, clamp01(dist / audible)) * lerp(1, 1.9, occl);
     const a = this.rng() * TAU;
     const r = this.rng() * err;
+
+    // Bearing it was already working on, sampled before the belief moves.
+    const prevX = this.lastHeard.x - this.position.x;
+    const prevZ = this.lastHeard.z - this.position.z;
+    const prevConf = this.confidence;
+    const prevState = this.state;
 
     // A stronger cue overwrites a weaker belief; a weaker one only refreshes it.
     if (strength >= this.confidence * 0.72) {
@@ -581,8 +635,33 @@ export class Surveyor {
       // A loud noise cuts a measuring cycle short. Quiet ones do not.
       this.measureHold = Math.min(this.measureHold, 0.6);
     }
+    // HOW FAR IT SWUNG. This is the player's only feedback that a decoy or a
+    // switch worked, and until now nothing carried it: the event said where the
+    // *sound* was, so the head tick played at the thrown cell thirty metres
+    // away. The player heard their own can land — which they already knew — and
+    // learned nothing about the thing they threw it to move.
+    //
+    // `turn` is the angle between the bearing it was already working on and the
+    // bearing it now believes in, so a decoy that pulls it right round reads
+    // differently from a correction of half a metre. It cannot lie: it is
+    // computed from the belief that actually changed.
+    const nx = this.lastHeard.x - this.position.x, nz = this.lastHeard.z - this.position.z;
+    let turn = 0;
+    // `prevState` and not `this.state`: a DORMANT entity is not working on a
+    // bearing, and its stale belief can be four hundred metres away in another
+    // zone, which would report a huge swing for simply waking up. That would
+    // make the swing check pass on the one case it must not be satisfied by.
+    if (prevState !== STATE.DORMANT && prevState !== STATE.RETREATING
+        && prevConf > 0.08 && (prevX * prevX + prevZ * prevZ) > 0.25 && (nx * nx + nz * nz) > 0.25) {
+      const d = (prevX * nx + prevZ * nz) / (Math.hypot(prevX, prevZ) * Math.hypot(nx, nz));
+      turn = Math.acos(Math.min(1, Math.max(-1, d)));
+    }
     this.bus?.emit('entity:heard', {
       entity: 'surveyor', position: this.lastHeard.clone(),
+      // Where the LISTENER is, not where the sound was. The head plate is on
+      // its head; that is the only place the tick can honestly come from.
+      from: this.position.clone(),
+      turn: +turn.toFixed(3),
       radius, strength: +strength.toFixed(3),
     });
     return strength;
@@ -606,7 +685,8 @@ export class Surveyor {
       lum += this.flashlight.illuminationAt(x, yChest, z, true);
     }
     this.illumination = lum;
-    this.lightScale = smoothstep(LIGHT_DEAD, LIGHT_FULL, lum);
+    this.deadBelow = lerp(LIGHT_DEAD, LIGHT_DEAD_HOT, clamp01(this.aggression));
+    this.lightScale = smoothstep(this.deadBelow, LIGHT_FULL, lum);
     return this.lightScale;
   }
 
@@ -725,6 +805,26 @@ export class Surveyor {
     const from = this.state;
     this.state = s;
     this.stateTime = 0;
+    // EVERY CAPTURE IS A NEW CAPTURE.
+    //
+    // `captureT` was initialised once in the constructor and only ever
+    // incremented; `_killed` was set true on the first kill and reset nowhere in
+    // the file. Neither `despawn()` nor `spawnAt()` touched them, and
+    // `Director.respawn()` calls both. So after the Surveyor caught the player
+    // once, `captureT` stayed above the 1.35 s threshold and `_killed` stayed
+    // true forever — the guard at the bottom of STATE.CAPTURING could never pass
+    // again, `game:death` was never emitted again, and the entity simply stood
+    // on the player.
+    //
+    // **It could kill exactly once per page load.** Measured in a delivered
+    // session: five threat episodes, two of which reached CAPTURING, and one
+    // `game:death` in the whole log. The second capture did nothing and the
+    // entity sat in CAPTURING for 41.7 s while the player walked around it.
+    if (s === STATE.CAPTURING) {
+      this.captureT = 0;
+      this.captureBlend = 0;
+      this._killed = false;
+    }
     this.bus?.emit('entity:state', {
       entity: 'surveyor', state: s, from,
       position: this.position.clone(),
@@ -754,8 +854,33 @@ export class Surveyor {
     switch (this.state) {
       // -------------------------------------------------------------- DORMANT
       case STATE.DORMANT: {
-        this.speed = damp(this.speed, 0, 6, dt);
-        // Even dormant it is not idle: it holds whatever pose it froze in.
+        // IT DRIFTS. A DORMANT SURVEYOR THAT NEVER MOVES IS SCENERY.
+        //
+        // This used to damp to a stop and hold its pose until something made a
+        // noise inside its hearing radius — walking is audible at 14 m, so a
+        // player who never comes within 14 m of the exact spot it was placed
+        // will not meet it in an hour. Traced through a session: it sat at one
+        // point for five minutes while the player's distance to it wandered
+        // between 22 and 56 m purely because the *player* was moving.
+        //
+        // So it patrols, slowly, and not toward the player: `wanderGoal` is a
+        // point picked in the player's rough half of the room, far enough away
+        // that this is not stalking. What it produces is a distance that
+        // changes, which is what makes an encounter possible by geometry rather
+        // than only by the Director deciding one should happen.
+        this._wanderT -= dt;
+        if (this._wanderT <= 0 || !this._wanderGoal) {
+          this._wanderT = 9 + this.rng() * 11;
+          const a = this.rng() * TAU;
+          const r = this.wanderRadius * (0.45 + this.rng() * 0.55);
+          this._wanderGoal = {
+            x: p.position.x + Math.cos(a) * r,
+            z: p.position.z + Math.sin(a) * r,
+          };
+        }
+        // A quarter of seeking speed: audible if you are close, invisible on a
+        // distance plot, and never fast enough to be a chase.
+        this._moveToward(dt, this._wanderGoal.x, this._wanderGoal.z, baseSpeed * 0.26);
         if (this.confidence > 0.25) this.rouse(this.lastHeard);
         break;
       }
@@ -818,9 +943,38 @@ export class Surveyor {
 
       // ----------------------------------------------------------- APPROACHING
       case STATE.APPROACHING: {
-        // Still not a chase: it walks at the belief, which it refreshes only
-        // when the player makes noise. A silent player watches it walk past.
-        this._moveToward(dt, this.lastHeard.x, this.lastHeard.z, baseSpeed * 1.12);
+        // ONCE IT HAS COMMITTED, IT HAS TO BE ABLE TO ARRIVE.
+        //
+        // This used to run at `baseSpeed * 1.12` — 1.39 m/s at full aggression,
+        // against a 2.15 m/s walk and a 3.62 m/s sprint. It could not close on
+        // anybody who kept moving, in any state, ever; an independent assessment
+        // called the chase "unlosable" and the three deaths in the exploration
+        // session all happened after the bot had stopped. A threat that cannot
+        // reach a walking player is scenery, and every hour of atmosphere in
+        // this building is spent on a player who has worked that out.
+        //
+        // APPROACHING now has its own range instead of a multiplier on the
+        // survey pace, because it is a different behaviour and not a faster
+        // version of the same one:
+        //
+        //   aggression 0.0  ->  2.45 m/s   gains 0.30 m/s on a walk
+        //   aggression 1.0  ->  3.10 m/s   gains 0.95 m/s on a walk
+        //   player sprint       3.62 m/s   always wins, and always will
+        //
+        // Committing at 6.5 m and capturing at 1.15 m means the closing window
+        // is about eighteen seconds early on and under six late, which is long
+        // enough to be a decision and short enough to be a bad one to get wrong.
+        // The decision is the point: sprinting outruns it and is loud enough to
+        // refresh the belief it is chasing, walking is quiet and loses ground,
+        // and a locker is now actually a third option (see `hear`).
+        //
+        // Everything else about the design is untouched. It still walks at the
+        // BELIEF rather than at the player, it still cannot corner faster than
+        // 0.85 rad/s, and it is still stone in the dark — `_moveToward` scales
+        // all of this by `lightScale`, so none of these numbers apply in an
+        // unlit room. There is no lunge and no teleport.
+        this._moveToward(dt, this.lastHeard.x, this.lastHeard.z,
+          lerp(2.45, 3.10, this.aggression));
         if (playerDist < 1.15 && this.lightScale > 0.02) {
           this._setState(STATE.CAPTURING);
           break;
@@ -856,6 +1010,14 @@ export class Surveyor {
           this._killed = true;
           this.bus?.emit('game:death', { cause: 'surveyor', position: this.position.clone() });
         }
+        // AND IT MUST BE ABLE TO LET GO.
+        //
+        // CAPTURING had no exit of its own: it ended only when something outside
+        // the entity changed its state, which in practice meant the death →
+        // respawn → `despawn()` chain. Any run where that chain did not complete
+        // left the Surveyor standing on the player indefinitely. A capture that
+        // has not resolved in six seconds has failed; it goes back to looking.
+        if (this.stateTime > 6) { this.confidence = 0.35; this._setState(STATE.SEEKING); }
         break;
       }
 

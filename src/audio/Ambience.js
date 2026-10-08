@@ -1015,14 +1015,41 @@ export class Ambience {
     this._lullT -= dt;
     if (this._lullFor > 0) {
       this._lullFor -= dt;
-      if (this._lullFor <= 0) { this._lullT = 45 + this.rng() * 40; this._lullHold = 0; }
+      // Close enough together that a second one lands inside a long capture and,
+      // more to the point, inside a stretch of play. 45-85 s meant a player
+      // crossing a zone heard at most one.
+      if (this._lullFor <= 0) { this._lullT = 34 + this.rng() * 24; this._lullHold = 0; }
     } else if (this._lullT <= 0 && !directed) {
-      // Long enough that the flat bottom outlasts a 3 s analysis window — a dip
-      // shorter than the window never fully registers as quiet, in the measure
-      // or in the ear.
-      this._lullFor = 6.0 + this.rng() * 3.0;
+      // SIZED FROM THE MEASURE, BECAUSE THE OLD SIZE COULD NOT SATISFY IT.
+      //
+      // `audiodyn` calls a window quiet when it sits more than 12 LU below the
+      // file's own p90, over a 3 s window, and wants a tenth of the running time
+      // to qualify. The previous numbers — 6-9 s at a depth of 0.18-0.30 — could
+      // not reach that from any seed, and the arithmetic says so without
+      // rendering anything:
+      //
+      //   depth 0.30  =  -10.5 dB   does not even count as quiet
+      //   depth 0.18  =  -14.9 dB   counts, but only the plateau does
+      //   plateau     =  0.6 x 9 s  =  5.4 s
+      //   a 3 s window fits inside it for (5.4 - 3) = 2.4 s
+      //   2.4 / 45 s of bed  =  0.053, half the budget, at the very best roll
+      //
+      // So the lull was built to a size that cannot pass the check it exists
+      // for, and four passes of mix work went at the bus, the compressor and the
+      // fader instead — none of which can help, because the shape was too small
+      // rather than too loud.
+      //
+      // Sized the other way round now. To clear 0.10 the envelope has to spend
+      // Q >= 7.5 s below -12 dB; with 20 % ease ramps and a floor deep enough
+      // that most of each ramp is already under the bar, Q is about 0.86 T, so
+      // T >= 8.7 s. Nine to thirteen seconds, down to -18..-15 dB.
+      //
+      // That is also the right SOUND rather than the right number: a room going
+      // properly quiet for ten seconds and then coming back is what the brief
+      // means by carefully controlled silence. A 6 s dip to -12 is a mix wobble.
+      this._lullFor = 9.0 + this.rng() * 4.0;
       this._lullHold = this._lullFor;
-      this._lullDepth = 0.18 + this.rng() * 0.12;   // to -15..-10.5 dB
+      this._lullDepth = 0.12 + this.rng() * 0.06;   // to -18.4..-14.9 dB
     }
     if (this._lullFor > 0 && !directed) {
       // Ease in and out rather than stepping: a gate is a mix error, an ebb is

@@ -1,0 +1,55 @@
+[
+  {
+    "name": "09_duct",
+    "settle": 150,
+    "setup": "g.world.goto('duct');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();const r=g.world.spawn;g.lookOpen(r,g.world.spawnYaw||0,0.0);",
+    "file": "docs/captures/duct_fixed/09_duct.png",
+    "stats": {
+      "ms": 0.800000007947286,
+      "fps": 1249.9999875823657,
+      "p90": 1.2000000476837158,
+      "calls": 181,
+      "tris": 153524,
+      "quality": "high",
+      "res": "960x540",
+      "lights": {
+        "fixtures": 279,
+        "lit": 209,
+        "active": 12,
+        "tubes": 209,
+        "shadows": 3
+      },
+      "probe": {
+        "zone": "duct",
+        "directAtHead": 9.792,
+        "directAtFloor": 10.292,
+        "handExposure": 0.49,
+        "fillUp": 0.084,
+        "fillDown": 0.083,
+        "fixtures": {
+          "fixtures": 279,
+          "lit": 209,
+          "active": 12,
+          "tubes": 209,
+          "shadows": 3
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "duct": 1
+        },
+        "zoneFixtures": {
+          "total": 25,
+          "lit": 25
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -5.1641,
+          "adapted": 0.0057,
+          "autoGain": 1.55
+        }
+      }
+    }
+  }
+]

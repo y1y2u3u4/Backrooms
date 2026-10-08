@@ -1,0 +1,853 @@
+[
+  {
+    "name": "01_intake_spine",
+    "setup": "const r = g.world.goto ? g.world.goto('intake') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 0; g.lookAtOpen(p, y, 0)",
+    "file": "docs/captures/judge_reaimed/01_intake_spine.png",
+    "stats": {
+      "ms": 1.2691666742165884,
+      "fps": 787.918577059443,
+      "p90": 2.299999952316284,
+      "calls": 297,
+      "tris": 1094636,
+      "quality": "high",
+      "res": "960x540",
+      "lights": {
+        "fixtures": 254,
+        "lit": 184,
+        "active": 12,
+        "tubes": 184,
+        "shadows": 3
+      },
+      "probe": {
+        "zone": "intake",
+        "directAtHead": 47.799,
+        "directAtFloor": 43.373,
+        "handExposure": 1,
+        "fillUp": 0.585,
+        "fillDown": 0.949,
+        "fixtures": {
+          "fixtures": 254,
+          "lit": 184,
+          "active": 12,
+          "tubes": 184,
+          "shadows": 3
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1
+        },
+        "zoneFixtures": {
+          "total": 254,
+          "lit": 184
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -2.1582,
+          "adapted": 0.1155,
+          "autoGain": 1.169
+        }
+      }
+    }
+  },
+  {
+    "name": "02_intake_bay",
+    "setup": "const r = g.world.goto ? g.world.goto('intake') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 1.6; g.lookAtOpen(p, y, -0.04)",
+    "file": "docs/captures/judge_reaimed/02_intake_bay.png",
+    "stats": {
+      "ms": 1.0233333349227904,
+      "fps": 977.1986955506038,
+      "p90": 1.5,
+      "calls": 297,
+      "tris": 1094636,
+      "quality": "high",
+      "res": "960x540",
+      "lights": {
+        "fixtures": 254,
+        "lit": 184,
+        "active": 12,
+        "tubes": 184,
+        "shadows": 3
+      },
+      "probe": {
+        "zone": "intake",
+        "directAtHead": 47.665,
+        "directAtFloor": 43.248,
+        "handExposure": 1,
+        "fillUp": 0.585,
+        "fillDown": 0.949,
+        "fixtures": {
+          "fixtures": 254,
+          "lit": 184,
+          "active": 12,
+          "tubes": 184,
+          "shadows": 3
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1
+        },
+        "zoneFixtures": {
+          "total": 254,
+          "lit": 184
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -2.1055,
+          "adapted": 0.1218,
+          "autoGain": 1.108
+        }
+      }
+    }
+  },
+  {
+    "name": "03_intake_ceiling",
+    "setup": "const r = g.world.goto ? g.world.goto('intake') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 0.4; g.lookAtOpen(p, y, 0.6)",
+    "file": "docs/captures/judge_reaimed/03_intake_ceiling.png",
+    "stats": {
+      "ms": 1.0416666607062022,
+      "fps": 960.000005493164,
+      "p90": 1.2999999523162842,
+      "calls": 251,
+      "tris": 1084008,
+      "quality": "high",
+      "res": "960x540",
+      "lights": {
+        "fixtures": 254,
+        "lit": 184,
+        "active": 12,
+        "tubes": 184,
+        "shadows": 3
+      },
+      "probe": {
+        "zone": "intake",
+        "directAtHead": 47.746,
+        "directAtFloor": 43.318,
+        "handExposure": 1,
+        "fillUp": 0.585,
+        "fillDown": 0.949,
+        "fixtures": {
+          "fixtures": 254,
+          "lit": 184,
+          "active": 12,
+          "tubes": 184,
+          "shadows": 3
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1
+        },
+        "zoneFixtures": {
+          "total": 254,
+          "lit": 184
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -2.5469,
+          "adapted": 0.0783,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "04_intake_look_back",
+    "setup": "const r = g.world.goto ? g.world.goto('intake') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 3.1416; g.lookAtOpen(p, y, -0.06)",
+    "file": "docs/captures/judge_reaimed/04_intake_look_back.png",
+    "stats": {
+      "ms": 1.3133333265781402,
+      "fps": 761.4213237133615,
+      "p90": 1.7999999523162842,
+      "calls": 297,
+      "tris": 1094636,
+      "quality": "high",
+      "res": "960x540",
+      "lights": {
+        "fixtures": 254,
+        "lit": 183,
+        "active": 12,
+        "tubes": 184,
+        "shadows": 3
+      },
+      "probe": {
+        "zone": "intake",
+        "directAtHead": 47.735,
+        "directAtFloor": 43.31,
+        "handExposure": 1,
+        "fillUp": 0.585,
+        "fillDown": 0.949,
+        "fixtures": {
+          "fixtures": 254,
+          "lit": 183,
+          "active": 12,
+          "tubes": 184,
+          "shadows": 3
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1
+        },
+        "zoneFixtures": {
+          "total": 254,
+          "lit": 183
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -1.9883,
+          "adapted": 0.1369,
+          "autoGain": 0.986
+        }
+      }
+    }
+  },
+  {
+    "name": "05_service_corridor",
+    "setup": "const r = g.world.goto ? g.world.goto('service') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 0; g.lookAtOpen(p, y, 0)",
+    "file": "docs/captures/judge_reaimed/05_service_corridor.png",
+    "stats": {
+      "ms": 375.1566666662693,
+      "fps": 2.6655530578364397,
+      "p90": 4.3999998569488525,
+      "calls": 433,
+      "tris": 607240,
+      "quality": "high",
+      "res": "960x540",
+      "lights": {
+        "fixtures": 352,
+        "lit": 260,
+        "active": 14,
+        "tubes": 260,
+        "shadows": 3
+      },
+      "probe": {
+        "zone": "service",
+        "directAtHead": 19.604,
+        "directAtFloor": 15.744,
+        "handExposure": 0.68,
+        "fillUp": 0.094,
+        "fillDown": 0.132,
+        "fixtures": {
+          "fixtures": 352,
+          "lit": 260,
+          "active": 14,
+          "tubes": 260,
+          "shadows": 3
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 0,
+          "stack": 0,
+          "residence": 0,
+          "duct": 0,
+          "plant_lift": 0
+        },
+        "zoneFixtures": {
+          "total": 74,
+          "lit": 72
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -2.1719,
+          "adapted": 0.114,
+          "autoGain": 1.185
+        }
+      }
+    }
+  },
+  {
+    "name": "06_cistern_water",
+    "setup": "const r = g.world.goto ? g.world.goto('cistern') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 0; g.lookAtOpen(p, y, -0.12)",
+    "file": "docs/captures/judge_reaimed/06_cistern_water.png",
+    "stats": {
+      "ms": 1.0924999952316283,
+      "fps": 915.3318117754163,
+      "p90": 1.7000000476837158,
+      "calls": 281,
+      "tris": 239636,
+      "quality": "high",
+      "res": "960x540",
+      "lights": {
+        "fixtures": 352,
+        "lit": 260,
+        "active": 1,
+        "tubes": 260,
+        "shadows": 3
+      },
+      "probe": {
+        "zone": "cistern",
+        "directAtHead": 1.018,
+        "directAtFloor": 0.736,
+        "handExposure": 0.15,
+        "fillUp": 0.3,
+        "fillDown": 0.359,
+        "fixtures": {
+          "fixtures": 352,
+          "lit": 260,
+          "active": 1,
+          "tubes": 260,
+          "shadows": 3
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 0,
+          "stack": 0,
+          "residence": 0,
+          "duct": 0,
+          "plant_lift": 0
+        },
+        "zoneFixtures": {
+          "total": 24,
+          "lit": 4
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -4.9063,
+          "adapted": 0.0074,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "07_residence_corridor",
+    "setup": "const r = g.world.goto ? g.world.goto('residence') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 0; g.lookAtOpen(p, y, 0)",
+    "file": "docs/captures/judge_reaimed/07_residence_corridor.png",
+    "stats": {
+      "ms": 2.1199999928474424,
+      "fps": 471.6981147989849,
+      "p90": 3.4000000953674316,
+      "calls": 457,
+      "tris": 350068,
+      "quality": "high",
+      "res": "960x540",
+      "lights": {
+        "fixtures": 135,
+        "lit": 113,
+        "active": 11,
+        "tubes": 113,
+        "shadows": 3
+      },
+      "probe": {
+        "zone": "residence",
+        "directAtHead": 10.23,
+        "directAtFloor": 7.433,
+        "handExposure": 0.49,
+        "fillUp": 0.223,
+        "fillDown": 0.302,
+        "fixtures": {
+          "fixtures": 135,
+          "lit": 113,
+          "active": 11,
+          "tubes": 113,
+          "shadows": 3
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 0,
+          "stack": 0,
+          "residence": 1,
+          "duct": 0,
+          "plant_lift": 0
+        },
+        "zoneFixtures": {
+          "total": 37,
+          "lit": 37
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -2.4395,
+          "adapted": 0.0872,
+          "autoGain": 1.548
+        }
+      }
+    }
+  },
+  {
+    "name": "08_plant_hall",
+    "setup": "const r = g.world.goto ? g.world.goto('plant') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 0; g.lookAtOpen(p, y, -0.05)",
+    "file": "docs/captures/judge_reaimed/08_plant_hall.png",
+    "stats": {
+      "ms": 1858.9366666734218,
+      "fps": 0.5379419417174153,
+      "p90": 3.4000000953674316,
+      "calls": 424,
+      "tris": 879434,
+      "quality": "high",
+      "res": "960x540",
+      "lights": {
+        "fixtures": 92,
+        "lit": 70,
+        "active": 14,
+        "tubes": 70,
+        "shadows": 3
+      },
+      "probe": {
+        "zone": "plant",
+        "directAtHead": 307.762,
+        "directAtFloor": 297.954,
+        "handExposure": 1,
+        "fillUp": 0.085,
+        "fillDown": 0.121,
+        "fixtures": {
+          "fixtures": 92,
+          "lit": 70,
+          "active": 14,
+          "tubes": 70,
+          "shadows": 3
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 0,
+          "stack": 0,
+          "residence": 1,
+          "duct": 0,
+          "plant_lift": 0
+        },
+        "zoneFixtures": {
+          "total": 31,
+          "lit": 29
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -3.8398,
+          "adapted": 0.0215,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "09_plant_wide",
+    "setup": "const r = g.world.goto ? g.world.goto('plant') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 1.2; g.lookAtOpen(p, y, 0.14)",
+    "file": "docs/captures/judge_reaimed/09_plant_wide.png",
+    "stats": {
+      "ms": 3381.4508333444596,
+      "fps": 0.2957310483828444,
+      "p90": 2.3000001907348633,
+      "calls": 407,
+      "tris": 875152,
+      "quality": "high",
+      "res": "960x540",
+      "lights": {
+        "fixtures": 92,
+        "lit": 70,
+        "active": 17,
+        "tubes": 70,
+        "shadows": 3
+      },
+      "probe": {
+        "zone": "plant",
+        "directAtHead": 310.354,
+        "directAtFloor": 300.328,
+        "handExposure": 1,
+        "fillUp": 0.085,
+        "fillDown": 0.121,
+        "fixtures": {
+          "fixtures": 92,
+          "lit": 70,
+          "active": 17,
+          "tubes": 70,
+          "shadows": 3
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 0,
+          "stack": 0,
+          "residence": 1,
+          "duct": 0,
+          "plant_lift": 0
+        },
+        "zoneFixtures": {
+          "total": 31,
+          "lit": 29
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -4.0352,
+          "adapted": 0.0177,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "10_duct_crawl",
+    "setup": "const r = g.world.goto ? g.world.goto('duct') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 0; g.lookAtOpen(p, y, 0); g.player.crouchAmt = 1;",
+    "file": "docs/captures/judge_reaimed/10_duct_crawl.png",
+    "stats": {
+      "ms": 1.242499985297521,
+      "fps": 804.8289833665846,
+      "p90": 2.3000001907348633,
+      "calls": 205,
+      "tris": 172044,
+      "quality": "high",
+      "res": "960x540",
+      "lights": {
+        "fixtures": 93,
+        "lit": 77,
+        "active": 4,
+        "tubes": 77,
+        "shadows": 3
+      },
+      "probe": {
+        "zone": "duct",
+        "directAtHead": 1.239,
+        "directAtFloor": 1.391,
+        "handExposure": 0.18,
+        "fillUp": 0.011,
+        "fillDown": 0.016,
+        "fixtures": {
+          "fixtures": 93,
+          "lit": 77,
+          "active": 4,
+          "tubes": 77,
+          "shadows": 3
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 0,
+          "stack": 0,
+          "residence": 1,
+          "duct": 0,
+          "plant_lift": 0
+        },
+        "zoneFixtures": {
+          "total": 25,
+          "lit": 11
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -4.3008,
+          "adapted": 0.0136,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "11_stack_shaft",
+    "setup": "const r = g.world.goto ? g.world.goto('stack') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 0; g.lookAtOpen(p, y, 0.2)",
+    "file": "docs/captures/judge_reaimed/11_stack_shaft.png",
+    "stats": {
+      "ms": 2.6691666702429453,
+      "fps": 374.64876627917016,
+      "p90": 1.3999998569488525,
+      "calls": 201,
+      "tris": 885176,
+      "quality": "high",
+      "res": "960x540",
+      "lights": {
+        "fixtures": 154,
+        "lit": 46,
+        "active": 0,
+        "tubes": 46,
+        "shadows": 3
+      },
+      "probe": {
+        "zone": "stack",
+        "directAtHead": 0,
+        "directAtFloor": 0,
+        "handExposure": 0,
+        "fillUp": 0.871,
+        "fillDown": 1,
+        "fixtures": {
+          "fixtures": 154,
+          "lit": 46,
+          "active": 0,
+          "tubes": 46,
+          "shadows": 3
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 0,
+          "stack": 0,
+          "residence": 1,
+          "duct": 0,
+          "plant_lift": 1,
+          "office_lamp": 1
+        },
+        "zoneFixtures": {
+          "total": 98,
+          "lit": 5
+        },
+        "exposure": 0.314,
+        "adaptation": {
+          "logLuminance": -3.8828,
+          "adapted": 0.0206,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "12_safe_room",
+    "setup": "const r = g.world.goto ? g.world.goto('safe') : null; const p = (r && r.position) || g.world.spawn; const y = ((r && r.yaw !== undefined) ? r.yaw : (g.world.spawnYaw||0)) + 0.6; g.lookAtOpen(p, y, -0.04)",
+    "file": "docs/captures/judge_reaimed/12_safe_room.png",
+    "stats": {
+      "ms": 0.7483333388964335,
+      "fps": 1336.3028853888818,
+      "p90": 1.1000001430511475,
+      "calls": 205,
+      "tris": 888024,
+      "quality": "high",
+      "res": "960x540",
+      "lights": {
+        "fixtures": 128,
+        "lit": 21,
+        "active": 5,
+        "tubes": 21,
+        "shadows": 3
+      },
+      "probe": {
+        "zone": "safe",
+        "directAtHead": 15.128,
+        "directAtFloor": 12.093,
+        "handExposure": 0.59,
+        "fillUp": 0.352,
+        "fillDown": 0.427,
+        "fixtures": {
+          "fixtures": 128,
+          "lit": 21,
+          "active": 5,
+          "tubes": 21,
+          "shadows": 3
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 0,
+          "stack": 0,
+          "residence": 1,
+          "duct": 0,
+          "plant_lift": 1,
+          "office_lamp": 1,
+          "safe": 1
+        },
+        "zoneFixtures": {
+          "total": 5,
+          "lit": 5
+        },
+        "exposure": 0.896,
+        "adaptation": {
+          "logLuminance": -3.918,
+          "adapted": 0.0199,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "13_surveyor_mid",
+    "setup": "const r = g.world.goto ? g.world.goto('intake') : null; const p=(r&&r.position)||g.world.spawn; const y=((r&&r.yaw!==undefined)?r.yaw:(g.world.spawnYaw||0)); const o = g.lookOpen(p, y, 0); const q=g.gameplay&&g.gameplay.qa; if(q&&q.surveyorTo){ const f=g.player.forward(); q.surveyorTo(g.player.position.x+f.x*10, g.player.position.z+f.z*10, {state:'SEEKING'}); }",
+    "file": "docs/captures/judge_reaimed/13_surveyor_mid.png",
+    "stats": {
+      "ms": 1.0683333277702332,
+      "fps": 936.0374463718597,
+      "p90": 1.5,
+      "calls": 205,
+      "tris": 888024,
+      "quality": "high",
+      "res": "960x540",
+      "lights": {
+        "fixtures": 426,
+        "lit": 261,
+        "active": 1,
+        "tubes": 261,
+        "shadows": 3
+      },
+      "probe": {
+        "zone": "stack",
+        "directAtHead": 0.761,
+        "directAtFloor": 0.578,
+        "handExposure": 0.18,
+        "fillUp": 0.596,
+        "fillDown": 0.683,
+        "fixtures": {
+          "fixtures": 426,
+          "lit": 261,
+          "active": 1,
+          "tubes": 261,
+          "shadows": 3
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 0,
+          "stack": 0,
+          "residence": 1,
+          "duct": 0,
+          "plant_lift": 1,
+          "office_lamp": 1,
+          "safe": 1
+        },
+        "zoneFixtures": {
+          "total": 98,
+          "lit": 5
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -3.1348,
+          "adapted": 0.0435,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "14_surveyor_close",
+    "setup": "const r = g.world.goto ? g.world.goto('intake') : null; const p=(r&&r.position)||g.world.spawn; const y=((r&&r.yaw!==undefined)?r.yaw:(g.world.spawnYaw||0)); const o = g.lookOpen(p, y, 0.04); const q=g.gameplay&&g.gameplay.qa; if(q&&q.surveyorTo){ const f=g.player.forward(); q.surveyorTo(g.player.position.x+f.x*4.5, g.player.position.z+f.z*4.5, {state:'MEASURING'}); }",
+    "file": "docs/captures/judge_reaimed/14_surveyor_close.png",
+    "stats": {
+      "ms": 0.9491666714350383,
+      "fps": 1053.5557453656766,
+      "p90": 1,
+      "calls": 205,
+      "tris": 888024,
+      "quality": "high",
+      "res": "960x540",
+      "lights": {
+        "fixtures": 426,
+        "lit": 261,
+        "active": 1,
+        "tubes": 261,
+        "shadows": 3
+      },
+      "probe": {
+        "zone": "stack",
+        "directAtHead": 0.763,
+        "directAtFloor": 0.58,
+        "handExposure": 0.13,
+        "fillUp": 0.869,
+        "fillDown": 0.997,
+        "fixtures": {
+          "fixtures": 426,
+          "lit": 261,
+          "active": 1,
+          "tubes": 261,
+          "shadows": 3
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1,
+          "service": 1,
+          "plant": 1,
+          "cistern": 0,
+          "stack": 0,
+          "residence": 1,
+          "duct": 0,
+          "plant_lift": 1,
+          "office_lamp": 1,
+          "safe": 1
+        },
+        "zoneFixtures": {
+          "total": 98,
+          "lit": 5
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -3.1973,
+          "adapted": 0.0409,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "15_lamp_in_the_dark",
+    "setup": "const r = g.world.goto ? g.world.goto('service') : null; const p=(r&&r.position)||g.world.spawn; const y=((r&&r.yaw!==undefined)?r.yaw:(g.world.spawnYaw||0)); g.lookAtOpen(p, y, 0); for (const c of g.rig.circuits.keys()) g.rig.setCircuit(c,false); if (g.flashlight) { g.flashlight.isOn = true; g.flashlight.on = true; }",
+    "file": "docs/captures/judge_reaimed/15_lamp_in_the_dark.png",
+    "stats": {
+      "ms": 1.319999982913335,
+      "fps": 757.575767382154,
+      "p90": 1.3999998569488525,
+      "calls": 439,
+      "tris": 623240,
+      "quality": "high",
+      "res": "960x540",
+      "lights": {
+        "fixtures": 426,
+        "lit": 0,
+        "active": 0,
+        "tubes": 0,
+        "shadows": 0
+      },
+      "probe": {
+        "zone": "service",
+        "directAtHead": 0,
+        "directAtFloor": 0,
+        "handExposure": 0,
+        "fillUp": 0.094,
+        "fillDown": 0.132,
+        "fixtures": {
+          "fixtures": 426,
+          "lit": 0,
+          "active": 0,
+          "tubes": 0,
+          "shadows": 0
+        },
+        "circuits": {
+          "main": 0,
+          "emergency": 0,
+          "intake": 0,
+          "service": 0,
+          "plant": 0,
+          "cistern": 0,
+          "stack": 0,
+          "residence": 0,
+          "duct": 0,
+          "plant_lift": 0,
+          "office_lamp": 0,
+          "safe": 0
+        },
+        "zoneFixtures": {
+          "total": 74,
+          "lit": 0
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -4.543,
+          "adapted": 0.0106,
+          "autoGain": 1.55
+        }
+      }
+    }
+  }
+]

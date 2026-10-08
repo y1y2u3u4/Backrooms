@@ -1,0 +1,155 @@
+[
+  {
+    "name": "c1_ceiling_up",
+    "settle": 1,
+    "setup": "const settle=(m)=>{let l=-1,st=0;for(let i=0;i<m;i++){g.renderOnce(1/60);const a=g.lightProbe().adaptation;const e=a?a.autoGain:0;if(i>150&&Math.abs(e-l)<2e-3){if(++st>20)return i;}else st=0;l=e;}return m;};for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;const r=g.world.goto('intake');const cine=g.ui&&g.ui.cine;let n=0;while(cine&&cine.active&&n<4000){g.renderOnce(1/60);n++;}if(g.flashlight){g.flashlight.isOn=false;g.flashlight.on=false;}const p=(r&&r.position)||g.world.spawn;g.lookOpen(p,(r&&r.yaw)||0,0.62);settle(700);",
+    "file": "docs/captures/ceil_before/c1_ceiling_up.png",
+    "stats": {
+      "ms": 1.23166663646698,
+      "fps": 811.9080036693105,
+      "p90": 1.3999996185302734,
+      "calls": 243,
+      "tris": 1045712,
+      "quality": "medium",
+      "res": "1280x720",
+      "lights": {
+        "fixtures": 222,
+        "lit": 157,
+        "active": 12,
+        "tubes": 157,
+        "shadows": 2
+      },
+      "probe": {
+        "zone": "intake",
+        "directAtHead": 47.66,
+        "directAtFloor": 43.243,
+        "fillUp": 0.632,
+        "fillDown": 1.025,
+        "fixtures": {
+          "fixtures": 222,
+          "lit": 157,
+          "active": 12,
+          "tubes": 157,
+          "shadows": 2
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1
+        },
+        "zoneFixtures": {
+          "total": 222,
+          "lit": 157
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -2.6582,
+          "adapted": 0.0701,
+          "autoGain": 1.55
+        }
+      }
+    }
+  },
+  {
+    "name": "c2_ceiling_up_spine",
+    "settle": 1,
+    "setup": "const settle=(m)=>{let l=-1,st=0;for(let i=0;i<m;i++){g.renderOnce(1/60);const a=g.lightProbe().adaptation;const e=a?a.autoGain:0;if(i>150&&Math.abs(e-l)<2e-3){if(++st>20)return i;}else st=0;l=e;}return m;};for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;const r=g.world.goto('intake');const cine=g.ui&&g.ui.cine;let n=0;while(cine&&cine.active&&n<4000){g.renderOnce(1/60);n++;}if(g.flashlight){g.flashlight.isOn=false;g.flashlight.on=false;}const p=(r&&r.position)||g.world.spawn;g.lookOpen([p[0]+6,p[1],p[2]+8],((r&&r.yaw)||0)+1.57,0.55);settle(700);",
+    "file": "docs/captures/ceil_before/c2_ceiling_up_spine.png",
+    "stats": {
+      "ms": 1.3958333373069762,
+      "fps": 716.4179084082706,
+      "p90": 1.5999999046325684,
+      "calls": 325,
+      "tris": 1228976,
+      "quality": "medium",
+      "res": "1280x720",
+      "lights": {
+        "fixtures": 222,
+        "lit": 156,
+        "active": 12,
+        "tubes": 157,
+        "shadows": 2
+      },
+      "probe": {
+        "zone": "intake",
+        "directAtHead": 36.382,
+        "directAtFloor": 32.824,
+        "fillUp": 0.632,
+        "fillDown": 1.025,
+        "fixtures": {
+          "fixtures": 222,
+          "lit": 156,
+          "active": 12,
+          "tubes": 157,
+          "shadows": 2
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1
+        },
+        "zoneFixtures": {
+          "total": 222,
+          "lit": 156
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -2.0371,
+          "adapted": 0.1304,
+          "autoGain": 1.035
+        }
+      }
+    }
+  },
+  {
+    "name": "c3_ceiling_walking",
+    "settle": 1,
+    "setup": "const settle=(m)=>{let l=-1,st=0;for(let i=0;i<m;i++){g.renderOnce(1/60);const a=g.lightProbe().adaptation;const e=a?a.autoGain:0;if(i>150&&Math.abs(e-l)<2e-3){if(++st>20)return i;}else st=0;l=e;}return m;};for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;const r=g.world.goto('intake');const cine=g.ui&&g.ui.cine;let n=0;while(cine&&cine.active&&n<4000){g.renderOnce(1/60);n++;}if(g.flashlight){g.flashlight.isOn=false;g.flashlight.on=false;}const p=(r&&r.position)||g.world.spawn;g.lookOpen([p[0]-4,p[1],p[2]+4],((r&&r.yaw)||0)+3.14,0.30);settle(700);",
+    "file": "docs/captures/ceil_before/c3_ceiling_walking.png",
+    "stats": {
+      "ms": 1.378333330154419,
+      "fps": 725.5139073564787,
+      "p90": 1.5999999046325684,
+      "calls": 301,
+      "tris": 1090100,
+      "quality": "medium",
+      "res": "1280x720",
+      "lights": {
+        "fixtures": 222,
+        "lit": 157,
+        "active": 12,
+        "tubes": 157,
+        "shadows": 2
+      },
+      "probe": {
+        "zone": "intake",
+        "directAtHead": 33.2,
+        "directAtFloor": 29.936,
+        "fillUp": 0.632,
+        "fillDown": 1.025,
+        "fixtures": {
+          "fixtures": 222,
+          "lit": 157,
+          "active": 12,
+          "tubes": 157,
+          "shadows": 2
+        },
+        "circuits": {
+          "main": 1,
+          "emergency": 1,
+          "intake": 1
+        },
+        "zoneFixtures": {
+          "total": 222,
+          "lit": 157
+        },
+        "exposure": 1,
+        "adaptation": {
+          "logLuminance": -2.6113,
+          "adapted": 0.0734,
+          "autoGain": 1.55
+        }
+      }
+    }
+  }
+]

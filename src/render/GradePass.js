@@ -19,6 +19,21 @@ import { Pass, FullScreenQuad } from 'three/examples/jsm/postprocessing/Pass.js'
  *    tint toward bone.
  */
 
+/**
+ * The auto-exposure curve, in one place because two things read it: the grade
+ * shader that applies it, and `ExposureAdaptation.read()` that reports it.
+ *
+ * They used to be the same three numbers written twice, and the reason that
+ * matters is that nothing in this project could see this subsystem at all.
+ * `Game.lightProbe()` reported a field called `exposure` which was the constant
+ * `uExposure` uniform, not the adaptation — so every harness that waited for
+ * "the exposure to settle" was watching a number that never moves, and settled
+ * after 31 frames against a 1.8 s time constant. Frames taken that way are
+ * photographed at the previous room's adaptation, which is the exact mistake
+ * capture.mjs's SETTLE comment was written about.
+ */
+export const AUTO_EXPOSURE = { target: 0.135, min: 0.80, max: 1.55 };
+
 const GradeShader = {
   uniforms: {
     tDiffuse: { value: null },
@@ -116,7 +131,7 @@ const GradeShader = {
       // pushes the gain up until the lit wall in the other half reads as blown
       // white — the auto-exposure doing exactly what it is asked to do and
       // ruining the shot. Authored lighting should dominate; this is a nudge.
-      float autoGain = clamp(0.135 / max(adapted, 1e-4), 0.80, 1.55);
+      float autoGain = clamp(${AUTO_EXPOSURE.target.toFixed(3)} / max(adapted, 1e-4), ${AUTO_EXPOSURE.min.toFixed(3)}, ${AUTO_EXPOSURE.max.toFixed(3)});
       float gain = uExposure * mix(1.0, autoGain, uAutoExposure);
       col *= gain;
 
@@ -280,6 +295,36 @@ export class ExposureAdaptation {
     const t = this.accA; this.accA = this.accB; this.accB = t;
     r.setRenderTarget(prevTarget);
     return this.accB.texture;
+  }
+
+  /**
+   * What the eye has actually adapted to, and the gain the grade will apply
+   * because of it.
+   *
+   * DIAGNOSTICS ONLY. This reads back a 1x1 render target, which stalls the
+   * pipeline, so it belongs in `lightProbe()` and never in a frame. It exists
+   * because the adaptation was the one part of the image chain with no readout
+   * at all: a harness could render a thousand frames waiting for "the exposure"
+   * to settle and never learn that it had, or had not.
+   *
+   * @returns {{logLuminance:number, adapted:number, autoGain:number}|null}
+   */
+  read() {
+    if (!this._primed) return null;
+    const buf = new Uint16Array(4);
+    try {
+      this.renderer.readRenderTargetPixels(this.accB, 0, 0, 1, 1, buf);
+    } catch { return null; }
+    const logL = THREE.DataUtils.fromHalfFloat(buf[0]);
+    if (!Number.isFinite(logL)) return null;
+    const adapted = Math.min(4, Math.max(0.004, Math.exp(logL)));
+    const autoGain = Math.min(AUTO_EXPOSURE.max,
+      Math.max(AUTO_EXPOSURE.min, AUTO_EXPOSURE.target / Math.max(adapted, 1e-4)));
+    return {
+      logLuminance: +logL.toFixed(4),
+      adapted: +adapted.toFixed(4),
+      autoGain: +autoGain.toFixed(3),
+    };
   }
 
   reset() { this._primed = false; this.locked = false; }

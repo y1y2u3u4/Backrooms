@@ -1,0 +1,57 @@
+[
+ {
+  "name": "01_intake_spine",
+  "settle": 150,
+  "setup": "g.world.goto('intake');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();g.look(-28.0,0,-8.4,-1.5708,0.0);"
+ },
+ {
+  "name": "02_intake_bay",
+  "settle": 150,
+  "setup": "g.world.goto('intake');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();g.look(-12.6,0,4.2,0.7,0.0);"
+ },
+ {
+  "name": "03_intake_lane",
+  "settle": 150,
+  "setup": "g.world.goto('intake');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();g.look(-25.2,0,-18.9,-1.5708,0.0);"
+ },
+ {
+  "name": "04_service",
+  "settle": 150,
+  "setup": "g.world.goto('service');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();const r=g.world.spawn;g.lookAtOpen(r,g.world.spawnYaw||0,0.0);"
+ },
+ {
+  "name": "05_cistern_tunnel",
+  "settle": 150,
+  "setup": "g.world.goto('cistern');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();g.look(785.0,0,0,-1.5708,0.0);"
+ },
+ {
+  "name": "06_cistern_chamber",
+  "settle": 150,
+  "setup": "g.world.goto('cistern');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();g.look(813.0,0,0,-1.5708,0.02);"
+ },
+ {
+  "name": "07_plant",
+  "settle": 150,
+  "setup": "g.world.goto('plant');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();const r=g.world.spawn;g.lookAtOpen(r,g.world.spawnYaw||0,-0.05);"
+ },
+ {
+  "name": "08_residence",
+  "settle": 150,
+  "setup": "g.world.goto('residence');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();const r=g.world.spawn;g.lookAtOpen(r,g.world.spawnYaw||0,0.0);"
+ },
+ {
+  "name": "09_duct",
+  "settle": 150,
+  "setup": "g.world.goto('duct');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();const r=g.world.spawn;g.lookAtOpen(r,g.world.spawnYaw||0,0.0);"
+ },
+ {
+  "name": "10_stack",
+  "settle": 150,
+  "setup": "g.world.goto('stack');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();g.look(0,0,789.8,3.1416,-0.10);"
+ },
+ {
+  "name": "11_safe",
+  "settle": 150,
+  "setup": "g.world.goto('safe');for(const c of g.rig.circuits.keys())g.rig.setCircuit(c,true);g.engine.autoQuality=false;if(g.ui&&g.ui.cine&&g.ui.cine.stop)g.ui.cine.stop();const r=g.world.spawn;g.lookAtOpen(r,g.world.spawnYaw||0,0.0);"
+ }
+]
